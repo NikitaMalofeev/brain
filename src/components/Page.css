@@ -1,0 +1,22 @@
+.page-container {
+  min-height: 100vh;
+  width: 100%;
+  background-color: var(--profile-bg, #ffffff);
+}
+
+html, body, #root {
+  background-color: var(--profile-bg, #ffffff);
+}
+
+/* Добавляем отступ только когда TabBar отображается */
+.page-container.with-tab-bar .content-wrapper {
+  /* 64px (высота TabBar) + env(safe-area-inset-bottom, 0) (отступ для notch) */
+  padding-bottom: calc(64px + env(safe-area-inset-bottom, 0px));
+}
+
+/* Для мобильных устройств с меньшими экранами */
+@media (max-width: 380px) {
+  .page-container.with-tab-bar .content-wrapper {
+    padding-bottom: calc(64px + env(safe-area-inset-bottom, 0px) + 8px);
+  }
+} 

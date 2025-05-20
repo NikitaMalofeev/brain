@@ -1,0 +1,2720 @@
+TITLE: SDK Initialization for Telegram Mini Apps (TypeScript)
+DESCRIPTION: This snippet demonstrates how to initialize the @telegram-apps/sdk within a Telegram Mini App using the init method. Initialization is a prerequisite for all further operations involving SDK components or utilities, as it sets up necessary global dependencies. This function should be called at the start of application execution. Input: None. Output: Initializes the SDK state; subsequent SDK methods assume initialization is complete.
+SOURCE: https://github.com/telegram-mini-apps/telegram-apps/blob/master/apps/docs/packages/telegram-apps-sdk/3-x/scopes.md#2025-04-23_snippet_1
+
+LANGUAGE: ts
+CODE:
+```
+import { init } from '@telegram-apps/sdk';
+
+init();
+
+```
+
+----------------------------------------
+
+TITLE: Installing Telegram Mini Apps SDK with npm
+DESCRIPTION: Command to install the @telegram-apps/sdk package using npm package manager.
+SOURCE: https://github.com/telegram-mini-apps/telegram-apps/blob/master/apps/docs/packages/telegram-apps-sdk/2-x.md#2025-04-23_snippet_1
+
+LANGUAGE: bash
+CODE:
+```
+npm i @telegram-apps/sdk
+```
+
+----------------------------------------
+
+TITLE: Installing @telegram-apps/sdk with Package Managers
+DESCRIPTION: Commands for installing the @telegram-apps/sdk package using different package managers (pnpm, npm, and yarn).
+SOURCE: https://github.com/telegram-mini-apps/telegram-apps/blob/master/apps/docs/packages/telegram-apps-sdk/3-x.md#2025-04-23_snippet_0
+
+LANGUAGE: bash
+CODE:
+```
+pnpm i @telegram-apps/sdk
+```
+
+LANGUAGE: bash
+CODE:
+```
+npm i @telegram-apps/sdk
+```
+
+LANGUAGE: bash
+CODE:
+```
+yarn add @telegram-apps/sdk
+```
+
+----------------------------------------
+
+TITLE: Call Method using @telegram-apps/sdk - TypeScript
+DESCRIPTION: Demonstrates the simplified approach to calling Telegram Mini App methods using the `postEvent` function from the `@telegram-apps/sdk` package, abstracting platform-specific details.
+SOURCE: https://github.com/telegram-mini-apps/telegram-apps/blob/master/apps/docs/zh/platform/methods.md#_snippet_4
+
+LANGUAGE: TypeScript
+CODE:
+```
+import { postEvent } from '@telegram-apps/sdk';
+
+postEvent('web_app_set_header_color', { color_key: 'bg_color' });
+```
+
+----------------------------------------
+
+TITLE: Installing @telegram-apps/sdk-react
+DESCRIPTION: Install the @telegram-apps/sdk-react package using your preferred package manager. This package is a peer dependency of React and re-exports the core @telegram-apps/sdk.
+SOURCE: https://github.com/telegram-mini-apps/telegram-apps/blob/master/apps/docs/packages/telegram-apps-sdk-react/3-x.md#_snippet_0
+
+LANGUAGE: bash
+CODE:
+```
+pnpm i @telegram-apps/sdk-react
+```
+
+LANGUAGE: bash
+CODE:
+```
+npm i @telegram-apps/sdk-react
+```
+
+LANGUAGE: bash
+CODE:
+```
+yarn add @telegram-apps/sdk-react
+```
+
+----------------------------------------
+
+TITLE: Retrieving Telegram Mini App Init Data via @telegram-apps/sdk in TypeScript
+DESCRIPTION: This TypeScript snippet demonstrates how to use the retrieveLaunchParams function from the @telegram-apps/sdk package to extract init data from the Telegram Mini App launch parameters. The returned object contains initDataRaw, used as an authorization token, and initData, a parsed representation of the launch data. Ensure that the @telegram-apps/sdk package is installed and imported. This operation requires no additional parameters and outputs the extracted data directly for further authentication steps.
+SOURCE: https://github.com/telegram-mini-apps/telegram-apps/blob/master/apps/docs/platform/init-data.md#2025-04-23_snippet_0
+
+LANGUAGE: typescript
+CODE:
+```
+import { retrieveLaunchParams } from '@telegram-apps/sdk';
+
+const { initDataRaw, initData } = retrieveLaunchParams();
+```
+
+----------------------------------------
+
+TITLE: Initializing and Using @telegram-apps/sdk in TypeScript
+DESCRIPTION: Example of initializing the SDK, mounting the back button component, and handling back button clicks. It demonstrates the basic usage of the package including event handling and cleanup.
+SOURCE: https://github.com/telegram-mini-apps/telegram-apps/blob/master/apps/docs/packages/telegram-apps-sdk/3-x.md#2025-04-23_snippet_1
+
+LANGUAGE: typescript
+CODE:
+```
+import { init, backButton } from '@telegram-apps/sdk';
+
+// Init the package and actualize all global dependencies.
+init();
+
+// Mount the back button component and retrieve its actual
+// state.
+backButton.mount();
+
+// When a user clicked the back button, go back in the
+// navigation history.
+const off = backButton.onClick(() => {
+  off();
+  window.history.back();
+});
+```
+
+----------------------------------------
+
+TITLE: Running the Create Mini App CLI with different package managers
+DESCRIPTION: Commands for launching the project initialization process using npm, yarn, or pnpm. Each command will start the interactive scaffolding tool that prompts for technology choices and creates a new project from templates.
+SOURCE: https://github.com/telegram-mini-apps/telegram-apps/blob/master/packages/create-mini-app/README.md#2025-04-23_snippet_0
+
+LANGUAGE: bash
+CODE:
+```
+# npm
+npx @telegram-apps/create-mini-app
+
+# yarn
+yarn create @telegram-apps/mini-app
+
+# pnpm
+pnpm dlx @telegram-apps/create-mini-app
+```
+
+----------------------------------------
+
+TITLE: Sending Telegram Mini App Init Data to Server via Fetch in TypeScript
+DESCRIPTION: This TypeScript snippet illustrates securely sending init data from a Telegram Mini App to a server endpoint using the fetch API. The initDataRaw retrieved from the Telegram SDK is placed into the Authorization header, following the 'tma' scheme, for every request needing user identification. The receiving server must validate this signature using the referenced process. Dependencies include the @telegram-apps/sdk (for retrieveLaunchParams) and an accessible HTTP endpoint. This method is suitable for authenticating users in backend services.
+SOURCE: https://github.com/telegram-mini-apps/telegram-apps/blob/master/apps/docs/platform/init-data.md#2025-04-23_snippet_1
+
+LANGUAGE: typescript
+CODE:
+```
+import { retrieveLaunchParams } from '@telegram-apps/sdk';
+
+const { initDataRaw } = retrieveLaunchParams();
+
+fetch('https://example.com/api', {
+  method: 'POST',
+  headers: {
+    Authorization: `tma ${initDataRaw}`
+  },
+});
+```
+
+----------------------------------------
+
+TITLE: Calling Telegram Mini App Method (postEvent) - TypeScript
+DESCRIPTION: Demonstrates the basic usage of the postEvent function from the Telegram Apps SDK to send a command to the Telegram client without waiting for a specific response. It shows how to import the function and call a method like web_app_setup_back_button with parameters.
+SOURCE: https://github.com/telegram-mini-apps/telegram-apps/blob/master/apps/docs/zh/packages/telegram-apps-sdk/1-x/methods-and-events.md#_snippet_0
+
+LANGUAGE: TypeScript
+CODE:
+```
+import { postEvent } from '@telegram-apps/sdk';
+
+postEvent('web_app_setup_back_button', { is_visible: true });
+```
+
+----------------------------------------
+
+TITLE: Validating Telegram Init Data with Node.js and Express
+DESCRIPTION: This TypeScript snippet sets up an Express server in Node.js to handle user authorization based on Telegram Mini App init data. It defines middleware to extract the init data from the 'Authorization: tma ...' header, validate its signature and expiration using '@telegram-apps/init-data-node', and parse it. Validated data is stored in 'res.locals' for subsequent middleware. Requires the 'express' and '@telegram-apps/init-data-node' packages and a Telegram bot token.
+SOURCE: https://github.com/telegram-mini-apps/telegram-apps/blob/master/apps/docs/platform/authorizing-user.md#2025-04-23_snippet_1
+
+LANGUAGE: typescript
+CODE:
+```
+import { validate, parse, type InitDataParsed } from '@telegram-apps/init-data-node';
+import express, {
+  type ErrorRequestHandler,
+  type RequestHandler,
+  type Response,
+} from 'express';
+
+/**
+ * Sets init data in the specified Response object.
+ * @param res - Response object.
+ * @param initData - init data.
+ */
+function setInitData(res: Response, initData: InitDataParsed): void {
+  res.locals.initData = initData;
+}
+
+/**
+ * Extracts init data from the Response object.
+ * @param res - Response object.
+ * @returns Init data stored in the Response object. Can return undefined in case,
+ * the client is not authorized.
+ */
+function getInitData(res: Response): InitDataParsed | undefined {
+  return res.locals.initData;
+}
+
+/**
+ * Middleware which authorizes the external client.
+ * @param req - Request object.
+ * @param res - Response object.
+ * @param next - function to call the next middleware.
+ */
+const authMiddleware: RequestHandler = (req, res, next) => {
+  // We expect passing init data in the Authorization header in the following format:
+  // <auth-type> <auth-data>
+  // <auth-type> must be "tma", and <auth-data> is Telegram Mini Apps init data.
+  const [authType, authData = ''] = (req.header('authorization') || '').split(' ');
+
+  switch (authType) {
+    case 'tma':
+      try {
+        // Validate init data.
+        validate(authData, token, {
+          // We consider init data sign valid for 1 hour from their creation moment.
+          expiresIn: 3600,
+        });
+
+        // Parse init data. We will surely need it in the future.
+        setInitData(res, parse(authData));
+        return next();
+      } catch (e) {
+        return next(e);
+      }
+    // ... other authorization methods.
+    default:
+      return next(new Error('Unauthorized'));
+  }
+};
+
+/**
+ * Middleware which shows the user init data.
+ * @param _req
+ * @param res - Response object.
+ * @param next - function to call the next middleware.
+ */
+const showInitDataMiddleware: RequestHandler = (_req, res, next) => {
+  const initData = getInitData(res);
+  if (!initData) {
+    return next(new Error('Cant display init data as long as it was not found'));
+  }
+  res.json(initData);
+};
+
+/**
+ * Middleware which displays the user init data.
+ * @param err - handled error.
+ * @param _req
+ * @param res - Response object.
+ */
+const defaultErrorMiddleware: ErrorRequestHandler = (err, _req, res) => {
+  res.status(500).json({
+    error: err.message,
+  });
+};
+
+// Your secret bot token.
+const token = '1234567890:ABC';
+
+// Create an Express applet and start listening to port 3000.
+const app = express();
+
+app.use(authMiddleware);
+app.get('/', showInitDataMiddleware);
+app.use(defaultErrorMiddleware);
+
+app.listen(3000);
+
+// After the HTTP server was launched, try sending an HTTP GET request to the URL 
+// http://localhost:3000/ with an Authorization header containing data in the required format.
+```
+
+----------------------------------------
+
+TITLE: Initializing Telegram Apps SDK in TypeScript
+DESCRIPTION: This snippet imports the init function from @telegram-apps/sdk and executes it, performing necessary one-time SDK setup. This initialization is essential before mounting any SDK component or using its methods. There are no external dependencies beyond the SDK; input is none, output is that the SDK is ready for component mounting and usage, and failure to run this will cause methods to error.
+SOURCE: https://github.com/telegram-mini-apps/telegram-apps/blob/master/apps/docs/packages/telegram-apps-sdk/3-x/usage-tips.md#2025-04-23_snippet_2
+
+LANGUAGE: typescript
+CODE:
+```
+import { init } from '@telegram-apps/sdk';
+
+init();
+```
+
+----------------------------------------
+
+TITLE: Safely Invoking backButton.show Using ifAvailable Wrapper (TypeScript)
+DESCRIPTION: This snippet demonstrates using the ifAvailable wrapper on the backButton.show method from @telegram-apps/sdk. The ifAvailable function only calls backButton.show if it is currently available; otherwise, it returns a tuple with false as the first element. This allows for safe, guard-checked invocation of SDK methods in volatile environments. The output tuple provides a boolean indicating execution and, if successful, the function result.
+SOURCE: https://github.com/telegram-mini-apps/telegram-apps/blob/master/apps/docs/packages/telegram-apps-sdk/3-x/scopes.md#2025-04-23_snippet_4
+
+LANGUAGE: ts
+CODE:
+```
+import { backButton } from '@telegram-apps/sdk';
+
+backButton.show.ifAvailable();
+
+```
+
+----------------------------------------
+
+TITLE: Validating Telegram InitData in Backend (TypeScript)
+DESCRIPTION: This TypeScript backend function validates the `initData` string received from a Telegram Mini App. It utilizes the `validate` function from the `@tma.js/init-data-node` library, passing the raw `initData` string and the bot's secret token (`TG_BOT_SECRET`) obtained from BotFather. It returns `true` if the data is valid and untampered, `false` otherwise.
+SOURCE: https://github.com/telegram-mini-apps/telegram-apps/blob/master/apps/docs/platform/migrating-from-vk.md#2025-04-23_snippet_3
+
+LANGUAGE: typescript
+CODE:
+```
+import { validate } from '@tma.js/init-data-node';
+
+const TG_BOT_SECRET = 'TG_BOT_SECRET';
+
+function isInitDataValid(initDataRaw: string): boolean {
+  try {
+    validate(initDataRaw, TG_BOT_SECRET);
+    return true;
+  } catch (err) {
+    return false;
+  }
+}
+```
+
+----------------------------------------
+
+TITLE: Initializing Telegram Mini Apps SDK
+DESCRIPTION: Code snippet demonstrating how to initialize the Telegram Mini Apps SDK using the init function.
+SOURCE: https://github.com/telegram-mini-apps/telegram-apps/blob/master/apps/docs/packages/telegram-apps-sdk/2-x/usage-tips.md#2025-04-23_snippet_2
+
+LANGUAGE: typescript
+CODE:
+```
+import { init } from '@telegram-apps/sdk';
+
+init();
+```
+
+----------------------------------------
+
+TITLE: Initializing Telegram Mini Apps SDK in TypeScript
+DESCRIPTION: This code snippet demonstrates how to import and call the init function from the @telegram-apps/sdk package to initialize the SDK. This step is crucial for configuring the package's global dependencies and making it ready for use.
+SOURCE: https://github.com/telegram-mini-apps/telegram-apps/blob/master/apps/docs/packages/telegram-apps-sdk/3-x/initializing.md#2025-04-23_snippet_1
+
+LANGUAGE: typescript
+CODE:
+```
+import { init } from '@telegram-apps/sdk';
+
+init();
+```
+
+----------------------------------------
+
+TITLE: Mounting Mini App Component in Telegram SDK (TypeScript)
+DESCRIPTION: Demonstrates how to mount the Mini App component using the mountSync method. This updates the isMounted signal property to true if the mount is successful.
+SOURCE: https://github.com/telegram-mini-apps/telegram-apps/blob/master/apps/docs/packages/telegram-apps-sdk/3-x/components/mini-app.md#2025-04-23_snippet_0
+
+LANGUAGE: typescript
+CODE:
+```
+import { miniApp } from '@telegram-apps/sdk';
+
+if (miniApp.mountSync.isAvailable()) {
+  miniApp.mountSync();
+  miniApp.isMounted(); // true
+}
+```
+
+LANGUAGE: typescript
+CODE:
+```
+import { mountMiniAppSync, isMiniAppMounted } from '@telegram-apps/sdk';
+
+if (mountMiniAppSync.isAvailable()) {
+  mountMiniAppSync();
+  isMiniAppMounted(); // true
+}
+```
+
+----------------------------------------
+
+TITLE: Installing Telegram Mini Apps SDK for React
+DESCRIPTION: Commands to install the Telegram Mini Apps SDK for React using different package managers.
+SOURCE: https://github.com/telegram-mini-apps/telegram-apps/blob/master/apps/docs/packages/telegram-apps-sdk/2-x/usage-tips.md#2025-04-23_snippet_0
+
+LANGUAGE: bash
+CODE:
+```
+pnpm i @telegram-apps/sdk-react
+```
+
+LANGUAGE: bash
+CODE:
+```
+npm i @telegram-apps/sdk-react
+```
+
+LANGUAGE: bash
+CODE:
+```
+yarn add @telegram-apps/sdk-react
+```
+
+----------------------------------------
+
+TITLE: Retrieving Launch Parameters for Telegram Mini Apps using TypeScript
+DESCRIPTION: This snippet demonstrates how to use the retrieveLaunchParams function from the @telegram-apps/bridge package to extract launch parameters for a Telegram Mini App. The function attempts to retrieve parameters from all possible sources and throws an error if unsuccessful.
+SOURCE: https://github.com/telegram-mini-apps/telegram-apps/blob/master/apps/docs/packages/telegram-apps-bridge/launch-parameters.md#2025-04-23_snippet_0
+
+LANGUAGE: typescript
+CODE:
+```
+import { retrieveLaunchParams } from '@telegram-apps/bridge';
+
+const launchParams = retrieveLaunchParams();
+```
+
+----------------------------------------
+
+TITLE: Signaling Mini App Ready State
+DESCRIPTION: Demonstrates how to signal that the Mini App is ready to be displayed, which hides the loading placeholder.
+SOURCE: https://github.com/telegram-mini-apps/telegram-apps/blob/master/apps/docs/packages/telegram-apps-sdk/2-x/components/mini-app.md#2025-04-23_snippet_7
+
+LANGUAGE: typescript
+CODE:
+```
+if (miniApp.ready.isAvailable()) {
+  miniApp.ready();
+}
+```
+
+LANGUAGE: typescript
+CODE:
+```
+import { miniAppReady } from '@telegram-apps/sdk';
+
+if (miniAppReady.isAvailable()) {
+  miniAppReady();
+}
+```
+
+----------------------------------------
+
+TITLE: Opening Invoices in Telegram Mini Apps
+DESCRIPTION: Shows how to open invoices using either slugs or URLs, with status tracking through the isOpened signal property. Supports both direct URLs and invoice slugs with appropriate mode specification.
+SOURCE: https://github.com/telegram-mini-apps/telegram-apps/blob/master/apps/docs/packages/telegram-apps-sdk/3-x/components/invoice.md#2025-04-23_snippet_1
+
+LANGUAGE: typescript
+CODE:
+```
+import { invoice } from '@telegram-apps/sdk';
+
+if (invoice.open.isAvailable()) {
+  invoice.isOpened(); // false
+  const promise = invoice.open('abIIks213');
+  invoice.isOpened(); // true
+  const status = await promise;
+  invoice.isOpened(); // false
+
+  // Or in URL mode:
+  await invoice.open('https://t.me/invoice/abIIks213', 'url');
+}
+```
+
+LANGUAGE: typescript
+CODE:
+```
+import { openInvoice, isInvoiceOpened } from '@telegram-apps/sdk';
+
+if (openInvoice.isAvailable()) {
+  isInvoiceOpened(); // false
+  const promise = openInvoice('abIIks213');
+  isInvoiceOpened(); // true
+  const status = await promise;
+  isInvoiceOpened(); // false
+
+  // Or in URL mode:
+  await openInvoice('https://t.me/invoice/abIIks213', 'url');
+}
+```
+
+----------------------------------------
+
+TITLE: Signaling App Readiness in Telegram Mini Apps (API)
+DESCRIPTION: Details the `web_app_ready` method, which notifies the Telegram client that the Mini App has finished loading and is ready to be displayed. Calling this method typically removes any loading indicators shown by Telegram.
+SOURCE: https://github.com/telegram-mini-apps/telegram-apps/blob/master/apps/docs/platform/methods.md#2025-04-23_snippet_10
+
+LANGUAGE: api
+CODE:
+```
+web_app_ready()
+```
+
+----------------------------------------
+
+TITLE: Signaling Mini App Readiness in Telegram SDK (TypeScript)
+DESCRIPTION: Shows how to signal that the Mini App is ready to be displayed using the ready method. This hides the loading placeholder and displays the Mini App.
+SOURCE: https://github.com/telegram-mini-apps/telegram-apps/blob/master/apps/docs/packages/telegram-apps-sdk/3-x/components/mini-app.md#2025-04-23_snippet_8
+
+LANGUAGE: typescript
+CODE:
+```
+if (miniApp.ready.isAvailable()) {
+  miniApp.ready();
+}
+```
+
+LANGUAGE: typescript
+CODE:
+```
+import { miniAppReady } from '@telegram-apps/sdk';
+
+if (miniAppReady.isAvailable()) {
+  miniAppReady();
+}
+```
+
+----------------------------------------
+
+TITLE: Initializing Telegram Mini Apps SDK (TypeScript)
+DESCRIPTION: Demonstrates how to initialize the Telegram Mini Apps SDK, which is a prerequisite for using any SDK method.
+SOURCE: https://github.com/telegram-mini-apps/telegram-apps/blob/master/apps/docs/packages/telegram-apps-sdk/2-x/scopes.md#2025-04-23_snippet_2
+
+LANGUAGE: typescript
+CODE:
+```
+import { init } from '@telegram-apps/sdk';
+
+init();
+```
+
+----------------------------------------
+
+TITLE: Initializing and Managing Telegram Mini Apps Buttons
+DESCRIPTION: Demonstrates initialization of MainButton and BackButton components, event handling, styling configuration, and cleanup process. Shows how to toggle visibility between buttons and handle click events.
+SOURCE: https://github.com/telegram-mini-apps/telegram-apps/blob/master/apps/docs/packages/telegram-apps-sdk/1-x/components.md#2025-04-23_snippet_0
+
+LANGUAGE: typescript
+CODE:
+```
+import { initBackButton, initMainButton } from '@telegram-apps/sdk';
+
+const [mb, cleanupMb] = initMainButton();
+const [bb, cleanupBb] = initBackButton();
+
+// Clicking the MainButton hides it and shows the BackButton.
+mb.on('click', () => {
+  mb.hide();
+  bb.show();
+});
+
+// Clicking the BackButton hides it and shows the MainButton.
+bb.on('click', () => {
+  mb.show();
+  bb.hide();
+});
+
+// Configure the MainButton.
+mb
+  .setBgColor('#ff0000')
+  .setTextColor('#ffffff')
+  .setText('Expand')
+  .enable()
+  .show();
+
+// When we don't need BackButton and MainButton anymore, we can 
+// perform a cleanup. After calling a cleanup, the initialized 
+// component will not receive any events.
+cleanupMb();
+cleanupBb();
+```
+
+----------------------------------------
+
+TITLE: Adding Message Event Listener (Web)
+DESCRIPTION: Demonstrates the standard web approach to listening for messages from the parent iframe (the Telegram client) using window.addEventListener.
+SOURCE: https://github.com/telegram-mini-apps/telegram-apps/blob/master/apps/docs/zh/platform/events.md#_snippet_0
+
+LANGUAGE: typescript
+CODE:
+```
+window.addEventListener('message', ...);
+```
+
+----------------------------------------
+
+TITLE: Initializing and Using SDK Components in Solid.js
+DESCRIPTION: Example demonstrating the basic setup and usage of `@telegram-apps/sdk-solid` in a Solid.js application. The `index.tsx` file shows how to initialize the SDK and mount the Back Button. The `BackButton.ts` file defines a component that controls the Back Button's visibility using SDK functions and the `useSignal` hook.
+SOURCE: https://github.com/telegram-mini-apps/telegram-apps/blob/master/apps/docs/packages/telegram-apps-sdk-solid/3-x.md#2025-04-23_snippet_1
+
+LANGUAGE: tsx
+CODE:
+```
+import { render } from 'solid-js/web';
+import { init, backButton } from '@telegram-apps/sdk-solid';
+
+import { BackButton } from './BackButton.js';
+
+// Initialize the package.
+init();
+
+// Mount the Back Button, so we will work with 
+// the actual component properties.
+backButton.mount();
+
+render(() => <BackButton/>, document.getElementById('root')!);
+```
+
+LANGUAGE: ts
+CODE:
+```
+import { createEffect, onCleanup, onMount } from 'solid-js';
+import { backButton, useSignal } from '@telegram-apps/sdk-solid';
+
+/**
+ * Component which controls the Back Button visibility.
+ */
+export function BackButton() {
+  const isVisible = useSignal(backButton.isVisible);
+
+  createEffect(() => {
+    console.log('The button is', isVisible() ? 'visible' : 'invisible');
+  });
+
+  onMount(() => {
+    backButton.show();
+    onCleanup(() => {
+      backButton.hide();
+    });
+  });
+
+  return null;
+}
+```
+
+----------------------------------------
+
+TITLE: Parsing Launch Parameters in Typescript for Telegram Mini Apps
+DESCRIPTION: Demonstrates how to use the parseLaunchParams function to parse launch parameters from a URLSearchParams object. The function returns a LaunchParams interface containing parsed data including version, platform, theme parameters, and user information.
+SOURCE: https://github.com/telegram-mini-apps/telegram-apps/blob/master/apps/docs/packages/telegram-apps-sdk/1-x/launch-parameters.md#2025-04-23_snippet_0
+
+LANGUAGE: typescript
+CODE:
+```
+import { parseLaunchParams, launchParamsParser } from '@telegram-apps/sdk';
+
+parseLaunchParams(
+  new URLSearchParams([
+    ['tgWebAppVersion', '6.7'],
+    ['tgWebAppPlatform', 'tdekstop'],
+    ['tgWebAppBotInline', '1'],
+    ['tgWebAppData', new URLSearchParams([
+      ['query_id', 'AAHdF6IQAAAAAN0XohAOqR8k'],
+      ['user', JSON.stringify({
+        id: 279058397,
+        first_name: 'Vladislav',
+        last_name: 'Kibenko',
+        username: 'vdkfrost',
+        language_code: 'ru',
+        is_premium: true,
+        allows_write_to_pm: true,
+      })],
+      ['auth_date', '1691441944'],
+      ['hash', 'abc'],
+    ]).toString()],
+    ['tgWebAppThemeParams', JSON.stringify({
+      bg_color: '#17212b',
+      button_color: '#5288c1',
+      button_text_color: '#ffffff',
+      hint_color: '#708499',
+      link_color: '#6ab3f3',
+      secondary_bg_color: '#232e3c',
+      text_color: '#f5f5f5',
+    })],
+  ]),
+);
+```
+
+----------------------------------------
+
+TITLE: Accessing Safe Area Insets using @telegram-apps/sdk in TypeScript
+DESCRIPTION: Illustrates how to access safe area and content safe area inset values provided by the viewport component. It shows retrieving the full inset objects (top, bottom, left, right) and individual inset values using both signal properties on the `viewport` object and standalone functions from `@telegram-apps/sdk`.
+SOURCE: https://github.com/telegram-mini-apps/telegram-apps/blob/master/apps/docs/packages/telegram-apps-sdk/3-x/components/viewport.md#2025-04-23_snippet_6
+
+LANGUAGE: typescript
+CODE:
+```
+// Objects with numeric properties "top", "bottom", "left" and "right".
+viewport.safeAreaInsets();
+viewport.contentSafeAreaInsets();
+
+// Numeric values.
+viewport.safeAreaInsetTop();
+viewport.safeAreaInsetBottom();
+viewport.safeAreaInsetLeft();
+viewport.safeAreaInsetRight();
+viewport.contentSafeAreaInsetTop();
+viewport.contentSafeAreaInsetBottom();
+viewport.contentSafeAreaInsetLeft();
+viewport.contentSafeAreaInsetRight();
+```
+
+LANGUAGE: typescript
+CODE:
+```
+import {
+  viewportSafeAreaInsets,
+  viewportSafeAreaInsetTop,
+  viewportSafeAreaInsetBottom,
+  viewportSafeAreaInsetLeft,
+  viewportSafeAreaInsetRight,
+  viewportContentSafeAreaInsets,
+  viewportContentSafeAreaInsetTop,
+  viewportContentSafeAreaInsetBottom,
+  viewportContentSafeAreaInsetLeft,
+  viewportContentSafeAreaInsetRight,
+} from '@telegram-apps/sdk';
+
+// Objects with numeric properties "top", "bottom", "left" and "right".
+viewportSafeAreaInsets();
+viewportContentSafeAreaInsets();
+
+// Numeric values.
+viewportSafeAreaInsetTop();
+viewportSafeAreaInsetBottom();
+viewportSafeAreaInsetLeft();
+viewportSafeAreaInsetRight();
+viewportContentSafeAreaInsetTop();
+viewportContentSafeAreaInsetBottom();
+viewportContentSafeAreaInsetLeft();
+viewportContentSafeAreaInsetRight();
+```
+
+----------------------------------------
+
+TITLE: Basic Usage Example with TypeScript
+DESCRIPTION: Illustrates importing core functions, posting an event to show the back button, and setting up an event listener for the back button press, which then hides the button and removes the listener.
+SOURCE: https://github.com/telegram-mini-apps/telegram-apps/blob/master/apps/docs/zh/packages/telegram-apps-bridge.md#_snippet_3
+
+LANGUAGE: ts
+CODE:
+```
+import {
+  defineEventHandlers,
+  on,
+  postEvent
+} from '@telegram-apps/bridge';
+
+// Define Mini Apps event handlers to receive 
+// events from the Telegram native application.
+
+
+
+
+postEvent('web_app_setup_back_button', { is_visible: true });
+
+const off = on('back_button_pressed', () => {
+  postEvent('web_app_setup_back_button', { is_visible: false });
+  off();
+})；
+```
+
+----------------------------------------
+
+TITLE: Calling Method with Parameters in Telegram Mini Apps (TypeScript)
+DESCRIPTION: Shows how to use the 'request' function with parameters when calling a Telegram Mini Apps method. This example opens a popup with custom buttons and receives the selected button ID.
+SOURCE: https://github.com/telegram-mini-apps/telegram-apps/blob/master/apps/docs/packages/telegram-apps-bridge/2-x/advanced.md#2025-04-23_snippet_1
+
+LANGUAGE: typescript
+CODE:
+```
+const { button_id } = await request('web_app_open_popup', 'popup_closed', {
+  params: {
+    title: 'Caution',
+    message: 'Should we delete your account?',
+    buttons: [
+      { id: 'yes', type: 'ok' },
+      { id: 'no', type: 'cancel' },
+    ],
+  },
+});
+```
+
+----------------------------------------
+
+TITLE: Requesting Write Access in Telegram Mini Apps SDK (TypeScript)
+DESCRIPTION: Shows how to request permission to send messages to the user using the requestWriteAccess method. It demonstrates both isAvailable and ifAvailable approaches. The method returns a status indicating whether access was allowed or another result.
+SOURCE: https://github.com/telegram-mini-apps/telegram-apps/blob/master/apps/docs/packages/telegram-apps-sdk/3-x/utils/privacy.md#2025-04-23_snippet_1
+
+LANGUAGE: typescript
+CODE:
+```
+import { requestWriteAccess } from '@telegram-apps/sdk';
+
+if (requestWriteAccess.isAvailable()) {
+  const status = await requestWriteAccess();
+  // status will be 'allowed' | string
+}
+```
+
+LANGUAGE: typescript
+CODE:
+```
+import { requestWriteAccess } from '@telegram-apps/sdk';
+
+const result = requestWriteAccess.ifAvailable();
+if (result[0]) {
+  // status will be 'allowed' | string | undefined
+  const status = await result[1];
+}
+```
+
+----------------------------------------
+
+TITLE: Handling Main Button Click Events in Telegram Mini Apps SDK (TypeScript)
+DESCRIPTION: Shows how to add and remove click event listeners for the main button using both variable and function approaches. The onClick method returns a function to remove the bound listener.
+SOURCE: https://github.com/telegram-mini-apps/telegram-apps/blob/master/apps/docs/packages/telegram-apps-sdk/3-x/components/main-button.md#2025-04-23_snippet_3
+
+LANGUAGE: typescript
+CODE:
+```
+if (mainButton.onClick.isAvailable()) {
+  function listener() {
+    console.log('Clicked!');
+  }
+
+  const offClick = mainButton.onClick(listener);
+  offClick();
+  // or
+  mainButton.onClick(listener);
+  mainButton.offClick(listener);
+}
+```
+
+LANGUAGE: typescript
+CODE:
+```
+import {
+  onMainButtonClick,
+  offMainButtonClick,
+} from '@telegram-apps/sdk';
+
+if (onMainButtonClick.isAvailable()) {
+  function listener() {
+    console.log('Clicked!');
+  }
+
+  const offClick = onMainButtonClick(listener);
+  offClick();
+  // or
+  onMainButtonClick(listener);
+  offMainButtonClick(listener);
+}
+```
+
+----------------------------------------
+
+TITLE: Initializing Telegram Mini App SDK in Vue.js Application - TypeScript
+DESCRIPTION: This example sets up a basic Vue.js application integrated with @telegram-apps/sdk-vue. It shows how to import the core Vue createApp function, the SDK's init method, and the main App component, then initializes the SDK before mounting the app. Dependencies include vue, @telegram-apps/sdk-vue, and the App.vue component; 'init' must be called before app mounting to ensure Telegram functionalities are available globally.
+SOURCE: https://github.com/telegram-mini-apps/telegram-apps/blob/master/apps/docs/packages/telegram-apps-sdk-vue.md#2025-04-23_snippet_1
+
+LANGUAGE: typescript
+CODE:
+```
+import { createApp } from 'vue';
+import { init } from '@telegram-apps/sdk-vue';
+import App from './App.vue';
+
+// Initialize the package.
+init();
+
+const app = createApp(App);
+
+app.mount('#root');
+```
+
+----------------------------------------
+
+TITLE: Retrieving Raw Init Data for Backend Communication
+DESCRIPTION: Shows how to use the retrieveRawInitData function to extract init data in its raw format for sending to a backend server. This is the recommended approach as it guarantees the data remains unmodified from how it was passed by the Telegram client.
+SOURCE: https://github.com/telegram-mini-apps/telegram-apps/blob/master/apps/docs/packages/telegram-apps-bridge/2-x/launch-parameters.md#2025-04-23_snippet_3
+
+LANGUAGE: typescript
+CODE:
+```
+import { retrieveRawInitData } from '@telegram-apps/bridge';
+
+retrieveRawInitData();
+// '{"user":...,"auth_date":...,"query_id":...,...}'
+```
+
+----------------------------------------
+
+TITLE: Calling Methods Using @telegram-apps/sdk (TypeScript)
+DESCRIPTION: Presents the recommended approach for calling Telegram Mini App methods using the `@telegram-apps/sdk` library. It simplifies the process by abstracting platform differences. Import the `postEvent` function and call it with the method name as the first argument and an object containing the parameters as the second argument.
+SOURCE: https://github.com/telegram-mini-apps/telegram-apps/blob/master/apps/docs/platform/methods.md#2025-04-23_snippet_4
+
+LANGUAGE: ts
+CODE:
+```
+import { postEvent } from '@telegram-apps/sdk';
+
+postEvent('web_app_set_header_color', { color_key: 'bg_color' });
+```
+
+----------------------------------------
+
+TITLE: Validating Init Data with Token
+DESCRIPTION: Example of validating initialization data signature using a secret token and handling validation errors.
+SOURCE: https://github.com/telegram-mini-apps/telegram-apps/blob/master/apps/docs/packages/telegram-apps-init-data-node.md#2025-04-23_snippet_2
+
+LANGUAGE: typescript
+CODE:
+```
+import { validate, isErrorOfType } from '@telegram-apps/init-data-node';
+
+try {
+  validate('init-data', 'token');
+} catch (e) {
+  if (isErrorOfType(e, 'ERR_SIGN_INVALID')) {
+    console.log('Sign is invalid');
+  }
+}
+```
+
+----------------------------------------
+
+TITLE: Mounting Component and SDK Initialization in Telegram Apps SDK (TypeScript)
+DESCRIPTION: This snippet shows both initializing the SDK and mounting a component (backButton) from @telegram-apps/sdk. It is necessary to mount component scopes before interacting with their methods to ensure proper state and configuration. Prerequisites: Application running inside Telegram Mini Apps and the SDK package is installed. Inputs: Calls to init and backButton.mount. Outputs: SDK is ready and the backButton component is mounted and able to accept events.
+SOURCE: https://github.com/telegram-mini-apps/telegram-apps/blob/master/apps/docs/packages/telegram-apps-sdk/3-x/scopes.md#2025-04-23_snippet_2
+
+LANGUAGE: ts
+CODE:
+```
+import { init, backButton } from '@telegram-apps/sdk';
+
+// Initialize the SDK.
+init();
+
+// Mount the Back Button component.
+backButton.mount();
+
+```
+
+----------------------------------------
+
+TITLE: Transmitting Init Data from Client with TypeScript
+DESCRIPTION: This TypeScript snippet demonstrates how to retrieve the raw Telegram Mini App init data using `@telegram-apps/sdk` and send it to a backend server. The data is included in the 'Authorization' header of a POST request, prefixed with 'tma '.
+SOURCE: https://github.com/telegram-mini-apps/telegram-apps/blob/master/apps/docs/platform/authorizing-user.md#2025-04-23_snippet_0
+
+LANGUAGE: typescript
+CODE:
+```
+import { retrieveRawInitData } from '@telegram-apps/sdk'
+
+const initDataRaw = retrieveRawInitData()
+
+fetch('https://example.com/api', {
+  method: 'POST',
+  headers: {
+    Authorization: `tma ${initDataRaw}`
+  },
+});
+```
+
+----------------------------------------
+
+TITLE: Extracting Telegram Mini App Launch Parameters (TypeScript)
+DESCRIPTION: Demonstrates how to access the window.location.hash property, remove the leading '#' character, and then use URLSearchParams to parse the hash string into key-value pairs for easy access to individual parameters like tgWebAppVersion.
+SOURCE: https://github.com/telegram-mini-apps/telegram-apps/blob/master/apps/docs/zh/platform/launch-parameters.md#_snippet_0
+
+LANGUAGE: TypeScript
+CODE:
+```
+const hash = window.location.hash.slice(1);
+console.log(hash); // tgWebAppData=...&tgWebAppVersion=6.2&...
+
+const params = new URLSearchParams(hash);
+console.log(params.get('tgWebAppVersion')); // "6.2"
+```
+
+----------------------------------------
+
+TITLE: Initializing Event Handlers in Telegram Mini Apps with TypeScript
+DESCRIPTION: Sets up the necessary event handlers for communication between the Telegram native app and mini application. This function must be called to enable event reception in the mini app.
+SOURCE: https://github.com/telegram-mini-apps/telegram-apps/blob/master/apps/docs/packages/telegram-apps-bridge/events.md#2025-04-23_snippet_0
+
+LANGUAGE: typescript
+CODE:
+```
+import { defineEventHandlers } from '@telegram-apps/bridge';
+
+defineEventHandlers();
+```
+
+----------------------------------------
+
+TITLE: Using ready() Lifecycle Method in MiniApp
+DESCRIPTION: Demonstrates how to use the ready() method to inform the Telegram app that the Mini App is ready to be displayed, which hides the loading placeholder.
+SOURCE: https://github.com/telegram-mini-apps/telegram-apps/blob/master/apps/docs/packages/telegram-apps-sdk/1-x/components/mini-app.md#2025-04-23_snippet_8
+
+LANGUAGE: typescript
+CODE:
+```
+miniApp.ready();
+```
+
+----------------------------------------
+
+TITLE: Using SDK hooks in React components
+DESCRIPTION: Demonstrates usage of various SDK hooks, including synchronous and asynchronous initialization, and error handling.
+SOURCE: https://github.com/telegram-mini-apps/telegram-apps/blob/master/apps/docs/packages/telegram-apps-sdk-react/1-x.md#2025-04-23_snippet_2
+
+LANGUAGE: ts
+CODE:
+```
+import {
+  useBackButton,
+  useBackButtonRaw,
+  useViewport,
+  useViewportRaw,
+  useBiometryManagerRaw,
+} from '@telegram-apps/sdk-react';
+import { useEffect } from 'react';
+
+// BackButton initializes synchronously. So, bb will be 
+// the BackButton instance.
+const bb = useBackButton();
+
+// Viewport is being initialized asynchronously, so signal may return undefined.
+// After some time it will receive a valid value.
+const vp = useViewport();
+
+useEffect(() => {
+  console.log(vp); // will be undefined and then Viewport instance.
+}, [vp]);
+
+const bm = useBiometryManagerRaw();
+
+useEffect(() => {
+  if (bm.error) {
+    console.error('Something went wrong for BiometryManager', bm.error);
+  }
+}, [bm]);
+```
+
+----------------------------------------
+
+TITLE: Invoking SDK Method If Available in TypeScript
+DESCRIPTION: This snippet uses backButton.show.ifAvailable() to call the method only if it is currently supported and won\'t throw. This is an alternative to manually checking with .isAvailable(). It abstracts the check and prevents errors from calling unavailable features. Dependencies: @telegram-apps/sdk; requires SDK and component setup beforehand.
+SOURCE: https://github.com/telegram-mini-apps/telegram-apps/blob/master/apps/docs/packages/telegram-apps-sdk/3-x/usage-tips.md#2025-04-23_snippet_6
+
+LANGUAGE: typescript
+CODE:
+```
+import { backButton } from '@telegram-apps/sdk';
+
+// ... the SDK is already initialized, and the Back Button is mounted.
+backButton.show.ifAvailable();
+```
+
+----------------------------------------
+
+TITLE: Opening External Links with Fallback Options using Telegram Mini Apps SDK (TypeScript)
+DESCRIPTION: Demonstrates how to use the `openLink` method from the @telegram-apps/sdk package to open an external URL in a browser or using Instant View, with feature detection using `isAvailable`. It requires the @telegram-apps/sdk dependency. The method accepts a URL and an options object specifying preferred browser and Instant View setting. If the capability is available, it attempts to open the provided URL according to the specified preferences.
+SOURCE: https://github.com/telegram-mini-apps/telegram-apps/blob/master/apps/docs/packages/telegram-apps-sdk/3-x/utils/links.md#2025-04-23_snippet_0
+
+LANGUAGE: typescript
+CODE:
+```
+import { openLink } from '@telegram-apps/sdk';\n\nif (openLink.isAvailable()) {\n  openLink('https://telegram.org', {\n    tryBrowser: 'chrome',\n    tryInstantView: true,\n  });\n}
+```
+
+----------------------------------------
+
+TITLE: Using 'on' and 'off' Functions for Event Management in Telegram Mini Apps
+DESCRIPTION: Shows how to use the 'on' function to add an event listener and the 'off' function to remove it. The example includes type annotations for better TypeScript integration.
+SOURCE: https://github.com/telegram-mini-apps/telegram-apps/blob/master/apps/docs/packages/telegram-apps-bridge/events.md#2025-04-23_snippet_2
+
+LANGUAGE: typescript
+CODE:
+```
+import { on, off, type EventListener } from '@telegram-apps/bridge';
+
+const listener: EventListener<'viewport_changed'> = (payload) => {
+  console.log('Viewport changed:', payload);
+};
+
+// Start listening to the event.
+on('viewport_changed', listener);
+
+// Remove the event listener.
+off('viewport_changed', listener);
+```
+
+----------------------------------------
+
+TITLE: Subscribing to Signal Changes with sub (TypeScript)
+DESCRIPTION: This snippet demonstrates subscribing to changes on a signal using the sub method. The listener receives current and previous values whenever the signal changes. The sub method returns a function to remove this listener at any time. This pattern allows reacting to reactive data updates.
+SOURCE: https://github.com/telegram-mini-apps/telegram-apps/blob/master/apps/docs/packages/telegram-apps-signals.md#2025-04-23_snippet_6
+
+LANGUAGE: typescript
+CODE:
+```
+const removeListener = isVisible.sub((current, prev) => {
+  console.log('Value changed from', prev, 'to', current);
+});
+
+// Remove the listener whenever needed.
+removeListener();
+```
+
+----------------------------------------
+
+TITLE: Accessing Theme Parameter Properties in TypeScript
+DESCRIPTION: Lists all available theme parameter properties and how to access them using both variable and function approaches. Each property returns an RGB value or undefined.
+SOURCE: https://github.com/telegram-mini-apps/telegram-apps/blob/master/apps/docs/packages/telegram-apps-sdk/3-x/components/theme-params.md#2025-04-23_snippet_4
+
+LANGUAGE: typescript
+CODE:
+```
+themeParams.accentTextColor(); // RGB | undefined
+themeParams.backgroundColor(); // RGB | undefined
+themeParams.buttonTextColor(); // RGB | undefined
+themeParams.buttonColor(); // RGB | undefined
+themeParams.destructiveTextColor(); // RGB | undefined
+themeParams.headerBackgroundColor(); // RGB | undefined
+themeParams.hintColor(); // RGB | undefined
+themeParams.linkColor(); // RGB | undefined
+themeParams.subtitleTextColor(); // RGB | undefined
+themeParams.sectionBackgroundColor(); // RGB | undefined
+themeParams.secondaryBackgroundColor(); // RGB | undefined
+themeParams.sectionSeparatorColor(); // RGB | undefined
+themeParams.sectionHeaderTextColor(); // RGB | undefined
+themeParams.textColor(); // RGB | undefined
+
+themeParams.state(); // Record<string, RGB>;
+```
+
+LANGUAGE: typescript
+CODE:
+```
+import {
+  themeParamsAccentTextColor,
+  themeParamsBackgroundColor,
+  themeParamsButtonTextColor,
+  themeParamsButtonColor,
+  themeParamsDestructiveTextColor,
+  themeParamsHeaderBackgroundColor,
+  themeParamsHintColor,
+  themeParamsLinkColor,
+  themeParamsSubtitleTextColor,
+  themeParamsSectionBackgroundColor,
+  themeParamsSecondaryBackgroundColor,
+  themeParamsSectionSeparatorColor,
+  themeParamsSectionHeaderTextColor,
+  themeParamsTextColor,
+  themeParamsState,
+} from '@telegram-apps/sdk';
+
+themeParamsAccentTextColor(); // RGB | undefined
+themeParamsBackgroundColor(); // RGB | undefined
+themeParamsButtonTextColor(); // RGB | undefined
+themeParamsButtonColor(); // RGB | undefined
+themeParamsDestructiveTextColor(); // RGB | undefined
+themeParamsHeaderBackgroundColor(); // RGB | undefined
+themeParamsHintColor(); // RGB | undefined
+themeParamsLinkColor(); // RGB | undefined
+themeParamsSubtitleTextColor(); // RGB | undefined
+themeParamsSectionBackgroundColor(); // RGB | undefined
+themeParamsSecondaryBackgroundColor(); // RGB | undefined
+themeParamsSectionSeparatorColor(); // RGB | undefined
+themeParamsSectionHeaderTextColor(); // RGB | undefined
+themeParamsTextColor(); // RGB | undefined
+
+themeParamsState(); // Record<string, RGB>;
+```
+
+----------------------------------------
+
+TITLE: Checking Location Support Using Variable API – Telegram Mini Apps SDK – TypeScript
+DESCRIPTION: Checks whether location tracking is supported in the current Telegram Mini Apps environment using the variable-based API. Requires the Location Manager component (locationManager) imported from @telegram-apps/sdk. Returns a boolean indicating support; no arguments are needed.
+SOURCE: https://github.com/telegram-mini-apps/telegram-apps/blob/master/apps/docs/packages/telegram-apps-sdk/3-x/components/location-manager.md#2025-04-23_snippet_0
+
+LANGUAGE: TypeScript
+CODE:
+```
+import { locationManager } from '@telegram-apps/sdk';
+
+locationManager.isSupported(); // boolean
+```
+
+----------------------------------------
+
+TITLE: Mounting Main Button Component in Telegram Mini Apps SDK with Functions Approach
+DESCRIPTION: Shows how to mount the main button component using the function-based approach. The mountMainButton function updates the main button's mounted state.
+SOURCE: https://github.com/telegram-mini-apps/telegram-apps/blob/master/apps/docs/packages/telegram-apps-sdk/2-x/components/main-button.md#2025-04-23_snippet_1
+
+LANGUAGE: typescript
+CODE:
+```
+import { mountMainButton, isMainButtonMounted } from '@telegram-apps/sdk';
+
+if (mountMainButton.isAvailable()) {
+  mountMainButton();
+  isMainButtonMounted(); // true
+}
+```
+
+----------------------------------------
+
+TITLE: Third-Party Validation of Init Data
+DESCRIPTION: Example of validating initialization data signed by Telegram using the validate3rd function.
+SOURCE: https://github.com/telegram-mini-apps/telegram-apps/blob/master/apps/docs/packages/telegram-apps-init-data-node.md#2025-04-23_snippet_3
+
+LANGUAGE: typescript
+CODE:
+```
+const initData = 'user=%7B%22id%22%3A279058397%2C%22first_name%22%3A%22Vladislav%20%2B%20-%20%3F%20%5C%2F%22%2C%22last_name%22%3A%22Kibenko%22%2C%22username%22%3A%22vdkfrost%22%2C%22language_code%22%3A%22ru%22%2C%22is_premium%22%3Atrue%2C%22allows_write_to_pm%22%3Atrue%2C%22photo_url%22%3A%22https%3A%5C%2F%5C%2Ft.me%5C%2Fi%5C%2Fuserpic%5C%2F320%5C%2F4FPEE4tmP3ATHa57u6MqTDih13LTOiMoKoLDRG4PnSA.svg%22%7D&chat_instance=8134722200314281151&chat_type=private&auth_date=1733584787&signature=zL-ucjNyREiHDE8aihFwpfR9aggP2xiAo3NSpfe-p7IbCisNlDKlo7Kb6G4D0Ao2mBrSgEk4maLSdv6MLIlADQ&hash=2174df5b000556d044f3f020384e879c8efcab55ddea2ced4eb752e93e7080d6';
+const botId = 7342037359;
+
+await validate3rd(initData, botId);
+```
+
+----------------------------------------
+
+TITLE: Implementing TON Connect Auth Provider in React/TSX
+DESCRIPTION: This React functional component `AuthTonProvider` sets up an authentication context. It uses hooks from `@tonconnect/ui-react` to manage TON wallet connections and `@tma.js/sdk-react` to retrieve Telegram Mini App launch parameters. It includes logic to fetch user data, handle TON Proof challenges for wallet authentication, and manage user state based on connection status and API responses. Dependencies include the mentioned libraries and custom API service functions.
+SOURCE: https://github.com/telegram-mini-apps/telegram-apps/blob/master/apps/docs/zh/platform/migrating-from-vk.md#_snippet_0
+
+LANGUAGE: tsx
+CODE:
+```
+import {
+  ReactNode, useCallback, useEffect, useRef, useState,
+} from 'react';
+import {
+  useIsConnectionRestored, useTonAddress, useTonConnectModal, useTonConnectUI, useTonWallet,
+} from '@tonconnect/ui-react';
+import { retrieveLaunchParams } from '@tma.js/sdk-react';
+import {
+  apiGetSelf, apiGetTonProof, apiLogout, apiPostTgAuthorize, apiPostTonProofAuth,
+} from 'services/auth.api';
+import { GetAuthSelfResponse, GetAuthTonProofResponse } from 'dtos/auth.dtos';
+import { AuthContext } from '../auth.context';
+
+type TAuthProvider = {
+  children: ReactNode
+};
+
+const payloadTTLMS = 1000 * 60 * 20;
+
+export const AuthTonProvider = ({ children }: TAuthProvider) => {
+  const [user, setUser] = useState<GetAuthSelfResponse | null>();
+  const isConnectionRestored = useIsConnectionRestored();
+  const wallet = useTonWallet();
+  const [tonConnectUI] = useTonConnectUI();
+  const address = useTonAddress();
+
+  const { open } = useTonConnectModal();
+  const interval = useRef<ReturnType<typeof setInterval> | undefined>();
+  const tonProof = useRef<GetAuthTonProofResponse | null>(null);
+
+  const fetchUser = useCallback(async () => {
+    const userResponse = await apiGetSelf();
+    setUser(userResponse);
+    const { initDataRaw } = retrieveLaunchParams();
+    if (!userResponse.tgUserId) {
+      await apiPostTgAuthorize(initDataRaw || '');
+    }
+  }, []);
+
+  const completeAuth = useCallback(async () => {
+    if (!isConnectionRestored) {
+      return;
+    }
+    clearInterval(interval.current);
+    if (!wallet) {
+      setUser(null);
+      const refreshPayload = async () => {
+        tonConnectUI.setConnectRequestParameters({ state: 'loading' });
+
+        const value = await apiGetTonProof();
+        tonProof.current = value;
+        if (!value) {
+          tonConnectUI.setConnectRequestParameters(null);
+        } else {
+          tonConnectUI.setConnectRequestParameters({ state: 'ready', value: { tonProof: value.payload } });
+        }
+
+      };
+      refreshPayload().catch(() => {});
+      setInterval(refreshPayload, payloadTTLMS);
+      return;
+    }
+
+    try {
+      await fetchUser();
+    } catch (e) {
+      if (wallet.connectItems?.tonProof && !('error' in wallet.connectItems.tonProof) && tonProof.current) {
+        try {
+          await apiPostTonProofAuth(
+            wallet.connectItems.tonProof.proof, wallet.account, tonProof.current,
+          );
+          await fetchUser();
+        } catch (e) {
+          alert('Please try another wallet');
+          await tonConnectUI.disconnect();
+        }
+      } else {
+        alert('Please try another wallet');
+        await tonConnectUI.disconnect();
+      }
+    }
+
+  }, [fetchUser, isConnectionRestored, tonConnectUI, wallet]);
+
+  useEffect(() => {
+    completeAuth();
+  }, [completeAuth]);
+
+  const onLogout = useCallback(async () => {
+    await tonConnectUI.disconnect();
+    await apiLogout();
+    setUser(null);
+  }, [tonConnectUI]);
+
+  const authContextValue = {
+    user,
+    setUser,
+    onLogout,
+    isWalletConnectionRestored: isConnectionRestored,
+    address,
+    onOpenTonModal: open,
+    tonConnectUI,
+    fetchUser,
+  };
+
+  return (
+    <AuthContext.Provider value={authContextValue}>
+      {children}
+    </AuthContext.Provider>
+  );
+};
+
+```
+
+----------------------------------------
+
+TITLE: Creating and Accessing a Signal with @telegram-apps/signals (TypeScript)
+DESCRIPTION: This code shows how to create a reactive signal using the signal function, with an initial value of false. It also demonstrates retrieving the current value and logging it. Requires importing the signal function from the @telegram-apps/signals package. The created signal can be used to hold any value and supports further reactive operations.
+SOURCE: https://github.com/telegram-mini-apps/telegram-apps/blob/master/apps/docs/packages/telegram-apps-signals.md#2025-04-23_snippet_3
+
+LANGUAGE: typescript
+CODE:
+```
+import { signal } from '@telegram-apps/signals';
+
+const isVisible = signal(false);
+```
+
+LANGUAGE: typescript
+CODE:
+```
+console.log('The element is', isVisible() ? 'visible' : 'invisible');
+```
+
+----------------------------------------
+
+TITLE: Using SDKProvider component in React
+DESCRIPTION: Example of using the SDKProvider component to provide SDK functionality to a React application.
+SOURCE: https://github.com/telegram-mini-apps/telegram-apps/blob/master/apps/docs/packages/telegram-apps-sdk-react/1-x.md#2025-04-23_snippet_1
+
+LANGUAGE: jsx
+CODE:
+```
+import { SDKProvider } from '@telegram-apps/sdk-react';
+
+/**
+ * Root component for the whole project.
+ */
+export function Root() {
+  return (
+    <SDKProvider acceptCustomStyles debug>
+      <div>My application!</div>
+    </SDKProvider>
+  );
+}
+```
+
+----------------------------------------
+
+TITLE: Basic Event Tracking with Telegram Apps Bridge
+DESCRIPTION: Demonstrates how to start tracking events using the 'on' function, which returns a cleanup function for removing the event listener. Shows monitoring of viewport_changed events with automatic cleanup.
+SOURCE: https://github.com/telegram-mini-apps/telegram-apps/blob/master/apps/docs/packages/telegram-apps-bridge/2-x/events.md#2025-04-23_snippet_0
+
+LANGUAGE: typescript
+CODE:
+```
+import { on } from '@telegram-apps/bridge';
+
+// Start listening to the "viewport_changed" event. The returned value
+// is a function that removes this event listener.
+const removeListener = on('viewport_changed', (payload) => {
+  console.log('Viewport changed:', payload);
+  // Remove this event listener.
+  removeListener();
+});
+```
+
+----------------------------------------
+
+TITLE: Listening for Events in Web-based Telegram Mini Apps
+DESCRIPTION: This snippet demonstrates how to listen for events in web-based Telegram Mini Apps using the window.addEventListener method. It parses the incoming JSON data to extract the event type and data.
+SOURCE: https://github.com/telegram-mini-apps/telegram-apps/blob/master/apps/docs/platform/events.md#2025-04-23_snippet_0
+
+LANGUAGE: typescript
+CODE:
+```
+window.addEventListener('message', ({ data }) => {
+  const { eventType, eventData } = JSON.parse(data);
+  console.log(eventType, eventData);
+});
+```
+
+----------------------------------------
+
+TITLE: Setting Main Button Parameters in Telegram Mini Apps SDK (TypeScript)
+DESCRIPTION: Demonstrates how to update the main button properties using the setParams method. This updates various signals like backgroundColor, hasShineEffect, isVisible, etc.
+SOURCE: https://github.com/telegram-mini-apps/telegram-apps/blob/master/apps/docs/packages/telegram-apps-sdk/3-x/components/main-button.md#2025-04-23_snippet_2
+
+LANGUAGE: typescript
+CODE:
+```
+if (mainButton.setParams.isAvailable()) {
+  mainButton.setParams({
+    backgroundColor: '#000000',
+    hasShineEffect: true,
+    isEnabled: true,
+    isLoaderVisible: true,
+    isVisible: true,
+    text: 'My text',
+    textColor: '#ffffff'
+  });
+  mainButton.backgroundColor(); // '#000000'
+  mainButton.hasShineEffect(); // true
+  mainButton.isEnabled(); // true
+  mainButton.isLoaderVisible(); // true
+  mainButton.isVisible(); // true
+  mainButton.text(); // 'My text'
+  mainButton.textColor(); // '#ffffff'
+
+  mainButton.state();
+  // {
+  //   backgroundColor: '#000000',
+  //   hasShineEffect: true,
+  //   isActive: true,
+  //   isLoaderVisible: true,
+  //   isVisible: true,
+  //   text: 'My text',
+  //   textColor: '#ffffff'
+  // }
+}
+```
+
+LANGUAGE: typescript
+CODE:
+```
+import {
+  setMainButtonParams,
+  mainButtonBackgroundColor,
+  mainButtonHasShineEffect,
+  isMainButtonVisible,
+  isMainButtonEnabled,
+  isMainButtonLoaderVisible,
+  mainButtonState,
+  mainButtonTextColor,
+  mainButtonText,
+} from '@telegram-apps/sdk';
+
+if (setMainButtonParams.isAvailable()) {
+  setMainButtonParams({
+    backgroundColor: '#000000',
+    hasShineEffect: true,
+    isEnabled: true,
+    isLoaderVisible: true,
+    isVisible: true,
+    text: 'My text',
+    textColor: '#ffffff'
+  });
+  mainButtonBackgroundColor(); // '#000000'
+  mainButtonHasShineEffect(); // true
+  isMainButtonEnabled(); // true
+  isMainButtonLoaderVisible(); // true
+  isMainButtonVisible(); // true
+  mainButtonText(); // 'My text'
+  mainButtonTextColor(); // '#ffffff'
+
+  mainButtonState();
+  // {
+  //   backgroundColor: '#000000',
+  //   hasShineEffect: true,
+  //   isActive: true,
+  //   isLoaderVisible: true,
+  //   isVisible: true,
+  //   text: 'My text',
+  //   textColor: '#ffffff'
+  // }
+}
+```
+
+----------------------------------------
+
+TITLE: Parsing Telegram InitData and Extracting User ID (TypeScript)
+DESCRIPTION: After validating the `initDataRaw` string using a function like `isInitDataValid`, this backend TypeScript snippet uses the `parse` function from `@tma.js/init-data-node` to convert the raw string into a structured object. It then extracts the Telegram user ID (`user.id`) which can be used for identification and database storage.
+SOURCE: https://github.com/telegram-mini-apps/telegram-apps/blob/master/apps/docs/platform/migrating-from-vk.md#2025-04-23_snippet_4
+
+LANGUAGE: typescript
+CODE:
+```
+import { parse } from '@tma.js/init-data-node';
+
+const initData = parse(initDataRaw);
+const tgUserId = initData.user.id.toString();
+```
+
+----------------------------------------
+
+TITLE: Mounting and Using SDK Component in TypeScript
+DESCRIPTION: This snippet properly initializes the SDK, mounts the backButton component, and then calls backButton.show(). Ensures the backButton is ready for interaction without errors. Only dependency is @telegram-apps/sdk; input is none, output is that the back button is shown successfully.
+SOURCE: https://github.com/telegram-mini-apps/telegram-apps/blob/master/apps/docs/packages/telegram-apps-sdk/3-x/usage-tips.md#2025-04-23_snippet_4
+
+LANGUAGE: typescript
+CODE:
+```
+import { init, backButton } from '@telegram-apps/sdk';
+
+// Initialize the SDK.
+init();
+
+// Mount the Back Button.
+backButton.mount();
+
+// Show the Back Button.
+backButton.show();
+```
+
+----------------------------------------
+
+TITLE: Signing Telegram Mini App Init Data in Go
+DESCRIPTION: This snippet illustrates how to sign initialization data for a Telegram Mini App using the SignQueryString and Sign functions. It generates a hash for the init data, removing existing hash and auth_date parameters.
+SOURCE: https://github.com/telegram-mini-apps/telegram-apps/blob/master/apps/docs/packages/init-data-golang.md#2025-04-23_snippet_4
+
+LANGUAGE: go
+CODE:
+```
+package main
+
+import (
+	"fmt"
+	"time"
+
+	initdata "github.com/telegram-mini-apps/init-data-golang"
+)
+
+func main() {
+	// Init data in raw format.
+	initData := "user=%7B%22id%22%3A279058397%2C%22first_name%22%3A%22Vladislav%20%2B%20-%20%3F%20%5C%2F%22%2C%22last_name%22%3A%22Kibenko%22%2C%22username%22%3A%22vdkfrost%22%2C%22language_code%22%3A%22ru%22%2C%22is_premium%22%3Atrue%2C%22allows_write_to_pm%22%3Atrue%2C%22photo_url%22%3A%22https%3A%5C%2F%5C%2Ft.me%5C%2Fi%5C%2Fuserpic%5C%2F320%5C%2F4FPEE4tmP3ATHa57u6MqTDih13LTOiMoKoLDRG4PnSA.svg%22%7D&chat_instance=8134722200314281151&chat_type=private&auth_date=1733509682&signature=TYJxVcisqbWjtodPepiJ6ghziUL94-KNpG8Pau-X7oNNLNBM72APCpi_RKiUlBvcqo5L-LAxIc3dnTzcZX_PDg&hash=a433d8f9847bd6addcc563bff7cc82c89e97ea0d90c11fe5729cae6796a36d73"
+
+	// Telegram Bot secret key.
+	token := "7342037359:AAHI25ES9xCOMPokpYoz-p8XVrZUdygo2J4"
+
+	// Signing timestamp.
+	// Here we took the value from the initData variable
+	// above (auth_date query parameter).
+	authDate := time.Unix(1733509682, 0)
+
+	// Signing query parameters.
+	// Returned values:
+	// 1. Parameters sign result ("hash" init data property).
+	// 2. Error occurring while parsing query string as query parameters.
+	fmt.Println(initdata.SignQueryString(initData, token, authDate))
+
+	// Signing the same query parameters presented as a map.
+	fmt.Println(initdata.Sign(map[string]string{
+		"user":          "{\"id\":279058397,\"first_name\":\"Vladislav + - ? \\/\",\"last_name\":\"Kibenko\",\"username\":\"vdkfrost\",\"language_code\":\"ru\",\"is_premium\":true,\"allows_write_to_pm\":true,\"photo_url\":\"https:\\/\\/t.me\\/i\\/userpic\\/320\\/4FPEE4tmP3ATHa57u6MqTDih13LTOiMoKoLDRG4PnSA.svg\"}",
+		"chat_instance": "8134722200314281151",
+		"chat_type":     "private",
+		"signature":     "TYJxVcisqbWjtodPepiJ6ghziUL94-KNpG8Pau-X7oNNLNBM72APCpi_RKiUlBvcqo5L-LAxIc3dnTzcZX_PDg",
+	}, token, authDate))
+
+	// In the console, you should see the same results.
+}
+```
+
+----------------------------------------
+
+TITLE: Checking Method Availability Before Invocation in TypeScript
+DESCRIPTION: This code checks if backButton.show is available using .isAvailable() before calling it, ensuring that calling the method won\'t throw due to missing SDK initialization, mounting, or Telegram version mismatch. This pattern helps avoid runtime errors from unsupported features. Dependencies: @telegram-apps/sdk, assumes proper initialization and mounting beforehand.
+SOURCE: https://github.com/telegram-mini-apps/telegram-apps/blob/master/apps/docs/packages/telegram-apps-sdk/3-x/usage-tips.md#2025-04-23_snippet_5
+
+LANGUAGE: typescript
+CODE:
+```
+import { backButton } from '@telegram-apps/sdk';
+
+// ... the SDK is already initialized, and the Back Button is mounted.
+if (backButton.show.isAvailable()) {
+  backButton.show();
+}
+```
+
+----------------------------------------
+
+TITLE: Mounting Biometry Component
+DESCRIPTION: Demonstrates the asynchronous process of mounting the biometry component, including error handling and state management.
+SOURCE: https://github.com/telegram-mini-apps/telegram-apps/blob/master/apps/docs/packages/telegram-apps-sdk/3-x/components/biometry.md#2025-04-23_snippet_1
+
+LANGUAGE: typescript
+CODE:
+```
+if (biometry.mount.isAvailable()) {
+  try {
+    const promise = biometry.mount();
+    biometry.isMounting(); // true
+    await promise;
+    biometry.isMounting(); // false
+    biometry.isMounted(); // true
+  } catch (err) {
+    biometry.mountError(); // equals "err"
+    biometry.isMounting(); // false
+    biometry.isMounted(); // false
+  }
+}
+```
+
+LANGUAGE: typescript
+CODE:
+```
+import {
+  mountBiometry,
+  isBiometryMounting,
+  isBiometryMounted,
+  biometryMountError,
+} from '@telegram-apps/sdk';
+
+if (mountBiometry.isAvailable()) {
+  try {
+    const promise = mountBiometry();
+    isBiometryMounting(); // true
+    await promise;
+    isBiometryMounting(); // false
+    isBiometryMounted(); // true
+  } catch (err) {
+    biometryMountError(); // equals "err"
+    isBiometryMounting(); // false
+    isBiometryMounted(); // false
+  }
+}
+```
+
+----------------------------------------
+
+TITLE: Checking Biometry Support in Telegram Mini Apps
+DESCRIPTION: Methods to verify if biometry functionality is supported in the current Telegram Mini Apps version. Shows both variable-based and function-based approaches.
+SOURCE: https://github.com/telegram-mini-apps/telegram-apps/blob/master/apps/docs/packages/telegram-apps-sdk/3-x/components/biometry.md#2025-04-23_snippet_0
+
+LANGUAGE: typescript
+CODE:
+```
+import { biometry } from '@telegram-apps/sdk';
+
+biometry.isSupported(); // boolean
+```
+
+LANGUAGE: typescript
+CODE:
+```
+import { isBiometrySupported } from '@telegram-apps/sdk';
+
+isBiometrySupported(); // boolean
+```
+
+----------------------------------------
+
+TITLE: Configuring Vue Router with HTML5 History Mode - TypeScript
+DESCRIPTION: This snippet sets up the Vue Router to use HTML5 history mode, essential for proper URL handling in Telegram mini apps (which use the hash for parameter transmission). It imports createRouter and createWebHistory from vue-router and initializes the router with a history mode compatible with Telegram's requirements. The dependencies are vue-router, and at least one route must be configured in the routes array.
+SOURCE: https://github.com/telegram-mini-apps/telegram-apps/blob/master/apps/docs/packages/telegram-apps-sdk-vue.md#2025-04-23_snippet_5
+
+LANGUAGE: typescript
+CODE:
+```
+import { createRouter, createWebHistory } from 'vue-router'
+
+const router = createRouter({
+  history: createWebHistory(),
+  routes: [
+    //...
+  ],
+})
+```
+
+----------------------------------------
+
+TITLE: Example of Injected Event Call (Desktop/Mobile)
+DESCRIPTION: Shows an example of how the Telegram client on desktop or mobile platforms injects JavaScript code to call a globally defined function (window.Telegram.WebView.receiveEvent) to signal an event.
+SOURCE: https://github.com/telegram-mini-apps/telegram-apps/blob/master/apps/docs/zh/platform/events.md#_snippet_3
+
+LANGUAGE: javascript
+CODE:
+```
+window.Telegram.WebView.receiveEvent('popup_closed', {
+  button_id: 'cancel'
+});
+```
+
+----------------------------------------
+
+TITLE: Using the useSignal Hook in a Solid Component
+DESCRIPTION: Demonstrates the `useSignal` hook from `@telegram-apps/sdk-solid`. This hook converts a Telegram Apps signal (like `backButton.isVisible`) into a reactive Solid signal. The example component uses `useSignal` to get the visibility state, logs changes with `createEffect`, and manages the button's visibility lifecycle using `onMount` and `onCleanup`.
+SOURCE: https://github.com/telegram-mini-apps/telegram-apps/blob/master/apps/docs/packages/telegram-apps-sdk-solid/2-x.md#2025-04-23_snippet_3
+
+LANGUAGE: typescript
+CODE:
+```
+import { createEffect, onCleanup, onMount } from 'solid-js';
+import { backButton, useSignal } from '@telegram-apps/sdk-solid';
+
+function Component() {
+  const isVisible = useSignal(backButton.isVisible);
+
+  createEffect(() => {
+    console.log('The button is', isVisible() ? 'visible' : 'invisible');
+  });
+
+  onMount(() => {
+    backButton.show();
+    onCleanup(() => {
+      backButton.hide();
+    });
+  });
+
+  return null;
+}
+```
+
+----------------------------------------
+
+TITLE: Optimizing Bundle with Function-Only Imports in Telegram Apps SDK (TypeScript)
+DESCRIPTION: This snippet exhibits how importing individual scope functions (like showBackButton) instead of whole scoped objects (like backButton) enables better tree-shaking during bundling. Only the directly used function is bundled, while unused methods (such as hide or isVisible) are excluded. This approach can reduce final bundle size. Assumes a build process that supports tree-shaking (e.g., using Vite or Webpack in production mode).
+SOURCE: https://github.com/telegram-mini-apps/telegram-apps/blob/master/apps/docs/packages/telegram-apps-sdk/3-x/scopes.md#2025-04-23_snippet_5
+
+LANGUAGE: ts
+CODE:
+```
+import { showBackButton, backButton } from '@telegram-apps/sdk';
+
+showBackButton();
+// Only showBackButton's source code will be bundled.
+
+backButton.show();
+// All backButton dependencies will be bundled, even 
+// if not used in the code: backButton.show(), 
+// backButton.hide(), backButton.isVisible(), etc.
+
+```
+
+----------------------------------------
+
+TITLE: Checking Invoice Support in Telegram Mini Apps
+DESCRIPTION: Demonstrates how to check if invoices are supported in the current Telegram Mini Apps version using both variable and function approaches.
+SOURCE: https://github.com/telegram-mini-apps/telegram-apps/blob/master/apps/docs/packages/telegram-apps-sdk/3-x/components/invoice.md#2025-04-23_snippet_0
+
+LANGUAGE: typescript
+CODE:
+```
+import { invoice } from '@telegram-apps/sdk';
+
+invoice.isSupported(); // boolean
+```
+
+LANGUAGE: typescript
+CODE:
+```
+import { isInvoiceSupported } from '@telegram-apps/sdk';
+
+isInvoiceSupported(); // boolean
+```
+
+----------------------------------------
+
+TITLE: Getting Storage Values
+DESCRIPTION: Methods to retrieve values for single or multiple keys from cloud storage. Handles both existing and non-existing keys with appropriate return values.
+SOURCE: https://github.com/telegram-mini-apps/telegram-apps/blob/master/apps/docs/packages/telegram-apps-sdk/3-x/components/cloud-storage.md#2025-04-23_snippet_3
+
+LANGUAGE: typescript
+CODE:
+```
+if (cloudStorage.getItem.isAvailable()) {
+  const nonExistent = await cloudStorage.getItem('non-existent');
+  // The result is an empty string: ''
+
+  const existent = await cloudStorage.getItem('a');
+  // The result is the value of the 'a' key. Example: 'a-value'
+
+  const values = await cloudStorage.getItem(['a', 'b', 'non-existent']);
+  // The result is a record of the keys 'a', 'b', and 'non-existent'. 
+  // Example:
+  // { 
+  //   a: 'a-value', 
+  //   b: 'b-value', 
+  //   'non-existent': '', 
+  // }
+}
+```
+
+LANGUAGE: typescript
+CODE:
+```
+import { getCloudStorageItem } from '@telegram-apps/sdk';
+
+if (getCloudStorageItem.isAvailable()) {
+  const nonExistent = await getCloudStorageItem('non-existent');
+  // The result is an empty string: ''
+
+  const existent = await getCloudStorageItem('a');
+  // The result is the value of the 'a' key. Example: 'a-value'
+
+  const values = await getCloudStorageItem(['a', 'b', 'non-existent']);
+  // The result is a record of the keys 'a', 'b', and 'non-existent'. 
+  // Example:
+  // { 
+  //   a: 'a-value', 
+  //   b: 'b-value', 
+  //   'non-existent': '', 
+  // }
+}
+```
+
+----------------------------------------
+
+TITLE: Using the useSignal Hook in Solid.js
+DESCRIPTION: Demonstrates how to use the `useSignal` hook from `@telegram-apps/sdk-solid` to create a reactive Solid.js signal that mirrors the state of a Telegram Mini Apps SDK signal (e.g., `backButton.isVisible`). The example shows how to use Solid's `createEffect` to react to changes in the signal and `onMount`/`onCleanup` to manage the component lifecycle, such as showing and hiding the Back Button.
+SOURCE: https://github.com/telegram-mini-apps/telegram-apps/blob/master/apps/docs/packages/telegram-apps-sdk-solid/3-x.md#2025-04-23_snippet_2
+
+LANGUAGE: ts
+CODE:
+```
+import { createEffect, onCleanup, onMount } from 'solid-js';
+import { backButton, useSignal } from '@telegram-apps/sdk-solid';
+
+function Component() {
+  const isVisible = useSignal(backButton.isVisible);
+
+  createEffect(() => {
+    console.log('The button is', isVisible() ? 'visible' : 'invisible');
+  });
+
+  onMount(() => {
+    backButton.show();
+    onCleanup(() => {
+      backButton.hide();
+    });
+  });
+
+  return null;
+}
+```
+
+----------------------------------------
+
+TITLE: Basic Usage of Telegram Mini Apps Bridge for Back Button Control
+DESCRIPTION: This example demonstrates how to use the @telegram-apps/bridge package to control the back button in a Telegram Mini App. It shows the back button, sets up an event listener for when it's pressed, and then hides the button and removes the listener after the first click.
+SOURCE: https://github.com/telegram-mini-apps/telegram-apps/blob/master/packages/bridge/README.md#2025-04-23_snippet_1
+
+LANGUAGE: typescript
+CODE:
+```
+import { on, postEvent } from '@telegram-apps/bridge';
+
+// Show the back button, wait for it to be clicked once,
+// then hide it.
+postEvent('web_app_setup_back_button', { is_visible: true });
+
+const off = on('back_button_pressed', () => {
+  postEvent('web_app_setup_back_button', { is_visible: false });
+  off();
+});
+```
+
+----------------------------------------
+
+TITLE: Incorrect Usage: Accessing SDK Component Before Mount in TypeScript
+DESCRIPTION: This code shows how attempting to use backButton.show() before mounting the backButton component leads to an error. It's provided as a cautionary example—mounting is mandatory to prevent runtime issues. Dependencies: @telegram-apps/sdk, and expects prior SDK initialization for any success.
+SOURCE: https://github.com/telegram-mini-apps/telegram-apps/blob/master/apps/docs/packages/telegram-apps-sdk/3-x/usage-tips.md#2025-04-23_snippet_3
+
+LANGUAGE: typescript
+CODE:
+```
+import { init, backButton } from '@telegram-apps/sdk';
+
+// Initialize the SDK.
+init();
+
+// Attempt to show the Back Button.
+backButton.show();
+// Error: The backButton component was not mounted.
+```
+
+----------------------------------------
+
+TITLE: Parsing Init Data in Telegram Mini Apps SDK (TypeScript)
+DESCRIPTION: Shows how to parse a string as init data, returning an object with deeply camel-cased properties representing various init data parameters.
+SOURCE: https://github.com/telegram-mini-apps/telegram-apps/blob/master/apps/docs/packages/telegram-apps-sdk/2-x/components/init-data.md#2025-04-23_snippet_1
+
+LANGUAGE: typescript
+CODE:
+```
+import { parseInitData } from '@telegram-apps/sdk';
+
+const initData = parseInitData('auth_date=123&query_id=anQQ231vs&...');
+// {
+//   user: {
+//     id: 99281932,
+//     firstName: 'Andrew',
+//     lastName: 'Rogue',
+//     username: 'rogue',
+//     languageCode: 'en',
+//     isPremium: true,
+//     allowsWriteToPm: true,
+//   },
+//   hash: 'abcedef123',
+//   authDate: Date(1716922846000),
+//   startParam: 'debug',
+//   chatType: 'sender',
+//   chatInstance: '8428209589180549439',
+// };
+```
+
+----------------------------------------
+
+TITLE: Requesting Device Location Using Variable API – Telegram Mini Apps SDK – TypeScript
+DESCRIPTION: Requests the device's current location through locationManager.requestLocation, after checking API availability. Returns a promise resolving to a detailed location object with latitude, longitude, and optional precision and movement properties. Essential for location-aware functionality in Telegram Mini Apps.
+SOURCE: https://github.com/telegram-mini-apps/telegram-apps/blob/master/apps/docs/packages/telegram-apps-sdk/3-x/components/location-manager.md#2025-04-23_snippet_6
+
+LANGUAGE: TypeScript
+CODE:
+```
+if (locationManager.requestLocation.isAvailable()) {
+  const location = await locationManager.requestLocation();
+}
+```
+
+----------------------------------------
+
+TITLE: Checking Method Support in Telegram Mini Apps Components
+DESCRIPTION: Demonstrates how to check if specific methods and parameters are supported in different Mini Apps versions using the supports() and supportsParam() functions.
+SOURCE: https://github.com/telegram-mini-apps/telegram-apps/blob/master/apps/docs/packages/telegram-apps-sdk/1-x/components.md#2025-04-23_snippet_2
+
+LANGUAGE: typescript
+CODE:
+```
+import { BackButton } from '@telegram-apps/sdk';
+
+let bb = new BackButton('6.0', ...);
+bb.supports('show'); // false
+
+bb = new BackButton('6.3', ...);
+bb.supports('hide'); // true
+```
+
+LANGUAGE: typescript
+CODE:
+```
+import { Utils } from '@telegram-apps/sdk';
+
+let utils = new Utils('6.0', ...);
+utils.supportsParam('openLink.tryInstantView'); // false
+
+utils = new Utils('6.10', ...);
+utils.supportsParam('openLink.tryInstantView'); // true
+```
+
+----------------------------------------
+
+TITLE: Initializing Telegram Mini Apps SDK in TypeScript
+DESCRIPTION: This code snippet demonstrates how to import and call the init function from the @telegram-apps/sdk package to initialize the Telegram Mini Apps SDK. It configures global dependencies and creates event handlers.
+SOURCE: https://github.com/telegram-mini-apps/telegram-apps/blob/master/apps/docs/packages/telegram-apps-sdk/2-x/initializing.md#2025-04-23_snippet_1
+
+LANGUAGE: typescript
+CODE:
+```
+import { init } from '@telegram-apps/sdk';
+
+init();
+```
+
+----------------------------------------
+
+TITLE: Accessing Init Data Signals in Telegram Mini Apps SDK (TypeScript)
+DESCRIPTION: Demonstrates how to access various init data signals using both variable and function approaches. Includes examples for authDate, canSendAfter, chat, chatType, and other properties.
+SOURCE: https://github.com/telegram-mini-apps/telegram-apps/blob/master/apps/docs/packages/telegram-apps-sdk/2-x/components/init-data.md#2025-04-23_snippet_2
+
+LANGUAGE: typescript
+CODE:
+```
+initData.authDate(); // Date(1727368894000)
+```
+
+LANGUAGE: typescript
+CODE:
+```
+import { initDataAuthDate } from '@telegram-apps/sdk';
+
+initDataAuthDate(); // Date(1727368894000)
+```
+
+LANGUAGE: typescript
+CODE:
+```
+initData.canSendAfter(); // 3600
+```
+
+LANGUAGE: typescript
+CODE:
+```
+import { initDataCanSendAfter } from '@telegram-apps/sdk';
+
+initDataAuthDate(); // 3600
+```
+
+LANGUAGE: typescript
+CODE:
+```
+initData.chat();
+// {
+//   id: 7728725378876215,
+//   type: 'group',
+//   title: '@BotFather',
+//   photoUrl: 'https://example.com/image.png',
+//   username: 'botfather'
+// }
+```
+
+LANGUAGE: typescript
+CODE:
+```
+import { initDataChat } from '@telegram-apps/sdk';
+
+initDataChat();
+// {
+//   id: 7728725378876215,
+//   type: 'group',
+//   title: '@BotFather',
+//   photoUrl: 'https://example.com/image.png',
+//   username: 'botfather'
+// }
+```
+
+LANGUAGE: typescript
+CODE:
+```
+initData.chatType(); // 'group'
+```
+
+LANGUAGE: typescript
+CODE:
+```
+import { initDataChatType } from '@telegram-apps/sdk';
+
+initDataChatType(); // 'group'
+```
+
+----------------------------------------
+
+TITLE: Opening External Links with OpenLink Method
+DESCRIPTION: Demonstrates how to open external links in a browser or Instant View using the openLink method. Supports optional parameters for specifying browser preference and Instant View usage.
+SOURCE: https://github.com/telegram-mini-apps/telegram-apps/blob/master/apps/docs/packages/telegram-apps-sdk/2-x/utils/links.md#2025-04-23_snippet_0
+
+LANGUAGE: typescript
+CODE:
+```
+import { openLink } from '@telegram-apps/sdk';
+
+if (openLink.isAvailable()) {
+  openLink('https://telegram.org', {
+    tryBrowser: 'chrome',
+    tryInstantView: true,
+  });
+}
+```
+
+LANGUAGE: typescript
+CODE:
+```
+import { openLink } from '@telegram-apps/sdk';
+
+openLink.ifAvailable('https://telegram.org', {
+  tryBrowser: 'chrome',
+  tryInstantView: true,
+});
+```
+
+----------------------------------------
+
+TITLE: Controlling the Back Button with useSignal in Svelte - Svelte (TypeScript)
+DESCRIPTION: Implements a BackButton.svelte component that uses the useSignal hook to reactively track the Telegram SDK's backButton visibility state. The component logs visibility status, shows the back button on mount, and hides it on destroy using Svelte's lifecycle methods. This pattern leverages Svelte's reactivity and the SDK's signal system, requiring @telegram-apps/sdk-svelte as a dependency. Key parameters include the backButton.isVisible signal and lifecycle event handlers; no direct input/output, but visual state on the Telegram UI is affected.
+SOURCE: https://github.com/telegram-mini-apps/telegram-apps/blob/master/apps/docs/packages/telegram-apps-sdk-svelte/2-x.md#2025-04-23_snippet_2
+
+LANGUAGE: svelte
+CODE:
+```
+/**
+ * Component which controls the Back Button visibility.
+ */
+<script lang=\"ts\">
+  import { onMount, onDestroy } from 'svelte';
+  import { backButton, useSignal } from '@telegram-apps/sdk-svelte';
+
+  const isVisible = useSignal(backButton.isVisible);
+
+  $: console.log('The button is', isVisible.value ? 'visible' : 'invisible')
+
+  onMount(() => {
+    backButton.show();
+  });
+
+  onDestroy(() => {
+    backButton.hide();
+  });
+</script>
+```
+
+----------------------------------------
+
+TITLE: Calling Methods Using postEvent in Telegram Mini Apps
+DESCRIPTION: Demonstrates how to call Telegram Mini Apps methods using the postEvent function, which automatically determines the correct way to send events based on the current environment.
+SOURCE: https://github.com/telegram-mini-apps/telegram-apps/blob/master/apps/docs/packages/telegram-apps-bridge/2-x/methods.md#2025-04-23_snippet_0
+
+LANGUAGE: typescript
+CODE:
+```
+import { postEvent } from '@telegram-apps/bridge';
+
+postEvent('web_app_setup_back_button', { is_visible: true });
+```
+
+----------------------------------------
+
+TITLE: Retrieving Telegram InitData on Frontend (TypeScript)
+DESCRIPTION: This frontend TypeScript snippet uses the `retrieveLaunchParams` function from the `@tma.js/sdk` library (or `@tma.js/sdk-react`) to get the launch parameters provided by the Telegram Mini App environment. It specifically extracts the `initDataRaw` string, which is needed for backend validation.
+SOURCE: https://github.com/telegram-mini-apps/telegram-apps/blob/master/apps/docs/platform/migrating-from-vk.md#2025-04-23_snippet_5
+
+LANGUAGE: typescript
+CODE:
+```
+import { retrieveLaunchParams } from '@tma.js/sdk';
+
+const { initDataRaw } = retrieveLaunchParams();
+```
+
+----------------------------------------
+
+TITLE: Full Environment Mocking Setup for Telegram Mini Apps
+DESCRIPTION: Comprehensive example of mocking Telegram environment with custom theme parameters, launch parameters, and event handling for development purposes.
+SOURCE: https://github.com/telegram-mini-apps/telegram-apps/blob/master/apps/docs/packages/telegram-apps-bridge/2-x/environment.md#2025-04-23_snippet_3
+
+LANGUAGE: typescript
+CODE:
+```
+import { mockTelegramEnv, emitEvent } from '@telegram-apps/bridge';
+
+const noInsets = {
+  left: 0,
+  top: 0,
+  bottom: 0,
+  right: 0,
+} as const;
+const themeParams = {
+  accent_text_color: '#6ab2f2',
+  bg_color: '#17212b',
+  button_color: '#5288c1',
+  button_text_color: '#ffffff',
+  destructive_text_color: '#ec3942',
+  header_bg_color: '#17212b',
+  hint_color: '#708499',
+  link_color: '#6ab3f3',
+  secondary_bg_color: '#232e3c',
+  section_bg_color: '#17212b',
+  section_header_text_color: '#6ab3f3',
+  subtitle_text_color: '#708499',
+  text_color: '#f5f5f5',
+} as const;
+
+mockTelegramEnv({
+  launchParams: {
+    tgWebAppThemeParams: themeParams,
+    tgWebAppData: new URLSearchParams([
+      ['user', JSON.stringify({
+        id: 1,
+        first_name: 'Pavel',
+      })],
+      ['hash', ''],
+      ['signature', ''],
+      ['auth_date', Date.now().toString()],
+    ]),
+    tgWebAppStartParam: 'debug',
+    tgWebAppVersion: '8',
+    tgWebAppPlatform: 'tdesktop',
+  },
+  onEvent(e) {
+    if (e[0] === 'web_app_request_theme') {
+      return emitEvent('theme_changed', { theme_params: themeParams });
+    }
+    if (e[0] === 'web_app_request_viewport') {
+      return emitEvent('viewport_changed', {
+        height: window.innerHeight,
+        width: window.innerWidth,
+        is_expanded: true,
+        is_state_stable: true,
+      });
+    }
+    if (e[0] === 'web_app_request_content_safe_area') {
+      return emitEvent('content_safe_area_changed', noInsets);
+    }
+    if (e[0] === 'web_app_request_safe_area') {
+      return emitEvent('safe_area_changed', noInsets);
+    }
+  },
+});
+```
+
+----------------------------------------
+
+TITLE: Authenticating with Biometry
+DESCRIPTION: Implementation of biometric authentication with optional reason parameter, returning status and token information.
+SOURCE: https://github.com/telegram-mini-apps/telegram-apps/blob/master/apps/docs/packages/telegram-apps-sdk/3-x/components/biometry.md#2025-04-23_snippet_4
+
+LANGUAGE: typescript
+CODE:
+```
+if (biometry.authenticate.isAvailable()) {
+  const { status, token } = await biometry.authenticate({
+    reason: 'Please!',
+  });
+
+  if (status === 'authorized') {
+    console.log(`Authorized. Token: ${token}`);
+  } else {
+    console.log('Not authorized');
+  }
+}
+```
+
+LANGUAGE: typescript
+CODE:
+```
+import { authenticateBiometry } from '@telegram-apps/sdk';
+
+if (authenticateBiometry.isAvailable()) {
+  const { status, token } = await authenticateBiometry({
+    reason: 'Please!',
+  });
+
+  if (status === 'authorized') {
+    console.log(`Authorized. Token: ${token}`);
+  } else {
+    console.log('Not authorized');
+  }
+}
+```
+
+----------------------------------------
+
+TITLE: Using useSignal Hook
+DESCRIPTION: A helper hook to integrate signals from @telegram-apps/signals into React components. It returns the current signal value and updates the component when the signal changes.
+SOURCE: https://github.com/telegram-mini-apps/telegram-apps/blob/master/apps/docs/packages/telegram-apps-sdk-react/3-x.md#_snippet_5
+
+LANGUAGE: ts
+CODE:
+```
+import { useEffect } from 'react';
+import { backButton, useSignal } from '@telegram-apps/sdk-react';
+
+function Component() {
+  const isVisible = useSignal(backButton.isVisible);
+
+  useEffect(() => {
+    console.log('The button is', isVisible ? 'visible' : 'invisible');
+  }, [isVisible]);
+
+  useEffect(() => {
+    backButton.show();
+    return () => {
+      backButton.hide();
+    };
+  }, []);
+
+  return null;
+}
+```
+
+----------------------------------------
+
+TITLE: Binding CSS Variables for Theme Parameters
+DESCRIPTION: Demonstrates how to bind theme parameters to CSS variables with custom naming options. Supports default kebab-case formatting with --tg-theme prefix or custom prefix implementation.
+SOURCE: https://github.com/telegram-mini-apps/telegram-apps/blob/master/apps/docs/packages/telegram-apps-sdk/2-x/components/theme-params.md#2025-04-23_snippet_2
+
+LANGUAGE: typescript
+CODE:
+```
+if (themeParams.bindCssVars.isAvailable()) {
+  themeParams.bindCssVars();
+  // Creates CSS variables like:
+  // --tg-theme-button-color: #aabbcc
+  // --tg-theme-accent-text-color: #aabbcc
+  // --tg-theme-bg-color: #aabbcc
+  // ...
+
+  themeParams.bindCssVars(key => `--my-prefix-${key}`);
+  // Creates CSS variables like:
+  // --my-prefix-buttonColor: #aabbcc
+  // --my-prefix-accentTextColor: #aabbcc
+  // --my-prefix-bgColor: #aabbcc
+  // ...
+
+  // themeParams.isCssVarsBound() -> true
+}
+```
+
+LANGUAGE: typescript
+CODE:
+```
+import {
+  bindThemeParamsCssVars,
+  isThemeParamsCssVarsBound,
+} from '@telegram-apps/sdk';
+
+if (bindThemeParamsCssVars.isAvailable()) {
+  bindThemeParamsCssVars();
+  // Creates CSS variables like:
+  // --tg-theme-button-color: #aabbcc
+  // --tg-theme-accent-text-color: #aabbcc
+  // --tg-theme-bg-color: #aabbcc
+  // ...
+
+  bindThemeParamsCssVars(key => `--my-prefix-${key}`);
+  // Creates CSS variables like:
+  // --my-prefix-buttonColor: #aabbcc
+  // --my-prefix-accentTextColor: #aabbcc
+  // --my-prefix-bgColor: #aabbcc
+  // ...
+  
+  // isThemeParamsCssVarsBound() -> true
+}
+```
+
+----------------------------------------
+
+TITLE: Mounting Location Manager Using Functions API – Telegram Mini Apps SDK – TypeScript
+DESCRIPTION: Shows how to mount the Location Manager via imported SDK functions. It checks availability, performs mounting, and monitors state with isLocationManagerMounting and isLocationManagerMounted, catching errors with locationManagerMountError. Requires imports from @telegram-apps/sdk and correct async-await handling.
+SOURCE: https://github.com/telegram-mini-apps/telegram-apps/blob/master/apps/docs/packages/telegram-apps-sdk/3-x/components/location-manager.md#2025-04-23_snippet_3
+
+LANGUAGE: TypeScript
+CODE:
+```
+import {
+  mountLocationManager,
+  isLocationManagerMounting,
+  isLocationManagerMounted,
+  locationManagerMountError,
+} from '@telegram-apps/sdk';
+
+if (mountLocationManager.isAvailable()) {
+  try {
+    const promise = mountLocationManager();
+    isLocationManagerMounting(); // true
+    await promise;
+    isLocationManagerMounting(); // false
+    isLocationManagerMounted(); // true
+  } catch (err) {
+    locationManagerMountError(); // equals "err"
+    isLocationManagerMounting(); // false
+    isLocationManagerMounted(); // false
+  }
+}
+```
+
+----------------------------------------
+
+TITLE: Opening QR Scanner with Callback in TypeScript (Functions Style)
+DESCRIPTION: Shows how to open the QR scanner using the functions style, with a callback function to handle captured QR codes. It demonstrates importing individual functions, checking availability, and managing the scanner's state.
+SOURCE: https://github.com/telegram-mini-apps/telegram-apps/blob/master/apps/docs/packages/telegram-apps-sdk/3-x/components/qr-scanner.md#2025-04-23_snippet_1
+
+LANGUAGE: typescript
+CODE:
+```
+import {
+  openQrScanner,
+  closeQrScanner,
+  isQrScannerOpened,
+} from '@telegram-apps/sdk';
+
+if (openQrScanner.isAvailable()) {
+  isQrScannerOpened(); // false
+  const promise = openQrScanner({
+    text: 'Scan the QR',
+    onCaptured(qr) {
+      if (qr === 'qr-content-we-expect') {
+        closeQrScanner();
+      }
+    },
+  });
+  isQrScannerOpened(); // true
+  await promise;
+  isQrScannerOpened(); // true
+}
+```
+
+----------------------------------------
+
+TITLE: Accessing Init Data Properties in Telegram Mini Apps
+DESCRIPTION: Examples of accessing various initialization data properties using both variable and function approaches.
+SOURCE: https://github.com/telegram-mini-apps/telegram-apps/blob/master/apps/docs/packages/telegram-apps-sdk/3-x/components/init-data.md#2025-04-23_snippet_2
+
+LANGUAGE: typescript
+CODE:
+```
+// Auth Date
+initData.authDate(); // Date(1727368894000)
+
+// Can Send After
+initData.canSendAfter(); // 3600
+
+// Chat Type
+initData.chatType(); // 'group'
+
+// Query ID
+initData.queryId(); // 'ssVXZ231ger'
+
+// Raw Data
+initData.raw(); // 'user=...&chat=...&...'
+
+// User Data
+initData.user();
+// {
+//   addedToAttachmentMenu: false,
+//   allowsWriteToPm: true,
+//   isPremium: true,
+//   firstName: 'Pavel',
+//   id: 78262681,
+//   isBot: false,
+//   lastName: 'Durov',
+//   languageCode: 'ru',
+//   photoUrl: 'https://example.com/image.png',
+//   username: 'durove',
+// }
+```
+
+----------------------------------------
+
+TITLE: Basic Method Call with postEvent in TypeScript
+DESCRIPTION: Demonstrates how to call Telegram Mini Apps methods using the postEvent function
+SOURCE: https://github.com/telegram-mini-apps/telegram-apps/blob/master/apps/docs/packages/telegram-apps-sdk/1-x/methods-and-events.md#2025-04-23_snippet_0
+
+LANGUAGE: typescript
+CODE:
+```
+import { postEvent } from '@telegram-apps/sdk';
+
+postEvent('web_app_setup_back_button', { is_visible: true });
+```
+
+----------------------------------------
+
+TITLE: Sending Method Request via postEvent (Desktop/Mobile, TypeScript/JavaScript)
+DESCRIPTION: Shows how to call a method in Telegram Desktop and Mobile applications. The method parameters are stringified using `JSON.stringify`, and then passed as the second argument to the globally available `window.TelegramWebviewProxy.postEvent` function. The first argument is the method name (event type).
+SOURCE: https://github.com/telegram-mini-apps/telegram-apps/blob/master/apps/docs/platform/methods.md#2025-04-23_snippet_2
+
+LANGUAGE: typescript
+CODE:
+```
+const data = JSON.stringify({ is_visible: true });
+
+window
+  .TelegramWebviewProxy
+  .postEvent('web_app_setup_back_button', data);
+```
+
+----------------------------------------
+
+TITLE: Creating a MainButton Signal Composable in Vue - TypeScript
+DESCRIPTION: Defines a custom composable for managing Telegram mainButton visibility using signals from @telegram-apps/sdk-vue. The hook mounts mainButton if not already, creates a reactive ref tracking its visibility, and returns the state. Depends on @telegram-apps/sdk-vue and Vue's composition API. Intended for internal state management; returns an object with an isVisible ref.
+SOURCE: https://github.com/telegram-mini-apps/telegram-apps/blob/master/apps/docs/packages/telegram-apps-sdk-vue/2-x.md#2025-04-23_snippet_5
+
+LANGUAGE: typescript
+CODE:
+```
+/**
+ * Composable which encapsulates mainButton interaction logic
+ */
+import { mainButton, useSignal } from '@telegram-apps/sdk-vue';
+
+export function useMainButton() {
+  if (!mainButton.isMounted()) {
+    mainButton.mount();
+  }
+
+  const isVisible = useSignal(mainButton.isVisible);
+
+  return { isVisible };
+}
+```
+
+----------------------------------------
+
+TITLE: Retrieving Launch Parameters in Typescript for Telegram Mini Apps
+DESCRIPTION: Demonstrates how to use the retrieveLaunchParams function to extract launch parameters from the current environment. This function throws an error if all known sources contain invalid data.
+SOURCE: https://github.com/telegram-mini-apps/telegram-apps/blob/master/apps/docs/packages/telegram-apps-sdk/1-x/launch-parameters.md#2025-04-23_snippet_2
+
+LANGUAGE: typescript
+CODE:
+```
+import { retrieveLaunchParams } from '@telegram-apps/sdk';
+
+const launchParams = retrieveLaunchParams();
+```
+
+----------------------------------------
+
+TITLE: Setting Background Color in Mini App for Telegram SDK (TypeScript)
+DESCRIPTION: Demonstrates how to set the background color for the Mini App using the setBackgroundColor method. It updates the backgroundColor signal with the new color value.
+SOURCE: https://github.com/telegram-mini-apps/telegram-apps/blob/master/apps/docs/packages/telegram-apps-sdk/3-x/components/mini-app.md#2025-04-23_snippet_5
+
+LANGUAGE: typescript
+CODE:
+```
+if (miniApp.setBackgroundColor.isAvailable()) {
+  miniApp.setBackgroundColor('#ffffff');
+  miniApp.backgroundColor(); // '#ffffff'
+}
+```
+
+LANGUAGE: typescript
+CODE:
+```
+import {
+  setMiniAppBackgroundColor,
+  miniAppBackgroundColor,
+} from '@telegram-apps/sdk';
+
+if (setMiniAppBackgroundColor.isAvailable()) {
+  setMiniAppBackgroundColor('#ffffff');
+  miniAppBackgroundColor(); // '#ffffff'
+}
+```
+
+----------------------------------------
+
+TITLE: Calling Method with Parameters (request) - TypeScript
+DESCRIPTION: Shows how to pass parameters to a Telegram Mini App method when using the request function. The parameters are provided in the params property of the request object. This example opens a popup using web_app_open_popup and waits for the popup_closed event.
+SOURCE: https://github.com/telegram-mini-apps/telegram-apps/blob/master/apps/docs/zh/packages/telegram-apps-sdk/1-x/methods-and-events.md#_snippet_2
+
+LANGUAGE: TypeScript
+CODE:
+```
+import { request } from '@telegram-apps/sdk';
+
+const buttonId = await request({
+  method: 'web_app_open_popup',
+  event: 'popup_closed',
+  params: {
+    title: 'Caution',
+    message: 'Should we delete you account?',
+    buttons: [
+      { id: 'yes', type: 'ok' },
+      { id: 'no', type: 'cancel' }
+    ]
+  }
+});
+```
+
+----------------------------------------
+
+TITLE: Setting Main Button Properties in Telegram Mini Apps SDK with Variable Approach
+DESCRIPTION: Shows how to update the main button properties using the variable-based approach. The setParams method accepts an object with optional properties and updates corresponding signals.
+SOURCE: https://github.com/telegram-mini-apps/telegram-apps/blob/master/apps/docs/packages/telegram-apps-sdk/2-x/components/main-button.md#2025-04-23_snippet_4
+
+LANGUAGE: typescript
+CODE:
+```
+if (mainButton.setParams.isAvailable()) {
+  mainButton.setParams({
+    backgroundColor: '#000000',
+    hasShineEffect: true,
+    isEnabled: true,
+    isLoaderVisible: true,
+    isVisible: true,
+    text: 'My text',
+    textColor: '#ffffff'
+  });
+  mainButton.backgroundColor(); // '#000000'
+  mainButton.hasShineEffect(); // true
+  mainButton.isEnabled(); // true
+  mainButton.isLoaderVisible(); // true
+  mainButton.isVisible(); // true
+  mainButton.text(); // 'My text'
+  mainButton.textColor(); // '#ffffff'
+
+  mainButton.state();
+  // {
+  //   backgroundColor: '#000000',
+  //   hasShineEffect: true,
+  //   isActive: true,
+  //   isLoaderVisible: true,
+  //   isVisible: true,
+  //   text: 'My text',
+  //   textColor: '#ffffff'
+  // }
+}
+```
+
+----------------------------------------
+
+TITLE: Requesting Contact Information in Telegram Mini Apps SDK (TypeScript)
+DESCRIPTION: Illustrates how to retrieve a user's contact information using the requestContact method. It shows both isAvailable and ifAvailable approaches. The method returns an object containing the user's contact details, including user ID, phone number, name, and authentication information.
+SOURCE: https://github.com/telegram-mini-apps/telegram-apps/blob/master/apps/docs/packages/telegram-apps-sdk/3-x/utils/privacy.md#2025-04-23_snippet_2
+
+LANGUAGE: typescript
+CODE:
+```
+import { requestContact } from '@telegram-apps/sdk';
+
+if (requestContact.isAvailable()) {
+  const contact = await requestContact();
+  // {
+  //   contact: {
+  //     user_id: 1,
+  //     phone_number: '+987654321',
+  //     first_name: 'Vladislav',
+  //     last_name: 'Kibenko'
+  //   },
+  //   auth_date: Date(12345678),
+  //   hash: 'abcdefgh'
+  // };
+}
+```
+
+LANGUAGE: typescript
+CODE:
+```
+import { requestContact } from '@telegram-apps/sdk';
+
+const result = requestContact.ifAvailable();
+if (result[0]) {
+  const contact = await result[1];
+  // {
+  //   contact: {
+  //     userId: 1,
+  //     phoneNumber: '+987654321',
+  //     firstName: 'Vladislav',
+  //     lastName: 'Kibenko'
+  //   },
+  //   authDate: Date(12345678),
+  //   hash: 'abcdefgh'
+  // };
+}
+```
+
+----------------------------------------
+
+TITLE: Opening Telegram Links Conditionally with ifAvailable using Telegram Mini Apps SDK (TypeScript)
+DESCRIPTION: Presents the use of `openTelegramLink.ifAvailable` to open a Telegram link, automatically performing an availability check within the @telegram-apps/sdk method. Requires only the @telegram-apps/sdk package and takes a Telegram URL as argument. This method simplifies the code needed to safely launch deep links from mini apps.
+SOURCE: https://github.com/telegram-mini-apps/telegram-apps/blob/master/apps/docs/packages/telegram-apps-sdk/3-x/utils/links.md#2025-04-23_snippet_3
+
+LANGUAGE: typescript
+CODE:
+```
+import { openTelegramLink } from '@telegram-apps/sdk';\n\nopenTelegramLink.ifAvailable('https://t.me/heyqbnk');
+```
+
+----------------------------------------
+
+TITLE: Illustrating Telegram Mini App Theme Parameters Structure in TypeScript
+DESCRIPTION: Shows the structure of the JavaScript object obtained after parsing the `tgWebAppThemeParams` launch parameter string using `JSON.parse`. This object contains various theme color details (e.g., `bg_color`, `text_color`, `button_color`) allowing the Mini App to dynamically adapt its appearance to match the user's Telegram theme settings, even during initial loading.
+SOURCE: https://github.com/telegram-mini-apps/telegram-apps/blob/master/apps/docs/platform/launch-parameters.md#2025-04-23_snippet_1
+
+LANGUAGE: typescript
+CODE:
+```
+const theme = {
+  bg_color: '#212121',
+  text_color: '#ffffff',
+  hint_color: '#aaaaaa',
+  link_color: '#8774e1',
+  button_color: '#8774e1',
+  button_text_color: '#ffffff',
+  secondary_bg_color: '#0f0f0f',
+};
+```

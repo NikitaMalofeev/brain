@@ -1,0 +1,500 @@
+:root {
+  --profile-bg: #ffffff;
+  --profile-text-primary: var(--text-primary, #1a1a1a);
+  --profile-text-secondary: var(--text-secondary, #4a4a4a);
+  --profile-text-tertiary: var(--text-tertiary, #6d6d6d);
+  --profile-accent: var(--accent-color, #4e9bff);
+  --profile-accent-hover: var(--accent-hover, #3a87ff);
+  --profile-item-bg: var(--bg-item, #f9f9f9);
+  --profile-card-bg: var(--bg-card, #ffffff);
+  --profile-border: var(--border-color, #f0f0f0);
+  --profile-progress-bg: #e7f0ff;
+  --profile-progress-fill: var(--accent-color, #4e9bff);
+  --profile-shadow-sm: var(--shadow-sm, 0 2px 8px rgba(0, 0, 0, 0.03));
+  --profile-shadow-md: var(--shadow-md, 0 8px 16px rgba(0, 0, 0, 0.04));
+  --profile-radius-sm: var(--border-radius-sm, 0.5rem);
+  --profile-radius-md: var(--border-radius-md, 0.875rem);
+  --profile-radius-lg: var(--border-radius-lg, 1.25rem);
+  --profile-transition: var(--transition-standard, all 0.3s cubic-bezier(0.4, 0, 0.2, 1));
+}
+
+/* Темная тема */
+:root.dark {
+  --profile-bg: #1a202c;
+  --profile-text-primary: #f7fafc;
+  --profile-text-secondary: #e2e8f0;
+  --profile-text-tertiary: #a0aec0;
+  --profile-item-bg: #2d3748;
+  --profile-card-bg: #2d3748;
+  --profile-border: #4a5568;
+  --profile-progress-bg: #2c5282;
+  --profile-progress-fill: #63b3ed;
+}
+
+/* Анимация пульсации */
+@keyframes pulse {
+  0% {
+    transform: scale(1);
+    opacity: 1;
+  }
+  50% {
+    transform: scale(1.05);
+    opacity: 0.9;
+  }
+  100% {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+
+.animate-pulse {
+  animation: pulse 2s infinite ease-in-out;
+}
+
+/* Основной контейнер */
+.profile-main {
+  display: flex;
+  flex-direction: column;
+  min-height: 100%;
+  background: var(--profile-bg);
+  padding: 1.25rem 1.25rem 0;
+  box-sizing: border-box;
+  width: 100%;
+  color: var(--profile-text-primary);
+  animation: fadeIn 0.3s ease-out forwards;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Верхний блок с аватаром и именем */
+.profile-header {
+  display: flex;
+  align-items: center;
+  margin-bottom: 1.5rem;
+  padding: 1rem;
+  background-color: var(--profile-card-bg);
+  border-radius: var(--profile-radius-lg);
+  box-shadow: var(--profile-shadow-sm);
+}
+
+.profile-avatar-container {
+  position: relative;
+  width: 76px;
+  height: 76px;
+  margin-right: 1rem;
+  border-radius: 50%;
+  overflow: hidden;
+  background: var(--profile-item-bg);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: var(--profile-shadow-sm);
+  border: 1px solid var(--profile-border);
+  flex-shrink: 0;
+}
+
+.profile-avatar {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.profile-avatar-placeholder {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background-color: var(--profile-item-bg);
+  color: var(--profile-text-secondary);
+  font-size: 2rem;
+  font-weight: 600;
+}
+
+.profile-user-info {
+  flex: 1;
+}
+
+.profile-name {
+  display: flex;
+  align-items: center;
+  font-size: 1.25rem;
+  font-weight: 600;
+  margin: 0 0 0.25rem;
+  color: var(--profile-text-primary);
+}
+
+.profile-username {
+  font-size: 0.875rem;
+  color: var(--profile-text-tertiary);
+  margin: 0 0 0.5rem;
+}
+
+.profile-subscription {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.75rem;
+}
+
+.profile-plan {
+  font-weight: 600;
+  background-color: var(--profile-accent);
+  color: white;
+  padding: 0.25rem 0.5rem;
+  border-radius: var(--profile-radius-sm);
+}
+
+.profile-status {
+  color: var(--profile-text-secondary);
+}
+
+.profile-expiry {
+  color: var(--profile-text-tertiary);
+}
+
+/* Блок силы пользователя */
+.profile-strength-block {
+  margin-bottom: 1.5rem;
+  background-color: var(--profile-card-bg);
+  border-radius: var(--profile-radius-lg);
+  padding: 1.25rem;
+  box-shadow: var(--profile-shadow-sm);
+}
+
+.strength-container {
+  text-align: center;
+}
+
+.strength-title {
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: var(--profile-text-secondary);
+  margin: 0 0 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.strength-value {
+  font-size: 3.5rem;
+  font-weight: 700;
+  color: var(--profile-accent);
+  margin: 0 0 0.5rem;
+  line-height: 1;
+}
+
+.strength-progress {
+  height: 8px;
+  width: 100%;
+  background-color: var(--profile-progress-bg);
+  border-radius: 4px;
+  margin: 0.5rem 0;
+  overflow: hidden;
+}
+
+.strength-bar {
+  height: 100%;
+  background-color: var(--profile-progress-fill);
+  border-radius: 4px;
+  transition: width 0.5s ease;
+}
+
+.strength-description {
+  font-size: 0.75rem;
+  color: var(--profile-text-tertiary);
+  margin: 0.5rem 0 0;
+}
+
+/* Вкладки */
+.profile-tabs {
+  display: flex;
+  margin-bottom: 1.25rem;
+  background-color: var(--profile-item-bg);
+  padding: 0.25rem;
+  border-radius: var(--profile-radius-md);
+}
+
+.profile-tab {
+  flex: 1;
+  padding: 0.75rem;
+  border: none;
+  background: none;
+  color: var(--profile-text-secondary);
+  font-weight: 500;
+  font-size: 0.875rem;
+  border-radius: var(--profile-radius-sm);
+  transition: var(--profile-transition);
+  cursor: pointer;
+  text-align: center;
+}
+
+.profile-tab.active {
+  background-color: var(--profile-card-bg);
+  color: var(--profile-text-primary);
+  font-weight: 600;
+  box-shadow: var(--profile-shadow-sm);
+}
+
+/* Статистика */
+.profile-stats {
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+  margin-bottom: 1.5rem;
+}
+
+.stats-item-large {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 1.25rem;
+  background-color: var(--profile-card-bg);
+  border-radius: var(--profile-radius-lg);
+  box-shadow: var(--profile-shadow-sm);
+  text-align: center;
+}
+
+.stats-counter {
+  font-size: 3rem;
+  font-weight: 700;
+  color: var(--profile-accent);
+  line-height: 1;
+  margin-bottom: 0.5rem;
+}
+
+.stats-label {
+  font-size: 0.875rem;
+  color: var(--profile-text-secondary);
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+/* График активности */
+.activity-graph {
+  padding: 1.25rem;
+  background-color: var(--profile-card-bg);
+  border-radius: var(--profile-radius-lg);
+  box-shadow: var(--profile-shadow-sm);
+  margin-bottom: 1rem;
+}
+
+.activity-title {
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: var(--profile-text-primary);
+  margin: 0 0 1.25rem;
+  text-align: center;
+}
+
+.activity-bars {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-end;
+  height: 150px;
+  margin-top: 1rem;
+}
+
+.activity-day {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  width: 100%;
+  max-width: 40px;
+}
+
+.activity-bar {
+  width: 16px;
+  background-color: var(--profile-accent);
+  border-radius: 10px 10px 0 0;
+  min-height: 4px;
+  transition: height 0.5s ease;
+}
+
+.activity-label {
+  margin-top: 0.5rem;
+  font-size: 0.75rem;
+  color: var(--profile-text-tertiary);
+  text-align: center;
+}
+
+/* Настройки */
+.profile-settings {
+  min-height: 200px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  padding: 2rem;
+  background-color: var(--profile-card-bg);
+  border-radius: var(--profile-radius-lg);
+  box-shadow: var(--profile-shadow-sm);
+  margin-bottom: 1.5rem;
+}
+
+.settings-info {
+  text-align: center;
+  color: var(--profile-text-secondary);
+  margin-bottom: 1.5rem;
+}
+
+/* Контейнер для кнопки администратора */
+.admin-button-container {
+  display: flex;
+  justify-content: center;
+  margin-top: 1rem;
+}
+
+.admin-button {
+  background-color: #9f2f2f !important; /* Темно-красный цвет для админской кнопки */
+  color: white !important;
+}
+
+.admin-button:hover {
+  background-color: #c23a3a !important;
+}
+
+/* Кнопки действий */
+.profile-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  margin-bottom: 2rem;
+}
+
+.action-button {
+  width: 100%;
+  padding: 0.9rem 1.25rem;
+  border-radius: var(--profile-radius-md);
+  border: 1px solid var(--profile-border);
+  background-color: var(--profile-item-bg);
+  color: var(--profile-text-primary);
+  font-weight: 600;
+  font-size: 0.95rem;
+  cursor: pointer;
+  transition: var(--profile-transition);
+  text-align: center;
+  box-shadow: var(--profile-shadow-sm);
+}
+
+.action-button:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--profile-shadow-md);
+}
+
+.action-button:active {
+  transform: translateY(-1px);
+}
+
+.action-button.primary {
+  background-color: var(--profile-accent);
+  color: white;
+  border: none;
+}
+
+.action-button.primary:hover {
+  background-color: var(--profile-accent-hover);
+}
+
+/* Состояние загрузки */
+.profile-loading {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 70vh;
+  color: var(--profile-text-secondary);
+}
+
+.profile-loading-spinner {
+  width: 48px;
+  height: 48px;
+  border: 3px solid rgba(0, 0, 0, 0.05);
+  border-radius: 50%;
+  border-top-color: var(--profile-accent);
+  animation: spin 1s ease-in-out infinite;
+  margin-bottom: 1.25rem;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* Состояние ошибки */
+.profile-error {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  padding: 2rem;
+  min-height: 70vh;
+}
+
+.profile-error-icon {
+  font-size: 3rem;
+  margin-bottom: 1rem;
+}
+
+.profile-error h2 {
+  margin: 0 0 0.5rem;
+  color: var(--profile-text-primary);
+}
+
+.profile-error p {
+  color: var(--profile-text-secondary);
+}
+
+/* Медиа-запросы для адаптивности */
+@media (max-width: 380px) {
+  .profile-main {
+    padding: 1rem;
+  }
+  
+  .profile-avatar-container {
+    width: 64px;
+    height: 64px;
+  }
+  
+  .profile-name {
+    font-size: 1.125rem;
+  }
+  
+  .stats-counter {
+    font-size: 2.5rem;
+  }
+}
+
+@media (min-width: 768px) {
+  .profile-main {
+    max-width: 768px;
+    margin: 0 auto;
+  }
+  
+  .profile-stats {
+    flex-direction: row;
+    flex-wrap: wrap;
+  }
+  
+  .stats-item-large {
+    flex: 1;
+    min-width: 45%;
+  }
+}
+
+.ml-2 {
+  margin-left: 0.5rem;
+} 

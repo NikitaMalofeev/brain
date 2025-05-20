@@ -1,0 +1,28 @@
+{
+  "mcpServers": {
+    "supabase": {
+      "command": "cmd",
+      "args": [
+        "/c",
+        "npx",
+        "-y",
+        "@supabase/mcp-server-supabase@latest",
+        "--access-token",
+        "sbp_bebf68ce2e9d175791dca08bf6d5cd589fb75d26"
+      ]
+    },
+    "vercel": {
+      "command": "npx",
+      "args": [
+        "vercel-mcp VERCEL_API_KEY=GQk5oVi32SlOb6kMnmlZVvNM"
+      ]
+    },
+    "context7-mcp": {
+      "command": "/opt/homebrew/bin/context7-mcp",
+      "args": [],
+      "autoApprove": [
+        "resolve-library-id"
+      ]
+    }
+  }
+}

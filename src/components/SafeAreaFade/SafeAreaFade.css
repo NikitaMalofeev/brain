@@ -1,0 +1,33 @@
+/* Общие свойства для обоих фейдов */
+.safe-area-fade-top,
+.safe-area-fade-bottom {
+  position: fixed;
+  left: 0;
+  right: 0;
+  pointer-events: none; /* Пропускать клики через фейды */
+  z-index: 9999; /* Максимально высокий z-index, чтобы быть поверх всего */
+}
+
+/* Верхний фейд */
+.safe-area-fade-top {
+  top: 0;
+  height: 100px; /* Высота верхнего фейда */
+  background: linear-gradient(
+    to bottom,
+    var(--tgui-background) 0%,
+    var(--tgui-background) 60%,
+    rgba(var(--tgui-background-rgb, 255, 255, 255), 0.9) 80%,
+    rgba(var(--tgui-background-rgb, 255, 255, 255), 0) 100%
+  );
+}
+
+/* Нижний фейд */
+.safe-area-fade-bottom {
+  bottom: 0;
+  height: 20px; /* Высота нижнего фейда */
+  background: linear-gradient(
+    to top,
+    var(--tgui-background) 0%,
+    rgba(var(--tgui-background-rgb, 255, 255, 255), 0) 100%
+  );
+} 

@@ -1,0 +1,60 @@
+:root {
+  --status-success: #4ade80;
+  --status-success-glow: rgba(74, 222, 128, 0.18);
+  --status-error: #ff5a5f;
+  --status-error-glow: rgba(255, 90, 95, 0.18);
+}
+
+:root.dark {
+  --status-success: #68d391;
+  --status-success-glow: rgba(104, 211, 145, 0.2);
+  --status-error: #fc8181;
+  --status-error-glow: rgba(252, 129, 129, 0.2);
+}
+
+.auth-status-indicator {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  display: inline-block;
+  vertical-align: middle;
+  transition: all 0.3s ease;
+  position: relative;
+}
+
+.auth-status-indicator.authenticated {
+  background-color: var(--status-success);
+  box-shadow: 0 0 0 2px var(--status-success-glow);
+}
+
+.auth-status-indicator.unauthenticated {
+  background-color: var(--status-error);
+  box-shadow: 0 0 0 2px var(--status-error-glow);
+}
+
+.auth-status-indicator.authenticated::after,
+.auth-status-indicator.unauthenticated::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  border-radius: 50%;
+  opacity: 0;
+  transform: scale(1.5);
+  transition: opacity 0.3s, transform 0.3s;
+}
+
+.auth-status-indicator.authenticated::after {
+  box-shadow: 0 0 8px 2px var(--status-success);
+}
+
+.auth-status-indicator.unauthenticated::after {
+  box-shadow: 0 0 8px 2px var(--status-error);
+}
+
+.auth-status-indicator:hover::after {
+  opacity: 0.4;
+  transform: scale(1);
+} 

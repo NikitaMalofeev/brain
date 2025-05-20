@@ -1,0 +1,157 @@
+.practice-page {
+  width: 100%;
+  min-height: calc(100vh - 56px);
+  padding: 16px;
+  box-sizing: border-box;
+  background-color: var(--tgui-bg-color);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.practice-content {
+  width: 100%;
+  max-width: 600px;
+  margin: 0 auto;
+  padding-bottom: 20px;
+}
+
+.practice-actions {
+  margin: 16px 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+}
+
+.back-button {
+  background-color: var(--tgui-secondary-bg);
+  color: var(--tgui-text-color);
+  border: none;
+  border-radius: 8px;
+  padding: 10px 16px;
+  cursor: pointer;
+  font-size: 14px;
+}
+
+.share-button {
+  background-color: var(--tgui-button-color);
+  color: white;
+  border: none;
+  border-radius: 8px;
+  padding: 10px 16px;
+  cursor: pointer;
+  font-size: 14px;
+  text-decoration: none;
+  display: inline-block;
+}
+
+.player-loading {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 300px;
+  width: 100%;
+  color: var(--tgui-text-color);
+  font-size: 16px;
+}
+
+.player-error {
+  padding: 20px;
+  text-align: center;
+  background-color: var(--tgui-secondary-bg);
+  border-radius: 10px;
+  margin: 20px 0;
+  color: var(--tgui-text-color);
+}
+
+.player-error p {
+  margin-bottom: 16px;
+  color: var(--tgui-destructive);
+}
+
+/* Адаптивные стили */
+@media (max-width: 480px) {
+  .practice-page {
+    padding: 8px;
+  }
+  
+  .practice-actions {
+    flex-direction: column;
+    gap: 12px;
+    align-items: center;
+  }
+  
+  .back-button,
+  .share-button {
+    width: 100%;
+    text-align: center;
+  }
+}
+
+/* Стили для кнопки "Получить другую практику" и мини-попапа с критериями */
+.refresh-button {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background-color: var(--tg-theme-button-color);
+  color: var(--tg-theme-button-text-color);
+  border: none;
+  padding: 10px 16px;
+  border-radius: 8px;
+  font-weight: 500;
+  cursor: pointer;
+}
+
+.criteria-button {
+  background-color: transparent;
+  color: var(--tg-theme-hint-color);
+  border: none;
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+}
+
+.criteria-popup {
+  position: absolute;
+  right: 8px;
+  top: 50px;
+  background-color: var(--tg-theme-bg-color);
+  border: 1px solid var(--tg-theme-hint-color);
+  border-radius: 8px;
+  padding: 12px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  z-index: 100;
+  width: 200px;
+  max-width: 90%;
+}
+
+.criteria-item {
+  margin-bottom: 8px;
+  font-size: 14px;
+}
+
+.criteria-label {
+  color: var(--tg-theme-hint-color);
+  margin-right: 4px;
+}
+
+.criteria-value {
+  color: var(--tg-theme-text-color);
+  font-weight: 500;
+}
+
+/* Затемнение фона при открытом попапе */
+.popup-backdrop {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0, 0, 0, 0.3);
+  z-index: 90;
+} 
