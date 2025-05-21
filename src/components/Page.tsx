@@ -34,9 +34,9 @@ interface PageProps {
   showSafeAreaFade?: boolean;
 }
 
-export function Page({ 
-  children, 
-  back = true, 
+export function Page({
+  children,
+  back = true,
   showTabBar = true,
   showSafeAreaFade = true,
 }: PropsWithChildren<PageProps>) {
@@ -57,7 +57,7 @@ export function Page({
   useEffect(() => {
     postEvent('web_app_request_safe_area');
     postEvent('web_app_request_viewport');
-    
+
     // Убедимся, что все родительские элементы имеют белый фон
     document.body.style.backgroundColor = '#ffffff';
     if (document.getElementById('root')) {
@@ -72,12 +72,22 @@ export function Page({
   };
 
   return (
-    <div 
-      className={`page-container ${showTabBar ? 'with-tab-bar' : ''}`} 
-      style={containerStyle} 
+    <div
+      className={`page-container ${showTabBar ? 'with-tab-bar' : ''}`}
+      style={containerStyle}
       ref={containerRef}
     >
-      <div className="content-wrapper" style={{ backgroundColor: '#ffffff' }}>
+      <div
+        className="content-wrapper"
+        style={{
+          backgroundColor: '#ffffff',
+          flex: 1,
+          overflowY: 'auto',
+          paddingBottom: showTabBar
+            ? 'calc(64px + env(safe-area-inset-bottom, 0px))'
+            : '0px',
+        }}
+      >
         {children}
       </div>
       {showTabBar && <TabBar />}
