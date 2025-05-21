@@ -20,22 +20,23 @@ interface Route {
   icon?: JSX.Element;
 }
 
+/*
 export const routes: Route[] = [
   // Основной экран для телеграм мини-аппа
   { path: '/', Component: MainScreen },
-  
+
   // Новый квиз для выбора практики
   { path: '/quiz', Component: QuizFlow, title: 'Выбор практики' },
-  
+
   // Страница практики
   { path: '/practice/:contentId', Component: PracticePage, title: 'Практика' },
-  
+
   // Админ панель
   { path: '/admin', Component: AdminPage, title: 'Админ панель' },
-  
+
   // Оставляем старую главную как диагностический инструмент
   { path: '/old-index', Component: IndexPage, title: 'Старая главная' },
-  
+
   // Другие страницы
   { path: '/init-data', Component: InitDataPage, title: 'Init Data' },
   { path: '/theme-params', Component: ThemeParamsPage, title: 'Theme Params' },
@@ -66,58 +67,58 @@ export const routes: Route[] = [
   },
   { path: '/diagnostics', Component: DiagnosticsPage },
 ];
-
-export const router = createHashRouter([
+*/
+export const routers = [
   {
     path: '/',
-    element: <MainScreen />
+    Component: MainScreen
   },
   {
     path: '/quiz',
-    element: <QuizFlow />
+    Component: QuizFlow
   },
   {
     path: '/practice/:contentId',
-    element: <PracticePage />
+    Component: PracticePage
   },
   {
     path: '/practice/meditation/:meditationType/:meditationObject',
-    element: <PracticePage />
+    Component: PracticePage
   },
   {
     path: '/practice/:contentId/:meditationType',
-    element: <PracticePage />
+    Component: PracticePage
   },
   {
     path: '/admin',
-    element: <AdminPage />
+    Component: AdminPage
   },
   {
     path: '/old-index',
-    element: <IndexPage />
+    Component: IndexPage
   },
   {
     path: '/init-data',
-    element: <InitDataPage />
+    Component: InitDataPage
   },
   {
     path: '/launch-params',
-    element: <LaunchParamsPage />
+    Component: LaunchParamsPage
   },
   {
     path: '/theme-params',
-    element: <ThemeParamsPage />
+    Component: ThemeParamsPage
   },
   {
     path: '/profile',
-    element: <ProfilePage />
+    Component: ProfilePage
   },
   {
     path: '/ton-connect',
-    element: <TONConnectPage />
+    Component: TONConnectPage
   },
   {
     path: '/diagnostics',
-    element: <DiagnosticsPage />
+    Component: DiagnosticsPage
   }
-]);
+];
