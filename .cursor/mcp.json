@@ -17,12 +17,16 @@
         "vercel-mcp VERCEL_API_KEY=GQk5oVi32SlOb6kMnmlZVvNM"
       ]
     },
-    "context7-mcp": {
-      "command": "/opt/homebrew/bin/context7-mcp",
-      "args": [],
-      "autoApprove": [
-        "resolve-library-id"
-      ]
+    "github.com/upstash/context7-mcp": {
+      "command": "cmd",
+      "args": [
+        "/c",
+        "npx",
+        "-y",
+        "@upstash/context7-mcp"
+      ],
+      "disabled": false,
+      "autoApprove": []
     }
   }
 }
