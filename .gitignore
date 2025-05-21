@@ -1,5 +1,7 @@
 # SpecStory explanation file
-.specstory/.what-is-this.md
+.specstory/
 node_modules/
 .env
 .env.*
+# SpecStory explanation file
+.specstory/.what-is-this.md
