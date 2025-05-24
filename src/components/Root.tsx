@@ -4,7 +4,6 @@ import { App } from '@/components/App.tsx';
 import { ErrorBoundary } from '@/components/ErrorBoundary.tsx';
 import { AppWrapper } from '@/components/AppWrapper.tsx';
 import { publicUrl } from '@/helpers/publicUrl.ts';
-import { QuizDataProvider } from '@/contexts/QuizDataContext';
 import { AppProvider } from '@/contexts/AppContext';
 
 function ErrorBoundaryError({ error }: { error: unknown }) {
@@ -31,11 +30,9 @@ export function Root() {
         manifestUrl={publicUrl('tonconnect-manifest.json')}
       >
         <AppProvider>
-          <QuizDataProvider>
-            <AppWrapper>
-              <App />
-            </AppWrapper>
-          </QuizDataProvider>
+          <AppWrapper>
+            <App />
+          </AppWrapper>
         </AppProvider>
       </TonConnectUIProvider>
     </ErrorBoundary>

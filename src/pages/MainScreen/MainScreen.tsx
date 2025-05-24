@@ -80,12 +80,7 @@ export const MainScreen: FC = () => {
   // Определяем пользователя из initDataState
   const user = useMemo(() =>
     initDataState && initDataState.user ? initDataState.user : undefined,
-  [initDataState]);
-
-  // Обработчик для кнопки выбора практики
-  const handleSelectPractice = () => {
-    navigate('/quiz');
-  };
+    [initDataState]);
 
   // Если это не Telegram App и не разрешен доступ в браузере, показываем предупреждение
   if (!showAppContent) {
@@ -155,12 +150,11 @@ export const MainScreen: FC = () => {
           </div>
         </div>
 
-        {/* Блок статистики и кнопка выбора практики */}
+        {/* Блок статистики */}
         <Stats
           strength={3}
           practiceMinutes={100}
           daysInFlow={7}
-          onSelectPractice={handleSelectPractice}
         />
       </div>
     </Page>

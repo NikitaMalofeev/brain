@@ -6,10 +6,10 @@ import { ProfilePage } from '@/pages/ProfilePage';
 import { TONConnectPage } from '@/pages/TONConnectPage/TONConnectPage';
 import { DiagnosticsPage } from '@/pages/DiagnosticsPage/DiagnosticsPage';
 import { MainScreen } from '@/pages/MainScreen/MainScreen';
-import { QuizFlow } from '@/pages/QuizFlow/QuizFlow';
-import PracticePage from '@/pages/PracticePage/PracticePage';
 import AdminPage from '@/pages/AdminPage/AdminPage';
 import LibraryPage from '@/pages/LibraryPage/LibraryPage';
+import StagePage from '@/pages/LibraryPage/StagePage';
+import LessonPage from '@/pages/LibraryPage/LessonPage';
 
 export const routers = [
   {
@@ -21,20 +21,12 @@ export const routers = [
     Component: LibraryPage
   },
   {
-    path: '/quiz',
-    Component: QuizFlow
+    path: '/library/stage/:id',
+    Component: StagePage
   },
   {
-    path: '/practice/:contentId',
-    Component: PracticePage
-  },
-  {
-    path: '/practice/meditation/:meditationType/:meditationObject',
-    Component: PracticePage
-  },
-  {
-    path: '/practice/:contentId/:meditationType',
-    Component: PracticePage
+    path: '/library/lesson/:id',
+    Component: LessonPage
   },
   {
     path: '/admin',
