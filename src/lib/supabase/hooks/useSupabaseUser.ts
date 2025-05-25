@@ -3,6 +3,7 @@ import { type InitData as TelegramInitDataType } from '@telegram-apps/sdk-react'
 import { supabase } from '../client';
 import { type SupabaseUser, type TelegramUserData } from '../types';
 import { logger } from '../../logger';
+import { autoEnrollUserToCourse, checkAndEnrollExistingUser } from '../utils/autoEnrollUser';
 
 // Определяем тип для возвращаемого значения хука
 interface UseSupabaseUserReturn {
@@ -22,7 +23,7 @@ export function useSupabaseUser(initDataRaw: TelegramInitDataType | undefined): 
   const [supabaseUser, setSupabaseUser] = useState<SupabaseUser | null>(null);
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<Error | null>(null);
-  
+
   // Ref для отслеживания если processUser уже был вызван
   const wasProcessedRef = useRef<boolean>(false);
 
@@ -53,8 +54,8 @@ export function useSupabaseUser(initDataRaw: TelegramInitDataType | undefined): 
     setError(null);
 
     // Убедимся, что auth_date - это число
-    const authDateAsNumber = typeof authDateFromInitData === 'number' 
-      ? authDateFromInitData 
+    const authDateAsNumber = typeof authDateFromInitData === 'number'
+      ? authDateFromInitData
       : Math.floor(new Date(authDateFromInitData as any).getTime() / 1000);
 
     // Используем поля с нижним подчеркиванием из telegramUserFromInitData, если они есть,
@@ -107,7 +108,10 @@ export function useSupabaseUser(initDataRaw: TelegramInitDataType | undefined): 
           throw updateError;
         }
         logger.info('User updated successfully');
-        
+
+        // Проверяем и при необходимости записываем существующего пользователя на курс
+        await checkAndEnrollExistingUser(updatedUser.id);
+
         setSupabaseUser(updatedUser);
       } else {
         logger.info('Creating new user', { telegramId: userData.id });
@@ -132,13 +136,16 @@ export function useSupabaseUser(initDataRaw: TelegramInitDataType | undefined): 
           throw insertError;
         }
         logger.info('New user created successfully');
-        
+
+        // Автоматически записываем нового пользователя на дефолтный курс
+        await autoEnrollUserToCourse(newUser.id);
+
         setSupabaseUser(newUser);
       }
-      
+
       // Отмечаем, что пользователь был успешно обработан
       wasProcessedRef.current = true;
-      
+
     } catch (err) {
       logger.error('Error processing user in Supabase:', err);
       setError(err instanceof Error ? err : new Error('Произошла неизвестная ошибка'));
@@ -151,23 +158,23 @@ export function useSupabaseUser(initDataRaw: TelegramInitDataType | undefined): 
   useEffect(() => {
     // Запускаем processUser только один раз при первоначальной загрузке
     if (
-      !wasProcessedRef.current && 
-      telegramUserFromInitData && 
-      typeof telegramUserFromInitData.id !== 'undefined' && 
+      !wasProcessedRef.current &&
+      telegramUserFromInitData &&
+      typeof telegramUserFromInitData.id !== 'undefined' &&
       typeof authDateFromInitData !== 'undefined'
     ) {
       logger.info('Starting user authentication process (one-time only)');
       processUser();
     } else {
       // Если данные не полны, но загрузка была активна, завершаем её
-      if(loading) {
+      if (loading) {
         logger.warn('Incomplete user data, stopping loading state');
         setLoading(false);
       }
     }
     // Важно: не включаем processUser в зависимости, чтобы избежать повторных вызовов
   }, [telegramUserFromInitData, authDateFromInitData, loading]);
-  
+
   // Функция для явного обновления данных - вызывается только по запросу пользователя
   const refetch = useCallback(() => {
     // Убедимся, что processUser вызывается только если есть данные
