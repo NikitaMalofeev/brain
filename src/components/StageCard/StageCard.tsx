@@ -7,12 +7,12 @@ import React from 'react';
 // import LockIcon from './lock.svg?react'; // Убираем импорт SVG
 
 export interface StageCardProps {
-    id: string;
+    id: number; // ИСПРАВЛЕНО: теперь number (BIGINT из PostgreSQL)
     name: string;
     // progressText: string; // Убираем, нет в дизайне карточки
     isLocked: boolean;
     // lockReason?: string; // Убираем, нет в дизайне карточки
-    onClick: (id: string) => void;
+    onClick: (id: number) => void; // ИСПРАВЛЕНО: теперь number
 }
 
 const StageCard: React.FC<StageCardProps> = ({

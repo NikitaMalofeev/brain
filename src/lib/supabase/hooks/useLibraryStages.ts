@@ -6,11 +6,11 @@ import { User } from '@supabase/supabase-js';
 // Интерфейс для данных ступени, которые мы ожидаем от RPC функции get_library_stages
 // Важно, чтобы поля соответствовали тем, что возвращает функция
 export interface LibraryStageData {
-    stage_id: string; // UUID
+    stage_id: number; // ИСПРАВЛЕНО: теперь BIGINT из PostgreSQL
     stage_name: string;
     stage_order_num: number;
     stage_description: string | null;
-    is_unlocked: boolean;
+    is_unlocked: boolean; // ИСПРАВЛЕНО: теперь всегда boolean, не null
     total_lessons: number;
     completed_lessons: number;
     unlock_condition_type_val: string | null;

@@ -1,14 +1,16 @@
 // Компонент страницы "Библиотека"
 
 import React, { useEffect, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import StageCard from '../../components/StageCard/StageCard';
 import useLibraryStages, { LibraryStageData } from '../../lib/supabase/hooks/useLibraryStages';
-import { User } from '@supabase/supabase-js'; // Импортируем тип User
-import { useSignal, initDataState } from '@telegram-apps/sdk-react'; // Импортируем для Telegram
-import { useSupabaseUser } from '@/lib/supabase/hooks/useSupabaseUser'; // Импортируем хук для работы с Telegram
-import { logger } from '@/lib/logger'; // Логгер для отладки
-import { useAppContext } from '@/contexts/AppContext'; // Импортируем контекст приложения
-import { Page } from '@/components/Page'; // Импортируем компонент Page
+import { User } from '@supabase/supabase-js';
+import { useSignal, initDataState } from '@telegram-apps/sdk-react';
+import { useSupabaseUser } from '@/lib/supabase/hooks/useSupabaseUser';
+import { logger } from '@/lib/logger';
+import { useAppContext } from '@/contexts/AppContext';
+import { Page } from '@/components/Page';
+import { COURSE_CONFIG } from '@/lib/config/constants';
 
 // Расширяем глобальный объект Window, добавляя Telegram
 declare global {
@@ -17,9 +19,12 @@ declare global {
     }
 }
 
-const HARDCODED_COURSE_ID = '1d66bf31-dc5b-4291-9581-f7f12cc373b6';
+// ID курса теперь берется из централизованного конфига
+const COURSE_ID = COURSE_CONFIG.DEFAULT_COURSE_ID;
 
 const LibraryPage: React.FC = () => {
+    const navigate = useNavigate();
+
     // Получаем информацию из глобального контекста
     const { isTelegramApp } = useAppContext();
 
@@ -79,7 +84,7 @@ const LibraryPage: React.FC = () => {
     const activeUser = supabaseCompatUser;
 
     // Используем хук для получения ступеней
-    const { stages, loading: stagesLoading, error: stagesError } = useLibraryStages(activeUser, HARDCODED_COURSE_ID);
+    const { stages, loading: stagesLoading, error: stagesError } = useLibraryStages(activeUser, COURSE_ID);
 
     // Объединяем состояния загрузки
     const loading = stagesLoading || (isTelegramApp && supabaseUserLoading);
@@ -87,10 +92,9 @@ const LibraryPage: React.FC = () => {
     // Объединяем ошибки
     const error = stagesError || (isTelegramApp && supabaseUserError);
 
-    const handleStageClick = (stageId: string) => {
-        console.log(`Переход к ступени: ${stageId}`);
-        // TODO: Реализовать переход к экрану ступени (stage_content_flow)
-        // например, history.push(`/library/stage/${stageId}`);
+    const handleStageClick = (stageId: number) => {
+        logger.debug('Navigating to stage', { stageId });
+        navigate(`/library/stage/${stageId}`);
     };
 
     // Функция для формирования текста прогресса
