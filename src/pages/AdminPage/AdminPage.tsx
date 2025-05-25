@@ -9,7 +9,7 @@ import { supabase } from '@/lib/supabase/client';
 import { useSupabaseUser } from '@/lib/supabase/hooks/useSupabaseUser';
 import { PlayerProvider } from '@/contexts/PlayerContext';
 import './AdminPage.css';
-import { uploadFileToR2 } from '@/lib/cloudflareR2Service';
+import { uploadImageToR2, uploadAudioToR2 } from '@/lib/cloudflareR2Service';
 import { MdPlayCircleOutline, MdRefresh, MdLogout } from 'react-icons/md';
 import TimeInput, { formatTimeFromSeconds } from '@/components/TimeInput/TimeInput';
 import { getKinescopeVideoMetadata } from '@/lib/kinescopeService';
@@ -718,7 +718,7 @@ const EditPracticeModal: React.FC<{
     setUploading(true);
     try {
       console.log('Начинаем загрузку файла обложки:', file.name);
-      const url = await uploadFileToR2(file, 'image');
+      const url = await uploadImageToR2(file);
       console.log('Файл обложки загружен, URL:', url);
       setForm((f: any) => ({ ...f, thumbnail_url: url }));
       setThumbPreview(url);
@@ -738,7 +738,7 @@ const EditPracticeModal: React.FC<{
     setUploading(true);
     try {
       console.log('Начинаем загрузку аудиофайла:', file.name);
-      const url = await uploadFileToR2(file, 'audio');
+      const url = await uploadAudioToR2(file);
       console.log('Аудиофайл загружен, URL:', url);
       setForm((f: any) => ({ ...f, audio_file_path: url }));
       setAudioPreview(url);
