@@ -3,9 +3,13 @@
 .audio-player-container,
 .timer-player-container {
   width: 100%;
-  max-width: 600px;
+  /* max-width: 600px; */
+  /* Временно убираем ограничение ширины */
+  height: 100%;
+  /* Добавляем растягивание по высоте */
   margin: 0 auto;
-  padding: 16px;
+  /* padding: 16px; */
+  /* Убираем внутренние отступы */
   box-sizing: border-box;
 }
 
@@ -37,9 +41,12 @@
 .video-player-wrapper {
   position: relative;
   width: 100%;
-  border-radius: 10px;
-  overflow: hidden;
-  background-color: #000;
+  height: 100%;
+  /* Добавляем растягивание по высоте */
+  /* border-radius: 10px; */
+  /* Убираем скругление */
+  /* overflow: hidden; */
+  /* Убираем обрезку */
 }
 
 .kinescope-player {
@@ -203,14 +210,26 @@
     width: 250px;
     height: 250px;
   }
-  
+
   .audio-controls {
     width: 100%;
     padding: 15px;
   }
-  
+
   .play-pause-btn {
     width: 40px;
     height: 40px;
   }
-} 
+}
+
+/* Стилизация кнопки Play для Kinescope плеера - повышаем специфичность */
+.video-player-wrapper .kinescope-player .kinescope-big-play-button {
+  background-color: #808080 !important;
+  /* Серый фон кнопки */
+  border-radius: 50% !important;
+}
+
+.video-player-wrapper .kinescope-player .kinescope-big-play-button svg path {
+  fill: #505050 !important;
+  /* Затемненный значок Play */
+}

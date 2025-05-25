@@ -89,11 +89,18 @@ export interface Lesson extends TimestampFields {
   name: string;
   description?: string;
   order_num: number;
+  cover_image_url?: string;
+  has_assignment?: boolean; // Есть ли домашнее задание
   estimated_duration_minutes?: number;
 }
 
-// Блоки контента урока
-export type BlockType = 'text' | 'video' | 'audio' | 'image' | 'pdf' | 'assignment_instruction';
+// Возможные типы блоков урока
+export type BlockType =
+  | 'text'      // Текстовый блок
+  | 'video'     // Видео (Kinescope)
+  | 'audio'     // Аудио (CloudFlare R2)
+  | 'image'     // Изображение
+  | 'pdf';      // PDF файл
 
 export interface LessonBlock extends TimestampFields {
   id: number;
@@ -164,7 +171,6 @@ export interface LessonProgress extends TimestampFields {
 // Урок с его блоками контента
 export interface LessonWithBlocks extends Lesson {
   blocks: LessonBlock[];
-  has_submission?: boolean; // Вычисляемое поле - есть ли assignment_instruction блоки
 }
 
 // Прогресс пользователя по уроку с данными о сдаче
@@ -343,17 +349,9 @@ export type UpdateSubmission = Partial<Submission> & { id: number };
 // Утилитарные функции для работы с уроками
 // ============================================================================
 
-// Проверка есть ли форма сдачи в уроке (через блоки)
-export const lessonHasSubmission = (blocks: LessonBlock[]): boolean => {
-  return blocks.some(block => block.block_type === 'assignment_instruction');
-};
-
-// Получение инструкций к сдаче из блоков
-export const getSubmissionInstructions = (blocks: LessonBlock[]): string[] => {
-  return blocks
-    .filter(block => block.block_type === 'assignment_instruction')
-    .map(block => block.content_text || '')
-    .filter(text => text.length > 0);
+// Проверка есть ли форма сдачи в уроке (через поле has_assignment)
+export const lessonHasSubmission = (lesson: Lesson): boolean => {
+  return lesson.has_assignment === true;
 };
 
 // ============================================================================
