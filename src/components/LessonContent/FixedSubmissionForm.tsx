@@ -29,12 +29,17 @@ const FixedSubmissionForm: React.FC<FixedSubmissionFormProps> = ({
         existingSubmission?.file_url ? [existingSubmission.file_url] : []
     );
     const [isUploading, setIsUploading] = useState(false);
+    const [textareaHeight, setTextareaHeight] = useState(28); // Отслеживаем высоту textarea
 
     const textareaRef = useRef<HTMLTextAreaElement>(null);
     const fileInputRef = useRef<HTMLInputElement>(null);
 
     const isSubmitted = !!existingSubmission;
     const navigate = useNavigate();
+
+    // Определяем выравнивание иконки: по центру для минимальной высоты, внизу для расширенной
+    const isTextareaExpanded = textareaHeight > 28;
+    const iconAlignment = isTextareaExpanded ? 'items-end' : 'items-center';
 
     // Автоматическое изменение высоты textarea
     useEffect(() => {
@@ -54,10 +59,12 @@ const FixedSubmissionForm: React.FC<FixedSubmissionFormProps> = ({
                 const newHeight = Math.min(scrollHeight, maxInputHeight);
                 textArea.style.height = `${newHeight}px`;
                 textArea.style.overflowY = newHeight >= maxInputHeight ? 'auto' : 'hidden';
+                setTextareaHeight(newHeight); // Обновляем состояние высоты
             } else {
                 // Для пустого поля или одной строки - фиксированная минимальная высота
                 textArea.style.height = `${MIN_HEIGHT}px`;
                 textArea.style.overflowY = 'hidden';
+                setTextareaHeight(MIN_HEIGHT); // Обновляем состояние высоты
             }
         }
     }, [submissionText]);
@@ -204,8 +211,8 @@ const FixedSubmissionForm: React.FC<FixedSubmissionFormProps> = ({
 
             {/* Основная форма ввода - ВЫРАВНИВАНИЕ ПО НИЗУ */}
             <div className="flex items-end gap-2 p-3">
-                {/* Контейнер для поля ввода и кнопки скрепки - ВЫРАВНИВАНИЕ ПО НИЗУ */}
-                <div className="flex-1 flex items-center gap-2 bg-neutral-100 rounded-[24px] border border-gray-200" style={{ padding: '6px 12px', minHeight: '40px' }}>
+                {/* Контейнер для поля ввода и кнопки скрепки - ДИНАМИЧЕСКОЕ ВЫРАВНИВАНИЕ */}
+                <div className={`flex-1 flex ${iconAlignment} gap-2 bg-neutral-100 rounded-[24px] border border-gray-200`} style={{ padding: '6px 12px', minHeight: '40px' }}>
                     <textarea
                         ref={textareaRef}
                         placeholder="Домашнее задание"
