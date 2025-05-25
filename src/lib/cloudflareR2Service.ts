@@ -1,9 +1,9 @@
 import { S3Client, PutObjectCommand } from '@aws-sdk/client-s3';
 
-// Получаем переменные окружения
-const CLOUDFLARE_ACCOUNT_ID = import.meta.env.CLOUDFLARE_R2_ACCOUNT_ID || process.env.CLOUDFLARE_R2_ACCOUNT_ID;
-const CLOUDFLARE_ACCESS_KEY_ID = import.meta.env.CLOUDFLARE_R2_ACCESS_KEY_ID || process.env.CLOUDFLARE_R2_ACCESS_KEY_ID;
-const CLOUDFLARE_SECRET_ACCESS_KEY = import.meta.env.CLOUDFLARE_R2_SECRET_ACCESS_KEY || process.env.CLOUDFLARE_R2_SECRET_ACCESS_KEY;
+// Получаем переменные окружения (с префиксом VITE_ для работы в браузере)
+const CLOUDFLARE_ACCOUNT_ID = import.meta.env.VITE_CLOUDFLARE_R2_ACCOUNT_ID;
+const CLOUDFLARE_ACCESS_KEY_ID = import.meta.env.VITE_CLOUDFLARE_R2_ACCESS_KEY_ID;
+const CLOUDFLARE_SECRET_ACCESS_KEY = import.meta.env.VITE_CLOUDFLARE_R2_SECRET_ACCESS_KEY;
 
 // Проверяем, что все переменные заданы
 if (!CLOUDFLARE_ACCOUNT_ID || !CLOUDFLARE_ACCESS_KEY_ID || !CLOUDFLARE_SECRET_ACCESS_KEY) {
