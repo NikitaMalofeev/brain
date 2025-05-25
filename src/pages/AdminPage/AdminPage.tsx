@@ -15,7 +15,7 @@ import TimeInput, { formatTimeFromSeconds } from '@/components/TimeInput/TimeInp
 import { getKinescopeVideoMetadata } from '@/lib/kinescopeService';
 
 // Типы для вкладок админ-панели
-type AdminTab = 'practices' | 'categories' | 'quiz' | 'users';
+type AdminTab = 'practices' | 'categories' | 'users';
 
 // Добавляем класс admin-mode к body при монтировании компонента
 const addBodyClass = () => {
@@ -29,13 +29,13 @@ const AdminPage: React.FC = () => {
   const initDataState = useSignal(_initDataState);
   const { supabaseUser, loading: userLoading, error: userError } = useSupabaseUser(initDataState);
   const navigate = useNavigate();
-  
+
   const [activeTab, setActiveTab] = useState<AdminTab>('practices');
   const [passwordAuth, setPasswordAuth] = useState<boolean>(false);
   const [password, setPassword] = useState<string>('');
   const [error, setError] = useState<string | null>(null);
   const [previewPractice, setPreviewPractice] = useState<any | null>(null);
-  
+
   // Добавляем состояние для редактирования практики непосредственно в AdminPage
   const [editPractice, setEditPractice] = useState<any | null>(null);
   const [categories, setCategories] = useState<any[]>([]);
@@ -67,38 +67,38 @@ const AdminPage: React.FC = () => {
   // Загрузка категорий и типов контента для селектов
   useEffect(() => {
     if (!passwordAuth && !supabaseUser?.is_admin) return;
-    
+
     const fetchMetadata = async () => {
       if (!supabase) return;
-      
+
       try {
         console.log('Загружаем метаданные (категории и типы контента)...');
-        
+
         const [{ data: cats, error: catError }, { data: types, error: typeError }] = await Promise.all([
           supabase.from('categories').select('*').order('name'),
           supabase.from('content_types').select('id, name, slug').order('name')
         ]);
-        
+
         if (catError) {
           console.error('Ошибка при загрузке категорий:', catError);
           throw catError;
         }
-        
+
         if (typeError) {
           console.error('Ошибка при загрузке типов контента:', typeError);
           throw typeError;
         }
-        
+
         console.log('Получено категорий:', cats?.length, 'типов контента:', types?.length);
         console.log('Категории:', cats);
-        
+
         setCategories(cats || []);
         setContentTypes(types || []);
       } catch (error) {
         console.error('Ошибка при загрузке метаданных:', error);
       }
     };
-    
+
     fetchMetadata();
   }, [supabaseUser, passwordAuth]);
 
@@ -139,18 +139,18 @@ const AdminPage: React.FC = () => {
     try {
       if (!supabase) throw new Error('Supabase не инициализирован');
       console.log('Сохраняем изменения практики:', form.title);
-      
+
       const { error } = await supabase
         .from('contents')
         .update(form)
         .eq('id', editPractice.id);
-        
+
       if (error) throw error;
-      
+
       console.log('Практика успешно обновлена');
       // Закрываем модалку редактирования
       setEditPractice(null);
-      
+
       // Данные обновятся автоматически через Realtime подписку,
       // но для уверенности можно явно сбросить чтобы PracticesManager перезапросил данные
       // (это не обязательно, если Realtime работает правильно)
@@ -223,7 +223,7 @@ const AdminPage: React.FC = () => {
               Выйти
             </button>
           </div>
-          
+
           <div className="admin-tabs">
             <button
               className={`admin-tab ${activeTab === 'practices' ? 'active' : ''}`}
@@ -238,49 +238,42 @@ const AdminPage: React.FC = () => {
               Категории
             </button>
             <button
-              className={`admin-tab ${activeTab === 'quiz' ? 'active' : ''}`}
-              onClick={() => handleTabChange('quiz')}
-            >
-              Настройки квиза
-            </button>
-            <button
               className={`admin-tab ${activeTab === 'users' ? 'active' : ''}`}
               onClick={() => handleTabChange('users')}
             >
               Пользователи
             </button>
           </div>
-          
+
           {/* Контент вкладок */}
           <div className="admin-content">
-            {activeTab === 'practices' && <PracticesManager 
-              setPreviewPractice={handlePreviewPractice} 
+            {activeTab === 'practices' && <PracticesManager
+              setPreviewPractice={handlePreviewPractice}
               setEditPractice={handleEditPractice}
-              categories={categories} 
+              categories={categories}
             />}
             {activeTab === 'categories' && <CategoriesManager />}
-            {activeTab === 'quiz' && <QuizManager />}
             {activeTab === 'users' && <UsersManager />}
           </div>
 
           {/* Попап предпросмотра видео */}
           {previewPractice && (
-            <div 
-              className="admin-modal-backdrop" 
+            <div
+              className="admin-modal-backdrop"
               onClick={() => {
                 console.log('Закрытие модалки предпросмотра по клику на backdrop');
                 setPreviewPractice(null);
               }}
             >
-              <div 
-                className="admin-modal" 
+              <div
+                className="admin-modal"
                 onClick={(e) => {
                   console.log('Клик внутри модалки предпросмотра (stopPropagation)');
                   e.stopPropagation();
                 }}
               >
-                <button 
-                  className="admin-modal-close" 
+                <button
+                  className="admin-modal-close"
                   onClick={(e) => {
                     console.log('Закрытие модалки предпросмотра по кнопке');
                     e.stopPropagation();
@@ -288,12 +281,12 @@ const AdminPage: React.FC = () => {
                   }}
                 >✕</button>
                 <h3>{previewPractice.title}</h3>
-                
+
                 {/* Отображаем видео из Kinescope - только через iframe для надежности */}
                 {previewPractice.kinescope_id ? (
                   <div style={{ position: 'relative', paddingTop: '56.25%', width: '100%' }}>
-                    <iframe 
-                      src={`https://kinescope.io/embed/${previewPractice.kinescope_id}`} 
+                    <iframe
+                      src={`https://kinescope.io/embed/${previewPractice.kinescope_id}`}
                       allow="autoplay; fullscreen; picture-in-picture; encrypted-media; gyroscope; accelerometer; clipboard-write;"
                       frameBorder="0"
                       allowFullScreen
@@ -308,7 +301,7 @@ const AdminPage: React.FC = () => {
               </div>
             </div>
           )}
-          
+
           {/* Попап редактирования практики перенесен на уровень AdminPage */}
           {editPractice && (
             <EditPracticeModal
@@ -331,16 +324,16 @@ const AdminPage: React.FC = () => {
 };
 
 // Компоненты для управления практиками
-const PracticesManager: React.FC<{ 
+const PracticesManager: React.FC<{
   setPreviewPractice: (practice: any) => void;
   setEditPractice: (practice: any) => void;
   categories: any[];
 }> = ({ setPreviewPractice, setEditPractice, categories }) => {
   const [practices, setPractices] = useState<any[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
-  const [editingCell, setEditingCell] = useState<{id: string, field: string} | null>(null);
+  const [editingCell, setEditingCell] = useState<{ id: string, field: string } | null>(null);
   const [editValue, setEditValue] = useState<string | number>('');
-  
+
   console.log('PracticesManager рендеринг');
 
   // Загрузка практик
@@ -350,7 +343,7 @@ const PracticesManager: React.FC<{
         console.log('Начинаем загрузку практик...');
         setLoading(true);
         if (!supabase) return;
-        
+
         // Загружаем практики с включением связанных данных
         const { data, error } = await supabase
           .from('contents')
@@ -366,9 +359,9 @@ const PracticesManager: React.FC<{
             )
           `)
           .order('title');
-        
+
         if (error) throw error;
-        
+
         console.log('Загружено практик:', data?.length);
         setPractices(data || []);
       } catch (error) {
@@ -377,15 +370,15 @@ const PracticesManager: React.FC<{
         setLoading(false);
       }
     };
-    
+
     fetchData();
-    
+
     // Подписка на realtime обновления таблицы contents
     if (supabase) {
       console.log('Подписываемся на обновления таблицы contents');
       const channel = supabase
         .channel('contents_changes')
-        .on('postgres_changes', 
+        .on('postgres_changes',
           { event: '*', schema: 'public', table: 'contents' },
           (payload) => {
             console.log('Получено realtime событие:', payload.eventType);
@@ -394,7 +387,7 @@ const PracticesManager: React.FC<{
           }
         )
         .subscribe();
-        
+
       // Очистка подписки при размонтировании
       return () => {
         console.log('Отписываемся от realtime обновлений');
@@ -415,12 +408,12 @@ const PracticesManager: React.FC<{
     e.stopPropagation();
     setPreviewPractice(practice);
   };
-  
+
   // Функции для инлайн-редактирования
   const startEditing = (practice: any, field: string) => {
     console.log(`Начинаем редактирование поля ${field} для практики ${practice.title}`);
     setEditingCell({ id: practice.id, field });
-    
+
     // Устанавливаем начальное значение в зависимости от поля
     if (field === 'duration') {
       setEditValue(practice.duration || 0);
@@ -430,49 +423,49 @@ const PracticesManager: React.FC<{
       setEditValue(practice.category_id || '');
     }
   };
-  
+
   const cancelEditing = () => {
     setEditingCell(null);
     setEditValue('');
   };
-  
+
   const saveInlineEdit = async () => {
     if (!editingCell) return;
-    
+
     try {
       console.log(`Сохраняем изменение поля ${editingCell.field} для практики ID: ${editingCell.id}`);
-      
+
       if (!supabase) throw new Error('Supabase не инициализирован');
-      
+
       // Создаем объект для обновления с одним полем
       const updateData: Record<string, any> = {};
       updateData[editingCell.field] = editValue;
-      
+
       // Если это длительность, убедимся, что она числовая
       if (editingCell.field === 'duration') {
         updateData[editingCell.field] = Number(editValue);
       }
-      
+
       const { error } = await supabase
         .from('contents')
         .update(updateData)
         .eq('id', editingCell.id);
-        
+
       if (error) throw error;
-      
+
       console.log('Изменение успешно сохранено');
-      
+
       // Обновляем локальные данные без ожидания realtime события
-      setPractices(prev => 
+      setPractices(prev =>
         prev.map(practice => {
           if (practice.id === editingCell.id) {
             // Создаем обновленный объект практики
             const updatedPractice = { ...practice };
-            
+
             // Обновляем поле в зависимости от типа
             if (editingCell.field === 'category_id') {
               updatedPractice.category_id = editValue;
-              
+
               // Также обновляем кэшированное значение категории
               const selectedCategory = categories.find(cat => cat.id === editValue);
               if (selectedCategory) {
@@ -488,13 +481,13 @@ const PracticesManager: React.FC<{
             } else {
               updatedPractice[editingCell.field] = editValue;
             }
-            
+
             return updatedPractice;
           }
           return practice;
         })
       );
-      
+
       // Добавляем визуальный эффект успешного сохранения
       const cell = document.querySelector(`td[data-id="${editingCell.id}"][data-field="${editingCell.field}"]`);
       if (cell) {
@@ -510,7 +503,7 @@ const PracticesManager: React.FC<{
       cancelEditing();
     }
   };
-  
+
   // Обработчик клавиш для инлайн-редактирования
   const handleEditKeyDown = (e: React.KeyboardEvent) => {
     if (e.key === 'Enter') {
@@ -526,7 +519,7 @@ const PracticesManager: React.FC<{
     <div className="admin-section">
       <div className="section-header">
         <h2>Управление практиками</h2>
-        <button 
+        <button
           className="admin-add-btn"
           onClick={() => console.log('Клик по кнопке "Добавить практику"')}
         >
@@ -552,7 +545,7 @@ const PracticesManager: React.FC<{
               {practices.length > 0 ? (
                 practices.map((practice) => (
                   <tr key={practice.id}>
-                    <td 
+                    <td
                       className={`editable-cell ${editingCell?.id === practice.id && editingCell?.field === 'title' ? 'editing' : ''}`}
                       onClick={() => startEditing(practice, 'title')}
                       data-id={practice.id}
@@ -561,9 +554,9 @@ const PracticesManager: React.FC<{
                       {practice.kinescope_id && (
                         <MdPlayCircleOutline
                           size={24}
-                          style={{ 
-                            cursor: 'pointer', 
-                            color: '#1976d2', 
+                          style={{
+                            cursor: 'pointer',
+                            color: '#1976d2',
                             marginRight: '8px',
                             verticalAlign: 'middle',
                           }}
@@ -575,8 +568,8 @@ const PracticesManager: React.FC<{
                         />
                       )}
                       {editingCell?.id === practice.id && editingCell?.field === 'title' ? (
-                        <input 
-                          value={editValue.toString()} 
+                        <input
+                          value={editValue.toString()}
                           onChange={(e) => setEditValue(e.target.value)}
                           onBlur={saveInlineEdit}
                           onKeyDown={handleEditKeyDown}
@@ -587,14 +580,14 @@ const PracticesManager: React.FC<{
                       )}
                     </td>
                     <td>{practice.content_types?.name || '-'}</td>
-                    <td 
+                    <td
                       className={`editable-cell ${editingCell?.id === practice.id && editingCell?.field === 'category_id' ? 'editing' : ''}`}
                       onClick={() => startEditing(practice, 'category_id')}
                       data-id={practice.id}
                       data-field="category_id"
                     >
                       {editingCell?.id === practice.id && editingCell?.field === 'category_id' ? (
-                        <select 
+                        <select
                           value={editValue.toString()}
                           onChange={(e) => setEditValue(e.target.value)}
                           onBlur={saveInlineEdit}
@@ -615,7 +608,7 @@ const PracticesManager: React.FC<{
                         practice.categories?.name || '-'
                       )}
                     </td>
-                    <td 
+                    <td
                       style={{ cursor: 'default' }}
                       data-id={practice.id}
                       data-field="duration"
@@ -630,8 +623,8 @@ const PracticesManager: React.FC<{
                       )}
                     </td>
                     <td className="actions-cell">
-                      <button 
-                        className="action-btn edit-btn" 
+                      <button
+                        className="action-btn edit-btn"
                         onClick={(e) => handleEditClick(e, practice)}
                         style={{
                           padding: '8px 12px',
@@ -642,7 +635,7 @@ const PracticesManager: React.FC<{
                       >
                         Изменить
                       </button>
-                      <button 
+                      <button
                         className="action-btn delete-btn"
                         onClick={() => console.log('Клик по кнопке "Удалить" практику:', practice.title)}
                         style={{
@@ -686,7 +679,7 @@ const EditPracticeModal: React.FC<{
   const [audioPreview, setAudioPreview] = useState<string>(practice.audio_file_path || '');
   const [uploading, setUploading] = useState(false);
   const [loadingDuration, setLoadingDuration] = useState(false);
-  
+
   // Добавляем debug чтобы видеть данные
   useEffect(() => {
     console.log('Категории в модалке:', categories);
@@ -699,7 +692,7 @@ const EditPracticeModal: React.FC<{
       alert('Для получения длительности необходимо указать Kinescope ID');
       return;
     }
-    
+
     setLoadingDuration(true);
     try {
       const metadata = await getKinescopeVideoMetadata(form.kinescope_id);
@@ -736,7 +729,7 @@ const EditPracticeModal: React.FC<{
       setUploading(false);
     }
   };
-  
+
   // Обработка выбора аудиофайла
   const handleAudioChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     console.log('handleAudioChange вызван');
@@ -769,11 +762,11 @@ const EditPracticeModal: React.FC<{
   };
 
   return (
-    <div 
-      className="admin-modal-backdrop" 
+    <div
+      className="admin-modal-backdrop"
       onClick={handleCloseModal}
     >
-      <div 
+      <div
         className="admin-modal"
         onClick={(e) => {
           console.log('Клик внутри модалки редактирования (stopPropagation)');
@@ -781,55 +774,55 @@ const EditPracticeModal: React.FC<{
         }}
       >
         <h3>Редактировать практику</h3>
-        <button 
-          className="admin-modal-close" 
+        <button
+          className="admin-modal-close"
           onClick={() => onClose()}
         >✕</button>
-        
+
         <form
           onSubmit={handleSubmit}
         >
           <div className="form-group">
             <label>Название</label>
-            <input 
-              className="admin-input" 
-              value={form.title || ''} 
+            <input
+              className="admin-input"
+              value={form.title || ''}
               onChange={e => {
                 console.log('Изменение названия:', e.target.value);
                 setForm((f: any) => ({ ...f, title: e.target.value }));
-              }} 
-              required 
+              }}
+              required
             />
           </div>
-          
+
           <div className="form-group">
             <label>Подзаголовок</label>
-            <input 
-              className="admin-input" 
-              value={form.subtitle || ''} 
+            <input
+              className="admin-input"
+              value={form.subtitle || ''}
               onChange={e => {
                 console.log('Изменение подзаголовка');
                 setForm((f: any) => ({ ...f, subtitle: e.target.value }));
-              }} 
+              }}
             />
           </div>
-          
+
           <div className="form-group">
             <label>Описание</label>
-            <textarea 
-              className="admin-input" 
-              value={form.description || ''} 
+            <textarea
+              className="admin-input"
+              value={form.description || ''}
               onChange={e => {
                 console.log('Изменение описания');
                 setForm((f: any) => ({ ...f, description: e.target.value }));
-              }} 
+              }}
             />
           </div>
-          
+
           <div className="form-row">
             <div className="form-group">
               <label>Длительность</label>
-              <TimeInput 
+              <TimeInput
                 totalSeconds={form.duration || 0}
                 onChange={(seconds) => {
                   console.log('Изменение длительности:', seconds, 'секунд');
@@ -837,27 +830,27 @@ const EditPracticeModal: React.FC<{
                 }}
               />
             </div>
-            
+
             <div className="form-group">
               <label>Порядок отображения</label>
-              <input 
-                className="admin-input" 
-                type="number" 
-                value={form.display_order || ''} 
+              <input
+                className="admin-input"
+                type="number"
+                value={form.display_order || ''}
                 onChange={e => {
                   console.log('Изменение порядка отображения:', e.target.value);
                   setForm((f: any) => ({ ...f, display_order: Number(e.target.value) }));
-                }} 
+                }}
               />
             </div>
           </div>
-          
+
           <div className="form-row">
             <div className="form-group">
               <label>Тип контента</label>
-              <select 
-                className="admin-input" 
-                value={form.content_type_id || ''} 
+              <select
+                className="admin-input"
+                value={form.content_type_id || ''}
                 onChange={e => {
                   console.log('Изменение типа контента:', e.target.value);
                   setForm((f: any) => ({ ...f, content_type_id: e.target.value }));
@@ -869,12 +862,12 @@ const EditPracticeModal: React.FC<{
                 ))}
               </select>
             </div>
-            
+
             <div className="form-group">
               <label>Категория</label>
-              <select 
-                className="admin-input" 
-                value={form.category_id || ''} 
+              <select
+                className="admin-input"
+                value={form.category_id || ''}
                 onChange={e => {
                   console.log('Изменение категории:', e.target.value);
                   setForm((f: any) => ({ ...f, category_id: e.target.value }));
@@ -891,22 +884,22 @@ const EditPracticeModal: React.FC<{
               </select>
             </div>
           </div>
-          
+
           <div className="form-group">
             <label>Kinescope ID</label>
             <div style={{ display: 'flex', gap: '8px' }}>
-              <input 
-                className="admin-input" 
+              <input
+                className="admin-input"
                 style={{ flex: 1 }}
-                value={form.kinescope_id || ''} 
+                value={form.kinescope_id || ''}
                 onChange={e => {
                   console.log('Изменение Kinescope ID:', e.target.value);
                   setForm((f: any) => ({ ...f, kinescope_id: e.target.value }));
-                }} 
+                }}
               />
-              <button 
-                type="button" 
-                className="admin-button" 
+              <button
+                type="button"
+                className="admin-button"
                 onClick={fetchVideoDuration}
                 disabled={loadingDuration || !form.kinescope_id}
                 style={{ whiteSpace: 'nowrap' }}
@@ -915,15 +908,15 @@ const EditPracticeModal: React.FC<{
               </button>
             </div>
           </div>
-          
+
           <div className="form-group">
             <label>Обложка</label>
-            <input 
-              className="admin-input file-input" 
-              type="file" 
-              accept="image/*" 
-              onChange={handleThumbChange} 
-              disabled={uploading} 
+            <input
+              className="admin-input file-input"
+              type="file"
+              accept="image/*"
+              onChange={handleThumbChange}
+              disabled={uploading}
             />
             {thumbPreview && (
               <div className="preview-container">
@@ -931,15 +924,15 @@ const EditPracticeModal: React.FC<{
               </div>
             )}
           </div>
-          
+
           <div className="form-group">
             <label>Аудиофайл</label>
-            <input 
-              className="admin-input file-input" 
-              type="file" 
-              accept="audio/*" 
-              onChange={handleAudioChange} 
-              disabled={uploading} 
+            <input
+              className="admin-input file-input"
+              type="file"
+              accept="audio/*"
+              onChange={handleAudioChange}
+              disabled={uploading}
             />
             {audioPreview && (
               <div className="preview-container">
@@ -947,63 +940,63 @@ const EditPracticeModal: React.FC<{
               </div>
             )}
           </div>
-          
+
           <div className="form-group">
             <label>Сложность</label>
-            <input 
-              className="admin-input" 
-              value={form.difficulty_level || ''} 
+            <input
+              className="admin-input"
+              value={form.difficulty_level || ''}
               onChange={e => {
                 console.log('Изменение сложности:', e.target.value);
                 setForm((f: any) => ({ ...f, difficulty_level: e.target.value }));
-              }} 
+              }}
             />
           </div>
-          
+
           <div className="form-row checkbox-group">
             <div className="form-group checkbox">
               <label>
-                <input 
-                  type="checkbox" 
-                  checked={!!form.is_premium} 
+                <input
+                  type="checkbox"
+                  checked={!!form.is_premium}
                   onChange={e => {
                     console.log('Изменение статуса премиум:', e.target.checked);
                     setForm((f: any) => ({ ...f, is_premium: e.target.checked }));
-                  }} 
+                  }}
                 />
                 Премиум контент
               </label>
             </div>
-            
+
             <div className="form-group checkbox">
               <label>
-                <input 
-                  type="checkbox" 
-                  checked={!!form.is_featured} 
+                <input
+                  type="checkbox"
+                  checked={!!form.is_featured}
                   onChange={e => {
                     console.log('Изменение статуса рекомендуемое:', e.target.checked);
                     setForm((f: any) => ({ ...f, is_featured: e.target.checked }));
-                  }} 
+                  }}
                 />
                 Рекомендуемое
               </label>
             </div>
           </div>
-          
+
           {error && <div className="admin-error">{error}</div>}
-          
+
           <div className="form-actions">
-            <button 
-              className="admin-button" 
-              type="submit" 
+            <button
+              className="admin-button"
+              type="submit"
               disabled={saving || uploading}
             >
               {saving ? 'Сохранение...' : 'Сохранить'}
             </button>
-            <button 
-              className="action-btn delete-btn" 
-              type="button" 
-              onClick={() => onClose()} 
+            <button
+              className="action-btn delete-btn"
+              type="button"
+              onClick={() => onClose()}
               disabled={saving || uploading}
             >
               Отмена
@@ -1021,19 +1014,19 @@ const CategoriesManager: React.FC = () => {
   const [loading, setLoading] = useState<boolean>(true);
   const [updateLoading, setUpdateLoading] = useState<boolean>(false);
   const [updateError, setUpdateError] = useState<string | null>(null);
-  
+
   // Новая категория
   const [newName, setNewName] = useState('');
   const [newSlug, setNewSlug] = useState('');
   const [newDescription, setNewDescription] = useState('');
   const [addLoading, setAddLoading] = useState(false);
-  
+
   // Редактируемая категория
   const [editingCategory, setEditingCategory] = useState<any | null>(null);
   const [editName, setEditName] = useState('');
   const [editSlug, setEditSlug] = useState('');
   const [editDescription, setEditDescription] = useState('');
-  
+
   // Загрузка категорий
   const fetchCategories = async () => {
     try {
@@ -1042,22 +1035,22 @@ const CategoriesManager: React.FC = () => {
         console.error('ОШИБКА: Supabase клиент не инициализирован');
         return;
       }
-      
+
       console.log('Попытка загрузки категорий прямым запросом с логами...');
-      
+
       // Попробуем выполнить запрос и посмотреть на данные в консоли
       const response = await supabase
         .from('categories')
         .select('*');
-      
+
       // Логируем весь ответ для диагностики
       console.log('ДИАГНОСТИКА SUPABASE ОТВЕТА:', response);
-      
+
       if (response.error) {
         console.error('ОШИБКА ЗАПРОСА В SUPABASE:', response.error);
         throw response.error;
       }
-      
+
       // Проверяем, есть ли данные вообще
       if (!response.data) {
         console.log('ПУСТОЙ ОТВЕТ ОТ SUPABASE, НЕТ ДАННЫХ');
@@ -1065,7 +1058,7 @@ const CategoriesManager: React.FC = () => {
         console.log('ПОЛУЧЕНЫ ДАННЫЕ ОТ SUPABASE:', response.data.length, 'категорий');
         console.log('ДАННЫЕ КАТЕГОРИЙ:', JSON.stringify(response.data, null, 2));
       }
-      
+
       setCategories(response.data || []);
     } catch (error) {
       console.error('КРИТИЧЕСКАЯ ОШИБКА ПРИ ЗАГРУЗКЕ КАТЕГОРИЙ:', error);
@@ -1073,7 +1066,7 @@ const CategoriesManager: React.FC = () => {
       setLoading(false);
     }
   };
-  
+
   useEffect(() => {
     fetchCategories();
   }, []);
@@ -1084,28 +1077,28 @@ const CategoriesManager: React.FC = () => {
       alert('Введите название и slug для новой категории');
       return;
     }
-    
+
     try {
       setAddLoading(true);
       setUpdateError(null);
-      
+
       if (!supabase) {
         throw new Error('Supabase клиент не доступен');
       }
-      
+
       // Проверка на уникальность slug
       const { data: existingCategory, error: checkError } = await supabase
         .from('categories')
         .select('id')
         .eq('slug', newSlug)
         .maybeSingle();
-      
+
       if (checkError) throw checkError;
-      
+
       if (existingCategory) {
         throw new Error(`Категория с slug "${newSlug}" уже существует`);
       }
-      
+
       // Находим максимальный display_order для новой категории
       const { data: maxOrderData } = await supabase
         .from('categories')
@@ -1113,29 +1106,29 @@ const CategoriesManager: React.FC = () => {
         .order('display_order', { ascending: false })
         .limit(1)
         .single();
-      
+
       const newOrder = maxOrderData?.display_order ? maxOrderData.display_order + 1 : 1;
-      
+
       // Добавляем новую категорию
       const { error } = await supabase
         .from('categories')
-        .insert([{ 
+        .insert([{
           name: newName,
           slug: newSlug,
           description: newDescription,
           display_order: newOrder
         }]);
-        
+
       if (error) throw error;
-      
+
       // Очищаем форму
       setNewName('');
       setNewSlug('');
       setNewDescription('');
-      
+
       // Перезагружаем список
       fetchCategories();
-      
+
     } catch (error: any) {
       console.error('Ошибка при добавлении категории:', error);
       setUpdateError(error.message || 'Произошла ошибка при добавлении категории');
@@ -1143,45 +1136,45 @@ const CategoriesManager: React.FC = () => {
       setAddLoading(false);
     }
   };
-  
+
   // Удаление категории
   const handleDeleteCategory = async (id: string) => {
     if (!confirm('Вы уверены, что хотите удалить эту категорию?')) {
       return;
     }
-    
+
     try {
       setUpdateLoading(true);
       setUpdateError(null);
-      
+
       if (!supabase) {
         throw new Error('Supabase клиент не доступен');
       }
-      
+
       // Проверяем, используется ли эта категория в практиках
       const { data: linkedPractices, error: checkError } = await supabase
         .from('contents')
         .select('id, title')
         .eq('category_id', id);
-      
+
       if (checkError) throw checkError;
-      
+
       if (linkedPractices && linkedPractices.length > 0) {
         const practiceNames = linkedPractices.map(p => p.title).join(', ');
         throw new Error(`Эта категория используется в практиках: ${practiceNames}`);
       }
-      
+
       // Удаляем категорию
       const { error } = await supabase
         .from('categories')
         .delete()
         .eq('id', id);
-        
+
       if (error) throw error;
-      
+
       // Обновляем список категорий
       fetchCategories();
-      
+
     } catch (error: any) {
       console.error('Ошибка при удалении категории:', error);
       setUpdateError(error.message || 'Произошла ошибка при удалении категории');
@@ -1189,7 +1182,7 @@ const CategoriesManager: React.FC = () => {
       setUpdateLoading(false);
     }
   };
-  
+
   // Начать редактирование категории
   const startEditing = (category: any) => {
     setEditingCategory(category);
@@ -1197,7 +1190,7 @@ const CategoriesManager: React.FC = () => {
     setEditSlug(category.slug);
     setEditDescription(category.description || '');
   };
-  
+
   // Отмена редактирования
   const cancelEditing = () => {
     setEditingCategory(null);
@@ -1205,7 +1198,7 @@ const CategoriesManager: React.FC = () => {
     setEditSlug('');
     setEditDescription('');
   };
-  
+
   // Сохранение отредактированной категории
   const saveCategory = async () => {
     if (!editingCategory) return;
@@ -1213,15 +1206,15 @@ const CategoriesManager: React.FC = () => {
       alert('Название и slug обязательны');
       return;
     }
-    
+
     try {
       setUpdateLoading(true);
       setUpdateError(null);
-      
+
       if (!supabase) {
         throw new Error('Supabase клиент не доступен');
       }
-      
+
       // Проверка на уникальность slug, если он изменился
       if (editSlug !== editingCategory.slug) {
         const { data: existingCategory, error: checkError } = await supabase
@@ -1230,32 +1223,32 @@ const CategoriesManager: React.FC = () => {
           .eq('slug', editSlug)
           .neq('id', editingCategory.id)
           .maybeSingle();
-        
+
         if (checkError) throw checkError;
-        
+
         if (existingCategory) {
           throw new Error(`Категория с slug "${editSlug}" уже существует`);
         }
       }
-      
+
       // Обновляем категорию
       const { error } = await supabase
         .from('categories')
-        .update({ 
+        .update({
           name: editName,
           slug: editSlug,
           description: editDescription
         })
         .eq('id', editingCategory.id);
-        
+
       if (error) throw error;
-      
+
       // Завершаем редактирование
       cancelEditing();
-      
+
       // Перезагружаем список
       fetchCategories();
-      
+
     } catch (error: any) {
       console.error('Ошибка при обновлении категории:', error);
       setUpdateError(error.message || 'Произошла ошибка при обновлении категории');
@@ -1263,59 +1256,59 @@ const CategoriesManager: React.FC = () => {
       setUpdateLoading(false);
     }
   };
-  
+
   return (
     <div className="admin-section">
       <div className="section-header">
         <h2>Управление категориями</h2>
-        <button 
-          className="admin-refresh-btn" 
-          onClick={fetchCategories} 
+        <button
+          className="admin-refresh-btn"
+          onClick={fetchCategories}
           disabled={loading}
         >
           <MdRefresh size={18} />
           Обновить
         </button>
       </div>
-      
+
       {/* Форма добавления категории */}
       <div className="category-add-form">
         <h3>Добавить категорию</h3>
         <div style={{ display: 'flex', gap: '8px', marginBottom: '16px' }}>
-          <input 
-            className="admin-input" 
-            placeholder="Название" 
-            value={newName} 
-            onChange={e => setNewName(e.target.value)} 
+          <input
+            className="admin-input"
+            placeholder="Название"
+            value={newName}
+            onChange={e => setNewName(e.target.value)}
           />
-          <input 
-            className="admin-input" 
-            placeholder="Slug" 
-            value={newSlug} 
-            onChange={e => setNewSlug(e.target.value)} 
+          <input
+            className="admin-input"
+            placeholder="Slug"
+            value={newSlug}
+            onChange={e => setNewSlug(e.target.value)}
           />
-          <input 
-            className="admin-input" 
-            placeholder="Описание" 
-            value={newDescription} 
-            onChange={e => setNewDescription(e.target.value)} 
+          <input
+            className="admin-input"
+            placeholder="Описание"
+            value={newDescription}
+            onChange={e => setNewDescription(e.target.value)}
           />
-          <button 
-            className="admin-button" 
-            onClick={handleAddCategory} 
+          <button
+            className="admin-button"
+            onClick={handleAddCategory}
             disabled={addLoading || !newName || !newSlug}
           >
             {addLoading ? 'Добавление...' : 'Добавить'}
           </button>
         </div>
       </div>
-      
+
       {updateError && (
         <div className="admin-error admin-update-error">
           {updateError}
         </div>
       )}
-      
+
       {loading ? (
         <div className="admin-loading">Загрузка категорий...</div>
       ) : (
@@ -1336,10 +1329,10 @@ const CategoriesManager: React.FC = () => {
                   <tr key={category.id}>
                     <td>
                       {editingCategory?.id === category.id ? (
-                        <input 
-                          className="admin-input" 
-                          value={editName} 
-                          onChange={e => setEditName(e.target.value)} 
+                        <input
+                          className="admin-input"
+                          value={editName}
+                          onChange={e => setEditName(e.target.value)}
                           style={{ width: '100%' }}
                         />
                       ) : (
@@ -1348,10 +1341,10 @@ const CategoriesManager: React.FC = () => {
                     </td>
                     <td>
                       {editingCategory?.id === category.id ? (
-                        <input 
-                          className="admin-input" 
-                          value={editSlug} 
-                          onChange={e => setEditSlug(e.target.value)} 
+                        <input
+                          className="admin-input"
+                          value={editSlug}
+                          onChange={e => setEditSlug(e.target.value)}
                           style={{ width: '100%' }}
                         />
                       ) : (
@@ -1360,10 +1353,10 @@ const CategoriesManager: React.FC = () => {
                     </td>
                     <td>
                       {editingCategory?.id === category.id ? (
-                        <input 
-                          className="admin-input" 
-                          value={editDescription} 
-                          onChange={e => setEditDescription(e.target.value)} 
+                        <input
+                          className="admin-input"
+                          value={editDescription}
+                          onChange={e => setEditDescription(e.target.value)}
                           style={{ width: '100%' }}
                         />
                       ) : (
@@ -1374,15 +1367,15 @@ const CategoriesManager: React.FC = () => {
                     <td className="actions-cell">
                       {editingCategory?.id === category.id ? (
                         <>
-                          <button 
-                            className="action-btn edit-btn" 
+                          <button
+                            className="action-btn edit-btn"
                             onClick={saveCategory}
                             disabled={updateLoading}
                           >
                             Сохранить
                           </button>
-                          <button 
-                            className="action-btn delete-btn" 
+                          <button
+                            className="action-btn delete-btn"
                             onClick={cancelEditing}
                             disabled={updateLoading}
                           >
@@ -1391,15 +1384,15 @@ const CategoriesManager: React.FC = () => {
                         </>
                       ) : (
                         <>
-                          <button 
-                            className="action-btn edit-btn" 
+                          <button
+                            className="action-btn edit-btn"
                             onClick={() => startEditing(category)}
                             disabled={updateLoading || !!editingCategory}
                           >
                             Изменить
                           </button>
-                          <button 
-                            className="action-btn delete-btn" 
+                          <button
+                            className="action-btn delete-btn"
                             onClick={() => handleDeleteCategory(category.id)}
                             disabled={updateLoading || !!editingCategory}
                           >
@@ -1423,843 +1416,24 @@ const CategoriesManager: React.FC = () => {
   );
 };
 
-// Компонент для управления квизом (обновлённый)
-const QuizManager: React.FC = () => {
-  const [quizSteps, setQuizSteps] = useState<any[]>([]);
-  const [quizAnswers, setQuizAnswers] = useState<any[]>([]);
-  const [loading, setLoading] = useState<boolean>(true);
-  const [errorMessage, setErrorMessage] = useState<string | null>(null);
-
-  // Состояние для добавления шага
-  const [stepTitle, setStepTitle] = useState('');
-  const [stepType, setStepType] = useState('');
-  const [stepOrder, setStepOrder] = useState(0);
-  const [addStepLoading, setAddStepLoading] = useState(false);
-
-  // Состояние для редактирования шага
-  const [editingStep, setEditingStep] = useState<any | null>(null);
-  const [editStepTitle, setEditStepTitle] = useState('');
-  const [editStepType, setEditStepType] = useState('');
-  const [editStepOrder, setEditStepOrder] = useState(0);
-  
-  // Состояние для выбранного шага и опций
-  const [selectedStepId, setSelectedStepId] = useState<string | null>(null);
-  
-  // Состояние для добавления опции
-  const [answerLabel, setAnswerLabel] = useState('');
-  const [answerValue, setAnswerValue] = useState('');
-  const [answerOrder, setAnswerOrder] = useState(0);
-  const [addAnswerLoading, setAddAnswerLoading] = useState(false);
-  
-  // Состояние для редактирования опции
-  const [editingAnswer, setEditingAnswer] = useState<any | null>(null);
-  const [editAnswerLabel, setEditAnswerLabel] = useState('');
-  const [editAnswerValue, setEditAnswerValue] = useState('');
-  const [editAnswerOrder, setEditAnswerOrder] = useState(0);
-
-  // Загрузка данных квиза
-  const fetchQuizData = async () => {
-    setLoading(true);
-    setErrorMessage(null);
-    try {
-      if (!supabase) {
-        throw new Error('Supabase клиент не инициализирован');
-      }
-      
-      console.log('Загрузка данных квиза...');
-      
-      // Загружаем шаги
-      const { data: steps, error: stepsError } = await supabase
-        .from('quiz_steps')
-        .select('*')
-        .order('order');
-        
-      if (stepsError) {
-        console.error('Ошибка при загрузке шагов квиза:', stepsError);
-        throw stepsError;
-      }
-      
-      console.log('Загружено шагов квиза:', steps?.length);
-      setQuizSteps(steps || []);
-      
-      // Загружаем опции ответов
-      const { data: answers, error: answersError } = await supabase
-        .from('quiz_answers')
-        .select('*')
-        .order('order');
-        
-      if (answersError) {
-        console.error('Ошибка при загрузке опций квиза:', answersError);
-        throw answersError;
-      }
-      
-      console.log('Загружено опций квиза:', answers?.length);
-      setQuizAnswers(answers || []);
-      
-      // Если есть шаги, автоматически выбираем первый
-      if (steps && steps.length > 0 && !selectedStepId) {
-        setSelectedStepId(steps[0].id);
-      }
-      
-    } catch (error: any) {
-      console.error('Ошибка при загрузке данных квиза:', error);
-      setErrorMessage(error.message || 'Произошла ошибка при загрузке данных');
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  // Загружаем данные при монтировании
-  useEffect(() => {
-    fetchQuizData();
-  }, []);
-
-  // Добавление шага квиза
-  const handleAddStep = async () => {
-    if (!stepTitle || !stepType) {
-      alert('Введите заголовок и тип шага');
-      return;
-    }
-    
-    setAddStepLoading(true);
-    setErrorMessage(null);
-    
-    try {
-      if (!supabase) {
-        throw new Error('Supabase клиент не инициализирован');
-      }
-      
-      const { error } = await supabase
-        .from('quiz_steps')
-        .insert([{ 
-          title: stepTitle, 
-          type: stepType, 
-          order: stepOrder, 
-          is_active: true 
-        }]);
-        
-      if (error) throw error;
-      
-      // Очищаем форму
-      setStepTitle('');
-      setStepType('');
-      setStepOrder(0);
-      
-      // Перезагружаем данные
-      fetchQuizData();
-      
-    } catch (error: any) {
-      console.error('Ошибка при добавлении шага:', error);
-      setErrorMessage(error.message || 'Произошла ошибка при добавлении шага');
-    } finally {
-      setAddStepLoading(false);
-    }
-  };
-
-  // Обновление шага
-  const handleUpdateStep = async () => {
-    if (!editingStep) return;
-    if (!editStepTitle || !editStepType) {
-      alert('Заголовок и тип шага обязательны');
-      return;
-    }
-    
-    try {
-      if (!supabase) {
-        throw new Error('Supabase клиент не инициализирован');
-      }
-      
-      const { error } = await supabase
-        .from('quiz_steps')
-        .update({ 
-          title: editStepTitle, 
-          type: editStepType, 
-          order: editStepOrder
-        })
-        .eq('id', editingStep.id);
-        
-      if (error) throw error;
-      
-      // Завершаем редактирование
-      setEditingStep(null);
-      
-      // Перезагружаем данные
-      fetchQuizData();
-      
-    } catch (error: any) {
-      console.error('Ошибка при обновлении шага:', error);
-      setErrorMessage(error.message || 'Произошла ошибка при обновлении шага');
-    }
-  };
-
-  // Удаление шага
-  const handleDeleteStep = async (stepId: string) => {
-    if (!confirm('Вы уверены, что хотите удалить этот шаг? Все связанные опции также будут удалены.')) {
-      return;
-    }
-    
-    try {
-      if (!supabase) {
-        throw new Error('Supabase клиент не инициализирован');
-      }
-      
-      // Сначала удаляем все связанные опции
-      const { error: answersError } = await supabase
-        .from('quiz_answers')
-        .delete()
-        .eq('question_id', stepId);
-        
-      if (answersError) throw answersError;
-      
-      // Затем удаляем сам шаг
-      const { error } = await supabase
-        .from('quiz_steps')
-        .delete()
-        .eq('id', stepId);
-        
-      if (error) throw error;
-      
-      // Если удаляемый шаг был выбран, сбрасываем выбор
-      if (selectedStepId === stepId) {
-        setSelectedStepId(null);
-      }
-      
-      // Перезагружаем данные
-      fetchQuizData();
-      
-    } catch (error: any) {
-      console.error('Ошибка при удалении шага:', error);
-      setErrorMessage(error.message || 'Произошла ошибка при удалении шага');
-    }
-  };
-
-  // Добавление опции ответа
-  const handleAddAnswer = async () => {
-    if (!selectedStepId) {
-      alert('Сначала выберите шаг квиза');
-      return;
-    }
-    
-    if (!answerLabel || !answerValue) {
-      alert('Введите метку и значение опции');
-      return;
-    }
-    
-    setAddAnswerLoading(true);
-    setErrorMessage(null);
-    
-    try {
-      if (!supabase) {
-        throw new Error('Supabase клиент не инициализирован');
-      }
-      
-      const { error } = await supabase
-        .from('quiz_answers')
-        .insert([{ 
-          question_id: selectedStepId, 
-          label: answerLabel, 
-          value: answerValue, 
-          order: answerOrder 
-        }]);
-        
-      if (error) throw error;
-      
-      // Очищаем форму
-      setAnswerLabel('');
-      setAnswerValue('');
-      setAnswerOrder(0);
-      
-      // Перезагружаем данные
-      fetchQuizData();
-      
-    } catch (error: any) {
-      console.error('Ошибка при добавлении опции:', error);
-      setErrorMessage(error.message || 'Произошла ошибка при добавлении опции');
-    } finally {
-      setAddAnswerLoading(false);
-    }
-  };
-
-  // Обновление опции
-  const handleUpdateAnswer = async () => {
-    if (!editingAnswer) return;
-    if (!editAnswerLabel || !editAnswerValue) {
-      alert('Метка и значение опции обязательны');
-      return;
-    }
-    
-    try {
-      if (!supabase) {
-        throw new Error('Supabase клиент не инициализирован');
-      }
-      
-      const { error } = await supabase
-        .from('quiz_answers')
-        .update({ 
-          label: editAnswerLabel, 
-          value: editAnswerValue, 
-          order: editAnswerOrder
-        })
-        .eq('id', editingAnswer.id);
-        
-      if (error) throw error;
-      
-      // Завершаем редактирование
-      setEditingAnswer(null);
-      
-      // Перезагружаем данные
-      fetchQuizData();
-      
-    } catch (error: any) {
-      console.error('Ошибка при обновлении опции:', error);
-      setErrorMessage(error.message || 'Произошла ошибка при обновлении опции');
-    }
-  };
-
-  // Удаление опции
-  const handleDeleteAnswer = async (answerId: string) => {
-    if (!confirm('Вы уверены, что хотите удалить эту опцию?')) {
-      return;
-    }
-    
-    try {
-      if (!supabase) {
-        throw new Error('Supabase клиент не инициализирован');
-      }
-      
-      const { error } = await supabase
-        .from('quiz_answers')
-        .delete()
-        .eq('id', answerId);
-        
-      if (error) throw error;
-      
-      // Перезагружаем данные
-      fetchQuizData();
-      
-    } catch (error: any) {
-      console.error('Ошибка при удалении опции:', error);
-      setErrorMessage(error.message || 'Произошла ошибка при удалении опции');
-    }
-  };
-
-  // Начать редактирование шага
-  const startEditingStep = (step: any) => {
-    setEditingStep(step);
-    setEditStepTitle(step.title);
-    setEditStepType(step.type);
-    setEditStepOrder(step.order);
-  };
-
-  // Отменить редактирование шага
-  const cancelEditingStep = () => {
-    setEditingStep(null);
-  };
-
-  // Начать редактирование опции
-  const startEditingAnswer = (answer: any) => {
-    setEditingAnswer(answer);
-    setEditAnswerLabel(answer.label);
-    setEditAnswerValue(answer.value);
-    setEditAnswerOrder(answer.order);
-  };
-
-  // Отменить редактирование опции
-  const cancelEditingAnswer = () => {
-    setEditingAnswer(null);
-  };
-
-  return (
-    <div className="admin-section">
-      <div className="section-header">
-        <h2>Настройки квиза (шаги и опции из Supabase)</h2>
-        <button 
-          className="admin-refresh-btn" 
-          onClick={fetchQuizData} 
-          disabled={loading}
-        >
-          <MdRefresh size={18} />
-          Обновить
-        </button>
-      </div>
-      
-      {errorMessage && (
-        <div className="admin-error admin-update-error">
-          {errorMessage}
-        </div>
-      )}
-      
-      {loading ? (
-        <div className="admin-loading">Загрузка шагов и опций...</div>
-      ) : (
-        <div className="quiz-manager-container">
-          <div className="quiz-manager-columns">
-            {/* Левая колонка - шаги квиза */}
-            <div className="quiz-steps-column">
-              <h3>Шаги квиза</h3>
-              
-              {/* Таблица шагов */}
-              <div className="admin-table-container">
-                <table className="admin-table">
-                  <thead>
-                    <tr>
-                      <th>Порядок</th>
-                      <th>Заголовок</th>
-                      <th>Тип</th>
-                      <th>Активен</th>
-                      <th>Действия</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {quizSteps.length > 0 ? (
-                      quizSteps.map((step) => (
-                        <tr 
-                          key={step.id} 
-                          className={`${selectedStepId === step.id ? 'selected-row' : ''} ${editingStep?.id === step.id ? 'editing-row' : ''}`}
-                        >
-                          <td>
-                            {editingStep?.id === step.id ? (
-                              <input 
-                                type="number"
-                                className="admin-input inline-edit"
-                                value={editStepOrder}
-                                onChange={(e) => setEditStepOrder(Number(e.target.value))}
-                                style={{ color: '#333', backgroundColor: '#f0f0f0', width: '60px' }}
-                              />
-                            ) : (
-                              step.order
-                            )}
-                          </td>
-                          <td>
-                            {editingStep?.id === step.id ? (
-                              <input 
-                                className="admin-input inline-edit"
-                                value={editStepTitle}
-                                onChange={(e) => setEditStepTitle(e.target.value)}
-                                style={{ color: '#333', backgroundColor: '#f0f0f0', width: '100%' }}
-                              />
-                            ) : (
-                              step.title
-                            )}
-                          </td>
-                          <td>
-                            {editingStep?.id === step.id ? (
-                              <input 
-                                className="admin-input inline-edit"
-                                value={editStepType}
-                                onChange={(e) => setEditStepType(e.target.value)}
-                                style={{ color: '#333', backgroundColor: '#f0f0f0', width: '100%' }}
-                              />
-                            ) : (
-                              step.type
-                            )}
-                          </td>
-                          <td>{step.is_active ? 'Да' : 'Нет'}</td>
-                          <td className="actions-cell">
-                            {editingStep?.id === step.id ? (
-                              <>
-                                <button 
-                                  className="action-btn edit-btn"
-                                  onClick={handleUpdateStep}
-                                >
-                                  Сохранить
-                                </button>
-                                <button 
-                                  className="action-btn delete-btn"
-                                  onClick={cancelEditingStep}
-                                >
-                                  Отмена
-                                </button>
-                              </>
-                            ) : (
-                              <>
-                                <button 
-                                  className="action-btn view-btn"
-                                  onClick={() => setSelectedStepId(step.id)}
-                                >
-                                  Опции
-                                </button>
-                                <button 
-                                  className="action-btn edit-btn"
-                                  onClick={() => startEditingStep(step)}
-                                  disabled={!!editingStep}
-                                >
-                                  Изменить
-                                </button>
-                                <button 
-                                  className="action-btn delete-btn"
-                                  onClick={() => handleDeleteStep(step.id)}
-                                  disabled={!!editingStep}
-                                >
-                                  Удалить
-                                </button>
-                              </>
-                            )}
-                          </td>
-                        </tr>
-                      ))
-                    ) : (
-                      <tr>
-                        <td colSpan={5} className="empty-table">Нет доступных шагов</td>
-                      </tr>
-                    )}
-                  </tbody>
-                </table>
-              </div>
-              
-              {/* Форма добавления шага */}
-              <div className="admin-form">
-                <h4>Добавить шаг</h4>
-                <div className="form-row">
-                  <input 
-                    className="admin-input"
-                    placeholder="Заголовок" 
-                    value={stepTitle} 
-                    onChange={(e) => setStepTitle(e.target.value)}
-                    style={{ color: '#333', backgroundColor: '#f0f0f0' }}
-                  />
-                  <input 
-                    className="admin-input"
-                    placeholder="Тип (type)" 
-                    value={stepType} 
-                    onChange={(e) => setStepType(e.target.value)} 
-                    style={{ color: '#333', backgroundColor: '#f0f0f0' }}
-                  />
-                  <input 
-                    className="admin-input"
-                    type="number" 
-                    placeholder="Порядок" 
-                    value={stepOrder} 
-                    onChange={(e) => setStepOrder(Number(e.target.value))} 
-                    style={{ color: '#333', backgroundColor: '#f0f0f0', width: '80px' }}
-                  />
-                  <button 
-                    className="admin-button" 
-                    onClick={handleAddStep} 
-                    disabled={addStepLoading || !stepTitle || !stepType}
-                  >
-                    {addStepLoading ? 'Добавление...' : 'Добавить'}
-                  </button>
-                </div>
-              </div>
-            </div>
-            
-            {/* Правая колонка - опции выбранного шага */}
-            <div className="quiz-answers-column">
-              <h3>Опции для шага</h3>
-              
-              {selectedStepId ? (
-                <>
-                  {/* Таблица опций */}
-                  <div className="admin-table-container">
-                    <table className="admin-table">
-                      <thead>
-                        <tr>
-                          <th>Порядок</th>
-                          <th>Метка</th>
-                          <th>Значение</th>
-                          <th>Действия</th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {quizAnswers.filter(a => a.question_id === selectedStepId).length > 0 ? (
-                          quizAnswers
-                            .filter(a => a.question_id === selectedStepId)
-                            .map((answer) => (
-                              <tr 
-                                key={answer.id}
-                                className={editingAnswer?.id === answer.id ? 'editing-row' : ''}
-                              >
-                                <td>
-                                  {editingAnswer?.id === answer.id ? (
-                                    <input 
-                                      type="number"
-                                      className="admin-input inline-edit"
-                                      value={editAnswerOrder}
-                                      onChange={(e) => setEditAnswerOrder(Number(e.target.value))}
-                                      style={{ color: '#333', backgroundColor: '#f0f0f0', width: '60px' }}
-                                    />
-                                  ) : (
-                                    answer.order
-                                  )}
-                                </td>
-                                <td>
-                                  {editingAnswer?.id === answer.id ? (
-                                    <input 
-                                      className="admin-input inline-edit"
-                                      value={editAnswerLabel}
-                                      onChange={(e) => setEditAnswerLabel(e.target.value)}
-                                      style={{ color: '#333', backgroundColor: '#f0f0f0', width: '100%' }}
-                                    />
-                                  ) : (
-                                    answer.label
-                                  )}
-                                </td>
-                                <td>
-                                  {editingAnswer?.id === answer.id ? (
-                                    <input 
-                                      className="admin-input inline-edit"
-                                      value={editAnswerValue}
-                                      onChange={(e) => setEditAnswerValue(e.target.value)}
-                                      style={{ color: '#333', backgroundColor: '#f0f0f0', width: '100%' }}
-                                    />
-                                  ) : (
-                                    answer.value
-                                  )}
-                                </td>
-                                <td className="actions-cell">
-                                  {editingAnswer?.id === answer.id ? (
-                                    <>
-                                      <button 
-                                        className="action-btn edit-btn"
-                                        onClick={handleUpdateAnswer}
-                                      >
-                                        Сохранить
-                                      </button>
-                                      <button 
-                                        className="action-btn delete-btn"
-                                        onClick={cancelEditingAnswer}
-                                      >
-                                        Отмена
-                                      </button>
-                                    </>
-                                  ) : (
-                                    <>
-                                      <button 
-                                        className="action-btn edit-btn"
-                                        onClick={() => startEditingAnswer(answer)}
-                                        disabled={!!editingAnswer}
-                                      >
-                                        Изменить
-                                      </button>
-                                      <button 
-                                        className="action-btn delete-btn"
-                                        onClick={() => handleDeleteAnswer(answer.id)}
-                                        disabled={!!editingAnswer}
-                                      >
-                                        Удалить
-                                      </button>
-                                    </>
-                                  )}
-                                </td>
-                              </tr>
-                            ))
-                        ) : (
-                          <tr>
-                            <td colSpan={4} className="empty-table">Нет опций для этого шага</td>
-                          </tr>
-                        )}
-                      </tbody>
-                    </table>
-                  </div>
-                  
-                  {/* Форма добавления опции */}
-                  <div className="admin-form">
-                    <h4>Добавить опцию</h4>
-                    <div className="form-row">
-                      <input 
-                        className="admin-input"
-                        placeholder="Метка" 
-                        value={answerLabel} 
-                        onChange={(e) => setAnswerLabel(e.target.value)} 
-                        style={{ color: '#333', backgroundColor: '#f0f0f0' }}
-                      />
-                      <input 
-                        className="admin-input"
-                        placeholder="Значение" 
-                        value={answerValue} 
-                        onChange={(e) => setAnswerValue(e.target.value)} 
-                        style={{ color: '#333', backgroundColor: '#f0f0f0' }}
-                      />
-                      <input 
-                        className="admin-input"
-                        type="number" 
-                        placeholder="Порядок" 
-                        value={answerOrder} 
-                        onChange={(e) => setAnswerOrder(Number(e.target.value))} 
-                        style={{ color: '#333', backgroundColor: '#f0f0f0', width: '80px' }}
-                      />
-                      <button 
-                        className="admin-button" 
-                        onClick={handleAddAnswer} 
-                        disabled={addAnswerLoading || !answerLabel || !answerValue}
-                      >
-                        {addAnswerLoading ? 'Добавление...' : 'Добавить'}
-                      </button>
-                    </div>
-                  </div>
-                </>
-              ) : (
-                <div className="empty-selection-message">
-                  Выберите шаг для просмотра и добавления опций
-                </div>
-              )}
-            </div>
-          </div>
-        </div>
-      )}
-      
-      {/* Добавляем стили для админки */}
-      <style>{`
-        .quiz-manager-container {
-          margin-top: 20px;
-        }
-        
-        .quiz-manager-columns {
-          display: flex;
-          gap: 30px;
-        }
-        
-        .quiz-steps-column, .quiz-answers-column {
-          flex: 1;
-        }
-        
-        .admin-table-container {
-          max-height: 400px;
-          overflow-y: auto;
-          margin-bottom: 20px;
-          background-color: rgba(40, 40, 55, 0.5);
-          border-radius: 8px;
-        }
-        
-        .admin-table {
-          width: 100%;
-          border-collapse: collapse;
-        }
-        
-        .admin-table th,
-        .admin-table td {
-          padding: 10px;
-          text-align: left;
-          border-bottom: 1px solid rgba(255, 255, 255, 0.1);
-        }
-        
-        .admin-table th {
-          background-color: rgba(30, 30, 46, 0.5);
-          position: sticky;
-          top: 0;
-          z-index: 1;
-        }
-        
-        .admin-table tbody tr:hover {
-          background-color: rgba(50, 50, 70, 0.3);
-        }
-        
-        .selected-row {
-          background-color: rgba(25, 118, 210, 0.2) !important;
-        }
-        
-        .editing-row {
-          background-color: rgba(255, 193, 7, 0.1) !important;
-        }
-        
-        .admin-form {
-          background-color: rgba(40, 40, 55, 0.5);
-          padding: 15px;
-          border-radius: 8px;
-        }
-        
-        .form-row {
-          display: flex;
-          gap: 10px;
-          flex-wrap: wrap;
-        }
-        
-        .admin-input {
-          padding: 8px 12px;
-          border-radius: 4px;
-          border: 1px solid rgba(255, 255, 255, 0.2);
-          background-color: #f0f0f0 !important;
-          color: #333 !important;
-        }
-        
-        .admin-input::placeholder {
-          color: #777;
-        }
-        
-        .inline-edit {
-          margin: 0;
-          padding: 4px 8px;
-        }
-        
-        .empty-selection-message {
-          padding: 30px;
-          text-align: center;
-          background-color: rgba(40, 40, 55, 0.5);
-          border-radius: 8px;
-          color: rgba(255, 255, 255, 0.6);
-        }
-        
-        .empty-table {
-          text-align: center;
-          color: rgba(255, 255, 255, 0.5);
-          padding: 20px 0;
-        }
-        
-        .actions-cell {
-          white-space: nowrap;
-        }
-        
-        .action-btn {
-          padding: 5px 10px;
-          margin: 0 3px;
-          border-radius: 4px;
-          cursor: pointer;
-          font-size: 13px;
-          border: none;
-        }
-        
-        .view-btn {
-          background-color: rgba(33, 150, 243, 0.7);
-          color: white;
-        }
-        
-        .edit-btn {
-          background-color: rgba(255, 193, 7, 0.7);
-          color: black;
-        }
-        
-        .delete-btn {
-          background-color: rgba(244, 67, 54, 0.7);
-          color: white;
-        }
-        
-        .admin-button {
-          padding: 8px 16px;
-          background-color: rgba(63, 81, 181, 0.8);
-          color: white;
-          border: none;
-          border-radius: the 4px;
-          cursor: pointer;
-        }
-        
-        .admin-button:disabled {
-          opacity: 0.6;
-          cursor: not-allowed;
-        }
-      `}</style>
-    </div>
-  );
-};
-
 // Компонент для управления пользователями
 const UsersManager: React.FC = () => {
   const [users, setUsers] = useState<any[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
   const [updateLoading, setUpdateLoading] = useState<boolean>(false);
   const [updateError, setUpdateError] = useState<string | null>(null);
-  
+
   // Загрузка пользователей
   const fetchUsers = async () => {
     try {
       setLoading(true);
       if (!supabase) return;
-      
+
       const { data, error } = await supabase
         .from('users')
         .select('*')
         .order('created_at', { ascending: false });
-        
+
       if (error) throw error;
       setUsers(data || []);
     } catch (error) {
@@ -2268,7 +1442,7 @@ const UsersManager: React.FC = () => {
       setLoading(false);
     }
   };
-  
+
   useEffect(() => {
     fetchUsers();
   }, []);
@@ -2278,23 +1452,23 @@ const UsersManager: React.FC = () => {
     try {
       setUpdateLoading(true);
       setUpdateError(null);
-      
+
       if (!supabase) {
         throw new Error('Supabase клиент не доступен');
       }
-      
+
       const { error } = await supabase
         .from('users')
         .update({ is_admin: !currentStatus })
         .eq('id', userId);
-        
+
       if (error) throw error;
-      
+
       // Обновляем локальный массив пользователей
-      setUsers(prev => 
-        prev.map(user => 
-          user.id === userId 
-            ? { ...user, is_admin: !currentStatus } 
+      setUsers(prev =>
+        prev.map(user =>
+          user.id === userId
+            ? { ...user, is_admin: !currentStatus }
             : user
         )
       );
@@ -2305,26 +1479,26 @@ const UsersManager: React.FC = () => {
       setUpdateLoading(false);
     }
   };
-  
+
   return (
     <div className="admin-section">
       <div className="section-header">
         <h2>Управление пользователями</h2>
-        <button 
-          className="admin-refresh-btn" 
-          onClick={fetchUsers} 
+        <button
+          className="admin-refresh-btn"
+          onClick={fetchUsers}
           disabled={loading}
         >
           Обновить
         </button>
       </div>
-      
+
       {updateError && (
         <div className="admin-error admin-update-error">
           {updateError}
         </div>
       )}
-      
+
       {loading ? (
         <div className="admin-loading">Загрузка пользователей...</div>
       ) : (
@@ -2356,7 +1530,7 @@ const UsersManager: React.FC = () => {
                       </span>
                     </td>
                     <td className="actions-cell">
-                      <button 
+                      <button
                         className={`action-btn ${user.is_admin ? 'delete-btn' : 'edit-btn'}`}
                         onClick={() => toggleAdminStatus(user.id, user.is_admin)}
                         disabled={updateLoading}
