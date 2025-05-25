@@ -4,8 +4,8 @@ import { supabase } from '@/lib/supabase/client';
 import { LessonBlock, Submission } from '@/lib/supabase/types';
 import { User } from '@supabase/supabase-js';
 import { Button } from '@/components/ui/button';
-import { Textarea } from '@/components/ui/textarea';
-import { cn } from '@/lib/utils';
+// import { Textarea } from '@/components/ui/textarea'; // Заменено на обычный textarea
+// import { cn } from '@/lib/utils'; // Больше не нужен
 import { useNavigate } from 'react-router-dom';
 
 interface FixedSubmissionFormProps {
@@ -38,9 +38,27 @@ const FixedSubmissionForm: React.FC<FixedSubmissionFormProps> = ({
 
     // Автоматическое изменение высоты textarea
     useEffect(() => {
-        if (textareaRef.current) {
-            textareaRef.current.style.height = 'auto';
-            textareaRef.current.style.height = Math.min(textareaRef.current.scrollHeight, 120) + 'px';
+        const textArea = textareaRef.current;
+        if (textArea) {
+            // Минимальная высота 28px для одной строки
+            const MIN_HEIGHT = 28;
+            // Максимальная высота поля ввода - 30% от высоты окна
+            const maxInputHeight = Math.round(window.innerHeight * 0.30);
+
+            // Сбрасываем высоту для корректного расчета scrollHeight
+            textArea.style.height = `${MIN_HEIGHT}px`;
+            const scrollHeight = textArea.scrollHeight;
+
+            // Если контент больше минимальной высоты, увеличиваем
+            if (scrollHeight > MIN_HEIGHT) {
+                const newHeight = Math.min(scrollHeight, maxInputHeight);
+                textArea.style.height = `${newHeight}px`;
+                textArea.style.overflowY = newHeight >= maxInputHeight ? 'auto' : 'hidden';
+            } else {
+                // Для пустого поля или одной строки - фиксированная минимальная высота
+                textArea.style.height = `${MIN_HEIGHT}px`;
+                textArea.style.overflowY = 'hidden';
+            }
         }
     }, [submissionText]);
 
@@ -184,29 +202,28 @@ const FixedSubmissionForm: React.FC<FixedSubmissionFormProps> = ({
                 </div>
             )}
 
-            {/* Основная форма ввода */}
-            <div className="flex items-center gap-2 p-3">
-                {/* Контейнер для поля ввода и кнопки скрепки */}
-                <div className="flex-1 flex items-center gap-2 bg-neutral-100 rounded-[24px] border border-gray-200" style={{ padding: '6px 12px', height: 'auto', minHeight: '40px' }}>
-                    {/* Обертка для Textarea с ограничением высоты и скроллом */}
-                    <div style={{ maxHeight: '80px', overflowY: 'auto', flexGrow: 1 }}>
-                        <Textarea
-                            ref={textareaRef}
-                            placeholder="Домашнее задание"
-                            value={submissionText}
-                            onChange={(e) => setSubmissionText(e.target.value)}
-                            className={cn(
-                                "flex-1 resize-none border-none bg-transparent text-sm text-black font-mono font-medium",
-                                "focus-visible:ring-0 focus-visible:ring-offset-0 placeholder:text-[#8D8D8D]"
-                            )}
-                            style={{
-                                fontSize: '14px',
-                                lineHeight: '20px',
-                                paddingRight: '8px',
-                            }}
-                            rows={1}
-                        />
-                    </div>
+            {/* Основная форма ввода - ВЫРАВНИВАНИЕ ПО НИЗУ */}
+            <div className="flex items-end gap-2 p-3">
+                {/* Контейнер для поля ввода и кнопки скрепки - ВЫРАВНИВАНИЕ ПО НИЗУ */}
+                <div className="flex-1 flex items-center gap-2 bg-neutral-100 rounded-[24px] border border-gray-200" style={{ padding: '6px 12px', minHeight: '40px' }}>
+                    <textarea
+                        ref={textareaRef}
+                        placeholder="Домашнее задание"
+                        value={submissionText}
+                        onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => setSubmissionText(e.target.value)}
+                        className="flex-1 resize-none border-none bg-transparent text-sm text-black font-medium focus:outline-none placeholder:text-[#8D8D8D]"
+                        style={{
+                            fontFamily: 'Montserrat, sans-serif',
+                            fontSize: '14px',
+                            lineHeight: '20px',
+                            padding: '4px 8px 4px 0px', // py-1 эквивалент (4px top/bottom, 0px left, 8px right)
+                            overflowY: 'hidden',
+                            width: '100%',
+                            boxSizing: 'border-box',
+                            minHeight: 'auto',
+                            height: 'auto',
+                        }}
+                    />
 
                     {/* Кнопка прикрепления файла */}
                     <Button
@@ -214,7 +231,7 @@ const FixedSubmissionForm: React.FC<FixedSubmissionFormProps> = ({
                         size="sm"
                         onClick={() => fileInputRef.current?.click()}
                         disabled={isUploading}
-                        className="h-4 w-4 p-0 text-gray-500 hover:text-black self-center"
+                        className="h-4 w-4 p-0 text-gray-500 hover:text-black"
                     >
                         {isUploading ? (
                             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" className="animate-spin">
@@ -232,12 +249,10 @@ const FixedSubmissionForm: React.FC<FixedSubmissionFormProps> = ({
                 <Button
                     onClick={handleSubmit}
                     disabled={!submissionText.trim() || isSubmitting || !user}
-                    className={cn(
-                        "rounded-full flex items-center justify-center",
-                        submissionText.trim() && !isSubmitting && user
-                            ? "bg-black hover:bg-gray-800 text-white"
-                            : "bg-gray-300 cursor-not-allowed hover:bg-gray-300 text-gray-500"
-                    )}
+                    className={`rounded-full flex items-center justify-center ${submissionText.trim() && !isSubmitting && user
+                        ? "bg-black hover:bg-gray-800 text-white"
+                        : "bg-gray-300 cursor-not-allowed hover:bg-gray-300 text-gray-500"
+                        }`}
                     style={{ padding: '0px', width: '40px', height: '40px' }}
                 >
                     <svg
