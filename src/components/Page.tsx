@@ -68,7 +68,7 @@ export function Page({
   // Добавляем отступ снизу, если показываем TabBar
   const containerStyle = {
     ...safeAreaStyle,
-    paddingBottom: showTabBar ? 'calc(56px + env(safe-area-inset-bottom, 0) + 5px)' : 'var(--safe-area-bottom, 0px)',
+    //paddingBottom: showTabBar ? 'calc(56px + env(safe-area-inset-bottom, 0) + 5px)' : 'var(--safe-area-bottom, 0px)',
   };
 
   return (
@@ -84,9 +84,9 @@ export function Page({
           flex: 1,
 
           overflowY: 'auto',
-          paddingBottom: showTabBar
-            ? 'calc(64px + env(safe-area-inset-bottom, 0px))'
-            : '0px',
+          // paddingBottom: showTabBar
+          //   ? 'calc(64px + env(safe-area-inset-bottom, 0px))'
+          //   : '0px',
         }}
       >
         {children}

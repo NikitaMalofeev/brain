@@ -5,7 +5,6 @@ import { ThemeParamsPage } from '@/pages/ThemeParamsPage';
 import { ProfilePage } from '@/pages/ProfilePage';
 import { TONConnectPage } from '@/pages/TONConnectPage/TONConnectPage';
 import { DiagnosticsPage } from '@/pages/DiagnosticsPage/DiagnosticsPage';
-import { MainScreen } from '@/pages/MainScreen/MainScreen';
 import AdminPage from '@/pages/AdminPage/AdminPage';
 import LibraryPage from '@/pages/LibraryPage/LibraryPage';
 import StagePage from '@/pages/LibraryPage/StagePage';
@@ -15,11 +14,12 @@ import {Chats} from "@/pages/Chats/Chats.tsx";
 import {HelpPage} from "@/pages/HelpPage/HelpPage.tsx";
 import {FaqPage} from "@/pages/FaqPage/FaqPage.tsx";
 import {CommonPage} from "@/pages/CommonPage/CommonPage.tsx";
+import {MainPage} from "@/pages/MainPage/MainPage.tsx";
 
 export const routers = [
   {
     path: '/',
-    Component: LibraryPage
+    Component: MainPage
   },
   {
     path: '/library',
