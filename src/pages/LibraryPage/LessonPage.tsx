@@ -486,6 +486,8 @@ const LessonPage: React.FC = () => {
                                     lineHeight: '1.5',
                                     color: '#666666',
                                     whiteSpace: 'pre-wrap',
+                                    wordBreak: 'break-word',
+                                    overflowWrap: 'break-word',
                                 }}>
                                     {state.submission.content_text}
                                 </div>

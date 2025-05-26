@@ -85,7 +85,7 @@ const FixedSubmissionForm: React.FC<FixedSubmissionFormProps> = ({
             setUploadedFiles(prev => [...prev, ...newFileUrls]);
         } catch (error) {
             console.error('Ошибка загрузки файлов:', error);
-            alert('Ошибка загрузки файлов. Попробуйте еще раз.');
+            // TODO: Добавить нормальное уведомление об ошибке вместо alert
         } finally {
             setIsUploading(false);
             if (fileInputRef.current) {
@@ -122,11 +122,11 @@ const FixedSubmissionForm: React.FC<FixedSubmissionFormProps> = ({
             }
 
             onSubmissionUpdate(data);
-            alert('Задание успешно сдано!');
+            // Убираем alert - пользователь увидит результат визуально (форма исчезнет, появится блок сданного задания)
 
         } catch (error) {
             console.error('Failed to submit assignment:', error);
-            alert('Ошибка отправки задания. Попробуйте еще раз.');
+            // TODO: Добавить нормальное уведомление об ошибке вместо alert
         } finally {
             setIsSubmitting(false);
         }
