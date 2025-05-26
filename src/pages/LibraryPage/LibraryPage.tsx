@@ -1,7 +1,7 @@
 // Компонент страницы "Библиотека"
 
 import React, { useEffect, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import {Link, useNavigate} from 'react-router-dom';
 import StageCard from '../../components/StageCard/StageCard';
 import useLibraryStages, { LibraryStageData } from '../../lib/supabase/hooks/useLibraryStages';
 import { User } from '@supabase/supabase-js';
@@ -145,14 +145,14 @@ const LibraryPage: React.FC = () => {
 
     return (
         <Page>
-            <div style={{ width: '100%', display: 'flex', flexDirection: 'column', alignItems: 'center', flex: 1 }}>
+            <div className={"bg-['#F1F1F1']"} style={{ width: '100%', display: 'flex', flexDirection: 'column', alignItems: 'center', flex: 1 }}>
                 <div style={{ width: '100%', maxWidth: '600px', margin: '0 auto', padding: '20px 0 0 0', flex: 1, backgroundColor: '#F1F1F1', borderRadius: '0 0 24px 24px' }}>
                     <h1 style={{ fontFamily: 'Inter, sans-serif', fontWeight: 700, fontSize: '24px', textAlign: 'left', marginBottom: '24px', paddingLeft: '12px', color: '#000' }}>Библиотека</h1>
                     <div style={{
                         display: 'grid',
                         gridTemplateColumns: 'repeat(2, 1fr)',
                         gap: '16px',
-                        padding: '0 12px 120px 12px',
+                        padding: '0 12px 12px 12px',
                         boxSizing: 'border-box',
                     }}>
                         {stages.map((stage, index) => (
@@ -186,6 +186,12 @@ const LibraryPage: React.FC = () => {
                             </div>
                         ))}
                     </div>
+                    <Link to={'/common'} className={'flex flex-col gap-2 items-center p-3'}>
+                        <div className={'w-full bg-white rounded-3xl p-6 h-[200px]'}>
+
+                        </div>
+                        <p className={'text-black/80'}>Дополнительные материалы</p>
+                    </Link>
                 </div>
             </div>
         </Page>

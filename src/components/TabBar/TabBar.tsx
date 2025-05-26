@@ -21,9 +21,9 @@ const TabBar: FC<TabBarProps> = ({ className }) => {
   };
 
   return (
-    <nav className={`tab-bar ${className || ''}`} aria-label="Основная навигация">
-      {/* Временно скрыты: Главная, Расписание, Профиль */}
-      {/* <button 
+      <nav className={`tab-bar ${className || ''}`} aria-label="Основная навигация">
+        {/* Временно скрыты: Главная, Расписание, Профиль */}
+        {/* <button
         className={`tab-item ${isActive('/') ? 'active' : ''}`} 
         onClick={() => handleTabClick('/')}
         aria-current={isActive('/') ? 'page' : undefined}
@@ -36,22 +36,23 @@ const TabBar: FC<TabBarProps> = ({ className }) => {
         <span>Главная</span>
       </button> */}
 
-      <button
-        className={`tab-item ${(isActive('/') || isActive('/library')) ? 'active' : ''}`}
-        onClick={() => handleTabClick('/')}
-        aria-current={(isActive('/') || isActive('/library')) ? 'page' : undefined}
-        aria-label="Перейти в библиотеку"
-      >
-        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-          <path d="M4 19.5C4 18.837 4.26339 18.2011 4.73223 17.7322C5.20107 17.2634 5.83696 17 6.5 17H20"
-            stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-          <path d="M6.5 2H20V22H6.5C5.83696 22 5.20107 21.7366 4.73223 21.2678C4.26339 20.7989 4 20.163 4 19.5V4.5C4 3.83696 4.26339 3.20107 4.73223 2.73223C5.20107 2.26339 5.83696 2 6.5 2V2Z"
-            stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-        </svg>
-        <span>Библиотека</span>
-      </button>
+        <button
+            className={`tab-item ${(isActive('/') || isActive('/library')) ? 'active' : ''}`}
+            onClick={() => handleTabClick('/')}
+            aria-current={(isActive('/') || isActive('/library')) ? 'page' : undefined}
+            aria-label="Перейти в библиотеку"
+        >
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <path d="M4 19.5C4 18.837 4.26339 18.2011 4.73223 17.7322C5.20107 17.2634 5.83696 17 6.5 17H20"
+                  stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+            <path
+                d="M6.5 2H20V22H6.5C5.83696 22 5.20107 21.7366 4.73223 21.2678C4.26339 20.7989 4 20.163 4 19.5V4.5C4 3.83696 4.26339 3.20107 4.73223 2.73223C5.20107 2.26339 5.83696 2 6.5 2V2Z"
+                stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+          </svg>
+          <span>Библиотека</span>
+        </button>
 
-      {/* <button 
+        {/* <button
         className={`tab-item ${isActive('/schedule') ? 'active' : ''}`} 
         onClick={() => handleTabClick('/schedule')}
         aria-current={isActive('/schedule') ? 'page' : undefined}
@@ -66,21 +67,39 @@ const TabBar: FC<TabBarProps> = ({ className }) => {
         <span>Расписание</span>
       </button> */}
 
-      {/* <button 
-        className={`tab-item ${isActive('/profile') ? 'active' : ''}`} 
-        onClick={() => handleTabClick('/profile')}
-        aria-current={isActive('/profile') ? 'page' : undefined}
-        aria-label="Перейти в профиль"
-      >
-        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-          <path d="M20 21V19C20 17.9391 19.5786 16.9217 18.8284 16.1716C18.0783 15.4214 17.0609 15 16 15H8C6.93913 15 5.92172 15.4214 5.17157 16.1716C4.42143 16.9217 4 17.9391 4 19V21" 
-          stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-          <path d="M12 11C14.2091 11 16 9.20914 16 7C16 4.79086 14.2091 3 12 3C9.79086 3 8 4.79086 8 7C8 9.20914 9.79086 11 12 11Z" 
-          stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-        </svg>
-        <span>Профиль</span>
-      </button> */}
-    </nav>
+        {/*<button*/}
+        {/*    className={`tab-item ${isActive('/profile') ? 'active' : ''}`}*/}
+        {/*    onClick={() => handleTabClick('/profile')}*/}
+        {/*    aria-current={isActive('/profile') ? 'page' : undefined}*/}
+        {/*    aria-label="Перейти в профиль"*/}
+        {/*>*/}
+        {/*  <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">*/}
+        {/*    <path*/}
+        {/*        d="M20 21V19C20 17.9391 19.5786 16.9217 18.8284 16.1716C18.0783 15.4214 17.0609 15 16 15H8C6.93913 15 5.92172 15.4214 5.17157 16.1716C4.42143 16.9217 4 17.9391 4 19V21"*/}
+        {/*        stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>*/}
+        {/*    <path*/}
+        {/*        d="M12 11C14.2091 11 16 9.20914 16 7C16 4.79086 14.2091 3 12 3C9.79086 3 8 4.79086 8 7C8 9.20914 9.79086 11 12 11Z"*/}
+        {/*        stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>*/}
+        {/*  </svg>*/}
+        {/*  <span>Профиль</span>*/}
+        {/*</button>*/}
+        <button
+            className={`tab-item ${isActive('/profile2') ? 'active' : ''}`}
+            onClick={() => handleTabClick('/profile2')}
+            aria-current={isActive('/profile2') ? 'page' : undefined}
+            aria-label="Перейти в профиль"
+        >
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <path
+                d="M20 21V19C20 17.9391 19.5786 16.9217 18.8284 16.1716C18.0783 15.4214 17.0609 15 16 15H8C6.93913 15 5.92172 15.4214 5.17157 16.1716C4.42143 16.9217 4 17.9391 4 19V21"
+                stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+            <path
+                d="M12 11C14.2091 11 16 9.20914 16 7C16 4.79086 14.2091 3 12 3C9.79086 3 8 4.79086 8 7C8 9.20914 9.79086 11 12 11Z"
+                stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+          </svg>
+          <span>Профиль</span>
+        </button>
+      </nav>
   );
 };
 

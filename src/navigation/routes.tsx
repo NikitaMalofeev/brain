@@ -10,6 +10,11 @@ import AdminPage from '@/pages/AdminPage/AdminPage';
 import LibraryPage from '@/pages/LibraryPage/LibraryPage';
 import StagePage from '@/pages/LibraryPage/StagePage';
 import LessonPage from '@/pages/LibraryPage/LessonPage';
+import {UserPage} from "@/pages/UserPage/UserPage.tsx";
+import {Chats} from "@/pages/Chats/Chats.tsx";
+import {HelpPage} from "@/pages/HelpPage/HelpPage.tsx";
+import {FaqPage} from "@/pages/FaqPage/FaqPage.tsx";
+import {CommonPage} from "@/pages/CommonPage/CommonPage.tsx";
 
 export const routers = [
   {
@@ -51,6 +56,26 @@ export const routers = [
   {
     path: '/profile',
     Component: ProfilePage
+  },
+  {
+    path: '/chats',
+    Component: Chats
+  },
+  {
+    path: '/help',
+    Component: HelpPage
+  },
+  {
+    path: '/faq',
+    Component: FaqPage
+  },
+  {
+    path: '/Common',
+    Component: CommonPage
+  },
+  {
+    path: '/profile2',
+    Component: UserPage
   },
   {
     path: '/ton-connect',
