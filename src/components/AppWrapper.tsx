@@ -38,7 +38,7 @@ export const AppWrapper: FC<AppWrapperProps> = ({ children }) => {
         } else if (data.eventType === 'viewport_changed') {
           // Обновляем состояние fullscreen, но убираем логи
           if (data.eventData && data.eventData.is_expanded) {
-            document.documentElement.style.setProperty('--fullscreen-extra-padding', '40px');
+            //document.documentElement.style.setProperty('--fullscreen-extra-padding', '40px');
           } else {
             document.documentElement.style.setProperty('--fullscreen-extra-padding', '0px');
           }
@@ -57,7 +57,7 @@ export const AppWrapper: FC<AppWrapperProps> = ({ children }) => {
     }, 15000); // Увеличиваем до 15 секунд
 
     // Устанавливаем дополнительный отступ для fullscreen
-    document.documentElement.style.setProperty('--fullscreen-extra-padding', '40px');
+    //document.documentElement.style.setProperty('--fullscreen-extra-padding', '40px');
 
     // Очистка подписок при размонтировании
     return () => {

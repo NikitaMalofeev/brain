@@ -14,6 +14,9 @@ html, body {
     Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
   background-color: #ffffff;
 }
+body {
+  font-family: 'Inter', sans-serif !important;
+}
 
 #root {
   display: flex;

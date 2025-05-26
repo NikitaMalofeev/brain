@@ -1,64 +1,25 @@
-// Компонент страницы "Библиотека"
+import {Page} from "@/components";
+import useLibraryStages from "@/lib/supabase/hooks/useLibraryStages.ts";
+import {COURSE_CONFIG} from "@/lib/config/constants.ts";
+import {useEffect, useState} from "react";
+import {User} from "@supabase/supabase-js";
+import {logger} from "@/lib/logger.ts";
+import {useAppContext} from "@/contexts/AppContext.tsx";
+import {useSupabaseUser} from "@/lib/supabase/hooks";
+import {initDataState, useSignal} from "@telegram-apps/sdk-react";
+import {Link} from "react-router-dom";
 
-import React, { useEffect, useState } from 'react';
-import {Link, useNavigate} from 'react-router-dom';
-import StageCard from '../../components/StageCard/StageCard';
-import useLibraryStages, { LibraryStageData } from '../../lib/supabase/hooks/useLibraryStages';
-import { User } from '@supabase/supabase-js';
-import { useSignal, initDataState } from '@telegram-apps/sdk-react';
-import { useSupabaseUser } from '@/lib/supabase/hooks/useSupabaseUser';
-import { logger } from '@/lib/logger';
-import { useAppContext } from '@/contexts/AppContext';
-import { Page } from '@/components/Page';
-import { COURSE_CONFIG } from '@/lib/config/constants';
-
-// Расширяем глобальный объект Window, добавляя Telegram
-declare global {
-    interface Window {
-        Telegram?: unknown;
-    }
-}
-
-// ID курса теперь берется из централизованного конфига
 const COURSE_ID = COURSE_CONFIG.DEFAULT_COURSE_ID;
 
-const LibraryPage: React.FC = () => {
-    const navigate = useNavigate();
+export const MainPage = () => {
 
-    // Получаем информацию из глобального контекста
+
+    const [supabaseCompatUser, setSupabaseCompatUser] = useState<User | null>(null);
     const { isTelegramApp } = useAppContext();
-
-    // Получаем initData из Telegram SDK если мы в Telegram
     const initDataSignal = useSignal(initDataState);
-
-    // Всегда используем хук useSupabaseUser, независимо от режима приложения
     const { supabaseUser, loading: supabaseUserLoading, error: supabaseUserError } = useSupabaseUser(initDataSignal);
 
-    // Для отладки логгируем что получили
-    useEffect(() => {
-        if (isTelegramApp) {
-            logger.debug('Telegram Mode: initDataSignal', { received: !!initDataSignal });
-            logger.debug('Telegram Mode: supabaseUser', {
-                userLoaded: !!supabaseUser,
-                loading: supabaseUserLoading,
-                error: supabaseUserError ? supabaseUserError.message : null,
-                userData: supabaseUser // Логируем самого пользователя в ТГ режиме
-            });
-        } else {
-            // В режиме разработки (не Telegram) также логируем supabaseUser,
-            // который должен быть получен из мокнутого initDataSignal
-            logger.debug('Development Mode (Browser): supabaseUser from mocked initData', {
-                userLoaded: !!supabaseUser,
-                loading: supabaseUserLoading,
-                error: supabaseUserError ? supabaseUserError.message : null,
-                userData: supabaseUser // Логируем пользователя, полученного из моков
-            });
-        }
-    }, [isTelegramApp, initDataSignal, supabaseUser, supabaseUserLoading, supabaseUserError]);
-
-    // Создаем Supabase-совместимого User из supabaseUser (если есть supabaseUser, независимо от режима)
-    const [supabaseCompatUser, setSupabaseCompatUser] = useState<User | null>(null);
-
+    const { stages, loading: stagesLoading, error: stagesError } = useLibraryStages(supabaseCompatUser, COURSE_ID);
     useEffect(() => {
         if (supabaseUser) { // Условие изменено: теперь зависит только от наличия supabaseUser
             // Создаем Supabase User-совместимый объект из supabaseUser
@@ -78,45 +39,18 @@ const LibraryPage: React.FC = () => {
         } else {
             setSupabaseCompatUser(null); // Если supabaseUser нет, сбрасываем compatUser
         }
-    }, [supabaseUser, isTelegramApp]); // isTelegramApp добавлен в зависимости для корректного лога источника
-
-    // Определяем активного пользователя: всегда supabaseCompatUser, если он есть
-    const activeUser = supabaseCompatUser;
-
-    // Используем хук для получения ступеней
-    const { stages, loading: stagesLoading, error: stagesError } = useLibraryStages(activeUser, COURSE_ID);
-
-    // Объединяем состояния загрузки
+    }, [supabaseUser, isTelegramApp]);
     const loading = stagesLoading || (isTelegramApp && supabaseUserLoading);
 
     // Объединяем ошибки
     const error = stagesError || (isTelegramApp && supabaseUserError);
 
-    const handleStageClick = (stageId: number) => {
-        logger.debug('Navigating to stage', { stageId });
-        navigate(`/library/stage/${stageId}`);
-    };
 
-    // Функция для формирования текста прогресса
-    const getProgressText = (stage: LibraryStageData): string => {
-        if (!stage.is_unlocked) return '';
-        return `${stage.completed_lessons} из ${stage.total_lessons} материалов пройдено`;
-    };
-
-    // Функция для формирования причины блокировки
-    const getLockReason = (stage: LibraryStageData): string | undefined => {
-        if (stage.is_unlocked) return undefined;
-        if (stage.unlock_condition_type_val === 'days_after_start') {
-            // TODO: Более умный расчет оставшихся дней, если это необходимо.
-            // Пока просто отображаем значение из базы.
-            return `Откроется через ${stage.unlock_condition_value_val || 'N'} дней после начала`;
+    useEffect(() => {
+        if(!loading && !error){
+            window.scrollTo(0, document.body.scrollHeight);
         }
-        if (stage.unlock_condition_type_val === 'previous_stage_completed') {
-            return 'Пройдите предыдущий этап';
-        }
-        return 'Этап пока недоступен'; // Общее сообщение
-    };
-
+    }, [loading, error]);
     if (loading) {
         return (
             <Page>
@@ -142,8 +76,7 @@ const LibraryPage: React.FC = () => {
             </Page>
         );
     }
-
-    return (
+    return(
         <Page>
             <div className={'fixed z-50 top-6 flex items-center justify-between px-6 w-full'}>
                 <img src={supabaseUser?.photo_url || ''} className={'w-8 h-8 rounded-full'}/>
@@ -156,13 +89,12 @@ const LibraryPage: React.FC = () => {
                     </svg>
                 </div>
             </div>
-            <div className={'relative min-h-screen overflow-hidden bg-[url("/bg2.jpg")] bg-cover'}>
-                <div className={'flex flex-col gap-3 items-center py-6 pt-24'}>
-                    {stages.map((stage, i) => (
-                        <Link to={`/library/stage/${stage.stage_id}`}
-                              className={stage.is_unlocked ? "cursor-pointer transition duration-200 ease-in hover:scale-105" : "pointer-events-none"}>
-                            <img src={`/step${stage.stage_id}${stage.stage_id}.png`}
-                                 className={`w-[95%] mx-auto ${!stage.is_unlocked && 'mix-blend-luminosity'}`}/>
+            <div className={'relative min-h-screen overflow-hidden bg-[url("/bg.jpg")] bg-cover'}>
+                <div className={'flex flex-col gap-5 items-center'}>
+                    {[...stages].reverse().map((stage, i) => (
+                        <Link to={`/library/stage/${stage.stage_id}`} className={stage.is_unlocked ? "cursor-pointer transition duration-200 ease-in hover:scale-105" : "pointer-events-none"}>
+                            <img src={`/step${stage.stage_id}.png`}
+                                 className={`w-[75%] mx-auto ${!stage.is_unlocked && 'mix-blend-luminosity'}`}/>
                         </Link>
                     ))}
                 </div>
@@ -197,7 +129,5 @@ const LibraryPage: React.FC = () => {
                 </div>
             </div>
         </Page>
-    );
-};
-
-export default LibraryPage; 
+    )
+}

@@ -75,7 +75,7 @@ export const UserPage = () => {
                 </div>
                 {links.map(el => (
                     <Link className={'p-4 rounded-2xl bg-white flex items-center justify-between'} to={el.link}>
-                        {el.title}
+                        <p className={'font-bold'}>{el.title}</p>
                         <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
                             <path d="M9 5L16 12L9 19" stroke="black" stroke-width="1.5" stroke-linecap="round"
                                   stroke-linejoin="round"/>
