@@ -73,15 +73,16 @@ export function Page({
 
   return (
     <div
-      className={`page-container ${showTabBar ? 'with-tab-bar' : ''}`}
+      className={`!bg-gray-100 page-container ${showTabBar ? 'with-tab-bar' : ''}`}
       style={containerStyle}
       ref={containerRef}
     >
       <div
         className="content-wrapper"
         style={{
-          backgroundColor: '#ffffff',
+          backgroundColor: '#F1F1F1',
           flex: 1,
+
           overflowY: 'auto',
           paddingBottom: showTabBar
             ? 'calc(64px + env(safe-area-inset-bottom, 0px))'
