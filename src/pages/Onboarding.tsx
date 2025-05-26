@@ -24,6 +24,7 @@ export default function Onboarding({ onClose }) {
         }
     };
 
+    
     return (
         <div className="h-screen flex flex-col justify-between bg-white z-[100] ">
 
