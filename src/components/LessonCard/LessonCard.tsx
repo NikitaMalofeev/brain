@@ -1,5 +1,6 @@
 import React from 'react';
 import { LessonData } from '@/lib/supabase/hooks/useStageDetails';
+import { buildImageUrl } from '@/lib/cloudflareR2Service';
 
 interface LessonCardProps {
     lesson: LessonData;
@@ -40,7 +41,19 @@ const LessonCard: React.FC<LessonCardProps> = ({ lesson, onClick }) => {
         }
     };
 
-    const coverImageUrl = lesson.cover_image_url || getDefaultCover(lesson.content_type);
+    // ВРЕМЕННО: используем дефолтную обложку вместо CloudFlare R2
+    const coverImageUrl = lesson.cover_image_path
+        ? buildImageUrl(lesson.cover_image_path)
+        : getDefaultCover(lesson.content_type);
+
+    // ВРЕМЕННАЯ ДИАГНОСТИКА: выводим в консоль для отладки
+    if (lesson.cover_image_path) {
+        console.log('🖼️ LessonCard Debug:', {
+            lessonName: lesson.lesson_name,
+            coverImagePath: lesson.cover_image_path,
+            generatedUrl: coverImageUrl
+        });
+    }
 
     return (
         <div onClick={handleClick} style={{
@@ -90,8 +103,19 @@ const LessonCard: React.FC<LessonCardProps> = ({ lesson, onClick }) => {
                         objectFit: 'cover',
                     }}
                     onError={(e) => {
+                        // ВРЕМЕННАЯ ДИАГНОСТИКА: логируем ошибку загрузки
+                        console.error('❌ Ошибка загрузки изображения:', {
+                            lessonName: lesson.lesson_name,
+                            failedUrl: e.currentTarget.src,
+                            originalPath: lesson.cover_image_path
+                        });
+
                         // В случае ошибки загрузки используем дефолтную обложку
                         e.currentTarget.src = getDefaultCover(lesson.content_type);
+                    }}
+                    onLoad={() => {
+                        // ВРЕМЕННАЯ ДИАГНОСТИКА: успешная загрузка
+                        console.log('✅ Изображение загружено успешно:', lesson.lesson_name);
                     }}
                 />
 

@@ -7,7 +7,7 @@ export interface LessonData {
     lesson_id: number;
     lesson_name: string;
     content_type: string;
-    cover_image_url?: string;
+    cover_image_path?: string; // Изменено: теперь хранится путь к файлу, а не полный URL
     order_num: number;
     has_assignment: boolean;
     is_completed: boolean;
@@ -70,7 +70,8 @@ const useStageDetails = (user: User | null, stageId: string | number) => {
                         name,
                         description,
                         order_num,
-                        has_assignment
+                        has_assignment,
+                        cover_image_path
                     `)
                     .eq('stage_id', stageId)
                     .order('order_num');
@@ -117,7 +118,7 @@ const useStageDetails = (user: User | null, stageId: string | number) => {
                         lesson_id: lesson.id,
                         lesson_name: lesson.name,
                         content_type: 'mixed', // Теперь уроки могут содержать разные типы блоков
-                        cover_image_url: undefined, // Убираем пока это поле, так как его нет в новой схеме
+                        cover_image_path: lesson.cover_image_path, // Используем путь к файлу из БД
                         order_num: lesson.order_num,
                         has_assignment: lesson.has_assignment || false,
                         is_completed: isCompleted,
