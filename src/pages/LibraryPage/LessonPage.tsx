@@ -293,7 +293,7 @@ const LessonPage: React.FC = () => {
                                 marginBottom: '16px',
                                 margin: '0 0 16px 0',
                             }}>
-                                🖼 {block.title}
+                                {block.title}
                             </h3>
                         )}
                         {block.content_url ? (
