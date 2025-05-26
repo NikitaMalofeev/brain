@@ -8,21 +8,8 @@ interface LessonCardProps {
 }
 
 // Функция для получения дефолтной обложки в зависимости от типа контента
-const getDefaultCover = (contentType: string): string => {
-    switch (contentType) {
-        case 'video':
-            return '/assets/default-video-cover.svg';
-        case 'audio':
-            return '/assets/default-audio-cover.svg';
-        case 'text':
-            return '/assets/default-text-cover.svg';
-        case 'file':
-            return '/assets/default-file-cover.svg';
-        case 'link':
-            return '/assets/default-link-cover.svg';
-        default:
-            return '/assets/default-lesson-cover.svg';
-    }
+const getDefaultCover = (): string => {
+    return '/assets/bp cover.jpg';
 };
 
 // Функция для получения иконки статуса выполнения
@@ -44,7 +31,7 @@ const LessonCard: React.FC<LessonCardProps> = ({ lesson, onClick }) => {
     // ВРЕМЕННО: используем дефолтную обложку вместо CloudFlare R2
     const coverImageUrl = lesson.cover_image_path
         ? buildImageUrl(lesson.cover_image_path)
-        : getDefaultCover(lesson.content_type);
+        : getDefaultCover();
 
     // ВРЕМЕННАЯ ДИАГНОСТИКА: выводим в консоль для отладки
     if (lesson.cover_image_path) {
@@ -111,7 +98,7 @@ const LessonCard: React.FC<LessonCardProps> = ({ lesson, onClick }) => {
                         });
 
                         // В случае ошибки загрузки используем дефолтную обложку
-                        e.currentTarget.src = getDefaultCover(lesson.content_type);
+                        e.currentTarget.src = getDefaultCover();
                     }}
                     onLoad={() => {
                         // ВРЕМЕННАЯ ДИАГНОСТИКА: успешная загрузка
