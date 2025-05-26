@@ -7,14 +7,16 @@ import { useSupabaseUser } from '@/lib/supabase/hooks/useSupabaseUser';
 import { useAppContext } from '@/contexts/AppContext';
 import { logger } from '@/lib/logger';
 import { supabase } from '@/lib/supabase/client';
-import { LessonWithBlocks, LessonBlock, Submission } from '@/lib/supabase/types';
+import { LessonWithBlocks, LessonBlock, Submission, LessonProgress } from '@/lib/supabase/types';
 import { VideoBlock, AudioBlock, FixedSubmissionForm } from '@/components/LessonContent';
+import { Button } from '@/components/ui/button';
 
 interface LessonPageState {
     lesson: LessonWithBlocks | null;
     loading: boolean;
     error: string | null;
     submission: Submission | null;
+    progress: LessonProgress | null;
 }
 
 const LessonPage: React.FC = () => {
@@ -29,10 +31,14 @@ const LessonPage: React.FC = () => {
         loading: true,
         error: null,
         submission: null,
+        progress: null,
     });
 
     // Создаем Supabase-совместимого User
     const [supabaseCompatUser, setSupabaseCompatUser] = useState<User | null>(null);
+
+    // Состояние для завершения урока
+    const [isCompletingLesson, setIsCompletingLesson] = useState(false);
 
     useEffect(() => {
         if (supabaseUser) {
@@ -82,10 +88,19 @@ const LessonPage: React.FC = () => {
                     blocks: sortedBlocks,
                 };
 
-                // Если есть пользователь, получаем его сдачи
+                // Если есть пользователь, получаем его сдачи и прогресс
                 if (supabaseCompatUser && supabase) {
+                    // Получаем сдачи
                     const { data: submission } = await supabase
                         .from('submissions')
+                        .select('*')
+                        .eq('user_id', supabaseCompatUser.id)
+                        .eq('lesson_id', lessonId)
+                        .maybeSingle();
+
+                    // Получаем прогресс урока
+                    const { data: progress } = await supabase
+                        .from('lesson_progress')
                         .select('*')
                         .eq('user_id', supabaseCompatUser.id)
                         .eq('lesson_id', lessonId)
@@ -95,6 +110,7 @@ const LessonPage: React.FC = () => {
                         ...prev,
                         lesson,
                         submission,
+                        progress,
                         loading: false,
                     }));
                 } else {
@@ -123,6 +139,75 @@ const LessonPage: React.FC = () => {
     // Обработчик обновления submission
     const handleSubmissionUpdate = (submission: Submission) => {
         setState(prev => ({ ...prev, submission }));
+    };
+
+    // Обработчик обновления прогресса урока
+    const handleProgressUpdate = (progress: LessonProgress) => {
+        setState(prev => ({ ...prev, progress }));
+    };
+
+    // Обработчик завершения урока без задания
+    const handleCompleteLesson = async () => {
+        if (!supabaseCompatUser || !supabase || isCompletingLesson || !lessonId) return;
+
+        setIsCompletingLesson(true);
+
+        try {
+            const now = new Date().toISOString();
+
+            // Данные для создания/обновления записи прогресса
+            const progressData = {
+                user_id: supabaseCompatUser.id,
+                lesson_id: parseInt(lessonId),
+                is_completed: true,
+                completed_at: now,
+                started_at: state.progress?.started_at || now,
+                submission_id: null, // Для уроков без задания всегда null
+            };
+
+            let updatedProgress: LessonProgress;
+
+            if (state.progress) {
+                // Обновляем существующую запись
+                const { data, error } = await supabase
+                    .from('lesson_progress')
+                    .update({
+                        is_completed: true,
+                        completed_at: now,
+                    })
+                    .eq('id', state.progress.id)
+                    .select()
+                    .single();
+
+                if (error) {
+                    throw new Error(`Ошибка обновления прогресса: ${error.message}`);
+                }
+
+                updatedProgress = data;
+            } else {
+                // Создаем новую запись
+                const { data, error } = await supabase
+                    .from('lesson_progress')
+                    .insert(progressData)
+                    .select()
+                    .single();
+
+                if (error) {
+                    throw new Error(`Ошибка создания прогресса: ${error.message}`);
+                }
+
+                updatedProgress = data;
+            }
+
+            // Обновляем состояние
+            handleProgressUpdate(updatedProgress);
+
+        } catch (error) {
+            console.error('Failed to complete lesson:', error);
+            // TODO: Добавить нормальное уведомление об ошибке
+        } finally {
+            setIsCompletingLesson(false);
+        }
     };
 
     // Рендер блока контента
@@ -377,10 +462,16 @@ const LessonPage: React.FC = () => {
         );
     }
 
-    // Определяем нужен ли bottom padding для fixed формы (только для несданных заданий)
+    // Определяем нужен ли bottom padding для fixed элементов
     const hasAssignment = state.lesson.has_assignment;
     const isAssignmentSubmitted = !!state.submission;
-    const bottomPadding = hasAssignment && !isAssignmentSubmitted ? '120px' : '40px';
+    const isLessonCompleted = state.progress?.is_completed || false;
+
+    // Показываем fixed элемент если:
+    // 1. Есть задание и оно не сдано (форма сдачи)
+    // 2. Нет задания и урок не завершен (кнопка завершения)
+    const showFixedElement = (hasAssignment && !isAssignmentSubmitted) || (!hasAssignment && !isLessonCompleted);
+    const bottomPadding = showFixedElement ? '120px' : '40px';
 
     return (
         <Page back={false} showTabBar={false}>
@@ -513,33 +604,58 @@ const LessonPage: React.FC = () => {
                         )}
 
                         {state.lesson && typeof state.lesson.stage_id === 'number' && (
-                            <button
+                            <Button
+                                variant="black"
                                 onClick={() => state.lesson && navigate(`/library/stage/${state.lesson.stage_id}`)}
-                                style={{
-                                    width: '100%',
-                                    padding: '12px 24px',
-                                    backgroundColor: '#000000',
-                                    color: '#ffffff',
-                                    border: 'none',
-                                    borderRadius: '12px',
-                                    fontFamily: 'Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
-                                    fontSize: '16px',
-                                    fontWeight: 600,
-                                    cursor: 'pointer',
-                                    transition: 'background-color 0.2s',
-                                }}
-                                onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = '#333333')}
-                                onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = '#000000')}
+                                className="w-full h-12 text-base font-semibold"
+                                size="lg"
                             >
                                 Вернуться ко всем урокам ступени
-                            </button>
+                            </Button>
+                        )}
+                    </div>
+                )}
+
+                {/* Блок завершенного урока без задания */}
+                {!hasAssignment && isLessonCompleted && state.progress && (
+                    <div style={{ marginBottom: '32px' }}>
+                        <div style={{
+                            fontFamily: 'Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
+                            fontWeight: 700,
+                            fontSize: '20px',
+                            lineHeight: '1.2',
+                            color: '#000000',
+                            marginBottom: '16px',
+                        }}>
+                            ✅ Урок пройден
+                        </div>
+
+                        <p style={{
+                            fontFamily: 'Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
+                            fontSize: '16px',
+                            lineHeight: '1.5',
+                            color: '#666666',
+                            marginBottom: '20px',
+                        }}>
+                            Урок завершен {state.progress.completed_at ? new Date(state.progress.completed_at).toLocaleDateString('ru-RU') : ''}
+                        </p>
+
+                        {state.lesson && typeof state.lesson.stage_id === 'number' && (
+                            <Button
+                                variant="black"
+                                onClick={() => state.lesson && navigate(`/library/stage/${state.lesson.stage_id}`)}
+                                className="w-full h-12 text-base font-semibold"
+                                size="lg"
+                            >
+                                Вернуться ко всем урокам ступени
+                            </Button>
                         )}
                     </div>
                 )}
             </div>
 
-            {/* Fixed форма сдачи (если есть задание) */}
-            {hasAssignment && state.lesson && (
+            {/* Fixed форма сдачи (если есть задание и оно не сдано) */}
+            {hasAssignment && !isAssignmentSubmitted && state.lesson && (
                 <FixedSubmissionForm
                     lessonId={parseInt(lessonId || '0')}
                     stageId={state.lesson.stage_id as number | undefined}
@@ -547,6 +663,21 @@ const LessonPage: React.FC = () => {
                     existingSubmission={state.submission}
                     onSubmissionUpdate={handleSubmissionUpdate}
                 />
+            )}
+
+            {/* Кнопка завершения урока (если нет задания и урок не завершен) */}
+            {!hasAssignment && !isLessonCompleted && state.lesson && (
+                <div className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 p-4 pb-8 z-50">
+                    <Button
+                        variant="black"
+                        onClick={handleCompleteLesson}
+                        disabled={!supabaseCompatUser || isCompletingLesson}
+                        className="w-full h-12 text-base font-semibold"
+                        size="lg"
+                    >
+                        {isCompletingLesson ? 'Завершаем...' : '✓ Урок пройден'}
+                    </Button>
+                </div>
             )}
         </Page>
     );

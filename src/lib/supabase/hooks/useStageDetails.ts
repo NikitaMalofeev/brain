@@ -69,7 +69,8 @@ const useStageDetails = (user: User | null, stageId: string | number) => {
                         id,
                         name,
                         description,
-                        order_num
+                        order_num,
+                        has_assignment
                     `)
                     .eq('stage_id', stageId)
                     .order('order_num');
@@ -89,27 +90,10 @@ const useStageDetails = (user: User | null, stageId: string | number) => {
                     console.warn('Ошибка загрузки прогресса уроков:', progressError.message);
                 }
 
-                // Получаем информацию о блоках заданий для определения наличия assignment_instruction
-                const { data: assignmentBlocksData, error: blocksError } = await supabase
-                    .from('lesson_blocks')
-                    .select('lesson_id')
-                    .eq('block_type', 'assignment_instruction')
-                    .in('lesson_id', allLessonsData?.map(l => l.id) || []);
-
-                if (blocksError) {
-                    console.warn('Ошибка загрузки блоков заданий:', blocksError.message);
-                }
-
                 // Создаем мапу прогресса для быстрого доступа
                 const progressMap = new Map();
                 progressData?.forEach(progress => {
                     progressMap.set(progress.lesson_id, progress.completed_at);
-                });
-
-                // Создаем мапу уроков с заданиями
-                const assignmentLessonsSet = new Set();
-                assignmentBlocksData?.forEach(block => {
-                    assignmentLessonsSet.add(block.lesson_id);
                 });
 
                 // Формируем данные уроков с логикой последовательной разблокировки
@@ -135,7 +119,7 @@ const useStageDetails = (user: User | null, stageId: string | number) => {
                         content_type: 'mixed', // Теперь уроки могут содержать разные типы блоков
                         cover_image_url: undefined, // Убираем пока это поле, так как его нет в новой схеме
                         order_num: lesson.order_num,
-                        has_assignment: assignmentLessonsSet.has(lesson.id),
+                        has_assignment: lesson.has_assignment || false,
                         is_completed: isCompleted,
                         is_unlocked: isUnlocked,
                         completion_date: completionDate,
