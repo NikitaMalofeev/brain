@@ -1,149 +1,387 @@
-
-# 🧩 stage_view_flow.md  
+# 🧩 Stage View Flow (ОБНОВЛЕНО 29.01.2025)
 **Экран: "Ступень" / Детализация этапа обучения**
 
 ---
 
 ## 🎯 Цель флоу
 
-Позволить пользователю зайти в конкретную ступень курса, изучить список уроков и перейти к их просмотру или выполнению задания.
+Позволить пользователю зайти в конкретную ступень курса, изучить список уроков с реальными обложками из CloudFlare R2 и перейти к их просмотру или выполнению задания через новую архитектуру has_assignment.
 
 ---
 
-## 🧠 Пользовательский опыт (UI)
+## 🧠 Пользовательский опыт (реализованный UI)
 
-**Экран: "Первая ступень"**  
-Элементы на экране (согласно Figma):
-- Название ступени
-- Прогресс: «2 из 5 завершено»
-- Список уроков:
-  - Иконка контента (видео, текст, аудио, файл, ссылка)
-  - Название
-  - Статус урока: 🟢 завершено / ⚪ не начат / ⏳ в процессе
-  - Метка "Есть задание" / Статус задания (сдано / не сдано / принято)
-- Кнопка "Назад"
-- Нижняя навигация (Tab Bar)
+### Структура экрана StagePage
+
+**Дизайн и размеры:**
+- **Ширина:** максимум 375px по центру
+- **Фон:** #F1F1F1 (светло-серый)
+- **Отступы:** 16px padding
+- **С TabBar:** показывает нижнюю навигацию
+
+**Элементы экрана (сверху вниз):**
+
+#### 1. Заголовок ступени
+```typescript
+<h1 style={{
+  fontFamily: 'Inter',
+  fontWeight: 700,
+  fontSize: '28px',
+  color: '#1a1a1a',
+  textAlign: 'left'
+}}>
+  {stageDetails.stage_name}
+</h1>
+```
+
+#### 2. Прогресс ступени
+```typescript
+<div style={{
+  fontSize: '16px',
+  color: '#4a4a4a',
+  marginBottom: '24px'
+}}>
+  {completed_lessons} из {total_lessons} завершено
+</div>
+```
+
+#### 3. Предупреждение о жизнях (если lives_remaining = 0)
+```
+┌─────────────────────────────────┐
+│ ⚠️ У вас осталось 0 жизней!     │ ← Красный блок
+│    Будьте осторожны с дедлайнами│
+└─────────────────────────────────┘
+```
+
+#### 4. Список уроков (LessonCard компоненты)
+- **Размер карточки:** 171px высота обложки + информация
+- **Статусы:** "Завершено" / "Доступно" / "Заблокированно"
+- **Иконка замка:** для заблокированных уроков на обложке
+- **Метка "Задание":** синий бейдж если has_assignment = true (поле в таблице lessons)
+- **Обложки уроков:** Реальные изображения из CloudFlare R2 через buildImageUrl()
+- **Диагностика:** Логи загрузки изображений в консоли браузера для отладки
+
+#### 5. Пустое состояние
+```
+В этой ступени пока нет уроков
+```
 
 ---
 
-## ⚙️ Логика (backend / Supabase)
+## ⚙️ Логика (реализованная)
 
-### 🔐 Доступ к ступени
+### 🔐 Доступ к урокам (последовательная разблокировка)
 
-- Каждая ступень (`course_stages`) может быть заблокирована:
-  - `unlock_condition_type = previous_stage_completed`
-  - `lives_remaining == 0` (игровая блокировка)
-- При `lives_remaining = 0` → весь экран неактивен, показываем алерт.
+```typescript
+// Логика разблокировки уроков
+let isUnlocked = false;
+if (index === 0) {
+  // Первый урок всегда разблокирован
+  isUnlocked = true;
+} else {
+  // Остальные уроки разблокированы, если предыдущий урок завершен
+  const previousLessonCompleted = !!progressMap.get(previousLessonId);
+  isUnlocked = previousLessonCompleted;
+}
+```
+
+### 🔴 Предупреждение о жизнях
+
+```typescript
+const livesRemaining = supabaseUser?.lives_remaining ?? 3;
+const showLivesWarning = livesRemaining === 0;
+
+// Показывается красный блок с предупреждением, но НЕ блокирует доступ
+```
 
 ---
 
-### 📥 Загрузка данных
+### 📥 Загрузка данных (useStageDetails хук) - ОБНОВЛЕНО
 
-```ts
-const stageId = params.stage_id
+```typescript
+// 1. Данные ступени
+const stageData = await supabase
+  .from('course_stages')
+  .select('id, name, description')
+  .eq('id', stageId)
+  .single();
 
-// Материалы
-const materials = await supabase
-  .from("materials")
-  .select("*")
-  .eq("stage_id", stageId)
-  .order("order")
+// 2. Все уроки ступени (ОБНОВЛЕНО: добавлены has_assignment и cover_image_path)
+const allLessonsData = await supabase
+  .from('lessons')
+  .select(`
+    id,
+    name,
+    description,
+    order_num,
+    has_assignment,
+    cover_image_path
+  `)
+  .eq('stage_id', stageId)
+  .order('order_num');
 
-// Прогресс пользователя по материалам
-const viewed = await supabase
-  .from("material_status")
-  .select("material_id")
-  .eq("user_id", user.id)
+// 3. Прогресс пользователя по урокам
+const progressData = await supabase
+  .from('lesson_progress')
+  .select('lesson_id, completed_at')
+  .eq('user_id', user.id)
+  .in('lesson_id', lessonIds);
 
-// Задания, привязанные к материалам
-const assignments = await supabase
-  .from("assignments")
-  .select("*")
-  .in("material_id", materials.map(m => m.id))
+// 4. УБРАНО: Блоки заданий больше не используются
+// has_assignment теперь поле в таблице lessons
+```
 
-// Сдачи по этим заданиям
-const submissions = await supabase
-  .from("submissions")
-  .select("assignment_id, status")
-  .eq("user_id", user.id)
-````
+### 📊 Структура данных - ОБНОВЛЕНО
+
+```typescript
+interface LessonData {
+  lesson_id: number;
+  lesson_name: string;
+  content_type: string;        // 'mixed' для всех уроков
+  cover_image_path?: string;   // НОВОЕ: путь к обложке в CloudFlare R2
+  order_num: number;
+  has_assignment: boolean;     // ИЗМЕНЕНО: поле из таблицы lessons
+  is_completed: boolean;       // Есть ли запись в lesson_progress
+  is_unlocked: boolean;        // Логика последовательности
+  completion_date?: string;
+}
+
+interface StageDetailsData {
+  stage_id: number;
+  stage_name: string;
+  stage_description: string;
+  total_lessons: number;
+  completed_lessons: number;
+  is_unlocked: boolean;        // Всегда true пока
+  lessons: LessonData[];
+}
+```
 
 ---
 
 ## 🔄 Действия пользователя
 
-### 1. Нажал на урок без задания
+### 1. Клик на доступный урок
 
-* Открывается `lesson_view` (контент)
-* После 90% просмотра → mark as viewed → `material_status`
+```typescript
+const handleLessonClick = (lessonId: number) => {
+  navigate(`/library/lesson/${lessonId}`);
+};
+```
 
-### 2. Нажал на урок с заданием
+- **Переход:** `/library/lesson/{lesson_id}`
+- **Контент:** Все блоки урока + FixedSubmissionForm (если has_assignment = true)
+- **Завершение урока:** Кнопка "Урок пройден" (если has_assignment = false)
+- **Навигация:** Кнопка "Вернуться ко всем урокам ступени" после сдачи/завершения
 
-* Открывается `lesson_view` + кнопка «Перейти к заданию»
-* Навигация: `assignment/:assignment_id`
+### 2. Клик на заблокированный урок
+
+```typescript
+if (lesson.is_unlocked) {
+  onClick(lesson.lesson_id);
+} else {
+  console.log('Урок заблокирован. Завершите предыдущий урок для разблокировки.');
+}
+```
+
+- **Действие:** Ничего не происходит
+- **Визуально:** opacity: 0.6, cursor: 'not-allowed'
+
+### 3. Предупреждение о жизнях
+
+- **Показывается:** Красный блок с предупреждением
+- **НЕ блокирует:** Доступ к урокам остается
 
 ---
 
 ## 🔁 Навигация
 
-* ← `library` (список ступеней)
-* → `lesson/:material_id`
-* → `assignment/:assignment_id` (если материал содержит задание)
+- **Входная точка:** `/library/stage/{stage_id}`
+- **Возврат:** Встроенный TabBar → `/library`
+- **Переход к уроку:** `/library/lesson/{lesson_id}`
 
 ---
 
-## 🗄 Задействованные таблицы
+## 🗄 Задействованные таблицы (ОБНОВЛЕНО)
 
-| Таблица             | Назначение                       |
-| ------------------- | -------------------------------- |
-| `course_stages`     | ID, название, условие доступа    |
-| `lessons`           | Уроки в рамках ступени         |
-| `assignments`       | Задания, связанные с уроками |
-| `submissions`       | Состояние сдачи                  |
-| `material_status`   | Просмотренность материалов       |
-| `user_gamification` | Жизни, баллы                     |
+| Таблица             | Назначение                       | Изменения                    |
+| ------------------- | -------------------------------- | ---------------------------- |
+| `course_stages`     | ID, название, описание ступени   | Без изменений                |
+| `lessons`           | Уроки + has_assignment + cover_image_path | **ОБНОВЛЕНО**: добавлены поля has_assignment, cover_image_path |
+| `lesson_progress`   | Завершенность уроков            | Обновлена логика создания при сдаче заданий |
+| `users`             | lives_remaining для предупреждения | Без изменений                |
+| `submissions`       | **ДОБАВЛЕНО**: Сданные задания пользователей | Новая таблица для ДЗ        |
 
----
+**НЕ используются:**
+- `assignments` - старая схема
+- `lesson_blocks` с типом `assignment_instruction` - **УДАЛЕНО**, заменено на поле has_assignment
+- `material_status` - заменено на lesson_progress
+- `user_gamification` - lives_remaining в users
 
-## ✅ Acceptance Criteria
-
-* [ ] Этап доступен при выполнении условий
-* [ ] Загружается корректный список материалов
-* [ ] Урок с `is_assignment_trigger` отображает кнопку «Перейти к заданию»
-* [ ] Статусы задания отображаются: `submitted`, `approved`, `rejected`
-* [ ] Если `lives = 0` — доступ к ступени заблокирован
-
----
-
-## 📍 Структура компонентов
-
-* `/pages/stage/[stage_id].tsx`
-* `/components/LessonCard.tsx`
-* `/lib/supabase/fetchStageViewData.ts`
+**CloudFlare R2:**
+- Бакет `brain-programming` с папками `images/`, `audio/`, `documents/`
+- Публичный URL: `https://pub-77b01fa701e84f019ef02376a7fb67f1.r2.dev`
 
 ---
 
-## 🧱 Псевдокод (React-style)
+## 🎨 Визуальные компоненты
 
-```tsx
-<StageScreen>
-  {materials.map((m) => (
-    <LessonCard
-      key={m.id}
-      title={m.title}
-      icon={m.content_type}
-      viewed={viewedIds.includes(m.id)}
-      hasAssignment={assignmentsMap[m.id]}
-      submissionStatus={submissionsMap[assignmentsMap[m.id]]?.status}
-      onClick={() => router.push(`/lesson/${m.id}`)}
+### LessonCard (реализованный) - ОБНОВЛЕНО
+
+```typescript
+<div style={{
+  backgroundColor: '#FFFFFF',
+  borderRadius: '24px',
+  boxShadow: '0 2px 8px rgba(0, 0, 0, 0.04)',
+  padding: '16px 16px 24px 16px',
+  opacity: lesson.is_unlocked ? 1 : 0.6,
+  cursor: lesson.is_unlocked ? 'pointer' : 'not-allowed'
+}}>
+  {/* Обложка 171px высота - ОБНОВЛЕНО: CloudFlare R2 */}
+  <div style={{ height: '171px', borderRadius: '12px' }}>
+    <img 
+      src={lesson.cover_image_path 
+        ? buildImageUrl(lesson.cover_image_path) 
+        : getDefaultCover(lesson.content_type)
+      }
+      onError={(e) => {
+        console.error('❌ Ошибка загрузки изображения:', {
+          lessonName: lesson.lesson_name,
+          failedUrl: e.currentTarget.src,
+          originalPath: lesson.cover_image_path
+        });
+        e.currentTarget.src = getDefaultCover(lesson.content_type);
+      }}
+      onLoad={() => {
+        console.log('✅ Изображение загружено успешно:', lesson.lesson_name);
+      }}
     />
-  ))}
-</StageScreen>
+    {/* Иконка замка для заблокированных - на обложке */}
+    {!lesson.is_unlocked && (
+      <div style={{ position: 'absolute', top: '70px', left: '50%' }}>
+        <svg>...</svg> {/* SVG иконка замка */}
+      </div>
+    )}
+  </div>
+  
+  {/* Информация */}
+  <div>
+    <div style={{ justifyContent: 'space-between' }}>
+      <span>День {lesson.lesson_id}</span>
+      <span>{lesson.is_completed ? 'Завершено' : lesson.is_unlocked ? 'Доступно' : 'Заблокировано'}</span>
+    </div>
+    <h3>{lesson.lesson_name}</h3>
+    {/* ОБНОВЛЕНО: has_assignment из поля БД */}
+    {lesson.has_assignment && (
+      <span style={{ backgroundColor: '#4e9bff' }}>ЗАДАНИЕ</span>
+    )}
+  </div>
+</div>
+```
+
+### Предупреждение о жизнях
+
+```typescript
+{showLivesWarning && (
+  <div style={{
+    backgroundColor: '#fff5f5',
+    border: '1px solid #fed7d7',
+    borderRadius: '12px',
+    padding: '16px',
+    color: '#c53030',
+    display: 'flex',
+    gap: '8px'
+  }}>
+    <span>⚠️</span>
+    <span>У вас осталось 0 жизней! Будьте осторожны с дедлайнами.</span>
+  </div>
+)}
 ```
 
 ---
 
-## 🧭 Следующие flow
+## ✅ Acceptance Criteria (ОБНОВЛЕНО)
 
-→ `lesson_view_flow.md` — просмотр контента
-→ `assignment_submission_tma_flow.md` или `assignment_submission_chat_report_flow.md`
+- ✅ Ступень загружается с правильным списком уроков
+- ✅ Последовательная разблокировка: следующий урок доступен после завершения предыдущего
+- ✅ **ОБНОВЛЕНО**: has_assignment теперь поле в таблице lessons (не через lesson_blocks)
+- ✅ **НОВОЕ**: Реальные обложки уроков загружаются из CloudFlare R2
+- ✅ **НОВОЕ**: buildImageUrl() корректно строит URL изображений
+- ✅ **НОВОЕ**: Диагностические логи для отладки загрузки изображений
+- ✅ Предупреждение о жизнях показывается при `lives_remaining = 0`
+- ✅ Заблокированные уроки неактивны (opacity, cursor, иконка замка на обложке)
+- ✅ Навигация к уроку работает только для разблокированных
+- ✅ Прогресс ступени подсчитывается корректно
+- ✅ **НОВОЕ**: Fallback на дефолтные обложки при ошибке загрузки
+
+---
+
+## 📍 Структура компонентов (фактическая)
+
+```
+src/pages/LibraryPage/StagePage.tsx          - основная страница ступени
+src/components/LessonCard/LessonCard.tsx     - карточка урока  
+src/lib/supabase/hooks/useStageDetails.ts    - хук загрузки данных
+```
+
+---
+
+## 🧱 Псевдокод (фактический React-style)
+
+```tsx
+<StagePage>
+  <h1>{stageDetails.stage_name}</h1>
+  <div>{completed_lessons} из {total_lessons} завершено</div>
+  
+  {showLivesWarning && <WarningBlock />}
+  
+  <div style={{ gap: '12px' }}>
+    {stageDetails.lessons.map((lesson) => (
+      <LessonCard
+        key={lesson.lesson_id}
+        lesson={lesson}
+        onClick={handleLessonClick}
+      />
+    ))}
+  </div>
+  
+  {lessons.length === 0 && <EmptyState />}
+</StagePage>
+```
+
+---
+
+## 🧭 Связанные flow
+
+- **Входная точка:** `library_flow.md` - список ступеней
+- **Переход к урокам:** `lesson_view_flow.md` - просмотр контента урока
+- **Завершение урока:** обновление `lesson_progress` → разблокировка следующего
+
+---
+
+## 🔧 Особенности реализации
+
+### ✅ Что реализовано (ОБНОВЛЕНО):
+
+- **Последовательная разблокировка** - через логику в useStageDetails
+- **Визуальная блокировка** - opacity + cursor + иконка замка на обложке
+- **ОБНОВЛЕНО: Определение заданий** - через поле has_assignment в таблице lessons
+- **НОВОЕ: CloudFlare R2 интеграция** - реальные обложки уроков
+- **НОВОЕ: buildImageUrl функция** - правильные URL для изображений
+- **НОВОЕ: Диагностика изображений** - логи в консоли для отладки
+- **Адаптивный дизайн** - максимум 375px ширина
+- **Предупреждения о жизнях** - без блокировки функционала
+- **НОВОЕ: Fallback обложки** - дефолтные изображения при ошибке
+
+### ⚠️ Ограничения:
+
+- **НЕТ условий разблокировки ступени** - is_unlocked всегда true
+- **НЕТ блокировки при lives = 0** - только предупреждение
+- **НЕТ детального статуса заданий** - только has_assignment флаг
+
+### 🔄 Улучшения в будущем:
+
+- Добавить условия разблокировки ступеней
+- Реализовать блокировку при lives = 0
+- Показывать статус сданных заданий (через таблицу submissions)
+- Оптимизировать загрузку изображений (lazy loading, кеширование)

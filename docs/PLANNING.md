@@ -20,7 +20,7 @@
 
 - **Frontend:** React, TypeScript, Vite
 - **Backend:** Supabase (PostgreSQL, Auth, Functions)
-- **UI/UX:** Figma
+- **UI/UX:** Figma, TailwindCSS, Shadcn/UI
 - **Deployment:** Vercel (Frontend), Railway (если потребуется Backend)
 
 ## 4. Стиль кода и стандарты
@@ -28,7 +28,7 @@
 - **TypeScript/React:** Стандарты сообщества, Prettier, ESLint.
 - **Общие принципы:** SOLID, DRY, KISS.
 - **Комментарии:** На русском языке, для нетривиальных участков кода.
-- **Размер файлов:** Лимит ~500 строк.
+- **Размер файлов:** Лимит ~300 строк.
 
 ## 5. Ограничения и допущения
 
