@@ -377,9 +377,10 @@ const LessonPage: React.FC = () => {
         );
     }
 
-    // Определяем нужен ли bottom padding для fixed формы (без TabBar)
+    // Определяем нужен ли bottom padding для fixed формы (только для несданных заданий)
     const hasAssignment = state.lesson.has_assignment;
-    const bottomPadding = hasAssignment ? '120px' : '40px';
+    const isAssignmentSubmitted = !!state.submission;
+    const bottomPadding = hasAssignment && !isAssignmentSubmitted ? '120px' : '40px';
 
     return (
         <Page back={false} showTabBar={false}>
@@ -453,6 +454,86 @@ const LessonPage: React.FC = () => {
                 <div style={{ marginBottom: '32px' }}>
                     {state.lesson.blocks.map((block: LessonBlock) => renderContentBlock(block))}
                 </div>
+
+                {/* Блок с результатом сданного задания */}
+                {state.submission && (
+                    <div style={{ marginBottom: '32px' }}>
+                        <div style={{
+                            fontFamily: 'Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
+                            fontWeight: 700,
+                            fontSize: '20px',
+                            lineHeight: '1.2',
+                            color: '#000000',
+                            marginBottom: '16px',
+                        }}>
+                            ✅ Задание сдано на проверку
+                        </div>
+
+                        {state.submission.content_text && (
+                            <div style={{ marginBottom: '16px' }}>
+                                <p style={{
+                                    fontFamily: 'Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
+                                    fontSize: '14px',
+                                    fontWeight: 600,
+                                    color: '#666666',
+                                    marginBottom: '8px',
+                                }}>
+                                    Ваш ответ:
+                                </p>
+                                <div style={{
+                                    fontFamily: 'Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
+                                    fontSize: '16px',
+                                    lineHeight: '1.5',
+                                    color: '#666666',
+                                    whiteSpace: 'pre-wrap',
+                                }}>
+                                    {state.submission.content_text}
+                                </div>
+                            </div>
+                        )}
+
+                        {state.submission.file_url && (
+                            <div style={{ marginBottom: '16px' }}>
+                                <a
+                                    href={state.submission.file_url}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    style={{
+                                        fontFamily: 'Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
+                                        fontSize: '16px',
+                                        color: '#4e9bff',
+                                        textDecoration: 'none',
+                                    }}
+                                >
+                                    📄 {decodeURIComponent(state.submission.file_url.substring(state.submission.file_url.lastIndexOf('/') + 1))}
+                                </a>
+                            </div>
+                        )}
+
+                        {state.lesson && typeof state.lesson.stage_id === 'number' && (
+                            <button
+                                onClick={() => state.lesson && navigate(`/library/stage/${state.lesson.stage_id}`)}
+                                style={{
+                                    width: '100%',
+                                    padding: '12px 24px',
+                                    backgroundColor: '#000000',
+                                    color: '#ffffff',
+                                    border: 'none',
+                                    borderRadius: '12px',
+                                    fontFamily: 'Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
+                                    fontSize: '16px',
+                                    fontWeight: 600,
+                                    cursor: 'pointer',
+                                    transition: 'background-color 0.2s',
+                                }}
+                                onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = '#333333')}
+                                onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = '#000000')}
+                            >
+                                Вернуться ко всем урокам ступени
+                            </button>
+                        )}
+                    </div>
+                )}
             </div>
 
             {/* Fixed форма сдачи (если есть задание) */}

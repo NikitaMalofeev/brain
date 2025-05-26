@@ -137,50 +137,9 @@ const FixedSubmissionForm: React.FC<FixedSubmissionFormProps> = ({
         setUploadedFiles(prev => prev.filter(url => url !== fileUrl));
     };
 
-    // Если задание уже сдано - показываем статус, текст, файл и кнопку
+    // Если задание уже сдано - ничего не рендерим (отображение перенесено в LessonPage)
     if (isSubmitted && existingSubmission) {
-        const submittedFileName = existingSubmission.file_url
-            ? existingSubmission.file_url.substring(existingSubmission.file_url.lastIndexOf('/') + 1)
-            : null;
-
-        return (
-            <div className="fixed bottom-0 left-0 right-0 z-50 p-4 bg-white border-t border-gray-200 shadow-lg">
-                <div className="max-w-[375px] mx-auto text-left">
-                    <p className="text-center font-mono text-base font-medium text-foreground mb-3">
-                        ✅ Задание сдано на проверку
-                    </p>
-                    {existingSubmission.content_text && (
-                        <div className="mb-2">
-                            <p className="text-sm font-semibold text-gray-700 mb-1">Ваш ответ:</p>
-                            <p className="text-sm text-gray-600 bg-gray-50 p-2 rounded whitespace-pre-wrap">
-                                {existingSubmission.content_text}
-                            </p>
-                        </div>
-                    )}
-                    {existingSubmission.file_url && submittedFileName && (
-                        <div className="mb-3">
-                            <p className="text-sm font-semibold text-gray-700 mb-1">Прикрепленный файл:</p>
-                            <a
-                                href={existingSubmission.file_url}
-                                target="_blank"
-                                rel="noopener noreferrer"
-                                className="text-sm text-blue-600 hover:underline break-all"
-                            >
-                                📄 {decodeURIComponent(submittedFileName)}
-                            </a>
-                        </div>
-                    )}
-                    {typeof stageId === 'number' && (
-                        <Button
-                            onClick={() => navigate(`/library/stage/${stageId}`)}
-                            className="w-full mt-2 bg-black hover:bg-gray-800 text-white font-mono"
-                        >
-                            Вернуться ко всем урокам ступени
-                        </Button>
-                    )}
-                </div>
-            </div>
-        );
+        return null;
     }
 
     return (
