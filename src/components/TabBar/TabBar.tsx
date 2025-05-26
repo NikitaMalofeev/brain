@@ -1,5 +1,6 @@
 import { FC } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
+import './TabBar.css';
 
 interface TabBarProps {
   className?: string;
@@ -36,9 +37,9 @@ const TabBar: FC<TabBarProps> = ({ className }) => {
       </button> */}
 
       <button
-        className={`tab-item ${isActive('/library') ? 'active' : ''}`}
-        onClick={() => handleTabClick('/library')}
-        aria-current={isActive('/library') ? 'page' : undefined}
+        className={`tab-item ${(isActive('/') || isActive('/library')) ? 'active' : ''}`}
+        onClick={() => handleTabClick('/')}
+        aria-current={(isActive('/') || isActive('/library')) ? 'page' : undefined}
         aria-label="Перейти в библиотеку"
       >
         <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">

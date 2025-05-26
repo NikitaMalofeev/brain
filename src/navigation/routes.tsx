@@ -14,7 +14,7 @@ import LessonPage from '@/pages/LibraryPage/LessonPage';
 export const routers = [
   {
     path: '/',
-    Component: MainScreen
+    Component: LibraryPage
   },
   {
     path: '/library',

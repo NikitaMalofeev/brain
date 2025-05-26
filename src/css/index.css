@@ -16,6 +16,12 @@
   --tgui-accent-rgb: 46, 138, 230;
   --tgui-border-rgb: 72, 78, 86;
 
+  /* Telegram UI переменные для TabBar */
+  --tgui-surface: #ffffff;
+  --tgui-border: #e0e0e0;
+  --tgui-text-secondary: #8c8c8c;
+  --tgui-accent: #007aff;
+
   /* shadcn/ui CSS переменные (соответствуют дизайну Figma) */
   --background: 241 241 241;
   /* #F1F1F1 - основной фон приложения */
