@@ -6,3 +6,9 @@ node_modules/
 # SpecStory explanation file
 .specstory/.what-is-this.md
 .vercel
+/dist
+/build
+/public/images
+/public/videos
+/public/audio
+/public/documents

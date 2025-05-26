@@ -68,6 +68,12 @@
 
 ## 🎯 Текущие Задачи
 
+- 🟢 **[Сегодня]** Деплой приложения на Vercel
+  - 🟢 Проверить конфигурацию проекта (vercel.json, package.json)
+  - 🟢 Выполнить сборку проекта (npm run build)
+  - 🟢 Выполнить продакшн деплой (npx vercel --prod)
+  - 🟢 **Production URL:** https://brain-programming-egrm90kzr-ivans-projects-37cac669.vercel.app
+
 - 🟢 **[Сегодня]** Исправить проблему с отображением TabBar
   - 🟢 Добавить отсутствующий импорт CSS файла в TabBar.tsx
   - 🟢 Добавить недостающие CSS переменные для TabBar в index.css
