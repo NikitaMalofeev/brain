@@ -1,12 +1,12 @@
-import {Page} from "@/components";
-import {Link} from "react-router-dom";
+import { Page } from "@/components";
+import { Link } from "react-router-dom";
 
-export const Chats = ()=>{
+export const Chats = () => {
     const chats = [
         {
-            title: "Chat 1",
+            title: "Общий чат",
             description: "Очень краткое описание чата, его целей, правил, активности",
-            link: 'https://t.me/123'
+            link: 'https://t.me/+mCueefdhh6Q3MDcy'
         },
         {
             title: "Chat 2",
@@ -24,7 +24,7 @@ export const Chats = ()=>{
             link: 'https://t.me/123'
         }
     ]
-    return(
+    return (
         <Page>
 
             <div className={'flex flex-col gap-4 p-4 bg-gray-100 text-black/80 min-h-screen'}>
@@ -42,7 +42,7 @@ export const Chats = ()=>{
                         </div>
                         <svg className={'min-w-8'} width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
                             <path d="M9 5L16 12L9 19" stroke="black" stroke-width="1.5" stroke-linecap="round"
-                                  stroke-linejoin="round"/>
+                                stroke-linejoin="round" />
                         </svg>
                     </Link>
                 ))}
