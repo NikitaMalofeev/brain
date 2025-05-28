@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { uploadFileToR2 } from '@/lib/cloudflareR2Service';
+import { uploadFileToR2, buildFileUrl } from '@/lib/cloudflareR2Service';
 import { supabase } from '@/lib/supabase/client';
 import { LessonBlock, Submission } from '@/lib/supabase/types';
 import { User } from '@supabase/supabase-js';
@@ -78,7 +78,11 @@ const FixedSubmissionForm: React.FC<FixedSubmissionFormProps> = ({
 
         try {
             const uploadPromises = Array.from(files).map(async (file) => {
-                return await uploadFileToR2(file);
+                // Загружаем файл в R2 и получаем file path
+                const filePath = await uploadFileToR2(file);
+                // Преобразуем file path в публичный URL
+                const fileUrl = buildFileUrl(filePath);
+                return fileUrl;
             });
 
             const newFileUrls = await Promise.all(uploadPromises);
@@ -137,6 +141,27 @@ const FixedSubmissionForm: React.FC<FixedSubmissionFormProps> = ({
         setUploadedFiles(prev => prev.filter(url => url !== fileUrl));
     };
 
+    // Определение типа файла по URL для отображения
+    const getFileTypeInfo = (fileUrl: string) => {
+        const fileName = decodeURIComponent(fileUrl.substring(fileUrl.lastIndexOf('/') + 1));
+        const extension = fileName.split('.').pop()?.toLowerCase() || '';
+
+        // Определяем тип и иконку
+        if (['jpg', 'jpeg', 'png', 'gif', 'webp', 'svg', 'bmp'].includes(extension)) {
+            return { type: 'image', icon: '🖼️', name: fileName };
+        }
+        if (['mp3', 'wav', 'ogg', 'aac', 'flac', 'm4a'].includes(extension)) {
+            return { type: 'audio', icon: '🎵', name: fileName };
+        }
+        if (extension === 'pdf') {
+            return { type: 'pdf', icon: '📄', name: fileName };
+        }
+        if (['doc', 'docx'].includes(extension)) {
+            return { type: 'document', icon: '📝', name: fileName };
+        }
+        return { type: 'unknown', icon: '📎', name: fileName };
+    };
+
     // Если задание уже сдано - ничего не рендерим (отображение перенесено в LessonPage)
     if (isSubmitted && existingSubmission) {
         return null;
@@ -148,22 +173,26 @@ const FixedSubmissionForm: React.FC<FixedSubmissionFormProps> = ({
             {uploadedFiles.length > 0 && (
                 <div className="px-4 pt-3">
                     <div className="flex gap-2 flex-wrap">
-                        {uploadedFiles.map((fileUrl, index) => (
-                            <div
-                                key={index}
-                                className="flex items-center px-3 py-1.5 bg-gray-100 rounded-lg text-sm font-medium text-gray-600"
-                            >
-                                📄 Файл {index + 1}
-                                <Button
-                                    variant="ghost"
-                                    size="sm"
-                                    onClick={() => handleRemoveFile(fileUrl)}
-                                    className="ml-2 h-auto p-0 text-muted-foreground hover:text-foreground"
+                        {uploadedFiles.map((fileUrl, index) => {
+                            const fileInfo = getFileTypeInfo(fileUrl);
+                            return (
+                                <div
+                                    key={index}
+                                    className="flex items-center px-3 py-1.5 bg-gray-100 rounded-lg text-sm font-medium text-gray-600"
                                 >
-                                    ✕
-                                </Button>
-                            </div>
-                        ))}
+                                    <span className="mr-2">{fileInfo.icon}</span>
+                                    <span className="max-w-[120px] truncate">{fileInfo.name}</span>
+                                    <Button
+                                        variant="ghost"
+                                        size="sm"
+                                        onClick={() => handleRemoveFile(fileUrl)}
+                                        className="ml-2 h-auto p-0 text-muted-foreground hover:text-foreground"
+                                    >
+                                        ✕
+                                    </Button>
+                                </div>
+                            );
+                        })}
                     </div>
                 </div>
             )}

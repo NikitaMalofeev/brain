@@ -210,6 +210,27 @@ const LessonPage: React.FC = () => {
         }
     };
 
+    // Определение типа файла для отображения
+    const getFileTypeInfo = (fileUrl: string) => {
+        const fileName = decodeURIComponent(fileUrl.substring(fileUrl.lastIndexOf('/') + 1));
+        const extension = fileName.split('.').pop()?.toLowerCase() || '';
+
+        // Определяем тип и иконку
+        if (['jpg', 'jpeg', 'png', 'gif', 'webp', 'svg', 'bmp'].includes(extension)) {
+            return { type: 'image', icon: '🖼️', name: fileName };
+        }
+        if (['mp3', 'wav', 'ogg', 'aac', 'flac', 'm4a'].includes(extension)) {
+            return { type: 'audio', icon: '🎵', name: fileName };
+        }
+        if (extension === 'pdf') {
+            return { type: 'pdf', icon: '📄', name: fileName };
+        }
+        if (['doc', 'docx'].includes(extension)) {
+            return { type: 'document', icon: '📝', name: fileName };
+        }
+        return { type: 'unknown', icon: '📎', name: fileName };
+    };
+
     // Рендер блока контента
     const renderContentBlock = (block: LessonBlock) => {
         // Убираем визуальное разделение на прямоугольники
@@ -587,19 +608,28 @@ const LessonPage: React.FC = () => {
 
                         {state.submission.file_url && (
                             <div style={{ marginBottom: '16px' }}>
-                                <a
-                                    href={state.submission.file_url}
-                                    target="_blank"
-                                    rel="noopener noreferrer"
-                                    style={{
-                                        fontFamily: 'Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
-                                        fontSize: '16px',
-                                        color: '#4e9bff',
-                                        textDecoration: 'none',
-                                    }}
-                                >
-                                    📄 {decodeURIComponent(state.submission.file_url.substring(state.submission.file_url.lastIndexOf('/') + 1))}
-                                </a>
+                                {(() => {
+                                    const fileInfo = getFileTypeInfo(state.submission.file_url);
+                                    return (
+                                        <a
+                                            href={state.submission.file_url}
+                                            target="_blank"
+                                            rel="noopener noreferrer"
+                                            style={{
+                                                fontFamily: 'Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
+                                                fontSize: '16px',
+                                                color: '#4e9bff',
+                                                textDecoration: 'none',
+                                                display: 'flex',
+                                                alignItems: 'center',
+                                                gap: '8px',
+                                            }}
+                                        >
+                                            <span>{fileInfo.icon}</span>
+                                            <span>{fileInfo.name}</span>
+                                        </a>
+                                    );
+                                })()}
                             </div>
                         )}
 
