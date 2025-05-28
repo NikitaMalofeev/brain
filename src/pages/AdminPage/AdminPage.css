@@ -296,7 +296,8 @@ body.admin-mode {
   border-radius: 4px;
 }
 
-.admin-add-btn, .admin-refresh-btn {
+.admin-add-btn,
+.admin-refresh-btn {
   background: rgba(14, 165, 233, 0.1);
   color: var(--admin-secondary);
   border: 1px solid rgba(14, 165, 233, 0.2);
@@ -323,13 +324,15 @@ body.admin-mode {
   font-size: 16px;
 }
 
-.admin-add-btn:hover, .admin-refresh-btn:hover {
+.admin-add-btn:hover,
+.admin-refresh-btn:hover {
   background: rgba(14, 165, 233, 0.2);
   transform: translateY(-2px);
   box-shadow: 0 4px 12px rgba(14, 165, 233, 0.2);
 }
 
-.admin-add-btn:active, .admin-refresh-btn:active {
+.admin-add-btn:active,
+.admin-refresh-btn:active {
   transform: translateY(1px);
 }
 
@@ -348,7 +351,7 @@ body.admin-mode {
   border: var(--admin-glass-border);
 }
 
-.practices-table table, 
+.practices-table table,
 .categories-table table,
 .users-table table {
   width: 100%;
@@ -559,8 +562,13 @@ body.admin-mode {
 }
 
 @keyframes fadeIn {
-  from { opacity: 0; }
-  to { opacity: 1; }
+  from {
+    opacity: 0;
+  }
+
+  to {
+    opacity: 1;
+  }
 }
 
 .admin-modal {
@@ -580,8 +588,15 @@ body.admin-mode {
 }
 
 @keyframes slideUp {
-  from { transform: translateY(30px); opacity: 0; }
-  to { transform: translateY(0); opacity: 1; }
+  from {
+    transform: translateY(30px);
+    opacity: 0;
+  }
+
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
 }
 
 .admin-modal h3 {
@@ -743,27 +758,27 @@ body.admin-mode {
     padding: 16px;
     border-radius: 0;
   }
-  
+
   .admin-header {
     flex-direction: column;
     align-items: flex-start;
     gap: 16px;
   }
-  
+
   .admin-header button {
     align-self: flex-end;
   }
-  
+
   .section-header {
     flex-direction: column;
     align-items: flex-start;
     gap: 12px;
   }
-  
+
   .admin-tabs {
     gap: 4px;
   }
-  
+
   .admin-tab {
     padding: 10px 16px;
     font-size: 14px;
@@ -778,9 +793,19 @@ body.admin-mode {
     flex-direction: column;
     gap: 16px;
   }
-  
+
   .form-row .form-group {
     margin-bottom: 0;
+  }
+
+  .block-content-preview {
+    max-width: 150px;
+    font-size: 12px;
+  }
+
+  .practices-table th:nth-child(4),
+  .practices-table td:nth-child(4) {
+    max-width: 120px;
   }
 }
 
@@ -842,7 +867,7 @@ body.admin-mode {
   padding: 0;
 }
 
-.editable-cell input, 
+.editable-cell input,
 .editable-cell select {
   width: 100%;
   background: transparent;
@@ -870,9 +895,17 @@ body.admin-mode {
 
 /* Добавляем анимацию сохранения */
 @keyframes saveFlash {
-  0% { background: transparent; }
-  50% { background: rgba(16, 185, 129, 0.2); }
-  100% { background: transparent; }
+  0% {
+    background: transparent;
+  }
+
+  50% {
+    background: rgba(16, 185, 129, 0.2);
+  }
+
+  100% {
+    background: transparent;
+  }
 }
 
 .save-flash {
@@ -887,4 +920,78 @@ body.admin-mode {
 }
 
 /* Исправляем позиционирование модального окна при скролле */
-/* Убираем ненужный медиа-запрос, так как уже применили фиксированное позиционирование */ 
+/* Убираем ненужный медиа-запрос, так как уже применили фиксированное позиционирование */
+
+/* Breadcrumb Navigation */
+.admin-breadcrumb {
+  margin-bottom: 24px;
+  padding: 12px 16px;
+  background: rgba(30, 30, 46, 0.3);
+  backdrop-filter: var(--admin-backdrop-filter);
+  -webkit-backdrop-filter: var(--admin-backdrop-filter);
+  border-radius: 8px;
+  border: var(--admin-glass-border);
+  font-size: 14px;
+}
+
+.breadcrumb-link {
+  background: none;
+  border: none;
+  color: var(--admin-primary);
+  cursor: pointer;
+  text-decoration: underline;
+  font-size: inherit;
+  font-family: inherit;
+  padding: 0;
+  transition: var(--admin-transition);
+}
+
+.breadcrumb-link:hover {
+  color: var(--admin-primary-hover);
+}
+
+.breadcrumb-link:last-child {
+  color: var(--admin-text);
+  text-decoration: none;
+  cursor: default;
+}
+
+/* Стили для BlocksManager */
+.block-content-preview {
+  max-width: 200px;
+  overflow: hidden;
+  font-size: 13px;
+  color: var(--admin-text-secondary);
+  padding: 4px 8px;
+  background: rgba(30, 30, 46, 0.3);
+  border-radius: 6px;
+  border: 1px solid var(--admin-border-light);
+  line-height: 1.3;
+}
+
+.block-content-preview div {
+  margin-bottom: 2px;
+}
+
+.block-content-preview div:last-child {
+  margin-bottom: 0;
+}
+
+.block-content-preview span {
+  color: var(--admin-text);
+}
+
+/* Улучшенные стили для textarea */
+.admin-input[rows] {
+  font-family: 'Consolas', 'Monaco', 'Courier New', monospace;
+  line-height: 1.5;
+  resize: vertical;
+  min-height: 100px;
+}
+
+/* Стили для небольших hint-ов */
+.admin-input+small {
+  font-size: 12px;
+  color: var(--admin-text-secondary);
+  opacity: 0.8;
+}

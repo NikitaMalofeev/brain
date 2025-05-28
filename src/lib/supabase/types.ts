@@ -11,7 +11,7 @@ export interface SupabaseUser {
   created_at?: string | null; // timestamptz, default now()
   updated_at?: string | null; // timestamptz, default now()
   last_login?: string | null; // timestamptz, default now()
-  is_admin?: boolean; // boolean, default false - флаг администратора
+  role?: 'user' | 'curator' | 'admin'; // enum user_role, default 'user' - роль пользователя
   access_till?: string | null; // timestamptz, nullable - дата окончания доступа
   total_points?: number | null; // integer, default 0 - общее количество очков пользователя
   lives_remaining?: number | null; // integer, default 3 - количество оставшихся жизней
@@ -80,6 +80,7 @@ export interface CourseStage extends TimestampFields {
   order_num: number;
   unlock_condition_type?: string;
   unlock_condition_value?: string;
+  is_unlocked?: boolean; // Разблокирована ли ступень
 }
 
 // Уроки (упрощенные, без полей сдачи)

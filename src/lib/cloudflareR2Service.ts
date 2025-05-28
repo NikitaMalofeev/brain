@@ -85,6 +85,18 @@ export const getFilePrefixByExtension = (fileName: string): FilePrefix => {
   return FILE_PREFIXES.DOCUMENTS;
 };
 
+// CORS НАСТРОЙКА: Убедитесь что в CloudFlare R2 настроены CORS правила для вашего домена
+// Перейдите в CloudFlare Dashboard > R2 > Ваш бакет > Settings > CORS Policy
+// Добавьте правило:
+// {
+//   "AllowedOrigins": ["http://localhost:5173", "https://your-domain.com"],
+//   "AllowedMethods": ["GET", "PUT", "POST", "DELETE"],
+//   "AllowedHeaders": ["*"],
+//   "ExposeHeaders": [],
+//   "MaxAgeSeconds": 3600
+// }
+
+
 // Загрузка файла в R2 с автоматическим определением префикса
 // НОВАЯ АРХИТЕКТУРА: возвращает только путь к файлу, а не полный URL
 export const uploadFileToR2 = async (
@@ -104,16 +116,17 @@ export const uploadFileToR2 = async (
     filePrefix = FILE_PREFIXES.DOCUMENTS;
   }
 
+  // Настоящая загрузка в CloudFlare R2 (требует правильной настройки CORS)
   const uniqueFileName = generateUniqueFileName((file as any).name || 'file');
   const fullKey = `${filePrefix}${uniqueFileName}`;
   const arrayBuffer = await file.arrayBuffer();
-  const buffer = Buffer.from(arrayBuffer);
+  const uint8Array = new Uint8Array(arrayBuffer);
   const contentType = (file as any).type || 'application/octet-stream';
 
   const command = new PutObjectCommand({
     Bucket: BUCKET_NAME,
     Key: fullKey,
-    Body: buffer,
+    Body: uint8Array,
     ContentType: contentType,
   });
 
@@ -149,7 +162,7 @@ export const buildFileUrl = (filePath: string): string => {
   // Убираем ведущий слеш, если есть
   const cleanPath = filePath.startsWith('/') ? filePath.slice(1) : filePath;
 
-  // ИСПРАВЛЕНО: используем правильный публичный URL без имени бакета
+  // Используем правильный публичный URL
   // CloudFlare R2 с настроенным Custom Domain предоставляет прямой доступ к файлам
   if (CLOUDFLARE_PUBLIC_URL) {
     return `${CLOUDFLARE_PUBLIC_URL}/${cleanPath}`;

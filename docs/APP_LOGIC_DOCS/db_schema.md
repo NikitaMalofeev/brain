@@ -85,7 +85,7 @@
 - `lesson_id` (bigint, FK → lessons.id, NOT NULL) - Ссылка на урок
 - `order_num` (int4, NOT NULL) - Порядковый номер блока в уроке
 - `title` (text) - Заголовок блока
-- `block_type` (text, NOT NULL) - Тип блока: 'text', 'video', 'audio', 'image', 'pdf', 'assignment_instruction'
+- `block_type` (text, NOT NULL) - Тип блока: 'text', 'video', 'audio', 'image', 'pdf'
 - `content_text` (text) - Текстовое содержимое для text-блоков
 - `content_url` (text) - URL для файлов/медиа контента
 - `meta_json` (jsonb, default: '{}') - Дополнительные поля: длительность видео, подписи и т.п.
