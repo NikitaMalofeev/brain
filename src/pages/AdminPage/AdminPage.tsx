@@ -335,6 +335,16 @@ const StagesManager: React.FC<StagesManagerProps> = ({ courseId, onBack, onStage
   const [editOrderNum, setEditOrderNum] = useState(1);
   const [editIsUnlocked, setEditIsUnlocked] = useState(false);
 
+  // Автоматически обновляем newOrderNum при изменении списка ступеней
+  useEffect(() => {
+    if (stages.length > 0) {
+      const maxOrderNum = Math.max(...stages.map(stage => stage.order_num));
+      setNewOrderNum(maxOrderNum + 1);
+    } else {
+      setNewOrderNum(1);
+    }
+  }, [stages]);
+
   // Добавление ступени
   const handleAddStage = async () => {
     if (!newName.trim()) {
@@ -357,7 +367,6 @@ const StagesManager: React.FC<StagesManagerProps> = ({ courseId, onBack, onStage
       // Очищаем форму
       setNewName('');
       setNewDescription('');
-      setNewOrderNum(stages.length + 1);
       setNewIsUnlocked(false);
 
     } catch (error: any) {
@@ -655,6 +664,16 @@ const LessonsManager: React.FC<LessonsManagerProps> = ({ courseId, stageId, onBa
   const [editOrderNum, setEditOrderNum] = useState(1);
   const [editHasAssignment, setEditHasAssignment] = useState(false);
 
+  // Автоматически обновляем newOrderNum при изменении списка уроков
+  useEffect(() => {
+    if (lessons.length > 0) {
+      const maxOrderNum = Math.max(...lessons.map(lesson => lesson.order_num));
+      setNewOrderNum(maxOrderNum + 1);
+    } else {
+      setNewOrderNum(1);
+    }
+  }, [lessons]);
+
   // Добавление урока
   const handleAddLesson = async () => {
     if (!newName.trim()) {
@@ -666,6 +685,7 @@ const LessonsManager: React.FC<LessonsManagerProps> = ({ courseId, stageId, onBa
       setAddLoading(true);
       setUpdateError(null);
 
+      // Просто создаем новый урок без проверки конфликтов
       await createLesson({
         stage_id: stageId,
         name: newName.trim(),
@@ -677,7 +697,6 @@ const LessonsManager: React.FC<LessonsManagerProps> = ({ courseId, stageId, onBa
       // Очищаем форму
       setNewName('');
       setNewDescription('');
-      setNewOrderNum(lessons.length + 1);
       setNewHasAssignment(false);
 
     } catch (error: any) {
@@ -738,6 +757,7 @@ const LessonsManager: React.FC<LessonsManagerProps> = ({ courseId, stageId, onBa
       setUpdateLoading(true);
       setUpdateError(null);
 
+      // Просто обновляем урок без проверки конфликтов
       await updateLesson(editingLesson.id, {
         name: editName.trim(),
         description: editDescription.trim() || undefined,
@@ -978,6 +998,10 @@ const BlocksManager: React.FC<BlocksManagerProps> = ({ courseId, stageId, lesson
   // Состояние для загрузки файлов
   const [uploadError, setUploadError] = useState<string | null>(null);
 
+  // Состояние для локального редактирования порядка
+  const [localOrderValues, setLocalOrderValues] = useState<{ [key: number]: number }>({});
+  const [orderUpdateTimeouts, setOrderUpdateTimeouts] = useState<{ [key: number]: NodeJS.Timeout }>({});
+
   // Обработчики для загрузки файлов
   const handleFileUploadComplete = (filePath: string, fileUrl: string) => {
     setModalData(prev => ({ ...prev, content_url: fileUrl }));
@@ -1054,6 +1078,7 @@ const BlocksManager: React.FC<BlocksManagerProps> = ({ courseId, stageId, lesson
       }
 
       if (modalMode === 'add') {
+        // Просто создаем новый блок без проверки конфликтов
         await createBlock({
           lesson_id: lessonId,
           title: modalData.title || undefined,
@@ -1063,6 +1088,7 @@ const BlocksManager: React.FC<BlocksManagerProps> = ({ courseId, stageId, lesson
           order_num: modalData.order_num,
         });
       } else {
+        // Просто обновляем блок без проверки конфликтов
         await updateBlock(modalData.id!, {
           title: modalData.title || undefined,
           block_type: modalData.block_type,
@@ -1101,13 +1127,45 @@ const BlocksManager: React.FC<BlocksManagerProps> = ({ courseId, stageId, lesson
     }
   };
 
-  // Инлайн-редактирование порядка
+  // Инлайн-редактирование порядка с debounce
+  const handleOrderInputChange = (blockId: number, newOrder: number) => {
+    // Обновляем локальное значение немедленно
+    setLocalOrderValues(prev => ({ ...prev, [blockId]: newOrder }));
+
+    // Очищаем предыдущий таймер если есть
+    if (orderUpdateTimeouts[blockId]) {
+      clearTimeout(orderUpdateTimeouts[blockId]);
+    }
+
+    // Устанавливаем новый таймер для отложенного обновления
+    const timeoutId = setTimeout(() => {
+      handleOrderChange(blockId, newOrder);
+    }, 1000); // 1 секунда задержки
+
+    setOrderUpdateTimeouts(prev => ({ ...prev, [blockId]: timeoutId }));
+  };
+
   const handleOrderChange = async (blockId: number, newOrder: number) => {
     try {
+      // Просто обновляем порядок без проверки конфликтов
       await updateBlock(blockId, { order_num: newOrder });
+
+      // Очищаем локальное значение после успешного обновления
+      setLocalOrderValues(prev => {
+        const newValues = { ...prev };
+        delete newValues[blockId];
+        return newValues;
+      });
     } catch (error: any) {
       console.error('Ошибка при изменении порядка:', error);
       setUpdateError(error.message || 'Произошла ошибка при изменении порядка');
+
+      // Возвращаем локальное значение к исходному
+      setLocalOrderValues(prev => {
+        const newValues = { ...prev };
+        delete newValues[blockId];
+        return newValues;
+      });
     }
   };
 
@@ -1233,8 +1291,8 @@ const BlocksManager: React.FC<BlocksManagerProps> = ({ courseId, stageId, lesson
                     <td>
                       <input
                         type="number"
-                        value={block.order_num}
-                        onChange={(e) => handleOrderChange(block.id, parseInt(e.target.value) || 1)}
+                        value={localOrderValues[block.id] ?? block.order_num}
+                        onChange={(e) => handleOrderInputChange(block.id, parseInt(e.target.value) || 1)}
                         style={{ width: '60px', textAlign: 'center' }}
                         className="admin-input"
                         min="1"
