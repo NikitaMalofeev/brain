@@ -8,7 +8,7 @@ import { useAppContext } from '@/contexts/AppContext';
 import { logger } from '@/lib/logger';
 import { supabase } from '@/lib/supabase/client';
 import { LessonWithBlocks, LessonBlock, Submission, LessonProgress } from '@/lib/supabase/types';
-import { VideoBlock, AudioBlock, FixedSubmissionForm } from '@/components/LessonContent';
+import { VideoBlock, AudioBlock, FixedSubmissionForm, DocumentBlock } from '@/components/LessonContent';
 import { Button } from '@/components/ui/button';
 
 interface LessonPageState {
@@ -223,27 +223,6 @@ const LessonPage: React.FC = () => {
         }
     };
 
-    // Определение типа файла для отображения
-    const getFileTypeInfo = (fileUrl: string) => {
-        const fileName = decodeURIComponent(fileUrl.substring(fileUrl.lastIndexOf('/') + 1));
-        const extension = fileName.split('.').pop()?.toLowerCase() || '';
-
-        // Определяем тип и иконку
-        if (['jpg', 'jpeg', 'png', 'gif', 'webp', 'svg', 'bmp'].includes(extension)) {
-            return { type: 'image', icon: '🖼️', name: fileName };
-        }
-        if (['mp3', 'wav', 'ogg', 'aac', 'flac', 'm4a'].includes(extension)) {
-            return { type: 'audio', icon: '🎵', name: fileName };
-        }
-        if (extension === 'pdf') {
-            return { type: 'pdf', icon: '📄', name: fileName };
-        }
-        if (['doc', 'docx'].includes(extension)) {
-            return { type: 'document', icon: '📝', name: fileName };
-        }
-        return { type: 'unknown', icon: '📎', name: fileName };
-    };
-
     // Рендер блока контента
     const renderContentBlock = (block: LessonBlock) => {
         // Убираем визуальное разделение на прямоугольники
@@ -346,7 +325,8 @@ const LessonPage: React.FC = () => {
                                 alignItems: 'center',
                                 justifyContent: 'center',
                                 height: '200px',
-                                backgroundColor: '#f8f9fa',
+                                backgroundColor: 'transparent',
+                                border: '2px dashed #e0e0e0',
                                 borderRadius: '12px',
                                 color: '#6d6d6d',
                                 fontSize: '16px',
@@ -358,70 +338,8 @@ const LessonPage: React.FC = () => {
                 );
 
             case 'pdf':
-                return (
-                    <div key={block.id} style={commonBlockStyle}>
-                        {block.title && (
-                            <h3 style={{
-                                fontFamily: 'Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
-                                fontWeight: 700,
-                                fontSize: '20px',
-                                lineHeight: '1.2',
-                                color: '#000000',
-                                marginBottom: '16px',
-                                margin: '0 0 16px 0',
-                            }}>
-                                📄 {block.title}
-                            </h3>
-                        )}
-                        <div style={{
-                            padding: '16px',
-                            backgroundColor: '#f9f9fa',
-                            borderRadius: '12px',
-                            border: '1px solid #e0e0e0',
-                        }}>
-                            <div style={{
-                                display: 'flex',
-                                alignItems: 'center',
-                                gap: '12px',
-                                marginBottom: '12px',
-                            }}>
-                                <span style={{ fontSize: '24px' }}>📎</span>
-                                <span style={{
-                                    fontFamily: 'Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
-                                    fontSize: '16px',
-                                    color: '#242424',
-                                }}>
-                                    PDF-материал
-                                </span>
-                            </div>
-                            {block.content_url ? (
-                                <a
-                                    href={block.content_url}
-                                    target="_blank"
-                                    rel="noopener noreferrer"
-                                    style={{
-                                        display: 'inline-flex',
-                                        alignItems: 'center',
-                                        padding: '8px 16px',
-                                        backgroundColor: '#4e9bff',
-                                        color: '#ffffff',
-                                        textDecoration: 'none',
-                                        borderRadius: '8px',
-                                        fontFamily: 'Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
-                                        fontSize: '14px',
-                                        fontWeight: 500,
-                                    }}
-                                >
-                                    Открыть PDF
-                                </a>
-                            ) : (
-                                <div style={{ color: '#6d6d6d' }}>
-                                    PDF недоступен
-                                </div>
-                            )}
-                        </div>
-                    </div>
-                );
+                // Используем новый компонент PdfBlock
+                return <div key={block.id} style={commonBlockStyle}><DocumentBlock block={block} /></div>;
 
             // assignment_instruction блоки больше не существуют
             // Инструкции к заданию теперь обычные текстовые блоки
@@ -508,50 +426,19 @@ const LessonPage: React.FC = () => {
     const bottomPadding = showFixedElement ? '120px' : '40px';
 
     return (
-        <Page back={false} showTabBar={false}>
+        <Page back={true} showTabBar={false}>
             <div style={{
                 maxWidth: '768px',
                 margin: '0 auto',
                 padding: `0 16px ${bottomPadding} 16px`,
                 fontFamily: 'Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
             }}>
-                {/* Кнопка назад и заголовок урока */}
+                {/* Заголовок урока */}
                 <div style={{
                     marginBottom: '24px',
+                    marginTop: '33px',
                     textAlign: 'left',
                 }}>
-                    {/* Кнопка назад */}
-                    <button
-                        onClick={() => navigate(-1)}
-                        style={{
-                            display: 'flex',
-                            alignItems: 'center',
-                            background: 'none',
-                            border: 'none',
-                            padding: '8px 0',
-                            marginBottom: '16px',
-                            cursor: 'pointer',
-                            fontSize: '16px',
-                            color: '#000000',
-                            fontFamily: 'Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
-                        }}
-                    >
-                        <svg
-                            width="20"
-                            height="20"
-                            viewBox="0 0 24 24"
-                            fill="none"
-                            stroke="currentColor"
-                            strokeWidth="2"
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                            style={{ marginRight: '8px' }}
-                        >
-                            <path d="m15 18-6-6 6-6" />
-                        </svg>
-                        Назад
-                    </button>
-
                     <h1 style={{
                         fontFamily: 'Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
                         fontWeight: 700,
@@ -622,7 +509,14 @@ const LessonPage: React.FC = () => {
                         {state.submission.file_url && (
                             <div style={{ marginBottom: '16px' }}>
                                 {(() => {
-                                    const fileInfo = getFileTypeInfo(state.submission.file_url);
+                                    const fileName = decodeURIComponent(state.submission.file_url.substring(state.submission.file_url.lastIndexOf('/') + 1));
+                                    const extension = fileName.split('.').pop()?.toLowerCase() || '';
+                                    const fileIcon =
+                                        (['jpg', 'jpeg', 'png', 'gif', 'webp', 'svg', 'bmp'].includes(extension)) ? '🖼️' :
+                                            (['mp3', 'wav', 'ogg', 'aac', 'flac', 'm4a'].includes(extension)) ? '🎵' :
+                                                (extension === 'pdf') ? '📄' :
+                                                    (['doc', 'docx'].includes(extension)) ? '📝' : '📎';
+
                                     return (
                                         <a
                                             href={state.submission.file_url}
@@ -638,8 +532,8 @@ const LessonPage: React.FC = () => {
                                                 gap: '8px',
                                             }}
                                         >
-                                            <span>{fileInfo.icon}</span>
-                                            <span>{fileInfo.name}</span>
+                                            <span>{fileIcon}</span>
+                                            <span>{fileName}</span>
                                         </a>
                                     );
                                 })()}

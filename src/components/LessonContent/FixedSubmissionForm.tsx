@@ -141,27 +141,6 @@ const FixedSubmissionForm: React.FC<FixedSubmissionFormProps> = ({
         setUploadedFiles(prev => prev.filter(url => url !== fileUrl));
     };
 
-    // Определение типа файла по URL для отображения
-    const getFileTypeInfo = (fileUrl: string) => {
-        const fileName = decodeURIComponent(fileUrl.substring(fileUrl.lastIndexOf('/') + 1));
-        const extension = fileName.split('.').pop()?.toLowerCase() || '';
-
-        // Определяем тип и иконку
-        if (['jpg', 'jpeg', 'png', 'gif', 'webp', 'svg', 'bmp'].includes(extension)) {
-            return { type: 'image', icon: '🖼️', name: fileName };
-        }
-        if (['mp3', 'wav', 'ogg', 'aac', 'flac', 'm4a'].includes(extension)) {
-            return { type: 'audio', icon: '🎵', name: fileName };
-        }
-        if (extension === 'pdf') {
-            return { type: 'pdf', icon: '📄', name: fileName };
-        }
-        if (['doc', 'docx'].includes(extension)) {
-            return { type: 'document', icon: '📝', name: fileName };
-        }
-        return { type: 'unknown', icon: '📎', name: fileName };
-    };
-
     // Если задание уже сдано - ничего не рендерим (отображение перенесено в LessonPage)
     if (isSubmitted && existingSubmission) {
         return null;
@@ -174,14 +153,22 @@ const FixedSubmissionForm: React.FC<FixedSubmissionFormProps> = ({
                 <div className="px-4 pt-3">
                     <div className="flex gap-2 flex-wrap">
                         {uploadedFiles.map((fileUrl, index) => {
-                            const fileInfo = getFileTypeInfo(fileUrl);
+                            // Используем getFileTypeInfo локально, т.к. он не был нужен в LessonPage
+                            const fileName = decodeURIComponent(fileUrl.substring(fileUrl.lastIndexOf('/') + 1));
+                            const extension = fileName.split('.').pop()?.toLowerCase() || '';
+                            const fileIcon =
+                                (['jpg', 'jpeg', 'png', 'gif', 'webp', 'svg', 'bmp'].includes(extension)) ? '🖼️' :
+                                    (['mp3', 'wav', 'ogg', 'aac', 'flac', 'm4a'].includes(extension)) ? '🎵' :
+                                        (extension === 'pdf') ? '📄' :
+                                            (['doc', 'docx'].includes(extension)) ? '📝' : '📎';
+
                             return (
                                 <div
                                     key={index}
                                     className="flex items-center px-3 py-1.5 bg-gray-100 rounded-lg text-sm font-medium text-gray-600"
                                 >
-                                    <span className="mr-2">{fileInfo.icon}</span>
-                                    <span className="max-w-[120px] truncate">{fileInfo.name}</span>
+                                    <span className="mr-2">{fileIcon}</span>
+                                    <span className="max-w-[120px] truncate">{fileName}</span>
                                     <Button
                                         variant="ghost"
                                         size="sm"
