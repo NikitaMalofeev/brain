@@ -88,38 +88,12 @@ const LessonPage: React.FC = () => {
                     blocks: sortedBlocks,
                 };
 
-                // Если есть пользователь, получаем его сдачи и прогресс
-                if (supabaseCompatUser && supabase) {
-                    // Получаем сдачи
-                    const { data: submission } = await supabase
-                        .from('submissions')
-                        .select('*')
-                        .eq('user_id', supabaseCompatUser.id)
-                        .eq('lesson_id', lessonId)
-                        .maybeSingle();
-
-                    // Получаем прогресс урока
-                    const { data: progress } = await supabase
-                        .from('lesson_progress')
-                        .select('*')
-                        .eq('user_id', supabaseCompatUser.id)
-                        .eq('lesson_id', lessonId)
-                        .maybeSingle();
-
-                    setState(prev => ({
-                        ...prev,
-                        lesson,
-                        submission,
-                        progress,
-                        loading: false,
-                    }));
-                } else {
-                    setState(prev => ({
-                        ...prev,
-                        lesson,
-                        loading: false,
-                    }));
-                }
+                // Обновляем состояние с уроком - урок грузится независимо от пользователя
+                setState(prev => ({
+                    ...prev,
+                    lesson,
+                    loading: false,
+                }));
 
                 logger.debug('Lesson data loaded', { lessonId, blocksCount: sortedBlocks.length });
 
@@ -134,6 +108,45 @@ const LessonPage: React.FC = () => {
         };
 
         fetchLessonData();
+    }, [lessonId]); // Убираю зависимость от supabaseCompatUser
+
+    // Отдельно загружаем пользовательские данные
+    useEffect(() => {
+        const fetchUserData = async () => {
+            if (!lessonId || !supabaseCompatUser || !supabase) return;
+
+            try {
+                // Получаем сдачи
+                const { data: submission } = await supabase
+                    .from('submissions')
+                    .select('*')
+                    .eq('user_id', supabaseCompatUser.id)
+                    .eq('lesson_id', lessonId)
+                    .maybeSingle();
+
+                // Получаем прогресс урока
+                const { data: progress } = await supabase
+                    .from('lesson_progress')
+                    .select('*')
+                    .eq('user_id', supabaseCompatUser.id)
+                    .eq('lesson_id', lessonId)
+                    .maybeSingle();
+
+                setState(prev => ({
+                    ...prev,
+                    submission,
+                    progress,
+                }));
+
+                logger.debug('User data loaded', { lessonId, hasSubmission: !!submission, hasProgress: !!progress });
+
+            } catch (error) {
+                logger.error('Failed to fetch user data', { lessonId, error });
+                // Не показываем ошибку пользовательских данных как критичную
+            }
+        };
+
+        fetchUserData();
     }, [lessonId, supabaseCompatUser]);
 
     // Обработчик обновления submission
