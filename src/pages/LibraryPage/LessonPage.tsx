@@ -8,7 +8,7 @@ import { useAppContext } from '@/contexts/AppContext';
 import { logger } from '@/lib/logger';
 import { supabase } from '@/lib/supabase/client';
 import { LessonWithBlocks, LessonBlock, Submission, LessonProgress } from '@/lib/supabase/types';
-import { VideoBlock, AudioBlock, FixedSubmissionForm, DocumentBlock } from '@/components/LessonContent';
+import { VideoBlock, AudioBlock, FixedSubmissionForm, DocumentBlock, ImageBlock } from '@/components/LessonContent';
 import { Button } from '@/components/ui/button';
 
 interface LessonPageState {
@@ -294,48 +294,8 @@ const LessonPage: React.FC = () => {
                 return <AudioBlock key={block.id} block={block} />;
 
             case 'image':
-                return (
-                    <div key={block.id} style={commonBlockStyle}>
-                        {block.title && (
-                            <h3 style={{
-                                fontFamily: 'Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
-                                fontWeight: 700,
-                                fontSize: '20px',
-                                lineHeight: '1.2',
-                                color: '#000000',
-                                marginBottom: '16px',
-                                margin: '0 0 16px 0',
-                            }}>
-                                {block.title}
-                            </h3>
-                        )}
-                        {block.content_url ? (
-                            <img
-                                src={block.content_url}
-                                alt={block.title || 'Изображение'}
-                                style={{
-                                    width: '100%',
-                                    height: 'auto',
-                                    borderRadius: '12px',
-                                }}
-                            />
-                        ) : (
-                            <div style={{
-                                display: 'flex',
-                                alignItems: 'center',
-                                justifyContent: 'center',
-                                height: '200px',
-                                backgroundColor: 'transparent',
-                                border: '2px dashed #e0e0e0',
-                                borderRadius: '12px',
-                                color: '#6d6d6d',
-                                fontSize: '16px',
-                            }}>
-                                🖼 Изображение недоступно
-                            </div>
-                        )}
-                    </div>
-                );
+                // Используем новый компонент ImageBlock
+                return <div key={block.id} style={commonBlockStyle}><ImageBlock block={block} /></div>;
 
             case 'pdf':
                 // Используем новый компонент PdfBlock
