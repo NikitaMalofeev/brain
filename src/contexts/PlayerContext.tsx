@@ -64,7 +64,7 @@ const initialState: PlayerState = {
 const PlayerContext = createContext<PlayerContextType | undefined>(undefined);
 
 // Провайдер контекста
-export const PlayerProvider: React.FC<{children: ReactNode}> = ({ children }) => {
+export const PlayerProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
   const [state, setState] = useState<PlayerState>(() => {
     // Попытка восстановить настройки плеера из localStorage
     const savedSettings = localStorage.getItem('playerSettings');
@@ -112,7 +112,7 @@ export const PlayerProvider: React.FC<{children: ReactNode}> = ({ children }) =>
   };
 
   const seekTo = (time: number) => {
-    const newTime = Math.max(0, Math.min(state.duration, time));
+    const newTime = Math.max(0, time);
     setState(prev => ({ ...prev, currentTime: newTime }));
   };
 
@@ -133,8 +133,8 @@ export const PlayerProvider: React.FC<{children: ReactNode}> = ({ children }) =>
   };
 
   const setActiveType = (type: PlayerType | null) => {
-    setState(prev => ({ 
-      ...prev, 
+    setState(prev => ({
+      ...prev,
       activeType: type,
       // Сбрасываем состояние плеера при смене типа
       playing: false,
@@ -149,8 +149,8 @@ export const PlayerProvider: React.FC<{children: ReactNode}> = ({ children }) =>
   };
 
   const setContentData = (data: any) => {
-    setState(prev => ({ 
-      ...prev, 
+    setState(prev => ({
+      ...prev,
       contentData: data,
       duration: data?.duration || 0
     }));
@@ -161,7 +161,7 @@ export const PlayerProvider: React.FC<{children: ReactNode}> = ({ children }) =>
   };
 
   const resetPlayer = () => {
-    setState(prev => ({ 
+    setState(prev => ({
       ...initialState,
       // Сохраняем пользовательские настройки
       volume: prev.volume,
@@ -173,10 +173,10 @@ export const PlayerProvider: React.FC<{children: ReactNode}> = ({ children }) =>
   // Форматирование времени (из секунд в MM:SS)
   const formatTime = (seconds: number): string => {
     if (isNaN(seconds)) return '00:00';
-    
+
     const minutes = Math.floor(seconds / 60);
     const remainingSeconds = Math.floor(seconds % 60);
-    
+
     return `${minutes.toString().padStart(2, '0')}:${remainingSeconds.toString().padStart(2, '0')}`;
   };
 

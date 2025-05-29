@@ -1,5 +1,5 @@
-import React, { useRef, useEffect } from 'react';
-import { usePlayer } from '../../contexts/PlayerContext';
+import React, { useRef, useEffect, useState } from 'react';
+import { usePlayer, PlayerType } from '../../contexts/PlayerContext';
 import KinescopePlayer from '@kinescope/react-kinescope-player';
 import './Player.css';
 
@@ -9,12 +9,36 @@ interface VideoPlayerProps {
   description?: string;
 }
 
-const VideoPlayer: React.FC<VideoPlayerProps> = ({ videoId, title, description }) => {
-  const { state, play, pause, seekTo, toggleFullscreen } = usePlayer();
+const VideoPlayer: React.FC<VideoPlayerProps> = ({ videoId, title: _title, description: _description }) => {
+  const {
+    state,
+    play,
+    pause,
+    seekTo,
+    setActiveType,
+    setContentId
+  } = usePlayer();
+
   const playerRef = useRef<any>(null);
+  const [isPlayerReady, setIsPlayerReady] = useState(false);
+
+  // Уникальный ID для этого видео-плеера
+  const videoIdKey = `video-${videoId}`;
+
+  // Проверяем, активен ли именно этот плеер
+  const isThisPlayerActive = state.activeType === PlayerType.VIDEO && state.contentId === videoIdKey;
 
   // Обработчики событий для Kinescope Player
+  const handleReady = () => {
+    setIsPlayerReady(true);
+  };
+
   const handlePlay = () => {
+    if (!isThisPlayerActive) {
+      // Если другой плеер активен, делаем этот активным
+      setActiveType(PlayerType.VIDEO);
+      setContentId(videoIdKey);
+    }
     play();
   };
 
@@ -23,15 +47,24 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({ videoId, title, description }
   };
 
   const handleTimeUpdate = ({ currentTime }: { currentTime: number }) => {
-    seekTo(currentTime);
+    if (isThisPlayerActive) {
+      seekTo(currentTime);
+    }
   };
 
   const handleEnded = () => {
     pause();
   };
 
-  // Управление полноэкранным режимом
+  // Сбрасываем состояние готовности при смене видео
   useEffect(() => {
+    setIsPlayerReady(false);
+  }, [videoId]);
+
+  // Управление полноэкранным режимом только для активного плеера
+  useEffect(() => {
+    if (!isThisPlayerActive) return;
+
     const playerContainer = document.querySelector('.video-player-wrapper');
     if (!playerContainer) return;
 
@@ -48,49 +81,77 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({ videoId, title, description }
         });
       }
     }
-  }, [state.fullscreen]);
+  }, [state.fullscreen, isThisPlayerActive]);
 
-  // Управление воспроизведением
+  // Управление воспроизведением только для активного плеера
   useEffect(() => {
-    if (!playerRef.current) return;
-
-    if (state.playing) {
-      playerRef.current.play().catch(() => {
-        // Ошибка при запуске воспроизведения (не используется)
-      });
-    } else {
-      playerRef.current.pause().catch(() => {
-        // Ошибка при постановке на паузу (не используется)
-      });
+    if (!playerRef.current || !isThisPlayerActive || !isPlayerReady) {
+      // Если этот плеер не активен или не готов, пытаемся поставить на паузу
+      if (playerRef.current && isPlayerReady) {
+        try {
+          playerRef.current.pause().catch(() => {
+            // Игнорируем ошибки при pause неактивного плеера
+          });
+        } catch (error) {
+          // Игнорируем синхронные ошибки (например, iframe не готов)
+        }
+      }
+      return;
     }
-  }, [state.playing]);
 
-  // Управление громкостью
+    // Проверяем, что плеер готов к работе
+    const executePlayerAction = async () => {
+      try {
+        if (state.playing) {
+          await playerRef.current.play();
+        } else {
+          await playerRef.current.pause();
+        }
+      } catch (error) {
+        // Игнорируем ошибки воспроизведения (плеер может быть не готов)
+        console.debug('Player action error (ignored):', error);
+      }
+    };
+
+    executePlayerAction();
+  }, [state.playing, isThisPlayerActive, isPlayerReady]);
+
+  // Управление громкостью только для активного плеера
   useEffect(() => {
-    if (!playerRef.current) return;
+    if (!playerRef.current || !isThisPlayerActive || !isPlayerReady) return;
 
-    if (state.muted) {
-      playerRef.current.mute().catch(() => {
-        // Ошибка при mute (не используется)
-      });
-    } else {
-      playerRef.current.unmute().catch(() => {
-        // Ошибка при unmute (не используется)
-      });
-      playerRef.current.setVolume(state.volume).catch(() => {
-        // Ошибка при setVolume (не используется)
-      });
-    }
-  }, [state.volume, state.muted]);
+    const updateVolume = async () => {
+      try {
+        if (state.muted) {
+          await playerRef.current.mute();
+        } else {
+          await playerRef.current.unmute();
+          await playerRef.current.setVolume(state.volume);
+        }
+      } catch (error) {
+        // Игнорируем ошибки управления громкостью
+        console.debug('Volume control error (ignored):', error);
+      }
+    };
 
-  // Управление скоростью воспроизведения
+    updateVolume();
+  }, [state.volume, state.muted, isThisPlayerActive, isPlayerReady]);
+
+  // Управление скоростью воспроизведения только для активного плеера
   useEffect(() => {
-    if (!playerRef.current) return;
+    if (!playerRef.current || !isThisPlayerActive || !isPlayerReady) return;
 
-    playerRef.current.setPlaybackRate(state.playbackRate).catch(() => {
-      // Ошибка при setPlaybackRate (не используется)
-    });
-  }, [state.playbackRate]);
+    const updatePlaybackRate = async () => {
+      try {
+        await playerRef.current.setPlaybackRate(state.playbackRate);
+      } catch (error) {
+        // Игнорируем ошибки управления скоростью
+        console.debug('Playback rate error (ignored):', error);
+      }
+    };
+
+    updatePlaybackRate();
+  }, [state.playbackRate, isThisPlayerActive, isPlayerReady]);
 
   return (
     <div className="video-player-container">
@@ -110,6 +171,7 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({ videoId, title, description }
             onError={() => {
               // Оставляем только критичные ошибки
             }}
+            onReady={handleReady}
           />
         ) : (
           <div className="error-message">Ошибка: ID видео не указан</div>
