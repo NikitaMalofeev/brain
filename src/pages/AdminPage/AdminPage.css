@@ -1,87 +1,163 @@
-/* CSS-переменные для админки с новым светлым дизайном */
+/* ========================================= */
+/* CSS-переменные для админки Brain Programming */
+/* Светлая тема с glass-эффектами и градиентами */
+/* ========================================= */
+
 :root {
-  /* Основные градиенты */
+  /* ===== ГРАДИЕНТЫ ===== */
+  /* Основные градиенты для кнопок, элементов управления и акцентов */
   --admin-gradient-primary: linear-gradient(135deg, #E1C1F4 0%, #B862EA 100%);
+  /* Фиолетовый градиент - основной цвет бренда */
   --admin-gradient-secondary: linear-gradient(135deg, #8DC5F1 0%, #63ABE6 100%);
+  /* Голубой градиент - вторичный цвет */
   --admin-gradient-accent: linear-gradient(135deg, #FFE4A3 0%, #FFD166 100%);
+  /* Желтый градиент - для предупреждений */
   --admin-gradient-neutral: linear-gradient(135deg, #F3F3F3 0%, #EAEAEA 100%);
+  /* Серый градиент - для отключенных элементов */
 
-  /* Цвета для обратной совместимости */
+  /* ===== ОСНОВНЫЕ ЦВЕТА ===== */
+  /* Плоские цвета для обратной совместимости и простых элементов */
   --admin-primary: #B862EA;
+  /* Основной фиолетовый */
   --admin-primary-hover: #A04FD9;
+  /* Фиолетовый при наведении */
   --admin-secondary: #63ABE6;
+  /* Вторичный голубой */
   --admin-success: #4EB3FF;
+  /* Цвет успеха/одобрения */
   --admin-warning: #FFD166;
+  /* Цвет предупреждения */
   --admin-danger: #FF6B6B;
+  /* Цвет опасности/ошибки */
   --admin-danger-hover: #FF5252;
+  /* Цвет опасности при наведении */
   --admin-info: #63ABE6;
+  /* Информационный цвет */
 
-  /* Светлая цветовая схема */
+  /* ===== ФОНЫ И ПОВЕРХНОСТИ ===== */
+  /* Светлая цветовая схема с использованием чистого белого как основы */
   --admin-bg: #FFFFFF;
+  /* Основной фон админки */
   --admin-bg-light: #FFFFFF;
+  /* Светлый фон для карточек */
   --admin-bg-secondary: #F1F1F1;
+  /* Вторичный фон для заголовков таблиц */
+
+  /* ===== ТЕКСТ И ТИПОГРАФИКА ===== */
+  /* Иерархия цветов текста от основного до третичного */
   --admin-text: #000000;
+  /* Основной цвет текста - чистый черный */
   --admin-text-secondary: #9F9F9F;
+  /* Вторичный текст - серый средней насыщенности */
   --admin-text-tertiary: #8C8C8C;
+  /* Третичный текст - более темный серый */
   --admin-text-label: #8D8D8D;
+  /* Цвет для лейблов и подписей */
 
-  /* Glass-эффекты */
+  /* ===== GLASS-ЭФФЕКТЫ ===== */
+  /* Полупрозрачные фоны и границы для современного glass-morphism дизайна */
   --admin-glass-bg: rgba(255, 255, 255, 0.25);
+  /* Основной glass-фон */
   --admin-glass-bg-light: rgba(255, 255, 255, 0.9);
+  /* Более непрозрачный glass-фон */
   --admin-glass-border: rgba(255, 255, 255, 0.14);
+  /* Границы для glass-элементов */
   --admin-glass-border-strong: rgba(89, 89, 89, 0.14);
+  /* Более контрастные границы */
+
+  /* ===== BLUR-ЭФФЕКТЫ ===== */
+  /* Backdrop-filter значения для размытия фона */
   --admin-backdrop-filter: blur(20px);
+  /* Основное размытие для модалов и overlay */
   --admin-backdrop-filter-card: blur(12px);
+  /* Размытие для карточек */
   --admin-backdrop-filter-input: blur(32px);
+  /* Сильное размытие для полей ввода */
 
-  /* Тени */
+  /* ===== ТЕНИ ===== */
+  /* Система теней для создания глубины и иерархии */
   --admin-shadow-card: 0px 2px 12px rgba(0, 0, 0, 0.06);
+  /* Легкая тень для карточек */
   --admin-shadow-glass: 0px 4px 20px rgba(0, 0, 0, 0.08);
+  /* Тень для glass-элементов */
   --admin-shadow-floating: 0px 8px 32px rgba(0, 0, 0, 0.12);
+  /* Тень для плавающих элементов */
   --admin-shadow-button: 0px 2px 8px rgba(0, 0, 0, 0.1);
+  /* Тень для кнопок */
 
-  /* Границы и разделители */
+  /* ===== ГРАНИЦЫ И РАЗДЕЛИТЕЛИ ===== */
+  /* Цвета границ для разделения контента */
   --admin-border: rgba(241, 241, 241, 1);
+  /* Основные границы - четкие */
   --admin-border-light: rgba(225, 225, 225, 0.6);
+  /* Легкие границы - полупрозрачные */
 
-  /* Скругления */
+  /* ===== СКРУГЛЕНИЯ ===== */
+  /* Система border-radius от мелких до крупных элементов */
   --admin-radius-sm: 12px;
+  /* Малые элементы - иконки, badges */
   --admin-radius-md: 16px;
+  /* Средние элементы - поля ввода, карточки */
   --admin-radius-lg: 24px;
+  /* Крупные элементы - таблицы, модалы */
   --admin-radius-xl: 32px;
+  /* Очень крупные элементы - основные кнопки */
   --admin-radius-full: 100px;
+  /* Полное скругление - таблетки, активные табы */
 
-  /* Переходы */
+  /* ===== ПЕРЕХОДЫ И АНИМАЦИИ ===== */
+  /* Стандартные timing функции для плавных анимаций */
   --admin-transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  /* Быстрые переходы */
   --admin-transition-slow: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  /* Медленные переходы */
 
-  /* Типографика */
+  /* ===== ТИПОГРАФИКА ===== */
+  /* Основной шрифт для всей админки */
   --admin-font-family: 'Nunito', -apple-system, BlinkMacSystemFont, sans-serif;
 }
 
-/* Глобальные стили для админки */
+/* ========================================= */
+/* ГЛОБАЛЬНЫЕ СТИЛИ АДМИНКИ */
+/* Базовые стили для body и контейнера */
+/* ========================================= */
+
+/* Глобальные стили для админки - применяются когда активен admin-mode */
 body.admin-mode {
   background: var(--admin-bg);
   overflow-x: hidden;
+  /* Убираем горизонтальную прокрутку */
   font-family: var(--admin-font-family);
   min-height: 100vh;
   color: var(--admin-text);
 }
+
+/* ========================================= */
+/* ОСНОВНОЙ КОНТЕЙНЕР АДМИНКИ */
+/* Центрированный layout с ограничением ширины */
+/* ========================================= */
 
 /* Main Admin Page Container - светлый дизайн */
 .admin-page {
   min-height: 100vh;
   width: 100%;
   padding: 24px;
+  /* Внешние отступы */
   background: var(--admin-bg);
   color: var(--admin-text);
   font-family: var(--admin-font-family);
   max-width: 1280px;
+  /* Ограничиваем максимальную ширину */
   margin: 0 auto;
+  /* Центрируем контейнер */
   box-sizing: border-box;
 }
 
-/* Admin Header */
+/* ========================================= */
+/* ЗАГОЛОВОК АДМИНКИ */
+/* Верхняя панель с названием и кнопкой выхода */
+/* ========================================= */
+
 .admin-header {
   display: flex;
   justify-content: space-between;
@@ -89,23 +165,31 @@ body.admin-mode {
   margin-bottom: 32px;
   padding-bottom: 16px;
   border-bottom: 1px solid var(--admin-border);
+  /* Разделительная линия */
 }
 
 .admin-header h1 {
   font-size: 28px;
   font-weight: 700;
   margin: 0;
+  /* Градиентный текст для заголовка */
   background: var(--admin-gradient-primary);
   -webkit-background-clip: text;
   background-clip: text;
   color: transparent;
+  /* Делаем текст прозрачным чтобы показать градиент */
   font-family: var(--admin-font-family);
 }
 
-/* Admin Login Page */
+/* ========================================= */
+/* СТРАНИЦА ВХОДА В АДМИНКУ */
+/* Центрированная форма авторизации */
+/* ========================================= */
+
 .admin-login {
   max-width: 400px;
   margin: 64px auto;
+  /* Центрируем и добавляем отступ сверху */
   padding: 36px;
   background: var(--admin-glass-bg-light);
   backdrop-filter: var(--admin-backdrop-filter);
@@ -120,6 +204,7 @@ body.admin-mode {
   font-size: 28px;
   font-weight: 700;
   margin-bottom: 24px;
+  /* Градиентный заголовок */
   background: var(--admin-gradient-primary);
   -webkit-background-clip: text;
   background-clip: text;
@@ -127,12 +212,18 @@ body.admin-mode {
   font-family: var(--admin-font-family);
 }
 
+/* ========================================= */
+/* СООБЩЕНИЯ ОБ ОШИБКАХ И ПРЕДУПРЕЖДЕНИЯ */
+/* Цветовая кодировка для разных типов сообщений */
+/* ========================================= */
+
 .admin-error {
   color: var(--admin-danger);
   margin: 16px 0;
   padding: 12px;
   border-radius: var(--admin-radius-sm);
   background: rgba(255, 107, 107, 0.1);
+  /* Полупрозрачный красный фон */
   backdrop-filter: var(--admin-backdrop-filter-card);
   border: 1px solid rgba(255, 107, 107, 0.2);
 }
@@ -143,11 +234,17 @@ body.admin-mode {
   padding: 12px;
   border-radius: var(--admin-radius-sm);
   background: rgba(255, 209, 102, 0.1);
+  /* Полупрозрачный желтый фон */
   backdrop-filter: var(--admin-backdrop-filter-card);
   border: 1px solid rgba(255, 209, 102, 0.2);
 }
 
-/* Form Elements */
+/* ========================================= */
+/* ЭЛЕМЕНТЫ ФОРМ */
+/* Поля ввода, кнопки и другие интерактивные элементы */
+/* ========================================= */
+
+/* Универсальные поля ввода */
 .admin-input {
   width: 100%;
   padding: 12px 16px;
@@ -168,10 +265,16 @@ body.admin-mode {
   outline: none;
   border-color: var(--admin-primary);
   box-shadow: 0 0 0 2px rgba(184, 98, 234, 0.2);
+  /* Фиолетовое свечение при фокусе */
   background: rgba(255, 255, 255, 0.95);
 }
 
-/* Buttons */
+/* ========================================= */
+/* КНОПКИ */
+/* Основные, вторичные и специальные кнопки */
+/* ========================================= */
+
+/* Основная кнопка с градиентом и эффектами */
 .admin-button {
   background: var(--admin-gradient-primary);
   color: white;
@@ -184,14 +287,18 @@ body.admin-mode {
   transition: var(--admin-transition);
   box-shadow: var(--admin-shadow-button);
   text-transform: none;
+  /* Не меняем регистр текста */
   letter-spacing: 0;
+  /* Убираем letter-spacing */
   margin-top: 16px;
   position: relative;
   overflow: hidden;
+  /* Для анимации блика */
   font-family: var(--admin-font-family);
   line-height: 1.25;
 }
 
+/* Анимация блика при наведении */
 .admin-button::before {
   content: '';
   position: absolute;
@@ -205,17 +312,21 @@ body.admin-mode {
 
 .admin-button:hover::before {
   left: 100%;
+  /* Блик проходит слева направо */
 }
 
 .admin-button:hover {
   box-shadow: var(--admin-shadow-glass);
   transform: translateY(-2px);
+  /* Поднимаем кнопку при наведении */
 }
 
 .admin-button:active {
   transform: translateY(0);
+  /* Возвращаем в исходное положение при клике */
   box-shadow: var(--admin-shadow-button);
   scale: 0.98;
+  /* Легкое сжатие при клике */
 }
 
 .admin-button:disabled {
@@ -223,9 +334,11 @@ body.admin-mode {
   opacity: 0.4;
   cursor: not-allowed;
   transform: none;
+  /* Убираем все трансформации */
   box-shadow: none;
 }
 
+/* Кнопка выхода - красный градиент */
 .admin-logout-btn {
   background: linear-gradient(135deg, #FF6B6B 0%, #FF5252 100%);
   color: white;
@@ -255,15 +368,21 @@ body.admin-mode {
 
 .admin-logout-btn::before {
   content: '↗';
+  /* Иконка стрелки */
   font-size: 16px;
 }
 
-/* Tabs Navigation */
+/* ========================================= */
+/* НАВИГАЦИЯ ПО ТАБАМ */
+/* Горизонтальная навигация в верхней части */
+/* ========================================= */
+
 .admin-tabs {
   display: flex;
   margin-bottom: 28px;
   border-bottom: 1px solid var(--admin-border);
   flex-wrap: wrap;
+  /* Переносим табы на новую строку при необходимости */
   gap: 8px;
 }
 
@@ -276,14 +395,17 @@ body.admin-mode {
   font-weight: 500;
   position: relative;
   color: var(--admin-text-secondary);
+  /* Неактивные табы серые */
   font-family: var(--admin-font-family);
 }
 
 .admin-tab.active {
   font-weight: 700;
   color: var(--admin-primary);
+  /* Активный таб фиолетовый */
 }
 
+/* Подчеркивание активного таба */
 .admin-tab.active::after {
   content: '';
   position: absolute;
@@ -296,18 +418,29 @@ body.admin-mode {
 
 .admin-tab:hover:not(.active) {
   color: var(--admin-text);
+  /* При наведении цвет становится темнее */
 }
 
-/* Admin Content Area */
+/* ========================================= */
+/* ОБЛАСТЬ КОНТЕНТА */
+/* Основная область где отображается контент табов */
+/* ========================================= */
+
 .admin-content {
   min-height: 500px;
 }
+
+/* ========================================= */
+/* АНИМАЦИИ */
+/* Анимации для переключения табов и других эффектов */
+/* ========================================= */
 
 /* Анимация появления контента при переключении табов */
 @keyframes fadeInUp {
   from {
     opacity: 0;
     transform: translateY(20px);
+    /* Контент появляется снизу вверх */
   }
 
   to {
@@ -321,7 +454,11 @@ body.admin-mode {
   animation: fadeInUp 0.2s ease-out;
 }
 
-/* Section Styles */
+/* ========================================= */
+/* СЕКЦИИ И ЗАГОЛОВКИ */
+/* Стили для организации контента по секциям */
+/* ========================================= */
+
 .admin-section {
   margin-bottom: 40px;
   position: relative;
@@ -341,8 +478,10 @@ body.admin-mode {
   color: var(--admin-text);
   position: relative;
   padding-left: 12px;
+  /* Место для вертикальной полоски */
 }
 
+/* Вертикальная полоска слева от заголовка */
 .section-header h2::before {
   content: '';
   position: absolute;
@@ -355,9 +494,15 @@ body.admin-mode {
   border-radius: 4px;
 }
 
+/* ========================================= */
+/* КНОПКИ ДЕЙСТВИЙ */
+/* Кнопки добавления, обновления и другие вторичные кнопки */
+/* ========================================= */
+
 .admin-add-btn,
 .admin-refresh-btn {
   background: rgba(99, 171, 230, 0.1);
+  /* Полупрозрачный голубой фон */
   color: var(--admin-secondary);
   border: 1px solid rgba(99, 171, 230, 0.2);
   padding: 10px 18px;
@@ -373,14 +518,17 @@ body.admin-mode {
   font-family: var(--admin-font-family);
 }
 
+/* Иконки для кнопок действий */
 .admin-add-btn::before {
   content: '+';
+  /* Плюс для кнопки добавления */
   font-size: 18px;
   font-weight: bold;
 }
 
 .admin-refresh-btn::before {
   content: '↻';
+  /* Стрелка обновления */
   font-size: 16px;
 }
 
@@ -397,10 +545,16 @@ body.admin-mode {
   scale: 0.98;
 }
 
-/* Универсальные стили таблиц для админки */
+/* ========================================= */
+/* УНИВЕРСАЛЬНАЯ СИСТЕМА ТАБЛИЦ */
+/* Единый стиль для всех таблиц в админке */
+/* ========================================= */
+
+/* Основной контейнер таблицы с glass-эффектом */
 .admin-table {
   width: 100%;
   overflow-x: auto;
+  /* Горизонтальная прокрутка на мобильных */
   background: var(--admin-glass-bg-light);
   backdrop-filter: var(--admin-backdrop-filter);
   -webkit-backdrop-filter: var(--admin-backdrop-filter);
@@ -412,6 +566,7 @@ body.admin-mode {
 .admin-table table {
   width: 100%;
   border-collapse: separate;
+  /* Не склеиваем границы для красивых скруглений */
   border-spacing: 0;
   font-size: 14px;
   font-family: var(--admin-font-family);
@@ -429,13 +584,16 @@ body.admin-mode {
   font-weight: 600;
   color: var(--admin-text);
   position: sticky;
+  /* Заголовки остаются видимыми при прокрутке */
   top: 0;
   border-bottom: 1px solid var(--admin-border);
   font-size: 13px;
   text-transform: uppercase;
+  /* Заголовки заглавными буквами */
   letter-spacing: 0.5px;
 }
 
+/* Скругления для первого и последнего заголовка */
 .admin-table th:first-child {
   border-top-left-radius: var(--admin-radius-lg);
 }
@@ -448,14 +606,18 @@ body.admin-mode {
   transition: var(--admin-transition);
 }
 
+/* Границы между строками (кроме последней) */
 .admin-table tbody tr:not(:last-child) td {
   border-bottom: 1px solid var(--admin-border-light);
 }
 
+/* Hover эффект для строк */
 .admin-table tbody tr:hover {
   background: rgba(184, 98, 234, 0.05);
+  /* Легкая фиолетовая подсветка */
 }
 
+/* Скругления для последней строки */
 .admin-table tbody tr:last-child td:first-child {
   border-bottom-left-radius: var(--admin-radius-lg);
 }
@@ -464,7 +626,11 @@ body.admin-mode {
   border-bottom-right-radius: var(--admin-radius-lg);
 }
 
-/* Обратная совместимость - старые классы наследуют новый стиль */
+/* ========================================= */
+/* ОБРАТНАЯ СОВМЕСТИМОСТЬ */
+/* Старые классы таблиц наследуют новый стиль */
+/* ========================================= */
+
 .practices-table,
 .categories-table,
 .quiz-rules-table,
@@ -544,7 +710,11 @@ body.admin-mode {
   background: rgba(184, 98, 234, 0.05);
 }
 
-/* Формы добавления элементов */
+/* ========================================= */
+/* ФОРМЫ ДОБАВЛЕНИЯ ЭЛЕМЕНТОВ */
+/* Единый стиль для всех форм добавления */
+/* ========================================= */
+
 .course-add-form,
 .stage-add-form,
 .lesson-add-form,
@@ -573,6 +743,7 @@ body.admin-mode {
   font-family: var(--admin-font-family);
 }
 
+/* Иконка плюса перед заголовком формы */
 .course-add-form h3::before,
 .stage-add-form h3::before,
 .lesson-add-form h3::before,
@@ -590,7 +761,11 @@ body.admin-mode {
   font-weight: bold;
 }
 
-/* Улучшенные стили для пустых состояний */
+/* ========================================= */
+/* ПУСТЫЕ СОСТОЯНИЯ */
+/* Красивые заглушки когда нет данных */
+/* ========================================= */
+
 .empty-table {
   text-align: center;
   color: var(--admin-text-secondary);
@@ -603,6 +778,7 @@ body.admin-mode {
   position: relative;
 }
 
+/* Эмодзи-иконка для пустого состояния */
 .empty-table::before {
   content: '📋';
   display: block;
@@ -611,6 +787,7 @@ body.admin-mode {
   opacity: 0.3;
 }
 
+/* Декоративный элемент в углу */
 .empty-table::after {
   content: '';
   position: absolute;
@@ -622,10 +799,16 @@ body.admin-mode {
   opacity: 0.1;
 }
 
+/* ========================================= */
+/* ЯЧЕЙКИ С ДЕЙСТВИЯМИ */
+/* Кнопки редактирования и удаления в таблицах */
+/* ========================================= */
+
 .actions-cell {
   display: flex;
   gap: 12px;
   flex-wrap: wrap;
+  /* Переносим кнопки на новую строку при необходимости */
 }
 
 .action-btn {
@@ -642,6 +825,7 @@ body.admin-mode {
   font-family: var(--admin-font-family);
 }
 
+/* Кнопка редактирования - голубая */
 .edit-btn {
   background: rgba(99, 171, 230, 0.1);
   color: var(--admin-secondary);
@@ -650,6 +834,7 @@ body.admin-mode {
 
 .edit-btn::before {
   content: '✎';
+  /* Иконка карандаша */
   font-size: 14px;
 }
 
@@ -659,6 +844,7 @@ body.admin-mode {
   transform: translateY(-2px);
 }
 
+/* Кнопка удаления - красная */
 .delete-btn {
   background: rgba(255, 107, 107, 0.1);
   color: var(--admin-danger);
@@ -667,6 +853,7 @@ body.admin-mode {
 
 .delete-btn::before {
   content: '✕';
+  /* Иконка крестика */
   font-size: 14px;
 }
 
@@ -676,7 +863,11 @@ body.admin-mode {
   transform: translateY(-2px);
 }
 
-/* Loading State */
+/* ========================================= */
+/* СОСТОЯНИЯ ЗАГРУЗКИ */
+/* Спиннеры и индикаторы загрузки */
+/* ========================================= */
+
 .admin-loading {
   color: var(--admin-text-secondary);
   text-align: center;
@@ -688,6 +879,7 @@ body.admin-mode {
   font-family: var(--admin-font-family);
 }
 
+/* Анимированный спиннер */
 .admin-loading::before {
   content: '';
   width: 40px;
@@ -701,10 +893,15 @@ body.admin-mode {
 @keyframes spinner {
   to {
     transform: rotate(360deg);
+    /* Вращение на 360 градусов */
   }
 }
 
-/* Status Indicators */
+/* ========================================= */
+/* ИНДИКАТОРЫ СТАТУСА */
+/* Цветные badges для отображения статусов */
+/* ========================================= */
+
 .admin-status {
   display: inline-flex;
   align-items: center;
@@ -717,6 +914,7 @@ body.admin-mode {
   font-family: var(--admin-font-family);
 }
 
+/* Светящаяся точка перед текстом статуса */
 .admin-status::before {
   content: '';
   display: block;
@@ -725,6 +923,7 @@ body.admin-mode {
   border-radius: 50%;
 }
 
+/* Положительный статус - зеленый */
 .admin-yes {
   background: rgba(78, 179, 255, 0.1);
   color: var(--admin-success);
@@ -734,8 +933,10 @@ body.admin-mode {
 .admin-yes::before {
   background: var(--admin-success);
   box-shadow: 0 0 8px var(--admin-success);
+  /* Эффект свечения */
 }
 
+/* Отрицательный статус - красный */
 .admin-no {
   background: rgba(255, 107, 107, 0.1);
   color: var(--admin-danger);
@@ -745,6 +946,7 @@ body.admin-mode {
 .admin-no::before {
   background: var(--admin-danger);
   box-shadow: 0 0 8px var(--admin-danger);
+  /* Эффект свечения */
 }
 
 /* Modal Styles */
@@ -1290,4 +1492,571 @@ body.admin-mode {
   .admin-card {
     margin-bottom: 1rem;
   }
+}
+
+/* ========================================= */
+/* КАРТОЧКИ И КОНТЕЙНЕРЫ */
+/* Унифицированные карточки для разной информации */
+/* ========================================= */
+
+/* Основная карточка для группировки контента */
+.admin-card {
+  background: var(--admin-glass-bg-light);
+  backdrop-filter: var(--admin-backdrop-filter-card);
+  -webkit-backdrop-filter: var(--admin-backdrop-filter-card);
+  border-radius: var(--admin-radius-lg);
+  padding: 24px;
+  border: 1px solid var(--admin-glass-border);
+  box-shadow: var(--admin-shadow-card);
+  margin-bottom: 24px;
+}
+
+.admin-card h3 {
+  margin: 0 0 20px 0;
+  font-size: 20px;
+  font-weight: 600;
+  color: var(--admin-text);
+  font-family: var(--admin-font-family);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.admin-card h4 {
+  margin: 0 0 12px 0;
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--admin-text);
+  font-family: var(--admin-font-family);
+}
+
+/* Информационная карточка для отображения данных */
+.admin-info-card {
+  background: var(--admin-glass-bg);
+  border-radius: var(--admin-radius-md);
+  padding: 16px;
+  border: 1px solid var(--admin-glass-border);
+  margin-bottom: 16px;
+}
+
+/* Карточка пользователя с аватаром */
+.admin-user-card {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px;
+  background: var(--admin-glass-bg);
+  border-radius: var(--admin-radius-md);
+  border: 1px solid var(--admin-glass-border);
+}
+
+.admin-user-avatar {
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  object-fit: cover;
+  border: 2px solid var(--admin-glass-border);
+}
+
+.admin-user-info {
+  flex: 1;
+}
+
+.admin-user-name {
+  font-weight: 600;
+  color: var(--admin-text);
+  margin-bottom: 4px;
+  font-family: var(--admin-font-family);
+}
+
+.admin-user-meta {
+  font-size: 14px;
+  color: var(--admin-text-secondary);
+  font-family: var(--admin-font-family);
+}
+
+/* ========================================= */
+/* СЕТКИ И LAYOUT'Ы */
+/* Гибкие системы расположения элементов */
+/* ========================================= */
+
+/* Двухколоночная сетка для деталей */
+.admin-grid {
+  display: grid;
+  grid-template-columns: 1fr 400px;
+  gap: 24px;
+  margin-bottom: 24px;
+}
+
+/* Трехколоночная сетка */
+.admin-grid-3 {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 20px;
+  margin-bottom: 24px;
+}
+
+/* Четырехколоночная сетка */
+.admin-grid-4 {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 16px;
+  margin-bottom: 24px;
+}
+
+/* Адаптивные сетки */
+@media (max-width: 1024px) {
+  .admin-grid {
+    grid-template-columns: 1fr;
+    gap: 16px;
+  }
+
+  .admin-grid-3 {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 16px;
+  }
+
+  .admin-grid-4 {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 12px;
+  }
+}
+
+@media (max-width: 768px) {
+
+  .admin-grid-3,
+  .admin-grid-4 {
+    grid-template-columns: 1fr;
+    gap: 12px;
+  }
+}
+
+/* ========================================= */
+/* ГРУППЫ ДЕЙСТВИЙ И КНОПКИ */
+/* Контейнеры для кнопок и быстрых действий */
+/* ========================================= */
+
+/* Контейнер для действий в форме */
+.form-actions {
+  display: flex;
+  gap: 12px;
+  margin-top: 24px;
+  flex-wrap: wrap;
+}
+
+/* Группа быстрых действий */
+.quick-actions {
+  display: flex;
+  gap: 8px;
+  padding: 12px;
+  background: var(--admin-glass-bg);
+  border-radius: var(--admin-radius-md);
+  border: 1px solid var(--admin-glass-border);
+  margin-top: 16px;
+}
+
+.quick-actions h4 {
+  margin: 0 0 8px 0;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--admin-text);
+  width: 100%;
+}
+
+/* Кнопки в группе действий */
+.quick-actions .admin-button {
+  flex: 1;
+  padding: 8px 12px;
+  font-size: 14px;
+}
+
+/* ========================================= */
+/* КОНТЕНТ И МЕДИА */
+/* Стили для отображения пользовательского контента */
+/* ========================================= */
+
+/* Контейнер для текстового контента */
+.content-text {
+  padding: 16px;
+  background: #f9f9f9;
+  border-radius: var(--admin-radius-md);
+  border: 1px solid var(--admin-border-light);
+  white-space: pre-wrap;
+  font-family: var(--admin-font-family);
+  color: var(--admin-text);
+  line-height: 1.6;
+  margin-bottom: 16px;
+}
+
+/* Контейнер для прикрепленного файла */
+.file-attachment {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px;
+  background: var(--admin-glass-bg);
+  border-radius: var(--admin-radius-md);
+  border: 1px solid var(--admin-glass-border);
+  margin-bottom: 16px;
+}
+
+.file-attachment-icon {
+  font-size: 24px;
+  color: var(--admin-primary);
+}
+
+.file-attachment-info {
+  flex: 1;
+}
+
+.file-attachment-name {
+  font-weight: 600;
+  color: var(--admin-text);
+  margin-bottom: 4px;
+}
+
+.file-attachment-meta {
+  font-size: 13px;
+  color: var(--admin-text-secondary);
+}
+
+/* ========================================= */
+/* РЕЗУЛЬТАТЫ И СТАТУСЫ */
+/* Отображение результатов проверки и статусов */
+/* ========================================= */
+
+/* Карточка результата проверки */
+.review-result {
+  padding: 16px;
+  border-radius: var(--admin-radius-md);
+  border: 1px solid var(--admin-glass-border);
+  margin-bottom: 16px;
+}
+
+.review-result.approved {
+  background: rgba(78, 179, 255, 0.1);
+  border-color: rgba(78, 179, 255, 0.2);
+}
+
+.review-result.rejected {
+  background: rgba(255, 107, 107, 0.1);
+  border-color: rgba(255, 107, 107, 0.2);
+}
+
+.review-result-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 8px;
+  font-weight: 600;
+  font-size: 16px;
+}
+
+.review-result-header .emoji {
+  font-size: 20px;
+}
+
+.review-result-info {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 8px;
+  font-size: 14px;
+  color: var(--admin-text);
+}
+
+.review-result-info span {
+  display: flex;
+  gap: 4px;
+}
+
+.review-result-info strong {
+  font-weight: 600;
+}
+
+/* ========================================= */
+/* ПРЕДУПРЕЖДЕНИЯ И УВЕДОМЛЕНИЯ */
+/* Информационные блоки разных типов */
+/* ========================================= */
+
+/* Предупреждающий блок */
+.admin-warning-block {
+  padding: 16px;
+  background: rgba(255, 209, 102, 0.1);
+  border: 1px solid rgba(255, 209, 102, 0.2);
+  border-radius: var(--admin-radius-md);
+  margin-bottom: 16px;
+}
+
+.admin-warning-block-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 8px;
+  font-weight: 600;
+  color: var(--admin-warning);
+}
+
+.admin-warning-block-content {
+  font-size: 14px;
+  color: var(--admin-text);
+  line-height: 1.5;
+}
+
+/* Информационный блок */
+.admin-info-block {
+  padding: 16px;
+  background: rgba(99, 171, 230, 0.1);
+  border: 1px solid rgba(99, 171, 230, 0.2);
+  border-radius: var(--admin-radius-md);
+  margin-bottom: 16px;
+}
+
+.admin-info-block-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 8px;
+  font-weight: 600;
+  color: var(--admin-info);
+}
+
+.admin-info-block-content {
+  font-size: 14px;
+  color: var(--admin-text);
+  line-height: 1.5;
+}
+
+/* ========================================= */
+/* ГРУППЫ ПОЛЕЙ ФОРМЫ */
+/* Организация элементов формы */
+/* ========================================= */
+
+/* Группа полей формы */
+.form-group {
+  margin-bottom: 20px;
+}
+
+.form-group label {
+  display: block;
+  margin-bottom: 8px;
+  font-weight: 600;
+  color: var(--admin-text);
+  font-family: var(--admin-font-family);
+  font-size: 14px;
+}
+
+/* Подпись под полем */
+.form-group small {
+  display: block;
+  margin-top: 4px;
+  font-size: 12px;
+  color: var(--admin-text-secondary);
+  line-height: 1.4;
+}
+
+/* Строка с несколькими полями */
+.form-row {
+  display: flex;
+  gap: 16px;
+  margin-bottom: 20px;
+  flex-wrap: wrap;
+}
+
+.form-row .form-group {
+  flex: 1;
+  margin-bottom: 0;
+  min-width: 200px;
+}
+
+/* Группа чекбоксов */
+.checkbox-group {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 8px;
+}
+
+.checkbox-group input[type="checkbox"] {
+  width: auto;
+  margin: 0;
+}
+
+.checkbox-group label {
+  margin: 0;
+  font-weight: normal;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+/* ========================================= */
+/* СТАТИСТИКА И МЕТРИКИ */
+/* Отображение числовых показателей */
+/* ========================================= */
+
+/* Контейнер статистики */
+.admin-stats {
+  display: flex;
+  gap: 16px;
+  margin-bottom: 24px;
+  flex-wrap: wrap;
+}
+
+/* Карточка со статистикой */
+.admin-stat-card {
+  background: var(--admin-glass-bg-light);
+  padding: 16px 20px;
+  border-radius: var(--admin-radius-md);
+  border: 1px solid var(--admin-glass-border);
+  box-shadow: var(--admin-shadow-card);
+  min-width: 140px;
+  text-align: center;
+}
+
+.admin-stat-value {
+  font-size: 24px;
+  font-weight: 700;
+  color: var(--admin-primary);
+  margin-bottom: 4px;
+  font-family: var(--admin-font-family);
+}
+
+.admin-stat-label {
+  font-size: 12px;
+  color: var(--admin-text-secondary);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  font-weight: 600;
+}
+
+/* ========================================= */
+/* ФИЛЬТРЫ И СОРТИРОВКА */
+/* Элементы управления для таблиц */
+/* ========================================= */
+
+/* Контейнер фильтров */
+.admin-filters {
+  display: flex;
+  gap: 16px;
+  align-items: center;
+  margin-bottom: 20px;
+  padding: 16px;
+  background: var(--admin-glass-bg);
+  border-radius: var(--admin-radius-md);
+  border: 1px solid var(--admin-glass-border);
+  flex-wrap: wrap;
+}
+
+.admin-filter-group {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.admin-filter-group label {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--admin-text);
+  white-space: nowrap;
+}
+
+.admin-filter-group select,
+.admin-filter-group input {
+  width: auto;
+  min-width: 120px;
+  margin: 0;
+}
+
+/* ========================================= */
+/* АВАТАРЫ И ИЗОБРАЖЕНИЯ */
+/* Стандартизация отображения изображений */
+/* ========================================= */
+
+/* Маленький аватар для таблиц */
+.admin-avatar-sm {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  object-fit: cover;
+  border: 1px solid var(--admin-glass-border);
+}
+
+/* Средний аватар */
+.admin-avatar-md {
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  object-fit: cover;
+  border: 2px solid var(--admin-glass-border);
+}
+
+/* Большой аватар */
+.admin-avatar-lg {
+  width: 64px;
+  height: 64px;
+  border-radius: 50%;
+  object-fit: cover;
+  border: 2px solid var(--admin-glass-border);
+}
+
+/* Превью изображения */
+.admin-image-preview {
+  max-width: 200px;
+  max-height: 120px;
+  border-radius: var(--admin-radius-sm);
+  object-fit: cover;
+  box-shadow: var(--admin-shadow-card);
+  border: 1px solid var(--admin-glass-border);
+}
+
+/* ========================================= */
+/* СПИСОК ЭЛЕМЕНТОВ */
+/* Стили для списков и элементов в них */
+/* ========================================= */
+
+/* Список элементов */
+.admin-list {
+  background: var(--admin-glass-bg-light);
+  border-radius: var(--admin-radius-lg);
+  border: 1px solid var(--admin-glass-border);
+  overflow: hidden;
+}
+
+/* Элемент списка */
+.admin-list-item {
+  padding: 16px;
+  border-bottom: 1px solid var(--admin-border-light);
+  transition: var(--admin-transition);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.admin-list-item:last-child {
+  border-bottom: none;
+}
+
+.admin-list-item:hover {
+  background: rgba(184, 98, 234, 0.05);
+}
+
+.admin-list-item-content {
+  flex: 1;
+}
+
+.admin-list-item-title {
+  font-weight: 600;
+  color: var(--admin-text);
+  margin-bottom: 4px;
+}
+
+.admin-list-item-meta {
+  font-size: 13px;
+  color: var(--admin-text-secondary);
+}
+
+.admin-list-item-actions {
+  display: flex;
+  gap: 8px;
 }
