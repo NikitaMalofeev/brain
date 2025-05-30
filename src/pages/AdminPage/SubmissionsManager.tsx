@@ -25,14 +25,20 @@ interface SubmissionWithDetails {
 
 interface SubmissionsManagerProps {
     onSubmissionSelect: (submissionId: number) => void;
+    // Добавляем информацию о текущем пользователе для админки
+    currentUser?: { id: string; role: string } | null;
 }
 
-const SubmissionsManager: React.FC<SubmissionsManagerProps> = ({ onSubmissionSelect }) => {
+const SubmissionsManager: React.FC<SubmissionsManagerProps> = ({
+    onSubmissionSelect,
+    currentUser: propCurrentUser
+}) => {
     const [submissions, setSubmissions] = useState<SubmissionWithDetails[]>([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
     const [statusFilter, setStatusFilter] = useState<string>('all');
     const [stageFilter, setStageFilter] = useState<string>('all');
+    const [currentUser, setCurrentUser] = useState<{ id: string; role: string } | null>(null);
 
     // Статистика для отображения
     const [stats, setStats] = useState({
@@ -50,6 +56,35 @@ const SubmissionsManager: React.FC<SubmissionsManagerProps> = ({ onSubmissionSel
                 setError('Supabase не инициализирован');
                 return;
             }
+
+            // Используем переданного пользователя из props (для админки) или получаем через Supabase Auth
+            let effectiveCurrentUser = propCurrentUser;
+
+            if (!effectiveCurrentUser) {
+                // Загрузка данных текущего пользователя через Supabase Auth (для обычных пользователей)
+                const { data: { user } } = await supabase.auth.getUser();
+                if (!user) {
+                    setError('Пользователь не авторизован');
+                    return;
+                }
+
+                // Получаем данные пользователя из таблицы users
+                const { data: userData, error: userError } = await supabase
+                    .from('users')
+                    .select('id, role')
+                    .eq('telegram_id', user.id)
+                    .single();
+
+                if (userError || !userData) {
+                    console.error('Ошибка получения данных пользователя:', userError);
+                    setError('Ошибка загрузки данных пользователя');
+                    return;
+                }
+
+                effectiveCurrentUser = { id: userData.id, role: userData.role };
+            }
+
+            setCurrentUser(effectiveCurrentUser);
 
             // Основной SQL запрос для получения сабмитов с деталями
             let query = supabase
@@ -140,7 +175,7 @@ const SubmissionsManager: React.FC<SubmissionsManagerProps> = ({ onSubmissionSel
 
     useEffect(() => {
         loadSubmissions();
-    }, [statusFilter, stageFilter]);
+    }, [statusFilter, stageFilter, propCurrentUser]);
 
     // Быстрые действия для проверки сабмита
     const handleQuickAction = async (submissionId: number, action: 'approve' | 'reject', points?: number) => {
@@ -153,8 +188,7 @@ const SubmissionsManager: React.FC<SubmissionsManagerProps> = ({ onSubmissionSel
             const updateData: any = {
                 status: action === 'approve' ? 'approved' : 'rejected',
                 reviewed_at: new Date().toISOString(),
-                // TODO: Получить ID текущего куратора
-                reviewed_by_curator_id: null
+                reviewed_by_curator_id: currentUser?.id || null
             };
 
             if (action === 'approve' && points) {

@@ -35,17 +35,25 @@ interface SubmissionDetailProps {
     submissionId: number;
     onBack: () => void;
     onSubmissionUpdated?: () => void;
+    // Добавляем информацию о текущем пользователе для админки
+    currentUser?: { id: string; role: string } | null;
 }
 
 const SubmissionDetail: React.FC<SubmissionDetailProps> = ({
     submissionId,
     onBack,
-    onSubmissionUpdated
+    onSubmissionUpdated,
+    currentUser: propCurrentUser
 }) => {
     const [submission, setSubmission] = useState<SubmissionDetailData | null>(null);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
     const [saving, setSaving] = useState(false);
+    const [currentUser, setCurrentUser] = useState<{ id: string; role: string } | null>(null);
+
+    // Состояние для изменения решений
+    const [isEditingDecision, setIsEditingDecision] = useState(false);
+    const [changeReason, setChangeReason] = useState('');
 
     // Форма проверки
     const [reviewForm, setReviewForm] = useState({
@@ -64,6 +72,35 @@ const SubmissionDetail: React.FC<SubmissionDetailProps> = ({
                 setError('Supabase не инициализирован');
                 return;
             }
+
+            // Используем переданного пользователя из props (для админки) или получаем через Supabase Auth
+            let effectiveCurrentUser = propCurrentUser;
+
+            if (!effectiveCurrentUser) {
+                // Загрузка данных текущего пользователя через Supabase Auth (для обычных пользователей)
+                const { data: { user } } = await supabase.auth.getUser();
+                if (!user) {
+                    setError('Пользователь не авторизован');
+                    return;
+                }
+
+                // Получаем данные пользователя из таблицы users
+                const { data: userData, error: userError } = await supabase
+                    .from('users')
+                    .select('id, role')
+                    .eq('telegram_id', user.id)
+                    .single();
+
+                if (userError || !userData) {
+                    console.error('Ошибка получения данных пользователя:', userError);
+                    setError('Ошибка загрузки данных пользователя');
+                    return;
+                }
+
+                effectiveCurrentUser = { id: userData.id, role: userData.role };
+            }
+
+            setCurrentUser(effectiveCurrentUser);
 
             const { data, error: queryError } = await supabase
                 .from('submissions')
@@ -161,7 +198,7 @@ const SubmissionDetail: React.FC<SubmissionDetailProps> = ({
 
     useEffect(() => {
         loadSubmissionDetail();
-    }, [submissionId]);
+    }, [submissionId, propCurrentUser]);
 
     // Сохранение результата проверки
     const saveReview = async () => {
@@ -181,8 +218,7 @@ const SubmissionDetail: React.FC<SubmissionDetailProps> = ({
                 reviewed_at: new Date().toISOString(),
                 feedback_text: reviewForm.feedback,
                 points_awarded: reviewForm.status === 'approved' ? reviewForm.points : 0,
-                // TODO: Получить ID текущего куратора
-                reviewed_by_curator_id: null
+                reviewed_by_curator_id: currentUser?.id || null
             };
 
             const { error: updateError } = await supabase
@@ -240,6 +276,142 @@ const SubmissionDetail: React.FC<SubmissionDetailProps> = ({
         } finally {
             setSaving(false);
         }
+    };
+
+    // Изменение решения по уже проверенному сабмиту
+    const changeDecision = async () => {
+        if (!submission || !changeReason.trim()) {
+            setError('Необходимо указать причину изменения решения');
+            return;
+        }
+
+        try {
+            setSaving(true);
+            setError(null);
+
+            if (!supabase) {
+                setError('Supabase не инициализирован');
+                return;
+            }
+
+            const oldStatus = submission.status;
+            const oldPoints = submission.points_awarded;
+            const newStatus = reviewForm.status;
+            const newPoints = newStatus === 'approved' ? reviewForm.points : 0;
+
+            // Определяем итоговый комментарий: новый (если есть) или старый
+            const finalFeedback = reviewForm.feedback.trim()
+                ? reviewForm.feedback
+                : submission.feedback_text || '';
+
+            // Обновляем сабмит
+            const updateData: any = {
+                status: newStatus,
+                reviewed_at: new Date().toISOString(),
+                feedback_text: finalFeedback,
+                points_awarded: newPoints,
+                reviewed_by_curator_id: currentUser?.id || null
+            };
+
+            const { error: updateError } = await supabase
+                .from('submissions')
+                .update(updateData)
+                .eq('id', submissionId);
+
+            if (updateError) {
+                console.error('Ошибка обновления сабмита:', updateError);
+                setError(`Ошибка обновления: ${updateError.message}`);
+                return;
+            }
+
+            // Пересчитываем баллы пользователя
+            let pointsDifference = 0;
+
+            if (oldStatus === 'approved' && newStatus === 'rejected') {
+                // Списываем ранее начисленные баллы
+                pointsDifference = -oldPoints;
+            } else if (oldStatus === 'rejected' && newStatus === 'approved') {
+                // Начисляем новые баллы
+                pointsDifference = newPoints;
+            } else if (oldStatus === 'approved' && newStatus === 'approved') {
+                // Корректируем разницу в баллах (НОВОЕ!)
+                pointsDifference = newPoints - oldPoints;
+            }
+
+            if (pointsDifference !== 0) {
+                // Получаем текущие баллы пользователя
+                const { data: userData, error: userError } = await supabase
+                    .from('users')
+                    .select('total_points')
+                    .eq('id', submission.user_id)
+                    .single();
+
+                if (!userError && userData) {
+                    // Обновляем баллы с учетом разницы
+                    const newTotalPoints = Math.max(0, (userData.total_points || 0) + pointsDifference);
+
+                    const { error: pointsError } = await supabase
+                        .from('users')
+                        .update({
+                            total_points: newTotalPoints
+                        })
+                        .eq('id', submission.user_id);
+
+                    if (pointsError) {
+                        console.error('Ошибка пересчета баллов:', pointsError);
+                        setError('Решение изменено, но произошла ошибка при пересчете баллов');
+                    }
+                }
+            }
+
+            // TODO: Отправить уведомление пользователю об изменении решения
+            if (oldStatus !== newStatus) {
+                console.log(`Уведомление: Статус сабмита ${submissionId} изменен с ${oldStatus} на ${newStatus}. Причина: ${changeReason}`);
+            } else if (pointsDifference !== 0) {
+                console.log(`Уведомление: Баллы за сабмит ${submissionId} изменены с ${oldPoints} на ${newPoints} (${pointsDifference > 0 ? '+' : ''}${pointsDifference}). Причина: ${changeReason}`);
+            }
+
+            // Сбрасываем состояние редактирования
+            setIsEditingDecision(false);
+            setChangeReason('');
+
+            // Обновляем локальные данные
+            await loadSubmissionDetail();
+
+            // Уведомляем родительский компонент
+            if (onSubmissionUpdated) {
+                onSubmissionUpdated();
+            }
+
+            if (oldStatus !== newStatus) {
+                alert('Решение успешно изменено!');
+            } else if (pointsDifference !== 0) {
+                alert(`Баллы успешно скорректированы! Изменение: ${pointsDifference > 0 ? '+' : ''}${pointsDifference} баллов`);
+            } else {
+                alert('Изменения сохранены!');
+            }
+
+        } catch (err) {
+            console.error('Ошибка изменения решения:', err);
+            setError('Произошла ошибка при изменении решения');
+        } finally {
+            setSaving(false);
+        }
+    };
+
+    // Проверка прав доступа для изменения решения
+    const canEditDecision = () => {
+        if (!currentUser || !submission) return false;
+
+        // Админы могут редактировать любые сабмиты
+        if (currentUser.role === 'admin') return true;
+
+        // Кураторы могут редактировать только свои сабмиты
+        if (currentUser.role === 'curator' && submission.reviewed_by_curator_id === currentUser.id) {
+            return true;
+        }
+
+        return false;
     };
 
     // Форматирование даты
@@ -399,94 +571,274 @@ const SubmissionDetail: React.FC<SubmissionDetailProps> = ({
 
                 {/* Правая панель - форма проверки */}
                 <div className="admin-card">
-                    <h3>Форма проверки</h3>
-
-                    {error && (
-                        <div className="admin-error" style={{ marginBottom: '1rem' }}>
-                            {error}
-                        </div>
-                    )}
-
-                    <div className="form-group">
-                        <label>Результат проверки</label>
-                        <select
-                            value={reviewForm.status}
-                            onChange={(e) => setReviewForm({
-                                ...reviewForm,
-                                status: e.target.value as 'approved' | 'rejected'
-                            })}
-                            className="admin-input"
-                        >
-                            <option value="approved">✅ Принято</option>
-                            <option value="rejected">❌ Отклонено</option>
-                        </select>
-                    </div>
-
-                    {reviewForm.status === 'approved' && (
-                        <div className="form-group">
-                            <label>Количество баллов (0-100)</label>
-                            <input
-                                type="number"
-                                min="0"
-                                max="100"
-                                value={reviewForm.points}
-                                onChange={(e) => setReviewForm({
-                                    ...reviewForm,
-                                    points: Math.max(0, Math.min(100, parseInt(e.target.value) || 0))
-                                })}
-                                className="admin-input"
-                            />
-                        </div>
-                    )}
-
-                    <div className="form-group">
-                        <label>Комментарий для пользователя</label>
-                        <textarea
-                            value={reviewForm.feedback}
-                            onChange={(e) => setReviewForm({
-                                ...reviewForm,
-                                feedback: e.target.value
-                            })}
-                            className="admin-input"
-                            rows={6}
-                            placeholder="Оставьте комментарий для пользователя..."
-                        />
-                    </div>
-
-                    <div className="form-actions">
-                        <button
-                            className="admin-button"
-                            onClick={saveReview}
-                            disabled={saving}
-                            style={{ width: '100%' }}
-                        >
-                            {saving ? 'Сохранение...' : 'Сохранить результат'}
-                        </button>
-                    </div>
-
-                    {/* Быстрые действия */}
+                    {/* Для новых сабмитов (submitted/pending_review) */}
                     {['submitted', 'pending_review'].includes(submission.status) && (
-                        <div style={{ marginTop: '1rem', borderTop: '1px solid #eee', paddingTop: '1rem' }}>
-                            <h4>Быстрые действия</h4>
-                            <div style={{ display: 'flex', gap: '0.5rem', flexDirection: 'column' }}>
-                                <button
-                                    className="admin-button admin-yes"
-                                    onClick={() => {
-                                        setReviewForm({ status: 'approved', points: 100, feedback: 'Отличная работа!' });
-                                    }}
+                        <>
+                            <h3>Форма проверки</h3>
+
+                            {error && (
+                                <div className="admin-error" style={{ marginBottom: '1rem' }}>
+                                    {error}
+                                </div>
+                            )}
+
+                            <div className="form-group">
+                                <label>Результат проверки</label>
+                                <select
+                                    value={reviewForm.status}
+                                    onChange={(e) => setReviewForm({
+                                        ...reviewForm,
+                                        status: e.target.value as 'approved' | 'rejected'
+                                    })}
+                                    className="admin-input"
                                 >
-                                    ✅ Принять с 100 баллами
-                                </button>
+                                    <option value="approved">✅ Принято</option>
+                                    <option value="rejected">❌ Отклонено</option>
+                                </select>
+                            </div>
+
+                            {reviewForm.status === 'approved' && (
+                                <div className="form-group">
+                                    <label>Количество баллов (0-100)</label>
+                                    <input
+                                        type="number"
+                                        min="0"
+                                        max="100"
+                                        value={reviewForm.points}
+                                        onChange={(e) => setReviewForm({
+                                            ...reviewForm,
+                                            points: Math.max(0, Math.min(100, parseInt(e.target.value) || 0))
+                                        })}
+                                        className="admin-input"
+                                    />
+                                </div>
+                            )}
+
+                            <div className="form-group">
+                                <label>Комментарий для пользователя</label>
+                                <textarea
+                                    value={reviewForm.feedback}
+                                    onChange={(e) => setReviewForm({
+                                        ...reviewForm,
+                                        feedback: e.target.value
+                                    })}
+                                    className="admin-input"
+                                    rows={6}
+                                    placeholder="Оставьте комментарий для пользователя..."
+                                />
+                            </div>
+
+                            <div className="form-actions">
                                 <button
-                                    className="admin-button admin-no"
-                                    onClick={() => {
-                                        setReviewForm({ status: 'rejected', points: 0, feedback: 'Работа требует доработки.' });
-                                    }}
+                                    className="admin-button"
+                                    onClick={saveReview}
+                                    disabled={saving}
+                                    style={{ width: '100%' }}
                                 >
-                                    ❌ Отклонить
+                                    {saving ? 'Сохранение...' : 'Сохранить результат'}
                                 </button>
                             </div>
-                        </div>
+
+                            {/* Быстрые действия */}
+                            <div style={{ marginTop: '1rem', borderTop: '1px solid #eee', paddingTop: '1rem' }}>
+                                <h4>Быстрые действия</h4>
+                                <div style={{ display: 'flex', gap: '0.5rem', flexDirection: 'column' }}>
+                                    <button
+                                        className="admin-button admin-yes"
+                                        onClick={() => {
+                                            setReviewForm({ status: 'approved', points: 100, feedback: 'Отличная работа!' });
+                                        }}
+                                    >
+                                        ✅ Принять с 100 баллами
+                                    </button>
+                                    <button
+                                        className="admin-button admin-no"
+                                        onClick={() => {
+                                            setReviewForm({ status: 'rejected', points: 0, feedback: 'Работа требует доработки.' });
+                                        }}
+                                    >
+                                        ❌ Отклонить
+                                    </button>
+                                </div>
+                            </div>
+                        </>
+                    )}
+
+                    {/* Для уже проверенных сабмитов (approved/rejected) */}
+                    {['approved', 'rejected'].includes(submission.status) && (
+                        <>
+                            <h3>Результат проверки</h3>
+
+                            {/* Отображение текущего результата */}
+                            <div style={{
+                                padding: '1rem',
+                                backgroundColor: submission.status === 'approved' ? '#f0f8f0' : '#fff0f0',
+                                borderRadius: '8px',
+                                marginBottom: '1rem'
+                            }}>
+                                <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.5rem' }}>
+                                    <span style={{ fontSize: '1.2rem' }}>
+                                        {submission.status === 'approved' ? '✅' : '❌'}
+                                    </span>
+                                    <strong>
+                                        {submission.status === 'approved' ? 'Принято' : 'Отклонено'}
+                                    </strong>
+                                </div>
+                                <div><strong>Баллы:</strong> {submission.points_awarded}</div>
+                                {submission.reviewed_at && (
+                                    <div><strong>Дата проверки:</strong> {formatDate(submission.reviewed_at)}</div>
+                                )}
+                                {submission.reviewer_name && (
+                                    <div><strong>Куратор:</strong> {submission.reviewer_name}</div>
+                                )}
+                            </div>
+
+                            {/* Кнопка изменения решения */}
+                            {!isEditingDecision && canEditDecision() && (
+                                <button
+                                    className="admin-button"
+                                    onClick={() => {
+                                        setIsEditingDecision(true);
+                                        // Инициализируем форму текущими значениями для корректировки
+                                        setReviewForm({
+                                            status: submission.status as 'approved' | 'rejected',
+                                            points: submission.points_awarded || 0,
+                                            feedback: ''
+                                        });
+                                        setChangeReason('');
+                                        setError(null);
+                                    }}
+                                    style={{ width: '100%', marginBottom: '1rem' }}
+                                >
+                                    🔄 Изменить решение
+                                </button>
+                            )}
+
+                            {/* Форма изменения решения */}
+                            {isEditingDecision && (
+                                <>
+                                    {error && (
+                                        <div className="admin-error" style={{ marginBottom: '1rem' }}>
+                                            {error}
+                                        </div>
+                                    )}
+
+                                    <div style={{
+                                        padding: '1rem',
+                                        backgroundColor: '#fffacd',
+                                        borderRadius: '8px',
+                                        marginBottom: '1rem'
+                                    }}>
+                                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.5rem' }}>
+                                            <span>⚠️</span>
+                                            <strong>Предупреждение</strong>
+                                        </div>
+                                        <div style={{ fontSize: '0.9rem' }}>
+                                            Баллы пользователя будут автоматически пересчитаны.
+                                            Можно изменить статус или скорректировать количество баллов.
+                                            Пользователь получит уведомление об изменении.
+                                        </div>
+                                    </div>
+
+                                    <div className="form-group">
+                                        <label>Новое решение</label>
+                                        <select
+                                            value={reviewForm.status}
+                                            onChange={(e) => {
+                                                const newStatus = e.target.value as 'approved' | 'rejected';
+                                                setReviewForm({
+                                                    ...reviewForm,
+                                                    status: newStatus,
+                                                    points: newStatus === 'approved'
+                                                        ? (submission.status === 'approved' ? reviewForm.points : 100)
+                                                        : 0
+                                                });
+                                            }}
+                                            className="admin-input"
+                                        >
+                                            <option value="approved">✅ Принято</option>
+                                            <option value="rejected">❌ Отклонено</option>
+                                        </select>
+                                    </div>
+
+                                    {reviewForm.status === 'approved' && (
+                                        <div className="form-group">
+                                            <label>Количество баллов (0-100)</label>
+                                            <input
+                                                type="number"
+                                                min="0"
+                                                max="100"
+                                                value={reviewForm.points}
+                                                onChange={(e) => setReviewForm({
+                                                    ...reviewForm,
+                                                    points: Math.max(0, Math.min(100, parseInt(e.target.value) || 0))
+                                                })}
+                                                className="admin-input"
+                                            />
+                                        </div>
+                                    )}
+
+                                    <div className="form-group">
+                                        <label>Новый комментарий (опционально)</label>
+                                        <textarea
+                                            value={reviewForm.feedback}
+                                            onChange={(e) => setReviewForm({
+                                                ...reviewForm,
+                                                feedback: e.target.value
+                                            })}
+                                            className="admin-input"
+                                            rows={4}
+                                            placeholder="Оставьте пустым чтобы сохранить старый комментарий..."
+                                        />
+                                        <small style={{ color: '#666' }}>
+                                            Если поле пустое - останется предыдущий комментарий
+                                        </small>
+                                    </div>
+
+                                    <div className="form-group">
+                                        <label>Причина изменения решения *</label>
+                                        <textarea
+                                            value={changeReason}
+                                            onChange={(e) => setChangeReason(e.target.value)}
+                                            className="admin-input"
+                                            rows={3}
+                                            placeholder="Обязательно укажите причину изменения решения..."
+                                            style={{ borderColor: changeReason.trim() ? '#ccc' : '#ff6b6b' }}
+                                        />
+                                        <small style={{ color: '#666' }}>
+                                            Например: "Обнаружена ошибка в первоначальной проверке", "Пересмотр критериев оценки"
+                                        </small>
+                                    </div>
+
+                                    <div className="form-actions" style={{ display: 'flex', gap: '0.5rem' }}>
+                                        <button
+                                            className="admin-button"
+                                            onClick={changeDecision}
+                                            disabled={saving || !changeReason.trim()}
+                                            style={{ flex: 1 }}
+                                        >
+                                            {saving ? 'Сохранение...' : 'Сохранить изменения'}
+                                        </button>
+                                        <button
+                                            className="admin-button"
+                                            onClick={() => {
+                                                setIsEditingDecision(false);
+                                                setChangeReason('');
+                                                setError(null);
+                                            }}
+                                            disabled={saving}
+                                            style={{
+                                                flex: 1,
+                                                backgroundColor: '#f5f5f5',
+                                                color: '#333'
+                                            }}
+                                        >
+                                            Отмена
+                                        </button>
+                                    </div>
+                                </>
+                            )}
+                        </>
                     )}
                 </div>
             </div>

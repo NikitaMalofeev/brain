@@ -1,13 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import {
-  initDataState as _initDataState,
-  useSignal,
-} from '@telegram-apps/sdk-react';
 import { Page } from '@/components/Page';
 import { FileUploader, CloudFlareR2Diagnostics } from '@/components';
 import { supabase } from '@/lib/supabase/client';
-import { useSupabaseUser, useCoursesAdmin, useStagesAdmin, useLessonsAdmin, useBlocksAdmin } from '@/lib/supabase/hooks';
+import { useCoursesAdmin, useStagesAdmin, useLessonsAdmin, useBlocksAdmin } from '@/lib/supabase/hooks';
 import { FILE_PREFIXES } from '@/lib/cloudflareR2Service';
 import { PlayerProvider } from '@/contexts/PlayerContext';
 import './AdminPage.css';
@@ -15,8 +11,8 @@ import { MdRefresh, MdLogout, MdArrowBack } from 'react-icons/md';
 import { Database } from '../../lib/supabase/types';
 
 // Импорты для компонентов проверки ДЗ
-import SubmissionsManager from './SubmissionsManager';
-import SubmissionDetail from './SubmissionDetail';
+import SubmissionsManager from './SubmissionsManager.tsx';
+import SubmissionDetail from './SubmissionDetail.tsx';
 
 type SupabaseUser = Database['public']['Tables']['users']['Row'];
 
@@ -1595,8 +1591,6 @@ const Breadcrumb: React.FC<BreadcrumbProps> = ({ navigation, onNavigate }) => {
 type AdminTab = 'users' | 'courses' | 'submissions' | 'gamification' | 'chats' | 'faq' | 'settings' | 'diagnostic';
 
 const AdminPage: React.FC = () => {
-  const initDataState = useSignal(_initDataState);
-  const { supabaseUser, loading: userLoading, error: userError } = useSupabaseUser(initDataState);
   const navigate = useNavigate();
 
   const [currentTab, setCurrentTab] = useState<AdminTab>('courses');
@@ -1606,23 +1600,16 @@ const AdminPage: React.FC = () => {
   const [password, setPassword] = useState<string>('');
   const [error, setError] = useState<string | null>(null);
 
-  useEffect(() => {
-    if (!userLoading) {
-      if (userError) {
-        setError('Ошибка при загрузке пользователя: ' + userError.message);
-      } else if (!supabaseUser) {
-        setError('Пользователь не найден');
-      } else if (supabaseUser.role !== 'admin' && supabaseUser.role !== 'curator' && !passwordAuth) {
-        navigate('/');
-      }
-    }
-  }, [supabaseUser, userLoading, userError, navigate, passwordAuth]);
+  // Заглушка для админского пользователя при авторизации по паролю
+  const [adminUser, setAdminUser] = useState<{ id: string; role: string } | null>(null);
 
   const checkPassword = () => {
     const correctPassword = 'admin123';
     if (password === correctPassword) {
       setPasswordAuth(true);
       setError(null);
+      // Создаем заглушку админа для передачи в дочерние компоненты
+      setAdminUser({ id: 'admin_password_user', role: 'admin' });
     } else {
       setError('Неверный пароль');
     }
@@ -1631,6 +1618,7 @@ const AdminPage: React.FC = () => {
   const handleLogout = () => {
     setPasswordAuth(false);
     setPassword('');
+    setAdminUser(null);
     navigate('/');
   };
 
@@ -1697,36 +1685,29 @@ const AdminPage: React.FC = () => {
     console.log('Сабмит обновлен');
   };
 
-  if (userLoading || (!['admin', 'curator'].includes(supabaseUser?.role || '') && !passwordAuth)) {
+  // Если пользователь не авторизован - показываем форму входа
+  if (!passwordAuth) {
     return (
       <div className="admin-login">
         <h1>Админ-панель</h1>
 
-        {userLoading ? (
-          <div className="admin-loading">Загрузка...</div>
-        ) : (
-          <>
-            {!passwordAuth && (
-              <div className="admin-warning">
-                Доступ ограничен. Введите пароль для входа.
-              </div>
-            )}
+        <div className="admin-warning">
+          Доступ ограничен. Введите пароль для входа.
+        </div>
 
-            {error && <div className="admin-error">{error}</div>}
+        {error && <div className="admin-error">{error}</div>}
 
-            <input
-              type="password"
-              className="admin-input"
-              placeholder="Пароль администратора"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              onKeyPress={(e) => e.key === 'Enter' && checkPassword()}
-            />
-            <button className="admin-button" onClick={checkPassword}>
-              Войти
-            </button>
-          </>
-        )}
+        <input
+          type="password"
+          className="admin-input"
+          placeholder="Пароль администратора"
+          value={password}
+          onChange={(e) => setPassword(e.target.value)}
+          onKeyPress={(e) => e.key === 'Enter' && checkPassword()}
+        />
+        <button className="admin-button" onClick={checkPassword}>
+          Войти
+        </button>
       </div>
     );
   }
@@ -1831,7 +1812,10 @@ const AdminPage: React.FC = () => {
             {currentTab === 'submissions' && (
               <>
                 {submissionsNavigation.view === 'list' && (
-                  <SubmissionsManager onSubmissionSelect={handleSubmissionSelect} />
+                  <SubmissionsManager
+                    onSubmissionSelect={handleSubmissionSelect}
+                    currentUser={adminUser}
+                  />
                 )}
 
                 {submissionsNavigation.view === 'detail' && submissionsNavigation.selectedSubmissionId && (
@@ -1839,6 +1823,7 @@ const AdminPage: React.FC = () => {
                     submissionId={submissionsNavigation.selectedSubmissionId}
                     onBack={handleSubmissionsBack}
                     onSubmissionUpdated={handleSubmissionUpdated}
+                    currentUser={adminUser}
                   />
                 )}
               </>
