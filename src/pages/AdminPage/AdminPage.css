@@ -1937,35 +1937,39 @@ body.admin-mode {
 
 /* Контейнер фильтров */
 .admin-filters {
+  background: rgba(55, 65, 81, 0.8);
+  border: 1px solid rgba(107, 114, 128, 0.5);
+  border-radius: 8px;
+  padding: 16px;
+  margin-bottom: 24px;
   display: flex;
   gap: 16px;
-  align-items: center;
-  margin-bottom: 20px;
-  padding: 16px;
-  background: var(--admin-glass-bg);
-  border-radius: var(--admin-radius-md);
-  border: 1px solid var(--admin-glass-border);
   flex-wrap: wrap;
+  align-items: center;
 }
 
 .admin-filter-group {
   display: flex;
-  align-items: center;
-  gap: 8px;
+  flex-direction: column;
+  gap: 4px;
 }
 
 .admin-filter-group label {
-  font-size: 14px;
+  font-size: 12px;
   font-weight: 600;
-  color: var(--admin-text);
-  white-space: nowrap;
+  color: var(--admin-text-secondary);
+  text-transform: uppercase;
 }
 
 .admin-filter-group select,
 .admin-filter-group input {
-  width: auto;
+  padding: 6px 12px;
+  border: 1px solid rgba(107, 114, 128, 0.5);
+  border-radius: 6px;
+  background: rgba(31, 41, 55, 0.8);
+  color: var(--admin-text);
+  font-size: 14px;
   min-width: 120px;
-  margin: 0;
 }
 
 /* ========================================= */
@@ -1975,39 +1979,38 @@ body.admin-mode {
 
 /* Маленький аватар для таблиц */
 .admin-avatar-sm {
-  width: 32px;
-  height: 32px;
+  width: 24px;
+  height: 24px;
   border-radius: 50%;
   object-fit: cover;
-  border: 1px solid var(--admin-glass-border);
+  border: 1px solid rgba(107, 114, 128, 0.3);
 }
 
 /* Средний аватар */
 .admin-avatar-md {
-  width: 48px;
-  height: 48px;
+  width: 32px;
+  height: 32px;
   border-radius: 50%;
   object-fit: cover;
-  border: 2px solid var(--admin-glass-border);
+  border: 2px solid rgba(107, 114, 128, 0.3);
 }
 
 /* Большой аватар */
 .admin-avatar-lg {
-  width: 64px;
-  height: 64px;
+  width: 48px;
+  height: 48px;
   border-radius: 50%;
   object-fit: cover;
-  border: 2px solid var(--admin-glass-border);
+  border: 2px solid rgba(107, 114, 128, 0.3);
 }
 
 /* Превью изображения */
 .admin-image-preview {
   max-width: 200px;
-  max-height: 120px;
-  border-radius: var(--admin-radius-sm);
+  max-height: 150px;
+  border-radius: 8px;
+  border: 1px solid rgba(107, 114, 128, 0.3);
   object-fit: cover;
-  box-shadow: var(--admin-shadow-card);
-  border: 1px solid var(--admin-glass-border);
 }
 
 /* ========================================= */
@@ -2017,20 +2020,20 @@ body.admin-mode {
 
 /* Список элементов */
 .admin-list {
-  background: var(--admin-glass-bg-light);
-  border-radius: var(--admin-radius-lg);
-  border: 1px solid var(--admin-glass-border);
+  background: rgba(55, 65, 81, 0.6);
+  border: 1px solid rgba(107, 114, 128, 0.3);
+  border-radius: 8px;
   overflow: hidden;
 }
 
 /* Элемент списка */
 .admin-list-item {
-  padding: 16px;
-  border-bottom: 1px solid var(--admin-border-light);
-  transition: var(--admin-transition);
+  padding: 12px 16px;
+  border-bottom: 1px solid rgba(107, 114, 128, 0.2);
   display: flex;
-  align-items: center;
   justify-content: space-between;
+  align-items: center;
+  transition: background-color 0.2s ease;
 }
 
 .admin-list-item:last-child {
@@ -2038,7 +2041,7 @@ body.admin-mode {
 }
 
 .admin-list-item:hover {
-  background: rgba(184, 98, 234, 0.05);
+  background: rgba(75, 85, 99, 0.3);
 }
 
 .admin-list-item-content {
@@ -2052,11 +2055,75 @@ body.admin-mode {
 }
 
 .admin-list-item-meta {
-  font-size: 13px;
+  font-size: 12px;
   color: var(--admin-text-secondary);
 }
 
 .admin-list-item-actions {
   display: flex;
   gap: 8px;
+}
+
+/* Стили для Drag & Drop */
+.drag-over {
+  background-color: rgba(99, 171, 230, 0.15) !important;
+  border: 2px dashed rgba(99, 171, 230, 0.6) !important;
+}
+
+.admin-table tbody tr {
+  transition: background-color 0.2s ease, border 0.2s ease;
+}
+
+.admin-table tbody tr:hover {
+  background: rgba(75, 85, 99, 0.3);
+}
+
+.admin-table tbody tr[style*="cursor: grab"] {
+  user-select: none;
+}
+
+.admin-table tbody tr[style*="cursor: grab"]:active {
+  cursor: grabbing !important;
+}
+
+.admin-table tbody tr.dragging {
+  opacity: 0.5;
+  transform: rotate(2deg);
+}
+
+.admin-table tbody tr.drop-target {
+  background-color: rgba(99, 171, 230, 0.1);
+  border-top: 3px solid rgba(99, 171, 230, 0.8);
+}
+
+.admin-table tbody tr.drop-target-bottom {
+  background-color: rgba(99, 171, 230, 0.1);
+  border-bottom: 3px solid rgba(99, 171, 230, 0.8);
+}
+
+/* Индикатор перетаскивания */
+.drag-indicator {
+  position: absolute;
+  background: rgba(99, 171, 230, 0.8);
+  height: 2px;
+  width: 100%;
+  left: 0;
+  z-index: 1000;
+  border-radius: 1px;
+  box-shadow: 0 0 8px rgba(99, 171, 230, 0.6);
+}
+
+/* Анимация для успешного drop */
+@keyframes dropSuccess {
+  0% {
+    background-color: rgba(34, 197, 94, 0.2);
+  }
+
+  100% {
+    background-color: transparent;
+  }
+}
+
+.drop-success {
+  animation: dropSuccess 0.6s ease-out;
 }

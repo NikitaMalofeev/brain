@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { FileUploader, CloudFlareR2Diagnostics } from '@/components';
 import { supabase } from '@/lib/supabase/client';
@@ -8,10 +8,13 @@ import { PlayerProvider } from '@/contexts/PlayerContext';
 import './AdminPage.css';
 import { MdRefresh, MdLogout, MdArrowBack } from 'react-icons/md';
 import { Database } from '../../lib/supabase/types';
+import { draggable, dropTargetForElements } from '@atlaskit/pragmatic-drag-and-drop/element/adapter';
+import { combine } from '@atlaskit/pragmatic-drag-and-drop/combine';
 
 // Импорты для компонентов проверки ДЗ
-import SubmissionsManager from './SubmissionsManager.tsx';
-import SubmissionDetail from './SubmissionDetail.tsx';
+import SubmissionsManager from './SubmissionsManager';
+import SubmissionDetail from './SubmissionDetail';
+import { DiagnosticsPage } from '../DiagnosticsPage/DiagnosticsPage';
 
 type SupabaseUser = Database['public']['Tables']['users']['Row'];
 
@@ -66,6 +69,106 @@ interface BlocksManagerProps {
   lessonId: number;
   onBack: () => void;
 }
+
+// Компонент для draggable строки блока
+interface DraggableBlockRowProps {
+  block: any;
+  localOrderValues: { [key: number]: number };
+  onOrderInputChange: (blockId: number, newOrder: number) => void;
+  getBlockTypeName: (type: string) => string;
+  renderBlockContent: (block: any) => React.ReactNode;
+  onEdit: (block: any) => void;
+  onDelete: (blockId: number, title?: string) => void;
+  onReorder: (draggedBlockId: number, targetBlockId: number) => void;
+}
+
+const DraggableBlockRow: React.FC<DraggableBlockRowProps> = ({
+  block,
+  localOrderValues,
+  onOrderInputChange,
+  getBlockTypeName,
+  renderBlockContent,
+  onEdit,
+  onDelete,
+  onReorder
+}) => {
+  const ref = useRef<HTMLTableRowElement>(null);
+  const [isDraggedOver, setIsDraggedOver] = useState(false);
+
+  useEffect(() => {
+    const element = ref.current;
+    if (!element) return;
+
+    return combine(
+      draggable({
+        element,
+        getInitialData: () => ({
+          type: 'block',
+          blockId: block.id,
+          orderNum: block.order_num
+        }),
+      }),
+      dropTargetForElements({
+        element,
+        canDrop: ({ source }) => source.data.type === 'block' && source.data.blockId !== block.id,
+        onDragEnter: () => setIsDraggedOver(true),
+        onDragLeave: () => setIsDraggedOver(false),
+        onDrop: ({ source }) => {
+          setIsDraggedOver(false);
+          if (source.data.type === 'block') {
+            onReorder(source.data.blockId as number, block.id);
+          }
+        },
+      }),
+    );
+  }, [block.id, block.order_num, onReorder]);
+
+  return (
+    <tr
+      ref={ref}
+      style={{
+        cursor: 'grab',
+        backgroundColor: isDraggedOver ? 'rgba(99, 171, 230, 0.1)' : undefined,
+        transition: 'background-color 0.2s ease'
+      }}
+      className={isDraggedOver ? 'drag-over' : ''}
+    >
+      <td>
+        <input
+          type="number"
+          value={localOrderValues[block.id] ?? block.order_num}
+          onChange={(e) => onOrderInputChange(block.id, parseInt(e.target.value) || 1)}
+          style={{ width: '60px', textAlign: 'center' }}
+          className="admin-input"
+          min="1"
+        />
+      </td>
+      <td>{block.title || <span className="empty-value">Без заголовка</span>}</td>
+      <td>
+        <span className={`admin-status admin-yes`}>
+          {getBlockTypeName(block.block_type)}
+        </span>
+      </td>
+      <td>{renderBlockContent(block)}</td>
+      <td className="actions-cell">
+        <button
+          className="action-btn edit-btn"
+          onClick={() => onEdit(block)}
+          title="Редактировать блок"
+        >
+          Изменить
+        </button>
+        <button
+          className="action-btn delete-btn"
+          onClick={() => onDelete(block.id, block.title)}
+          title="Удалить блок"
+        >
+          Удалить
+        </button>
+      </td>
+    </tr>
+  );
+};
 
 // Компонент для управления курсами
 const CoursesManager: React.FC<CoursesManagerProps> = ({ onCourseSelect }) => {
@@ -1174,6 +1277,57 @@ const BlocksManager: React.FC<BlocksManagerProps> = ({ courseId, stageId, lesson
     }
   };
 
+  // Обработка drag & drop перестановки блоков
+  const handleBlockReorder = async (draggedBlockId: number, targetBlockId: number) => {
+    try {
+      setUpdateLoading(true);
+      setUpdateError(null);
+
+      // Находим блоки в текущем массиве
+      const draggedBlock = blocks.find(b => b.id === draggedBlockId);
+      const targetBlock = blocks.find(b => b.id === targetBlockId);
+
+      if (!draggedBlock || !targetBlock) {
+        throw new Error('Блоки не найдены');
+      }
+
+      // Создаем копию массива блоков для расчета новых позиций
+      const sortedBlocks = [...blocks].sort((a, b) => a.order_num - b.order_num);
+      const draggedIndex = sortedBlocks.findIndex(b => b.id === draggedBlockId);
+      const targetIndex = sortedBlocks.findIndex(b => b.id === targetBlockId);
+
+      if (draggedIndex === -1 || targetIndex === -1) {
+        throw new Error('Индексы блоков не найдены');
+      }
+
+      // Перемещаем элемент в новую позицию
+      const reorderedBlocks = [...sortedBlocks];
+      const [movedBlock] = reorderedBlocks.splice(draggedIndex, 1);
+      reorderedBlocks.splice(targetIndex, 0, movedBlock);
+
+      // Обновляем order_num для всех затронутых блоков
+      const updates = [];
+      for (let i = 0; i < reorderedBlocks.length; i++) {
+        const newOrderNum = i + 1;
+        if (reorderedBlocks[i].order_num !== newOrderNum) {
+          updates.push(updateBlock(reorderedBlocks[i].id, { order_num: newOrderNum }));
+        }
+      }
+
+      // Выполняем все обновления
+      await Promise.all(updates);
+
+      // Перезагружаем данные для отображения обновленного порядка
+      await refetch();
+
+    } catch (error: any) {
+      console.error('Ошибка при перестановке блоков:', error);
+      setUpdateError(error.message || 'Произошла ошибка при перестановке блоков');
+    } finally {
+      setUpdateLoading(false);
+    }
+  };
+
   // Получение названия типа блока для отображения
   const getBlockTypeName = (type: string) => {
     const types: Record<string, string> = {
@@ -1295,41 +1449,17 @@ const BlocksManager: React.FC<BlocksManagerProps> = ({ courseId, stageId, lesson
             </thead>
             <tbody>
               {blocks.map((block) => (
-                <tr key={block.id}>
-                  <td>
-                    <input
-                      type="number"
-                      value={localOrderValues[block.id] ?? block.order_num}
-                      onChange={(e) => handleOrderInputChange(block.id, parseInt(e.target.value) || 1)}
-                      style={{ width: '60px', textAlign: 'center' }}
-                      className="admin-input"
-                      min="1"
-                    />
-                  </td>
-                  <td>{block.title || <span className="empty-value">Без заголовка</span>}</td>
-                  <td>
-                    <span className={`admin-status admin-yes`}>
-                      {getBlockTypeName(block.block_type)}
-                    </span>
-                  </td>
-                  <td>{renderBlockContent(block)}</td>
-                  <td className="actions-cell">
-                    <button
-                      className="action-btn edit-btn"
-                      onClick={() => openEditModal(block)}
-                      title="Редактировать блок"
-                    >
-                      Изменить
-                    </button>
-                    <button
-                      className="action-btn delete-btn"
-                      onClick={() => handleDeleteBlock(block.id, block.title)}
-                      title="Удалить блок"
-                    >
-                      Удалить
-                    </button>
-                  </td>
-                </tr>
+                <DraggableBlockRow
+                  key={block.id}
+                  block={block}
+                  localOrderValues={localOrderValues}
+                  onOrderInputChange={handleOrderInputChange}
+                  getBlockTypeName={getBlockTypeName}
+                  renderBlockContent={renderBlockContent}
+                  onEdit={openEditModal}
+                  onDelete={handleDeleteBlock}
+                  onReorder={handleBlockReorder}
+                />
               ))}
             </tbody>
           </table>

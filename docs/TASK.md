@@ -346,3 +346,47 @@ WHERE id = $2;
 - ✅ Техническая спецификация готова для разработчиков
 - ✅ Figma ID mapping выполнен для всех экранов
 - ✅ Plan для поэтапного внедрения создан 
+
+### 🟡 **[UX]** Реализация Drag & Drop в админке - В процессе 🔄
+
+**Дата начала:** 2024-01-29  
+**Цель:** Реализовать перетаскивание для изменения порядка блоков и уроков в админ-панели
+
+**Анализ готовности кодовой базы:**
+✅ **База данных готова:** Все таблицы имеют поле `order_num` для сортировки:
+- `lessons.order_num` (int4, NOT NULL)
+- `lesson_blocks.order_num` (int4, NOT NULL)
+
+✅ **Админка готова:** В `AdminPage.tsx` уже реализованы:
+- Инлайн редактирование `order_num` через input поля
+- Функции `handleOrderChange` и `updateBlock` для обновления порядка
+- Логика создания новых элементов с автоматическим `order_num`
+
+**Выбранная технология:** 
+🎯 **Atlassian Pragmatic Drag and Drop** - `/atlassian/pragmatic-drag-and-drop`
+- ✅ Trust Score: 8.1/10 - высокая надежность
+- ✅ 232 Code Snippets - обширная документация  
+- ✅ Fast performance - оптимизирована для производительности
+- ✅ Framework agnostic - не привязана к React (универсальность)
+- ✅ Поддержка React через хуки и ref паттерны
+- ✅ Активная разработка Atlassian (используется в Jira/Confluence)
+
+**План реализации (упрощенный):**
+1. 🟢 **Установка библиотеки:** `npm install @atlaskit/pragmatic-drag-and-drop` - ЗАВЕРШЕНО ✅
+2. 🟢 **Реализация для блоков:** Самый важный функционал с `useEffect` и `draggable/dropTargetForElements` - ЗАВЕРШЕНО ✅ **ПРОТЕСТИРОВАНО!**
+3. 🟡 **Реализация для уроков:** Аналогичная логика в LessonsManager - В ПРОЦЕССЕ 🔄
+4. 🔴 **Тестирование:** Проверка на разных браузерах
+5. 🔴 **Документация:** Обновить admin_user_flow.md
+
+**✅ РЕАЛИЗОВАНО И ПРОТЕСТИРОВАНО - Drag & Drop для блоков (lesson_blocks):**
+- **DraggableBlockRow компонент** - перетаскиваемые строки таблицы ✅ РАБОТАЕТ
+- **Drag & Drop логика** - `draggable` и `dropTargetForElements` с combine ✅ РАБОТАЕТ  
+- **Визуальные эффекты** - подсветка при наведении, курсор grab/grabbing ✅ РАБОТАЕТ
+- **handleBlockReorder функция** - автоматический пересчет order_num для всех блоков ✅ РАБОТАЕТ
+- **CSS стили** - .drag-over, .drop-target, анимации drag & drop ✅ РАБОТАЕТ
+- **Интеграция с BlocksManager** - замена обычных `<tr>` на `<DraggableBlockRow>` ✅ РАБОТАЕТ
+
+**🔄 В ПРОЦЕССЕ - Drag & Drop для уроков (lessons):**
+- Создать DraggableLessonRow компонент по аналогии с блоками
+- Реализовать handleLessonReorder функцию в LessonsManager  
+- Интегрировать в таблицу уроков
