@@ -14,6 +14,10 @@ import './AdminPage.css';
 import { MdRefresh, MdLogout, MdArrowBack } from 'react-icons/md';
 import { Database } from '../../lib/supabase/types';
 
+// Импорты для компонентов проверки ДЗ
+import SubmissionsManager from './SubmissionsManager';
+import SubmissionDetail from './SubmissionDetail';
+
 type SupabaseUser = Database['public']['Tables']['users']['Row'];
 
 // Типы для навигации
@@ -25,6 +29,12 @@ interface NavigationState {
   stageName?: string;
   lessonId?: number;
   lessonName?: string;
+}
+
+// Новое состояние для навигации по сабмитам
+interface SubmissionsNavigationState {
+  view: 'list' | 'detail';
+  selectedSubmissionId?: number;
 }
 
 // Типы для блоков
@@ -1591,6 +1601,7 @@ const AdminPage: React.FC = () => {
 
   const [currentTab, setCurrentTab] = useState<AdminTab>('courses');
   const [navigation, setNavigation] = useState<NavigationState>({ view: 'courses' });
+  const [submissionsNavigation, setSubmissionsNavigation] = useState<SubmissionsNavigationState>({ view: 'list' });
   const [passwordAuth, setPasswordAuth] = useState<boolean>(false);
   const [password, setPassword] = useState<string>('');
   const [error, setError] = useState<string | null>(null);
@@ -1667,6 +1678,23 @@ const AdminPage: React.FC = () => {
         setNavigation({ view: 'courses' });
         break;
     }
+  };
+
+  // Обработчики для сабмитов
+  const handleSubmissionSelect = (submissionId: number) => {
+    setSubmissionsNavigation({
+      view: 'detail',
+      selectedSubmissionId: submissionId
+    });
+  };
+
+  const handleSubmissionsBack = () => {
+    setSubmissionsNavigation({ view: 'list' });
+  };
+
+  const handleSubmissionUpdated = () => {
+    // Можно добавить дополнительную логику при обновлении сабмита
+    console.log('Сабмит обновлен');
   };
 
   if (userLoading || (!['admin', 'curator'].includes(supabaseUser?.role || '') && !passwordAuth)) {
@@ -1800,7 +1828,21 @@ const AdminPage: React.FC = () => {
                 )}
               </>
             )}
-            {currentTab === 'submissions' && <div>Проверка домашних заданий</div>}
+            {currentTab === 'submissions' && (
+              <>
+                {submissionsNavigation.view === 'list' && (
+                  <SubmissionsManager onSubmissionSelect={handleSubmissionSelect} />
+                )}
+
+                {submissionsNavigation.view === 'detail' && submissionsNavigation.selectedSubmissionId && (
+                  <SubmissionDetail
+                    submissionId={submissionsNavigation.selectedSubmissionId}
+                    onBack={handleSubmissionsBack}
+                    onSubmissionUpdated={handleSubmissionUpdated}
+                  />
+                )}
+              </>
+            )}
             {currentTab === 'gamification' && <div>Управление геймификацией</div>}
             {currentTab === 'chats' && <div>Управление чатами</div>}
             {currentTab === 'faq' && <div>Управление FAQ</div>}

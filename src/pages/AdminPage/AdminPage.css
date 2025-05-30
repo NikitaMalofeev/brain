@@ -995,3 +995,80 @@ body.admin-mode {
   color: var(--admin-text-secondary);
   opacity: 0.8;
 }
+
+/* Стили для проверки ДЗ */
+.admin-card {
+  background: white;
+  border-radius: 12px;
+  padding: 1.5rem;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.07);
+  border: 1px solid #e5e7eb;
+}
+
+.admin-card h3 {
+  margin: 0 0 1rem 0;
+  color: #1f2937;
+  font-size: 1.25rem;
+  font-weight: 600;
+  padding-bottom: 0.75rem;
+  border-bottom: 2px solid #f3f4f6;
+}
+
+.admin-card h4 {
+  margin: 0 0 0.5rem 0;
+  color: #374151;
+  font-size: 1rem;
+  font-weight: 600;
+}
+
+/* Статус индикаторы для быстрого сканирования */
+.admin-status {
+  display: inline-flex;
+  align-items: center;
+  padding: 4px 8px;
+  border-radius: 6px;
+  font-size: 0.875rem;
+  font-weight: 500;
+  background: #f3f4f6;
+  color: #374151;
+}
+
+.admin-status.admin-yes {
+  background: #dcfce7;
+  color: #166534;
+}
+
+.admin-status.admin-no {
+  background: #fef2f2;
+  color: #dc2626;
+}
+
+/* Кнопки быстрых действий */
+.action-btn.admin-yes {
+  background: #10b981;
+  color: white;
+}
+
+.action-btn.admin-yes:hover {
+  background: #059669;
+}
+
+.action-btn.admin-no {
+  background: #ef4444;
+  color: white;
+}
+
+.action-btn.admin-no:hover {
+  background: #dc2626;
+}
+
+/* Адаптивность для мобильных устройств */
+@media (max-width: 768px) {
+  .admin-section>div[style*="grid-template-columns"] {
+    display: block !important;
+  }
+
+  .admin-card {
+    margin-bottom: 1rem;
+  }
+}
