@@ -171,7 +171,7 @@ const LibraryPage: React.FC = () => {
                 <div className={'flex items-center justify-between'}>
                     <div className={'flex flex-col'}>
                         <p className={'font-bold text-black'}>Выполнено 12 заданий</p>
-                        <p className={'text-sm text-[#8C8C8C]'}>Еще 24 задания до третей ступени</p>
+                        <p className={'text-sm text-[#8C8C8C]'}>Еще 24 задания до третьей ступени</p>
                     </div>
                     <svg width="36" height="36" viewBox="0 0 36 36" fill="none" xmlns="http://www.w3.org/2000/svg">
                         <rect width="36" height="36" rx="18" fill="#EAF5FE"/>

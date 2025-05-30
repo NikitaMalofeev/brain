@@ -80,13 +80,9 @@ export const MainPage = () => {
         <Page>
             <div className={'fixed z-50 top-6 flex items-center justify-between px-6 w-full'}>
                 <img src={supabaseUser?.photo_url || ''} className={'w-8 h-8 rounded-full'}/>
-                <div className={'flex items-center gap-2 py-2 px-3 bg-white rounded-full'}>
-                    <p className={'text-black font-medium'}>{supabaseUser?.total_points}</p>
-                    <svg width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
-                        <path
-                            d="M9.87334 10.127L10.0383 10.1845C12.755 11.1195 16.025 10.2253 18.3333 7.91699M9.87334 10.127L9.40834 9.96783C6.87334 9.09449 3.82084 9.92949 1.66667 12.0837M9.87334 10.127L9.81584 9.96199C8.88084 7.24533 9.775 3.97533 12.0833 1.66699M9.87334 10.127L10.0325 10.592C10.9058 13.1262 10.0708 16.1795 7.91667 18.3337M8.33334 12.5003L9.86917 14.102M5.6375 9.86949L6.66667 10.9003M9.87 5.63783L11.6667 7.50033M13.3333 9.16699L14.1017 9.86949M3.33334 10.8337L6.25 13.7503M16.4817 9.07533L13.565 6.15866M7.75417 15.1595L9.07667 16.482M12.1558 4.65616L10.8333 3.33366"
-                            stroke="#369EF3" stroke-width="1.25" stroke-linecap="round"/>
-                    </svg>
+                <div className={'flex items-center gap-1 py-[6px] px-2 bg-white rounded-full'}>
+                    <p className={'text-black font-semibold leading-4'}>{supabaseUser?.total_points}</p>
+                    <img src={'/eid.svg'} className={'w-5 h-5'}/>
                 </div>
             </div>
             <div className={'relative min-h-screen overflow-hidden bg-[url("/bg.jpg")] bg-cover'}>
@@ -103,7 +99,7 @@ export const MainPage = () => {
                 <div className={'flex items-center justify-between'}>
                     <div className={'flex flex-col'}>
                         <p className={'font-bold text-black'}>Выполнено 12 заданий</p>
-                        <p className={'text-sm text-[#8C8C8C]'}>Еще 24 задания до третей ступени</p>
+                        <p className={'text-sm text-[#8C8C8C]'}>Еще 24 задания до третьей ступени</p>
                     </div>
                     <svg width="36" height="36" viewBox="0 0 36 36" fill="none" xmlns="http://www.w3.org/2000/svg">
                         <rect width="36" height="36" rx="18" fill="#EAF5FE"/>

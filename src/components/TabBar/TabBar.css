@@ -3,15 +3,11 @@
   bottom: 0;
   left: 0;
   right: 0;
-  height: 64px;
+  height: 60px;
   display: flex;
   justify-content: space-between;
   align-items: center;
   background-color: var(--tgui-surface);
-  border-top: 1px solid var(--tgui-border);
-  padding-left: calc(env(safe-area-inset-left, 0px) + 15px);
-  padding-right: calc(env(safe-area-inset-right, 0px) + 15px);
-  padding-bottom: calc(env(safe-area-inset-bottom, 0px) + 5px);
   z-index: 1000;
   box-sizing: border-box;
   width: 100%;
