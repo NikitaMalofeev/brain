@@ -397,7 +397,74 @@ body.admin-mode {
   scale: 0.98;
 }
 
-/* Table Styles */
+/* Универсальные стили таблиц для админки */
+.admin-table {
+  width: 100%;
+  overflow-x: auto;
+  background: var(--admin-glass-bg-light);
+  backdrop-filter: var(--admin-backdrop-filter);
+  -webkit-backdrop-filter: var(--admin-backdrop-filter);
+  border-radius: var(--admin-radius-lg);
+  box-shadow: var(--admin-shadow-glass);
+  border: 1px solid var(--admin-glass-border);
+}
+
+.admin-table table {
+  width: 100%;
+  border-collapse: separate;
+  border-spacing: 0;
+  font-size: 14px;
+  font-family: var(--admin-font-family);
+}
+
+.admin-table th,
+.admin-table td {
+  padding: 16px;
+  text-align: left;
+  vertical-align: middle;
+}
+
+.admin-table th {
+  background: var(--admin-bg-secondary);
+  font-weight: 600;
+  color: var(--admin-text);
+  position: sticky;
+  top: 0;
+  border-bottom: 1px solid var(--admin-border);
+  font-size: 13px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.admin-table th:first-child {
+  border-top-left-radius: var(--admin-radius-lg);
+}
+
+.admin-table th:last-child {
+  border-top-right-radius: var(--admin-radius-lg);
+}
+
+.admin-table tbody tr {
+  transition: var(--admin-transition);
+}
+
+.admin-table tbody tr:not(:last-child) td {
+  border-bottom: 1px solid var(--admin-border-light);
+}
+
+.admin-table tbody tr:hover {
+  background: rgba(184, 98, 234, 0.05);
+}
+
+.admin-table tbody tr:last-child td:first-child {
+  border-bottom-left-radius: var(--admin-radius-lg);
+}
+
+.admin-table tbody tr:last-child td:last-child {
+  border-bottom-right-radius: var(--admin-radius-lg);
+}
+
+/* Обратная совместимость - старые классы наследуют новый стиль */
 .practices-table,
 .categories-table,
 .quiz-rules-table,
@@ -430,6 +497,7 @@ body.admin-mode {
 .users-table td {
   padding: 16px;
   text-align: left;
+  vertical-align: middle;
 }
 
 .practices-table th,
@@ -441,6 +509,9 @@ body.admin-mode {
   position: sticky;
   top: 0;
   border-bottom: 1px solid var(--admin-border);
+  font-size: 13px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
 }
 
 .practices-table th:first-child,
@@ -455,33 +526,100 @@ body.admin-mode {
   border-top-right-radius: var(--admin-radius-lg);
 }
 
-.practices-table tr,
-.categories-table tr,
-.users-table tr {
+.practices-table tbody tr,
+.categories-table tbody tr,
+.users-table tbody tr {
   transition: var(--admin-transition);
 }
 
-.practices-table tr:not(:last-child) td,
-.categories-table tr:not(:last-child) td,
-.users-table tr:not(:last-child) td {
+.practices-table tbody tr:not(:last-child) td,
+.categories-table tbody tr:not(:last-child) td,
+.users-table tbody tr:not(:last-child) td {
   border-bottom: 1px solid var(--admin-border-light);
 }
 
-.practices-table tr:hover,
-.categories-table tr:hover,
-.users-table tr:hover {
+.practices-table tbody tr:hover,
+.categories-table tbody tr:hover,
+.users-table tbody tr:hover {
   background: rgba(184, 98, 234, 0.05);
 }
 
+/* Формы добавления элементов */
+.course-add-form,
+.stage-add-form,
+.lesson-add-form,
+.block-add-form {
+  background: var(--admin-glass-bg-light);
+  backdrop-filter: var(--admin-backdrop-filter-card);
+  -webkit-backdrop-filter: var(--admin-backdrop-filter-card);
+  border-radius: var(--admin-radius-lg);
+  padding: 20px;
+  margin-bottom: 24px;
+  border: 1px solid var(--admin-glass-border);
+  box-shadow: var(--admin-shadow-card);
+}
+
+.course-add-form h3,
+.stage-add-form h3,
+.lesson-add-form h3,
+.block-add-form h3 {
+  margin: 0 0 16px 0;
+  font-size: 18px;
+  font-weight: 600;
+  color: var(--admin-text);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-family: var(--admin-font-family);
+}
+
+.course-add-form h3::before,
+.stage-add-form h3::before,
+.lesson-add-form h3::before,
+.block-add-form h3::before {
+  content: '+';
+  background: var(--admin-gradient-primary);
+  color: white;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 14px;
+  font-weight: bold;
+}
+
+/* Улучшенные стили для пустых состояний */
 .empty-table {
   text-align: center;
   color: var(--admin-text-secondary);
-  padding: 32px;
+  padding: 48px 32px;
   font-style: italic;
   background: var(--admin-glass-bg);
   border-radius: var(--admin-radius-lg);
   backdrop-filter: var(--admin-backdrop-filter-card);
   border: 1px solid var(--admin-glass-border);
+  position: relative;
+}
+
+.empty-table::before {
+  content: '📋';
+  display: block;
+  font-size: 48px;
+  margin-bottom: 16px;
+  opacity: 0.3;
+}
+
+.empty-table::after {
+  content: '';
+  position: absolute;
+  top: 16px;
+  right: 16px;
+  width: 40px;
+  height: 40px;
+  background: linear-gradient(45deg, transparent 30%, var(--admin-glass-border) 30%, var(--admin-glass-border) 70%, transparent 70%);
+  opacity: 0.1;
 }
 
 .actions-cell {

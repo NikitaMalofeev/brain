@@ -181,7 +181,7 @@ const CoursesManager: React.FC<CoursesManagerProps> = ({ onCourseSelect }) => {
           onClick={refetch}
           disabled={loading}
         >
-          ↻ Обновить
+          Обновить
         </button>
       </div>
 
@@ -226,7 +226,7 @@ const CoursesManager: React.FC<CoursesManagerProps> = ({ onCourseSelect }) => {
       ) : courses.length === 0 ? (
         <div className="empty-table">Курсы не найдены</div>
       ) : (
-        <div className="courses-table">
+        <div className="admin-table">
           <table>
             <thead>
               <tr>
@@ -460,7 +460,7 @@ const StagesManager: React.FC<StagesManagerProps> = ({ courseId, onBack, onStage
             onClick={refetch}
             disabled={loading}
           >
-            ↻ Обновить
+            Обновить
           </button>
           <button
             className="admin-add-btn"
@@ -474,7 +474,7 @@ const StagesManager: React.FC<StagesManagerProps> = ({ courseId, onBack, onStage
       {/* Форма добавления ступени */}
       <div className="stage-add-form">
         <h3>Добавить ступень</h3>
-        <div style={{ display: 'flex', gap: '8px', marginBottom: '16px', flexWrap: 'wrap' }}>
+        <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap', marginBottom: '16px' }}>
           <input
             className="admin-input"
             placeholder="Название ступени"
@@ -529,7 +529,7 @@ const StagesManager: React.FC<StagesManagerProps> = ({ courseId, onBack, onStage
       ) : stages.length === 0 ? (
         <div className="empty-table">Ступени не найдены</div>
       ) : (
-        <div className="stages-table">
+        <div className="admin-table">
           <table>
             <thead>
               <tr>
@@ -790,7 +790,7 @@ const LessonsManager: React.FC<LessonsManagerProps> = ({ courseId, stageId, onBa
             onClick={refetch}
             disabled={loading}
           >
-            ↻ Обновить
+            Обновить
           </button>
           <button
             className="admin-add-btn"
@@ -804,7 +804,7 @@ const LessonsManager: React.FC<LessonsManagerProps> = ({ courseId, stageId, onBa
       {/* Форма добавления урока */}
       <div className="lesson-add-form">
         <h3>Добавить урок</h3>
-        <div style={{ display: 'flex', gap: '8px', marginBottom: '16px', flexWrap: 'wrap' }}>
+        <div style={{ display: 'flex', gap: '12px', marginBottom: '16px', flexWrap: 'wrap' }}>
           <input
             className="admin-input"
             placeholder="Название урока"
@@ -859,7 +859,7 @@ const LessonsManager: React.FC<LessonsManagerProps> = ({ courseId, stageId, onBa
       ) : lessons.length === 0 ? (
         <div className="empty-table">Уроки не найдены</div>
       ) : (
-        <div className="lessons-table">
+        <div className="admin-table">
           <table>
             <thead>
               <tr>
@@ -1248,7 +1248,7 @@ const BlocksManager: React.FC<BlocksManagerProps> = ({ courseId, stageId, lesson
             onClick={refetch}
             disabled={loading}
           >
-            ↻ Обновить
+            Обновить
           </button>
           <button
             className="admin-add-btn"
@@ -1277,66 +1277,62 @@ const BlocksManager: React.FC<BlocksManagerProps> = ({ courseId, stageId, lesson
         <div className="admin-loading">Загрузка блоков...</div>
       ) : error ? (
         <div className="admin-error">Ошибка: {error.message}</div>
+      ) : blocks.length === 0 ? (
+        <div className="empty-table">
+          Блоки не найдены. Добавьте первый блок урока.
+        </div>
       ) : (
-        <div className="practices-table">
-          {blocks.length > 0 ? (
-            <table>
-              <thead>
-                <tr>
-                  <th>Порядок</th>
-                  <th>Заголовок</th>
-                  <th>Тип</th>
-                  <th>Контент/URL</th>
-                  <th>Действия</th>
+        <div className="admin-table">
+          <table>
+            <thead>
+              <tr>
+                <th>Порядок</th>
+                <th>Заголовок</th>
+                <th>Тип</th>
+                <th>Контент/URL</th>
+                <th>Действия</th>
+              </tr>
+            </thead>
+            <tbody>
+              {blocks.map((block) => (
+                <tr key={block.id}>
+                  <td>
+                    <input
+                      type="number"
+                      value={localOrderValues[block.id] ?? block.order_num}
+                      onChange={(e) => handleOrderInputChange(block.id, parseInt(e.target.value) || 1)}
+                      style={{ width: '60px', textAlign: 'center' }}
+                      className="admin-input"
+                      min="1"
+                    />
+                  </td>
+                  <td>{block.title || <span className="empty-value">Без заголовка</span>}</td>
+                  <td>
+                    <span className={`admin-status admin-yes`}>
+                      {getBlockTypeName(block.block_type)}
+                    </span>
+                  </td>
+                  <td>{renderBlockContent(block)}</td>
+                  <td className="actions-cell">
+                    <button
+                      className="action-btn edit-btn"
+                      onClick={() => openEditModal(block)}
+                      title="Редактировать блок"
+                    >
+                      Изменить
+                    </button>
+                    <button
+                      className="action-btn delete-btn"
+                      onClick={() => handleDeleteBlock(block.id, block.title)}
+                      title="Удалить блок"
+                    >
+                      Удалить
+                    </button>
+                  </td>
                 </tr>
-              </thead>
-              <tbody>
-                {blocks.map((block) => (
-                  <tr key={block.id}>
-                    <td>
-                      <input
-                        type="number"
-                        value={localOrderValues[block.id] ?? block.order_num}
-                        onChange={(e) => handleOrderInputChange(block.id, parseInt(e.target.value) || 1)}
-                        style={{ width: '60px', textAlign: 'center' }}
-                        className="admin-input"
-                        min="1"
-                      />
-                    </td>
-                    <td>{block.title || <span className="empty-value">Без заголовка</span>}</td>
-                    <td>
-                      <span className={`admin-status admin-yes`}>
-                        {getBlockTypeName(block.block_type)}
-                      </span>
-                    </td>
-                    <td>{renderBlockContent(block)}</td>
-                    <td>
-                      <div className="actions-cell">
-                        <button
-                          className="action-btn edit-btn"
-                          onClick={() => openEditModal(block)}
-                          disabled={updateLoading}
-                        >
-                          Редактировать
-                        </button>
-                        <button
-                          className="action-btn delete-btn"
-                          onClick={() => handleDeleteBlock(block.id, block.title)}
-                          disabled={updateLoading}
-                        >
-                          Удалить
-                        </button>
-                      </div>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          ) : (
-            <div className="empty-table">
-              Блоки не найдены. Добавьте первый блок урока.
-            </div>
-          )}
+              ))}
+            </tbody>
+          </table>
         </div>
       )}
 

@@ -329,7 +329,7 @@ const SubmissionsManager: React.FC<SubmissionsManagerProps> = ({
             </div>
 
             {/* Таблица сабмитов */}
-            <div className="practices-table">
+            <div className="admin-table">
                 {submissions.length === 0 ? (
                     <div className="empty-table">
                         {statusFilter === 'pending'
