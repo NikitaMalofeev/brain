@@ -1295,17 +1295,34 @@ const AdminPage: React.FC = () => {
   const [currentTab, setCurrentTab] = useState<AdminTab>('courses');
   const [navigation, setNavigation] = useState<NavigationState>({ view: 'courses' });
   const [submissionsNavigation, setSubmissionsNavigation] = useState<SubmissionsNavigationState>({ view: 'list' });
-  const [passwordAuth, setPasswordAuth] = useState<boolean>(false);
+
+  // Инициализируем состояние авторизации из localStorage
+  const [passwordAuth, setPasswordAuth] = useState<boolean>(() => {
+    try {
+      const stored = localStorage.getItem('admin_auth');
+      return stored === 'true';
+    } catch {
+      return false;
+    }
+  });
+
   const [password, setPassword] = useState<string>('');
   const [error, setError] = useState<string | null>(null);
 
-  // Заглушка для админского пользователя при авторизации по паролю
+  // Инициализируем админского пользователя из localStorage
   const [adminUser, setAdminUser] = useState<{
     id: string;
     role: string;
     first_name?: string;
     last_name?: string;
-  } | null>(null);
+  } | null>(() => {
+    try {
+      const stored = localStorage.getItem('admin_user');
+      return stored ? JSON.parse(stored) : null;
+    } catch {
+      return null;
+    }
+  });
 
   // Состояние для веб-авторизации
   const [login, setLogin] = useState<string>('');
@@ -1328,6 +1345,38 @@ const AdminPage: React.FC = () => {
       document.body.style.fontFamily = '';
       document.body.className = '';
     };
+  }, []);
+
+  // Валидация данных из localStorage при загрузке
+  useEffect(() => {
+    try {
+      const authStored = localStorage.getItem('admin_auth');
+      const userStored = localStorage.getItem('admin_user');
+
+      if (authStored === 'true' && userStored) {
+        const userData = JSON.parse(userStored);
+
+        // Проверяем что данные пользователя валидны
+        if (userData && userData.id && userData.role &&
+          ['admin', 'curator'].includes(userData.role)) {
+          // Данные корректны, оставляем авторизацию
+          console.log('Сессия восстановлена из localStorage:', userData.role);
+        } else {
+          // Данные невалидны, очищаем
+          localStorage.removeItem('admin_auth');
+          localStorage.removeItem('admin_user');
+          setPasswordAuth(false);
+          setAdminUser(null);
+        }
+      }
+    } catch (err) {
+      console.warn('Ошибка валидации localStorage:', err);
+      // При ошибке парсинга очищаем все
+      localStorage.removeItem('admin_auth');
+      localStorage.removeItem('admin_user');
+      setPasswordAuth(false);
+      setAdminUser(null);
+    }
   }, []);
 
   // Веб-авторизация через базу данных
@@ -1366,14 +1415,23 @@ const AdminPage: React.FC = () => {
 
       const userData = data[0];
 
-      // Успешная авторизация
-      setPasswordAuth(true);
-      setAdminUser({
+      const userInfo = {
         id: userData.user_id,
         role: userData.user_role,
         first_name: userData.first_name,
         last_name: userData.last_name
-      });
+      };
+
+      // Успешная авторизация - сохраняем в localStorage
+      try {
+        localStorage.setItem('admin_auth', 'true');
+        localStorage.setItem('admin_user', JSON.stringify(userInfo));
+      } catch (err) {
+        console.warn('Ошибка сохранения в localStorage:', err);
+      }
+
+      setPasswordAuth(true);
+      setAdminUser(userInfo);
 
       // Очищаем поля
       setLogin('');
@@ -1388,6 +1446,14 @@ const AdminPage: React.FC = () => {
   };
 
   const handleLogout = () => {
+    // Очищаем localStorage
+    try {
+      localStorage.removeItem('admin_auth');
+      localStorage.removeItem('admin_user');
+    } catch (err) {
+      console.warn('Ошибка очистки localStorage:', err);
+    }
+
     setPasswordAuth(false);
     setLogin('');
     setPassword('');
