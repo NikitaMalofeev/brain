@@ -36,7 +36,12 @@ interface SubmissionDetailProps {
     onBack: () => void;
     onSubmissionUpdated?: () => void;
     // Добавляем информацию о текущем пользователе для админки
-    currentUser?: { id: string; role: string } | null;
+    currentUser?: {
+        id: string;
+        role: string;
+        first_name?: string;
+        last_name?: string;
+    } | null;
 }
 
 const SubmissionDetail: React.FC<SubmissionDetailProps> = ({
@@ -49,7 +54,12 @@ const SubmissionDetail: React.FC<SubmissionDetailProps> = ({
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
     const [saving, setSaving] = useState(false);
-    const [currentUser, setCurrentUser] = useState<{ id: string; role: string } | null>(null);
+    const [currentUser, setCurrentUser] = useState<{
+        id: string;
+        role: string;
+        first_name?: string;
+        last_name?: string;
+    } | null>(null);
 
     // Состояние для изменения решений
     const [isEditingDecision, setIsEditingDecision] = useState(false);
@@ -625,26 +635,30 @@ const SubmissionDetail: React.FC<SubmissionDetailProps> = ({
                                 </button>
                             </div>
 
-                            {/* Быстрые действия */}
-                            <div className="quick-actions">
-                                <h4>Быстрые действия</h4>
-                                <button
-                                    className="admin-button admin-yes"
-                                    onClick={() => {
-                                        setReviewForm({ status: 'approved', points: 100, feedback: 'Отличная работа!' });
-                                    }}
-                                >
-                                    ✅ Принять с 100 баллами
-                                </button>
-                                <button
-                                    className="admin-button admin-no"
-                                    onClick={() => {
-                                        setReviewForm({ status: 'rejected', points: 0, feedback: 'Работа требует доработки.' });
-                                    }}
-                                >
-                                    ❌ Отклонить
-                                </button>
-                            </div>
+                            {/* Быстрые действия - только при первичной проверке */}
+                            {!isEditingDecision && (
+                                <div className="quick-actions">
+                                    <h4>Быстрые действия</h4>
+                                    <div className="quick-actions-buttons">
+                                        <button
+                                            className="admin-button admin-yes"
+                                            onClick={() => {
+                                                setReviewForm({ status: 'approved', points: 100, feedback: 'Отличная работа!' });
+                                            }}
+                                        >
+                                            ✅ Принять с 100 баллами
+                                        </button>
+                                        <button
+                                            className="admin-button admin-no"
+                                            onClick={() => {
+                                                setReviewForm({ status: 'rejected', points: 0, feedback: 'Работа требует доработки.' });
+                                            }}
+                                        >
+                                            ❌ Отклонить
+                                        </button>
+                                    </div>
+                                </div>
+                            )}
                         </>
                     )}
 

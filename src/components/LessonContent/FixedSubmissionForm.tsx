@@ -14,6 +14,7 @@ interface FixedSubmissionFormProps {
     user: User | null;
     existingSubmission?: Submission | null;
     onSubmissionUpdate: (submission: Submission) => void;
+    isRetryMode?: boolean; // Новый проп для режима пересдачи
 }
 
 const FixedSubmissionForm: React.FC<FixedSubmissionFormProps> = ({
@@ -22,12 +23,11 @@ const FixedSubmissionForm: React.FC<FixedSubmissionFormProps> = ({
     user,
     existingSubmission,
     onSubmissionUpdate,
+    isRetryMode,
 }) => {
-    const [submissionText, setSubmissionText] = useState(existingSubmission?.content_text || '');
+    const [submissionText, setSubmissionText] = useState('');
     const [isSubmitting, setIsSubmitting] = useState(false);
-    const [uploadedFiles, setUploadedFiles] = useState<string[]>(
-        existingSubmission?.file_url ? [existingSubmission.file_url] : []
-    );
+    const [uploadedFiles, setUploadedFiles] = useState<string[]>([]);
     const [isUploading, setIsUploading] = useState(false);
     const [textareaHeight, setTextareaHeight] = useState(28); // Отслеживаем высоту textarea
 
@@ -36,6 +36,20 @@ const FixedSubmissionForm: React.FC<FixedSubmissionFormProps> = ({
 
     const isSubmitted = !!existingSubmission;
     const navigate = useNavigate();
+
+    // Обновляем состояние формы при изменении existingSubmission или isRetryMode
+    useEffect(() => {
+        if (isRetryMode && existingSubmission) {
+            // При активации режима пересдачи - предзаполняем форму
+            setSubmissionText(existingSubmission.content_text || '');
+            setUploadedFiles(existingSubmission.file_url ? [existingSubmission.file_url] : []);
+        } else if (!existingSubmission) {
+            // При отсутствии submission - очищаем форму
+            setSubmissionText('');
+            setUploadedFiles([]);
+        }
+        // При наличии submission но без isRetryMode - форма остается пустой
+    }, [existingSubmission, isRetryMode]);
 
     // Определяем выравнивание иконки: по центру для минимальной высоты, внизу для расширенной
     const isTextareaExpanded = textareaHeight > 28;
@@ -120,14 +134,57 @@ const FixedSubmissionForm: React.FC<FixedSubmissionFormProps> = ({
                 points_awarded: 0,
             };
 
-            const { data, error } = await supabase
-                .from('submissions')
-                .insert(submissionData)
-                .select()
-                .single();
+            let data;
 
-            if (error) {
-                throw new Error(`Ошибка отправки задания: ${error.message}`);
+            if (existingSubmission) {
+                // Пересдача - обновляем существующую запись
+                const { data: updateData, error } = await supabase
+                    .from('submissions')
+                    .update({
+                        content_text: submissionData.content_text,
+                        file_url: submissionData.file_url,
+                        status: submissionData.status,
+                        submitted_at: submissionData.submitted_at,
+                        points_awarded: 0,
+                        // Сбрасываем данные проверки
+                        reviewed_at: null,
+                        reviewed_by_curator_id: null,
+                        feedback_text: null,
+                    })
+                    .eq('id', existingSubmission.id)
+                    .select(`
+                        *,
+                        reviewer:users!submissions_reviewed_by_curator_id_fkey(
+                            first_name, 
+                            last_name
+                        )
+                    `)
+                    .single();
+
+                if (error) {
+                    throw new Error(`Ошибка обновления задания: ${error.message}`);
+                }
+
+                data = updateData;
+            } else {
+                // Первая сдача - создаем новую запись
+                const { data: insertData, error } = await supabase
+                    .from('submissions')
+                    .insert(submissionData)
+                    .select(`
+                        *,
+                        reviewer:users!submissions_reviewed_by_curator_id_fkey(
+                            first_name, 
+                            last_name
+                        )
+                    `)
+                    .single();
+
+                if (error) {
+                    throw new Error(`Ошибка отправки задания: ${error.message}`);
+                }
+
+                data = insertData;
             }
 
             onSubmissionUpdate(data);
@@ -147,7 +204,10 @@ const FixedSubmissionForm: React.FC<FixedSubmissionFormProps> = ({
     };
 
     // Если задание уже сдано - ничего не рендерим (отображение перенесено в LessonPage)
-    if (isSubmitted && existingSubmission) {
+    // Исключение: показываем форму для rejected заданий в режиме пересдачи
+    if (existingSubmission && !isRetryMode) {
+        const status = existingSubmission.status;
+        // Не показываем форму для любых статусов, если не активирован режим пересдачи
         return null;
     }
 

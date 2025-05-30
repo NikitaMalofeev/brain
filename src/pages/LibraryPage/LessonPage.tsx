@@ -40,6 +40,9 @@ const LessonPage: React.FC = () => {
     // Состояние для завершения урока
     const [isCompletingLesson, setIsCompletingLesson] = useState(false);
 
+    // Состояние для пересдачи задания
+    const [isRetryingSubmission, setIsRetryingSubmission] = useState(false);
+
     useEffect(() => {
         if (supabaseUser) {
             const compatUser: User = {
@@ -116,10 +119,16 @@ const LessonPage: React.FC = () => {
             if (!lessonId || !supabaseCompatUser || !supabase) return;
 
             try {
-                // Получаем сдачи
+                // Получаем сдачи с данными куратора
                 const { data: submission } = await supabase
                     .from('submissions')
-                    .select('*')
+                    .select(`
+                        *,
+                        reviewer:users!submissions_reviewed_by_curator_id_fkey(
+                            first_name, 
+                            last_name
+                        )
+                    `)
                     .eq('user_id', supabaseCompatUser.id)
                     .eq('lesson_id', lessonId)
                     .maybeSingle();
@@ -152,6 +161,12 @@ const LessonPage: React.FC = () => {
     // Обработчик обновления submission
     const handleSubmissionUpdate = (submission: Submission) => {
         setState(prev => ({ ...prev, submission }));
+
+        // Сбрасываем режим пересдачи после успешной отправки
+        if (isRetryingSubmission) {
+            setIsRetryingSubmission(false);
+            logger.debug('Retry submission mode reset after successful update');
+        }
     };
 
     // Обработчик обновления прогресса урока
@@ -221,6 +236,277 @@ const LessonPage: React.FC = () => {
         } finally {
             setIsCompletingLesson(false);
         }
+    };
+
+    // Обработчик пересдачи отклоненного задания
+    const handleRetrySubmission = async () => {
+        if (!state.submission || state.submission.status !== 'rejected') return;
+
+        // Просто активируем режим пересдачи, не обновляя базу данных
+        setIsRetryingSubmission(true);
+
+        logger.debug('Retry submission mode activated', { submissionId: state.submission.id });
+    };
+
+    // Обработчик отмены пересдачи
+    const handleCancelRetry = () => {
+        setIsRetryingSubmission(false);
+        logger.debug('Retry submission mode cancelled');
+    };
+
+    // Функция рендера результатов проверки задания
+    const renderSubmissionResult = (submission: any) => {
+        const status = submission.status;
+        const points = submission.points_awarded || 0;
+        const feedback = submission.feedback_text;
+        const reviewedAt = submission.reviewed_at;
+        const reviewerName = submission.reviewer?.first_name;
+
+        // Определяем конфигурацию по статусу
+        const getStatusConfig = () => {
+            switch (status) {
+                case 'approved':
+                    return {
+                        icon: '✅',
+                        title: `Задание принято! +${points} баллов`,
+                        titleColor: '#22c55e', // зеленый
+                        showFeedback: true,
+                        showRetryButton: false,
+                    };
+                case 'rejected':
+                    return {
+                        icon: '❌',
+                        title: 'Задание требует доработки',
+                        titleColor: '#ef4444', // красный
+                        showFeedback: true,
+                        showRetryButton: true,
+                    };
+                default: // submitted, pending_review
+                    return {
+                        icon: '⏳',
+                        title: 'Задание на проверке',
+                        titleColor: '#3b82f6', // синий
+                        showFeedback: false,
+                        showRetryButton: false,
+                    };
+            }
+        };
+
+        const config = getStatusConfig();
+
+        return (
+            <div style={{ marginBottom: '32px' }}>
+                {/* Заголовок с иконкой и статусом */}
+                <div style={{
+                    fontFamily: 'Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
+                    fontWeight: 700,
+                    fontSize: '20px',
+                    lineHeight: '1.2',
+                    color: config.titleColor,
+                    marginBottom: '16px',
+                }}>
+                    {config.icon} {config.title}
+                </div>
+
+                {/* Ваш ответ */}
+                {submission.content_text && (
+                    <div style={{ marginBottom: '16px' }}>
+                        <p style={{
+                            fontFamily: 'Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
+                            fontSize: '14px',
+                            fontWeight: 600,
+                            color: '#666666',
+                            marginBottom: '8px',
+                        }}>
+                            Ваш ответ:
+                        </p>
+                        <div style={{
+                            fontFamily: 'Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
+                            fontSize: '16px',
+                            lineHeight: '1.5',
+                            color: '#666666',
+                            whiteSpace: 'pre-wrap',
+                            wordBreak: 'break-word',
+                            overflowWrap: 'break-word',
+                        }}>
+                            {submission.content_text}
+                        </div>
+                    </div>
+                )}
+
+                {/* Прикрепленный файл */}
+                {submission.file_url && (
+                    <div style={{ marginBottom: '16px' }}>
+                        {(() => {
+                            const fileName = decodeURIComponent(submission.file_url.substring(submission.file_url.lastIndexOf('/') + 1));
+                            const extension = fileName.split('.').pop()?.toLowerCase() || '';
+                            const fileIcon =
+                                (['jpg', 'jpeg', 'png', 'gif', 'webp', 'svg', 'bmp'].includes(extension)) ? '🖼️' :
+                                    (['mp3', 'wav', 'ogg', 'aac', 'flac', 'm4a'].includes(extension)) ? '🎵' :
+                                        (extension === 'pdf') ? '📄' :
+                                            (['doc', 'docx'].includes(extension)) ? '📝' : '📎';
+
+                            return (
+                                <a
+                                    href={submission.file_url}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    style={{
+                                        fontFamily: 'Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
+                                        fontSize: '16px',
+                                        color: '#4e9bff',
+                                        textDecoration: 'none',
+                                        display: 'flex',
+                                        alignItems: 'center',
+                                        gap: '8px',
+                                    }}
+                                >
+                                    <span>{fileIcon}</span>
+                                    <span>{fileName}</span>
+                                </a>
+                            );
+                        })()}
+                    </div>
+                )}
+
+                {/* Комментарий куратора (для approved/rejected) */}
+                {config.showFeedback && feedback && (
+                    <div style={{ marginBottom: '16px' }}>
+                        <p style={{
+                            fontFamily: 'Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
+                            fontSize: '14px',
+                            fontWeight: 600,
+                            color: '#666666',
+                            marginBottom: '8px',
+                        }}>
+                            💬 Комментарий куратора:
+                        </p>
+                        <div style={{
+                            fontFamily: 'Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
+                            fontSize: '16px',
+                            lineHeight: '1.5',
+                            color: '#666666',
+                            whiteSpace: 'pre-wrap',
+                            wordBreak: 'break-word',
+                            overflowWrap: 'break-word',
+                            fontStyle: 'italic',
+                        }}>
+                            "{feedback}"
+                        </div>
+                    </div>
+                )}
+
+                {/* Информация о проверке (для approved/rejected) */}
+                {config.showFeedback && (reviewerName || reviewedAt) && (
+                    <div style={{ marginBottom: '16px' }}>
+                        {reviewerName && (
+                            <p style={{
+                                fontFamily: 'Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
+                                fontSize: '14px',
+                                color: '#666666',
+                                margin: '4px 0',
+                            }}>
+                                👤 Проверил: {reviewerName}
+                            </p>
+                        )}
+                        {reviewedAt && (
+                            <p style={{
+                                fontFamily: 'Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
+                                fontSize: '14px',
+                                color: '#666666',
+                                margin: '4px 0',
+                            }}>
+                                📅 {new Date(reviewedAt).toLocaleDateString('ru-RU')}
+                            </p>
+                        )}
+                    </div>
+                )}
+
+                {/* Мотивирующий текст для pending_review */}
+                {!config.showFeedback && (
+                    <div style={{ marginBottom: '16px' }}>
+                        <p style={{
+                            fontFamily: 'Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
+                            fontSize: '16px',
+                            lineHeight: '1.5',
+                            color: '#666666',
+                            fontStyle: 'italic',
+                        }}>
+                            💭 Ожидайте результата проверки
+                        </p>
+                    </div>
+                )}
+
+                {/* Кнопка пересдачи для rejected */}
+                {config.showRetryButton && (
+                    <div style={{ marginBottom: '16px' }}>
+                        {!isRetryingSubmission ? (
+                            <>
+                                <Button
+                                    variant="outline"
+                                    onClick={handleRetrySubmission}
+                                    className="w-full h-12 text-base font-semibold"
+                                    size="lg"
+                                    style={{
+                                        borderColor: '#3b82f6',
+                                        color: '#3b82f6',
+                                        marginBottom: '12px',
+                                    }}
+                                >
+                                    🔄 Попробовать снова
+                                </Button>
+                                <p style={{
+                                    fontFamily: 'Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
+                                    fontSize: '14px',
+                                    color: '#666666',
+                                    textAlign: 'center',
+                                    fontStyle: 'italic',
+                                }}>
+                                    Нажмите, чтобы исправить задание
+                                </p>
+                            </>
+                        ) : (
+                            <>
+                                <Button
+                                    variant="outline"
+                                    onClick={handleCancelRetry}
+                                    className="w-full h-12 text-base font-semibold"
+                                    size="lg"
+                                    style={{
+                                        borderColor: '#6b7280',
+                                        color: '#6b7280',
+                                        marginBottom: '12px',
+                                    }}
+                                >
+                                    ✕ Отменить исправление
+                                </Button>
+                                <p style={{
+                                    fontFamily: 'Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
+                                    fontSize: '14px',
+                                    color: '#666666',
+                                    textAlign: 'center',
+                                    fontStyle: 'italic',
+                                }}>
+                                    Форма для исправления появилась ниже
+                                </p>
+                            </>
+                        )}
+                    </div>
+                )}
+
+                {/* Кнопка возврата к ступени */}
+                {state.lesson && typeof state.lesson.stage_id === 'number' && (
+                    <Button
+                        variant="black"
+                        onClick={() => state.lesson && navigate(`/library/stage/${state.lesson.stage_id}`)}
+                        className="w-full h-12 text-base font-semibold"
+                        size="lg"
+                    >
+                        Вернуться ко всем урокам ступени
+                    </Button>
+                )}
+            </div>
+        );
     };
 
     // Рендер блока контента
@@ -374,15 +660,18 @@ const LessonPage: React.FC = () => {
         );
     }
 
-    // Определяем нужен ли bottom padding для fixed элементов
-    const hasAssignment = state.lesson.has_assignment;
+    // Логика отображения fixed элементов внизу
+    const hasAssignment = state.lesson?.has_assignment === true;
     const isAssignmentSubmitted = !!state.submission;
-    const isLessonCompleted = state.progress?.is_completed || false;
+    const isLessonCompleted = !!state.progress?.is_completed;
 
-    // Показываем fixed элемент если:
-    // 1. Есть задание и оно не сдано (форма сдачи)
+    // Показываем форму если:
+    // 1. Есть задание И (нет сдачи ИЛИ задание отклонено и включена пересдача)
+    const isRetryAllowed = state.submission?.status === 'rejected' && isRetryingSubmission;
+    const showSubmissionForm = hasAssignment && (!isAssignmentSubmitted || isRetryAllowed);
+
     // 2. Нет задания и урок не завершен (кнопка завершения)
-    const showFixedElement = (hasAssignment && !isAssignmentSubmitted) || (!hasAssignment && !isLessonCompleted);
+    const showFixedElement = showSubmissionForm || (!hasAssignment && !isLessonCompleted);
     const bottomPadding = showFixedElement ? '120px' : '40px';
 
     return (
@@ -430,86 +719,7 @@ const LessonPage: React.FC = () => {
                 {/* Блок с результатом сданного задания */}
                 {state.submission && (
                     <div style={{ marginBottom: '32px' }}>
-                        <div style={{
-                            fontFamily: 'Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
-                            fontWeight: 700,
-                            fontSize: '20px',
-                            lineHeight: '1.2',
-                            color: '#000000',
-                            marginBottom: '16px',
-                        }}>
-                            ✅ Задание сдано на проверку
-                        </div>
-
-                        {state.submission.content_text && (
-                            <div style={{ marginBottom: '16px' }}>
-                                <p style={{
-                                    fontFamily: 'Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
-                                    fontSize: '14px',
-                                    fontWeight: 600,
-                                    color: '#666666',
-                                    marginBottom: '8px',
-                                }}>
-                                    Ваш ответ:
-                                </p>
-                                <div style={{
-                                    fontFamily: 'Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
-                                    fontSize: '16px',
-                                    lineHeight: '1.5',
-                                    color: '#666666',
-                                    whiteSpace: 'pre-wrap',
-                                    wordBreak: 'break-word',
-                                    overflowWrap: 'break-word',
-                                }}>
-                                    {state.submission.content_text}
-                                </div>
-                            </div>
-                        )}
-
-                        {state.submission.file_url && (
-                            <div style={{ marginBottom: '16px' }}>
-                                {(() => {
-                                    const fileName = decodeURIComponent(state.submission.file_url.substring(state.submission.file_url.lastIndexOf('/') + 1));
-                                    const extension = fileName.split('.').pop()?.toLowerCase() || '';
-                                    const fileIcon =
-                                        (['jpg', 'jpeg', 'png', 'gif', 'webp', 'svg', 'bmp'].includes(extension)) ? '🖼️' :
-                                            (['mp3', 'wav', 'ogg', 'aac', 'flac', 'm4a'].includes(extension)) ? '🎵' :
-                                                (extension === 'pdf') ? '📄' :
-                                                    (['doc', 'docx'].includes(extension)) ? '📝' : '📎';
-
-                                    return (
-                                        <a
-                                            href={state.submission.file_url}
-                                            target="_blank"
-                                            rel="noopener noreferrer"
-                                            style={{
-                                                fontFamily: 'Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
-                                                fontSize: '16px',
-                                                color: '#4e9bff',
-                                                textDecoration: 'none',
-                                                display: 'flex',
-                                                alignItems: 'center',
-                                                gap: '8px',
-                                            }}
-                                        >
-                                            <span>{fileIcon}</span>
-                                            <span>{fileName}</span>
-                                        </a>
-                                    );
-                                })()}
-                            </div>
-                        )}
-
-                        {state.lesson && typeof state.lesson.stage_id === 'number' && (
-                            <Button
-                                variant="black"
-                                onClick={() => state.lesson && navigate(`/library/stage/${state.lesson.stage_id}`)}
-                                className="w-full h-12 text-base font-semibold"
-                                size="lg"
-                            >
-                                Вернуться ко всем урокам ступени
-                            </Button>
-                        )}
+                        {renderSubmissionResult(state.submission)}
                     </div>
                 )}
 
@@ -551,14 +761,15 @@ const LessonPage: React.FC = () => {
                 )}
             </div>
 
-            {/* Fixed форма сдачи (если есть задание и оно не сдано) */}
-            {hasAssignment && !isAssignmentSubmitted && state.lesson && (
+            {/* Fixed форма сдачи (если есть задание и оно не сдано ИЛИ идет пересдача) */}
+            {showSubmissionForm && state.lesson && (
                 <FixedSubmissionForm
                     lessonId={parseInt(lessonId || '0')}
                     stageId={state.lesson.stage_id as number | undefined}
                     user={supabaseCompatUser}
                     existingSubmission={state.submission}
                     onSubmissionUpdate={handleSubmissionUpdate}
+                    isRetryMode={isRetryingSubmission}
                 />
             )}
 

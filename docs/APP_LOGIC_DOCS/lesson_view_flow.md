@@ -224,136 +224,218 @@ const handleSubmit = async () => {
 
 ---
 
-## 5. Отображение сданного задания
+## 5. Отображение результатов проверки задания
 
 ### 5.1 Условие отображения
 ```typescript
 {state.submission && (
   <div style={{ marginBottom: '32px' }}>
-    // Блок сданного задания
+    {renderSubmissionResult(state.submission)}
   </div>
 )}
 ```
 
-### 5.2 Структура блока (БЕЗ рамок)
+### 5.2 Умный блок результатов по статусам
+
+#### 5.2.1 Статус: `submitted` / `pending_review`
 ```typescript
-// Заголовок
-<div style={{
-  fontWeight: 700,
-  fontSize: '20px',
-  color: '#000000',
-  marginBottom: '16px'
-}}>
-  ✅ Задание сдано на проверку
-</div>
-
-// Подпись "Ваш ответ:"
-<p style={{
-  fontSize: '14px',
-  fontWeight: 600,
-  color: '#666666',
-  marginBottom: '8px'
-}}>
-  Ваш ответ:
-</p>
-
-// Текст ответа (серый, с переносами)
-<div style={{
-  fontSize: '16px',
-  lineHeight: '1.5',
-  color: '#666666',  // Серый для отличия от контента урока
-  whiteSpace: 'pre-wrap',
-  wordBreak: 'break-word',
-  overflowWrap: 'break-word'
-}}>
-  {state.submission.content_text}
-</div>
-```
-
-### 5.3 Кнопка возврата к ступени
-```typescript
-<button onClick={() => navigate(`/library/stage/${lesson.stage_id}`)}>
-  Вернуться ко всем урокам ступени
-</button>
-```
-
----
-
-## 6. Навигация и состояния
-
-### 6.1 Кнопка "Назад"
-- **Стиль:** текстовая кнопка с SVG стрелкой
-- **Действие:** `navigate(-1)` - возврат к предыдущему экрану  
-- **Позиция:** в заголовке урока
-
-### 6.2 Логика отображения формы
-```typescript
-// Fixed форма показывается только если:
-// 1. Урок имеет задание (has_assignment = true)
-// 2. Задание НЕ сдано (!existingSubmission)
-{hasAssignment && !isSubmitted && (
-  <FixedSubmissionForm ... />
-)}
-```
-
-### 6.3 Адаптация контента под форму
-```typescript
-const bottomPadding = hasAssignment && !isSubmitted ? '120px' : '40px';
-// Контент урока имеет отступ снизу для fixed формы
-```
-
----
-
-## 7. Улучшения UX (реализованные)
-
-### ✅ Что УЛУЧШЕНО:
-- **Убраны JavaScript alert'ы** - вместо всплывающих окон визуальная обратная связь
-- **Адаптивное поле ввода** - автоувеличение от 28px до 30% экрана
-- **Перенос длинных строк** - wordBreak + overflowWrap для текста ответов
-- **Серый цвет для ответов** - визуальное отличие от основного контента урока
-- **Чистое отображение сданных заданий** - без лишних рамок и фонов
-- **Динамическое выравнивание иконок** - по центру/по низу в зависимости от высоты поля
-
-### ❌ Что УБРАНО:
-- Navigation Bar (навбар приложения)
-- TabBar на странице урока
-- Белые карточки с тенями для блоков контента
-- Рамки и фоны для блока сданного задания
-- JavaScript alert уведомления
-- `assignment_instruction` блоки (не используются)
-
----
-
-## 8. Технические файлы
-
-### Основные компоненты:
-- `src/pages/LibraryPage/LessonPage.tsx` - основная страница урока
-- `src/components/LessonContent/FixedSubmissionForm.tsx` - fixed форма сдачи
-- `src/components/LessonContent/VideoBlock.tsx` - видео плеер Kinescope
-- `src/components/LessonContent/AudioBlock.tsx` - аудио плеер
-
-### Интеграции:
-- **Kinescope:** видео через VideoBlock компонент
-- **CloudFlare R2:** файлы и аудио через `uploadFileToR2()`
-- **Supabase:** работа с `lessons`, `lesson_blocks`, `submissions`
-
-### Схема БД:
-```sql
--- Урок с флагом задания
-lessons: { 
-  id, name, description, has_assignment, stage_id, ... 
+// Конфигурация
+{
+  icon: '⏳',
+  title: 'Задание на проверке',
+  titleColor: '#3b82f6', // синий
+  showFeedback: false,
+  showRetryButton: false,
 }
 
--- Блоки контента урока  
-lesson_blocks: { 
-  id, lesson_id, block_type, content_text, content_url, 
-  title, order_num 
+// Отображение
+"⏳ Задание на проверке"
+"💭 Ожидайте результата проверки"
+```
+
+#### 5.2.2 Статус: `approved`
+```typescript
+// Конфигурация
+{
+  icon: '✅',
+  title: `Задание принято! +${points} баллов`,
+  titleColor: '#22c55e', // зеленый
+  showFeedback: true,
+  showRetryButton: false,
 }
 
--- Сдачи заданий пользователей
-submissions: { 
-  id, user_id, lesson_id, content_text, file_url, 
-  status, submitted_at, points_awarded 
+// Отображение
+"✅ Задание принято! +85 баллов"
+Ваш ответ: [текст ответа]
+📄 [прикрепленный файл]
+💬 Комментарий куратора: "[feedback_text]"
+👤 Проверил: [имя куратора]
+📅 [дата проверки]
+```
+
+#### 5.2.3 Статус: `rejected`
+```typescript
+// Конфигурация  
+{
+  icon: '❌',
+  title: 'Задание требует доработки',
+  titleColor: '#ef4444', // красный
+  showFeedback: true,
+  showRetryButton: true,
+}
+
+// Отображение
+"❌ Задание требует доработки"
+Ваш ответ: [текст ответа]
+📄 [прикрепленный файл]
+💬 Комментарий куратора: "[feedback_text]"
+👤 Проверил: [имя куратора]  
+📅 [дата проверки]
+🔄 [Кнопка "Попробовать снова"]
+"Форма для новой сдачи появится ниже"
+```
+
+### 5.3 Структура функции `renderSubmissionResult()`
+```typescript
+const renderSubmissionResult = (submission: any) => {
+  const status = submission.status;
+  const points = submission.points_awarded || 0;
+  const feedback = submission.feedback_text;
+  const reviewedAt = submission.reviewed_at;
+  const reviewerName = submission.reviewer?.first_name;
+
+  const getStatusConfig = () => {
+    switch (status) {
+      case 'approved': return { /* конфиг для принятого */ };
+      case 'rejected': return { /* конфиг для отклоненного */ };
+      default: return { /* конфиг для ожидающего */ };
+    }
+  };
+
+  return (
+    <div>
+      {/* Заголовок с иконкой и цветом */}
+      {/* Ваш ответ */}
+      {/* Прикрепленный файл */}
+      {/* Комментарий куратора (если showFeedback) */}
+      {/* Информация о проверке (если showFeedback) */}
+      {/* Кнопка пересдачи (если showRetryButton) */}
+      {/* Кнопка возврата к ступени */}
+    </div>
+  );
+};
+```
+
+---
+
+## 6. Система пересдачи отклоненных заданий
+
+### 6.1 Условия пересдачи
+- **Доступна только для:** `status === 'rejected'`
+- **Ограничений нет:** неограниченное количество попыток
+- **Не доступна для:** `approved`, `submitted`, `pending_review`
+
+### 6.2 Обработчик пересдачи
+```typescript
+const handleRetrySubmission = async () => {
+  // Сбрасываем статус на pending_review, обнуляем баллы, обновляем дату
+  const { data, error } = await supabase
+    .from('submissions')
+    .update({
+      status: 'pending_review',
+      points_awarded: 0,
+      submitted_at: new Date().toISOString(),
+      reviewed_at: null,
+      reviewed_by_curator_id: null,
+    })
+    .eq('id', state.submission.id)
+    .select(/* с данными куратора */)
+    .single();
+
+  handleSubmissionUpdate(data);
+};
+```
+
+### 6.3 Логика отображения формы сдачи
+```typescript
+// В LessonPage.tsx
+const isRetryAllowed = state.submission?.status === 'rejected' && isRetryingSubmission;
+const showSubmissionForm = hasAssignment && (!isAssignmentSubmitted || isRetryAllowed);
+
+// В FixedSubmissionForm.tsx - предзаполнение при пересдаче
+useEffect(() => {
+  if (existingSubmission) {
+    setSubmissionText(existingSubmission.content_text || '');
+    setUploadedFiles(existingSubmission.file_url ? [existingSubmission.file_url] : []);
+  }
+}, [existingSubmission]);
+```
+
+### 6.4 Логика отправки при пересдаче
+```typescript
+const handleSubmit = async () => {
+  if (existingSubmission) {
+    // Пересдача - обновляем существующую запись
+    const { data, error } = await supabase
+      .from('submissions')
+      .update({
+        content_text: submissionData.content_text,
+        file_url: submissionData.file_url,
+        status: 'submitted',
+        submitted_at: submissionData.submitted_at,
+        points_awarded: 0,
+        // Сбрасываем данные проверки
+        reviewed_at: null,
+        reviewed_by_curator_id: null,
+        feedback_text: null,
+      })
+      .eq('id', existingSubmission.id)
+      .select(/* с данными куратора */)
+      .single();
+  } else {
+    // Первая сдача - создаем новую запись
+    // ...INSERT логика
+  }
+};
+```
+
+---
+
+## 7. Обновленная загрузка данных
+
+### 7.1 Загрузка submission с данными куратора
+```typescript
+const { data: submission } = await supabase
+  .from('submissions')
+  .select(`
+    *,
+    reviewer:users!submissions_reviewed_by_curator_id_fkey(
+      first_name, 
+      last_name
+    )
+  `)
+  .eq('user_id', supabaseCompatUser.id)
+  .eq('lesson_id', lessonId)
+  .maybeSingle();
+```
+
+### 7.2 Структура данных submission
+```typescript
+interface SubmissionWithReviewer {
+  id: number;
+  user_id: string;
+  lesson_id: number;
+  content_text?: string;
+  file_url?: string;
+  status: 'submitted' | 'pending_review' | 'approved' | 'rejected';
+  points_awarded: number;
+  feedback_text?: string;
+  reviewed_at?: string;
+  reviewed_by_curator_id?: string;
+  reviewer?: {
+    first_name: string;
+    last_name: string;
+  };
 }
 ```
 

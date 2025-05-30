@@ -26,7 +26,12 @@ interface SubmissionWithDetails {
 interface SubmissionsManagerProps {
     onSubmissionSelect: (submissionId: number) => void;
     // Добавляем информацию о текущем пользователе для админки
-    currentUser?: { id: string; role: string } | null;
+    currentUser?: {
+        id: string;
+        role: string;
+        first_name?: string;
+        last_name?: string;
+    } | null;
 }
 
 const SubmissionsManager: React.FC<SubmissionsManagerProps> = ({

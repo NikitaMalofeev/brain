@@ -1300,7 +1300,16 @@ const AdminPage: React.FC = () => {
   const [error, setError] = useState<string | null>(null);
 
   // Заглушка для админского пользователя при авторизации по паролю
-  const [adminUser, setAdminUser] = useState<{ id: string; role: string } | null>(null);
+  const [adminUser, setAdminUser] = useState<{
+    id: string;
+    role: string;
+    first_name?: string;
+    last_name?: string;
+  } | null>(null);
+
+  // Состояние для веб-авторизации
+  const [login, setLogin] = useState<string>('');
+  const [authLoading, setAuthLoading] = useState<boolean>(false);
 
   // Устанавливаем стили для админки независимо от Telegram
   useEffect(() => {
@@ -1321,20 +1330,66 @@ const AdminPage: React.FC = () => {
     };
   }, []);
 
-  const checkPassword = () => {
-    const correctPassword = 'admin123';
-    if (password === correctPassword) {
-      setPasswordAuth(true);
+  // Веб-авторизация через базу данных
+  const authenticateUser = async () => {
+    if (!login.trim() || !password.trim()) {
+      setError('Введите логин и пароль');
+      return;
+    }
+
+    try {
+      setAuthLoading(true);
       setError(null);
-      // Создаем заглушку админа для передачи в дочерние компоненты
-      setAdminUser({ id: 'admin_password_user', role: 'admin' });
-    } else {
-      setError('Неверный пароль');
+
+      if (!supabase) {
+        setError('Supabase не инициализирован');
+        return;
+      }
+
+      // Вызываем функцию авторизации в базе данных
+      const { data, error } = await supabase
+        .rpc('authenticate_web_user', {
+          login_param: login.trim(),
+          password_param: password.trim()
+        });
+
+      if (error) {
+        console.error('Ошибка авторизации:', error);
+        setError('Ошибка подключения к базе данных');
+        return;
+      }
+
+      if (!data || data.length === 0 || !data[0].is_authenticated) {
+        setError('Неверный логин или пароль');
+        return;
+      }
+
+      const userData = data[0];
+
+      // Успешная авторизация
+      setPasswordAuth(true);
+      setAdminUser({
+        id: userData.user_id,
+        role: userData.user_role,
+        first_name: userData.first_name,
+        last_name: userData.last_name
+      });
+
+      // Очищаем поля
+      setLogin('');
+      setPassword('');
+
+    } catch (err) {
+      console.error('Неожиданная ошибка авторизации:', err);
+      setError('Произошла неожиданная ошибка');
+    } finally {
+      setAuthLoading(false);
     }
   };
 
   const handleLogout = () => {
     setPasswordAuth(false);
+    setLogin('');
     setPassword('');
     setAdminUser(null);
     navigate('/');
@@ -1435,21 +1490,35 @@ const AdminPage: React.FC = () => {
         <h1>Админ-панель</h1>
 
         <div className="admin-warning">
-          Доступ ограничен. Введите пароль для входа.
+          Доступ ограничен. Введите логин и пароль для входа.
         </div>
 
         {error && <div className="admin-error">{error}</div>}
 
         <input
+          type="text"
+          className="admin-input"
+          placeholder="Логин"
+          value={login}
+          onChange={(e) => setLogin(e.target.value)}
+          onKeyPress={(e) => e.key === 'Enter' && authenticateUser()}
+          disabled={authLoading}
+        />
+        <input
           type="password"
           className="admin-input"
-          placeholder="Пароль администратора"
+          placeholder="Пароль"
           value={password}
           onChange={(e) => setPassword(e.target.value)}
-          onKeyPress={(e) => e.key === 'Enter' && checkPassword()}
+          onKeyPress={(e) => e.key === 'Enter' && authenticateUser()}
+          disabled={authLoading}
         />
-        <button className="admin-button" onClick={checkPassword}>
-          Войти
+        <button
+          className="admin-button"
+          onClick={authenticateUser}
+          disabled={authLoading}
+        >
+          {authLoading ? 'Проверка...' : 'Войти'}
         </button>
       </div>
     );
