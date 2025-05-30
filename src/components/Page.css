@@ -1,3 +1,8 @@
+@import url('https://fonts.googleapis.com/css2?family=Nunito:wght@300;400;600;700&display=swap');
+
+body{
+  font-family: 'Nunito', sans-serif !important;
+}
 .page-container {
   min-height: 100vh;
   width: 100%;
@@ -6,6 +11,7 @@
 
 html, body, #root {
   background-color: var(--profile-bg, #ffffff);
+  scrollbar-width: none;
 }
 
 /* Добавляем отступ только когда TabBar отображается */

@@ -4,13 +4,13 @@ import { Pagination } from 'swiper/modules';
 import 'swiper/css';
 
 const slides = [
-    { title: 'Добро пожаловать', description: 'Краткое описание', img: '🎬' },
-    { title: 'Главная', description: 'Краткое описание', img: '🏠' },
-    { title: 'Библиотека', description: 'Краткое описание', img: '📚' },
-    { title: 'Профиль', description: 'Краткое описание', img: '👤' },
+    { title: 'Добро пожаловать', description: 'Это вводное видео поможет тебе быстро разобраться в устройстве курса и возможностях приложения. Посмотри его до конца, чтобы начать обучение на полной скорости.', img: '🎬' },
+    { title: 'Главная', description: 'Главная страница — это твой личный центр управления. Здесь ты видишь свой прогресс, баллы и путь по ступеням курса.', img: '🏠' },
+    { title: 'Библиотека', description: 'Библиотека — это центр твоего обучения. Здесь ты смотришь и слушаешь материалы, а после сразу выполняешь домашние задания. Всё, что нужно для погружения и практики в одном месте.', img: '📚' },
+    { title: 'Профиль', description: 'Профиль — твоя личная навигация. Здесь всё важное под рукой: чаты, помощь, FAQ и твои эдельштейны. Заглядывай сюда, когда нужен быстрый доступ или поддержка.\n', img: '👤' },
 ];
 
-export default function Onboarding({ onClose }) {
+export const Onboarding = ({ onClose }: {onClose: () => void})=>  {
     const swiperRef = useRef<any>(null);
     const [activeIndex, setActiveIndex] = useState(0);
 
@@ -32,20 +32,20 @@ export default function Onboarding({ onClose }) {
             <Swiper
                 ref={swiperRef}
                 modules={[Pagination]}
-                spaceBetween={50}
+                spaceBetween={1}
                 slidesPerView={1}
                 onSlideChange={(swiper) => setActiveIndex(swiper.activeIndex)}
-                className="flex-1 w-90"
+                className="flex-1 w-full"
             >
                 {slides.map((slide, index) => (
                     <SwiperSlide key={index} >
-                        <div className="flex flex-col items-center justify-center p-4 text-black pt-10 gap-4">
-                            <div className={'w-80 bg-gray-200 h-80 rounded-xl'}>
+                        <div className="flex flex-col items-center justify-center text-black gap-4">
+                            <div className={'w-full bg-[#E9EBFC] h-80 rounded-3xl'}>
 
                             </div>
-                            <div className={'flex flex-col gap-1 items-center'}>
+                            <div className={'flex flex-col gap-1 items-center px-4'}>
                                 <h2 className="w-max  text-lg font-semibold">{slide.title}</h2>
-                                <p className="w-max text-center text-sm text-gray-500">{slide.description}</p>
+                                <p className="text-center text-sm text-[#242424]">{slide.description}</p>
                             </div>
                         </div>
 
@@ -54,12 +54,12 @@ export default function Onboarding({ onClose }) {
             </Swiper>
 
             {/* Точки */}
-            <div className="flex justify-center gap-2 mb-4">
+            <div className="flex justify-center  gap-1 mb-4">
                 {slides.map((_, index) => (
                     <div
                         key={index}
-                        className={`w-2 h-2 rounded-full transition-colors duration-300 ${
-                            activeIndex === index ? 'bg-black' : 'bg-gray-300'
+                        className={`w-[10px] h-[10px] rounded-full transition-colors duration-300 ${
+                            activeIndex >= index ? 'bg-gradient-to-tr from-[#E1C1F4] to-[#B862EA]' : 'bg-[#E7DBEF]'
                         }`}
                     ></div>
                 ))}
@@ -69,11 +69,13 @@ export default function Onboarding({ onClose }) {
             <div className="p-4">
                 <button
                     onClick={handleNext}
-                    className="w-full bg-black text-white py-3 rounded text-center rounded-xl"
+                    className="font-bold w-full leading-5 text-white py-4 rounded-3xl text-center bg-[linear-gradient(135deg,rgba(141,197,241,0.4)_-48.61%,#63ABE6_105.56%),linear-gradient(91.99deg,#F3F3F3_0%,#EAEAEA_100%)]"
                 >
-                    Далее
+                    {activeIndex === 3 ? "Все понятно" : "Далее"}
                 </button>
             </div>
         </div>
     );
 }
+
+export default Onboarding;
