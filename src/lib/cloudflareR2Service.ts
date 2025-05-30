@@ -134,9 +134,21 @@ export const uploadFileToR2 = async (
   try {
     await s3.send(command);
   } catch (error) {
-    console.error(`Failed to upload file ${fullKey} to R2:`, error);
+    // Логируем полный объект ошибки для детального анализа
+    console.error(`Full error object for ${fullKey} from R2:`, JSON.stringify(error, null, 2));
+
+    // Формируем более информативное сообщение об ошибке
+    let errorMessage = 'Unknown upload error';
+    if (typeof error === 'object' && error !== null) {
+      const awsError = error as any;
+      errorMessage = awsError.message || awsError.name || JSON.stringify(error);
+    } else if (error instanceof Error) {
+      errorMessage = error.message;
+    }
+
+    console.error(`Failed to upload file ${fullKey} to R2:`, errorMessage); // Используем новое сообщение
     // Перебрасываем ошибку, чтобы ее можно было поймать выше
-    throw new Error(`Upload failed for ${fullKey}: ${(error as Error).message}`);
+    throw new Error(`Upload failed for ${fullKey}: ${errorMessage}`);
   }
 
   // НОВАЯ АРХИТЕКТУРА: возвращаем только путь к файлу
