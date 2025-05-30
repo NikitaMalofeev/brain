@@ -1703,6 +1703,31 @@ const AdminPage: React.FC = () => {
     console.log('Сабмит обновлен');
   };
 
+  const handleTabChange = (newTab: AdminTab) => {
+    const contentElement = document.querySelector('.admin-content');
+    if (contentElement) {
+      // Добавляем класс для анимации
+      contentElement.classList.add('tab-switching');
+
+      // Убираем класс после завершения анимации
+      setTimeout(() => {
+        contentElement.classList.remove('tab-switching');
+      }, 200);
+    }
+
+    setCurrentTab(newTab);
+
+    // Сбрасываем навигацию курсов при переходе на другие табы
+    if (newTab !== 'courses') {
+      setNavigation({ view: 'courses' });
+    }
+
+    // Сбрасываем навигацию сабмитов при переходе на другие табы
+    if (newTab !== 'submissions') {
+      setSubmissionsNavigation({ view: 'list' });
+    }
+  };
+
   // Если пользователь не авторизован - показываем форму входа
   if (!passwordAuth) {
     return (
@@ -1743,43 +1768,43 @@ const AdminPage: React.FC = () => {
         <div className="admin-tabs">
           <button
             className={`admin-tab ${currentTab === 'courses' ? 'active' : ''}`}
-            onClick={() => setCurrentTab('courses')}
+            onClick={() => handleTabChange('courses')}
           >
             Курсы
           </button>
           <button
             className={`admin-tab ${currentTab === 'submissions' ? 'active' : ''}`}
-            onClick={() => setCurrentTab('submissions')}
+            onClick={() => handleTabChange('submissions')}
           >
             Проверка ДЗ
           </button>
           <button
             className={`admin-tab ${currentTab === 'gamification' ? 'active' : ''}`}
-            onClick={() => setCurrentTab('gamification')}
+            onClick={() => handleTabChange('gamification')}
           >
             Геймификация
           </button>
           <button
             className={`admin-tab ${currentTab === 'chats' ? 'active' : ''}`}
-            onClick={() => setCurrentTab('chats')}
+            onClick={() => handleTabChange('chats')}
           >
             Чаты
           </button>
           <button
             className={`admin-tab ${currentTab === 'faq' ? 'active' : ''}`}
-            onClick={() => setCurrentTab('faq')}
+            onClick={() => handleTabChange('faq')}
           >
             FAQ
           </button>
           <button
             className={`admin-tab ${currentTab === 'settings' ? 'active' : ''}`}
-            onClick={() => setCurrentTab('settings')}
+            onClick={() => handleTabChange('settings')}
           >
             Настройки
           </button>
           <button
             className={`admin-tab ${currentTab === 'diagnostic' ? 'active' : ''}`}
-            onClick={() => setCurrentTab('diagnostic')}
+            onClick={() => handleTabChange('diagnostic')}
           >
             🔍 R2 Диагностика
           </button>
