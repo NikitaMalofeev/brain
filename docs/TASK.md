@@ -279,4 +279,26 @@ WHERE id = $2;
 
 ---
 
-*Последнее обновление: 2024-01-29* 
+*Последнее обновление: 2024-01-29*
+
+### 🟡 **[Админка]** Исправление роутинга и ошибки TypeScript - В процессе
+
+**Дата начала:** 2024-08-01
+**Цель:** Упростить роутинг админки и устранить ошибку TS `Cannot find module './adminApp.tsx'`
+
+**Проблемы:**
+1.  Роутинг вида `https://localhost:5173/admin#/admin` избыточен.
+2.  TypeScript выдает ошибку `Cannot find module './adminApp.tsx' or its corresponding type declarations.ts(2307)` для `src/index.tsx`, хотя файл `src/adminApp.tsx` существует.
+
+**План реализации:**
+1.  🟢 Изменить логику определения `isAdminRoute` в `src/index.tsx` на `window.location.pathname.startsWith('/admin')`. (СДЕЛАНО)
+2.  🟢 Проверить `tsconfig.json` на предмет корректности настроек. (ПРОВЕРЕНО, выглядит корректно)
+3.  🟢 Исправить `adminApp.tsx` - заменить HashRouter на BrowserRouter и исправить роуты. (СДЕЛАНО)
+4.  🟢 Убрать расширение .tsx из импорта в `src/index.tsx` для устранения ошибки TypeScript. (СДЕЛАНО)
+5.  🔴 Протестировать доступность админки по URL `https://localhost:5173/admin` без хэш-роутинга.
+
+**Обнаружено в ходе работы:**
+- ✅ Проблема с редиректом была в HashRouter в adminApp.tsx
+- ✅ TypeScript ошибка решается убиранием расширения .tsx из динамического импорта
+
+--- 

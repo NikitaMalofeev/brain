@@ -1,47 +1,44 @@
-/* AdminPage Dark Glassmorphism Theme */
+/* CSS-переменные для админки с темной темой */
 :root {
-  --admin-bg: #121212;
-  --admin-bg-light: #1e1e2e;
-  --admin-bg-lighter: #282838;
-  --admin-card-bg: rgba(30, 30, 46, 0.7);
   --admin-primary: #8b5cf6;
-  --admin-primary-hover: #9d6efa;
-  --admin-secondary: #0ea5e9;
-  --admin-secondary-hover: #38bdf8;
+  --admin-primary-hover: #7c3aed;
+  --admin-secondary: #06b6d4;
   --admin-success: #10b981;
-  --admin-success-hover: #34d399;
-  --admin-danger: #ef4444;
-  --admin-danger-hover: #f87171;
   --admin-warning: #f59e0b;
-  --admin-glass-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
-  --admin-glass-border: 1px solid rgba(255, 255, 255, 0.08);
-  --admin-text: #e2e8f0;
-  --admin-text-secondary: #94a3b8;
-  --admin-border: rgba(255, 255, 255, 0.08);
-  --admin-border-light: rgba(255, 255, 255, 0.05);
+  --admin-danger: #ef4444;
+  --admin-danger-hover: #dc2626;
+  --admin-info: #3b82f6;
+  --admin-dark: #1e1e2e;
+  --admin-darker: #181825;
+  --admin-border: rgba(139, 92, 246, 0.2);
+  --admin-text: #cdd6f4;
+  --admin-text-secondary: #a6adc8;
+  --admin-card-bg: rgba(30, 30, 46, 0.9);
   --admin-backdrop-filter: blur(12px);
-  --admin-transition: all 0.3s ease;
+  --admin-glass-shadow: 0 8px 32px rgba(0, 0, 0, 0.37);
+  --admin-glass-border: 1px solid rgba(139, 92, 246, 0.18);
+  --admin-transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
-/* Global Body Styles for Admin */
+/* Глобальные стили для админки */
 body.admin-mode {
-  background: linear-gradient(135deg, #121212, #1e1e2e);
-  color: var(--admin-text);
+  background: linear-gradient(135deg, #1e1e2e 0%, #313244 50%, #181825 100%);
+  overflow-x: hidden;
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
   min-height: 100vh;
 }
 
-/* Main Admin Page Container */
+/* Main Admin Page Container - обновлено для работы без Page */
 .admin-page {
+  min-height: 100vh;
+  width: 100%;
   padding: 24px;
+  background: linear-gradient(135deg, #1e1e2e 0%, #313244 50%, #181825 100%);
+  color: var(--admin-text);
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
   max-width: 1280px;
   margin: 0 auto;
-  background: var(--admin-card-bg);
-  backdrop-filter: var(--admin-backdrop-filter);
-  -webkit-backdrop-filter: var(--admin-backdrop-filter);
-  border-radius: 16px;
-  box-shadow: var(--admin-glass-shadow);
-  border: var(--admin-glass-border);
-  color: var(--admin-text);
+  box-sizing: border-box;
 }
 
 /* Admin Header */

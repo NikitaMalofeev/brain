@@ -14,6 +14,15 @@ interface SafeAreaData {
 
 export const AppWrapper: FC<AppWrapperProps> = ({ children }) => {
   useEffect(() => {
+    // Проверяем, находимся ли мы в админке
+    const isAdminRoute = window.location.hash.startsWith('#/admin') || window.location.pathname.includes('/admin');
+
+    if (isAdminRoute) {
+      // Для админки не выполняем Telegram-специфичные операции
+      console.log('🔧 AppWrapper: Admin mode detected - skipping Telegram operations');
+      return;
+    }
+
     // Автоматически включаем полноэкранный режим на всех страницах
     //postEvent('web_app_request_fullscreen');
 

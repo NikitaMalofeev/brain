@@ -1,6 +1,5 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Page } from '@/components/Page';
 import { FileUploader, CloudFlareR2Diagnostics } from '@/components';
 import { supabase } from '@/lib/supabase/client';
 import { useCoursesAdmin, useStagesAdmin, useLessonsAdmin, useBlocksAdmin } from '@/lib/supabase/hooks';
@@ -1603,6 +1602,25 @@ const AdminPage: React.FC = () => {
   // Заглушка для админского пользователя при авторизации по паролю
   const [adminUser, setAdminUser] = useState<{ id: string; role: string } | null>(null);
 
+  // Устанавливаем стили для админки независимо от Telegram
+  useEffect(() => {
+    // Устанавливаем стили body для админки
+    document.body.style.background = 'linear-gradient(135deg, #1e1e2e 0%, #313244 50%, #181825 100%)';
+    document.body.style.margin = '0';
+    document.body.style.padding = '0';
+    document.body.style.fontFamily = "'Inter', -apple-system, BlinkMacSystemFont, sans-serif";
+    document.body.className = 'admin-mode';
+
+    // Очистка при размонтировании
+    return () => {
+      document.body.style.background = '';
+      document.body.style.margin = '';
+      document.body.style.padding = '';
+      document.body.style.fontFamily = '';
+      document.body.className = '';
+    };
+  }, []);
+
   const checkPassword = () => {
     const correctPassword = 'admin123';
     if (password === correctPassword) {
@@ -1714,128 +1732,126 @@ const AdminPage: React.FC = () => {
 
   return (
     <PlayerProvider>
-      <Page showTabBar={false}>
-        <div className="admin-page">
-          <div className="admin-header">
-            <h1>Админ-панель</h1>
-            <button className="admin-logout-btn" onClick={handleLogout}>
-              Выйти
-            </button>
-          </div>
-
-          <div className="admin-tabs">
-            <button
-              className={`admin-tab ${currentTab === 'courses' ? 'active' : ''}`}
-              onClick={() => setCurrentTab('courses')}
-            >
-              Курсы
-            </button>
-            <button
-              className={`admin-tab ${currentTab === 'submissions' ? 'active' : ''}`}
-              onClick={() => setCurrentTab('submissions')}
-            >
-              Проверка ДЗ
-            </button>
-            <button
-              className={`admin-tab ${currentTab === 'gamification' ? 'active' : ''}`}
-              onClick={() => setCurrentTab('gamification')}
-            >
-              Геймификация
-            </button>
-            <button
-              className={`admin-tab ${currentTab === 'chats' ? 'active' : ''}`}
-              onClick={() => setCurrentTab('chats')}
-            >
-              Чаты
-            </button>
-            <button
-              className={`admin-tab ${currentTab === 'faq' ? 'active' : ''}`}
-              onClick={() => setCurrentTab('faq')}
-            >
-              FAQ
-            </button>
-            <button
-              className={`admin-tab ${currentTab === 'settings' ? 'active' : ''}`}
-              onClick={() => setCurrentTab('settings')}
-            >
-              Настройки
-            </button>
-            <button
-              className={`admin-tab ${currentTab === 'diagnostic' ? 'active' : ''}`}
-              onClick={() => setCurrentTab('diagnostic')}
-            >
-              🔍 R2 Диагностика
-            </button>
-          </div>
-
-          {currentTab === 'courses' && navigation.view !== 'courses' && (
-            <Breadcrumb
-              navigation={navigation}
-              onNavigate={setNavigation}
-            />
-          )}
-
-          <div className="admin-content">
-            {currentTab === 'courses' && (
-              <>
-                {navigation.view === 'courses' && (
-                  <CoursesManager onCourseSelect={handleCourseSelect} />
-                )}
-
-                {navigation.view === 'stages' && navigation.courseId && (
-                  <StagesManager
-                    courseId={navigation.courseId}
-                    onBack={handleNavigationBack}
-                    onStageSelect={handleStageSelect}
-                  />
-                )}
-
-                {navigation.view === 'lessons' && navigation.stageId && (
-                  <LessonsManager
-                    courseId={navigation.courseId!}
-                    stageId={navigation.stageId}
-                    onBack={handleNavigationBack}
-                    onLessonSelect={handleLessonSelect}
-                  />
-                )}
-
-                {navigation.view === 'blocks' && navigation.lessonId && (
-                  <BlocksManager
-                    courseId={navigation.courseId!}
-                    stageId={navigation.stageId!}
-                    lessonId={navigation.lessonId}
-                    onBack={handleNavigationBack}
-                  />
-                )}
-              </>
-            )}
-            {currentTab === 'submissions' && (
-              <>
-                {submissionsNavigation.view === 'list' && (
-                  <SubmissionsManager
-                    onSubmissionSelect={handleSubmissionSelect}
-                    currentUser={adminUser}
-                  />
-                )}
-
-                {submissionsNavigation.view === 'detail' && submissionsNavigation.selectedSubmissionId && (
-                  <SubmissionDetail
-                    submissionId={submissionsNavigation.selectedSubmissionId}
-                    onBack={handleSubmissionsBack}
-                    onSubmissionUpdated={handleSubmissionUpdated}
-                    currentUser={adminUser}
-                  />
-                )}
-              </>
-            )}
-            {currentTab === 'gamification' && <div>Управление геймификацией</div>}
-            {currentTab === 'chats' && <div>Управление чатами</div>}
-            {currentTab === 'faq' && <div>Управление FAQ</div>}
-            {currentTab === 'settings' && <div>Настройки системы</div>}
-            {currentTab === 'diagnostic' && <CloudFlareR2Diagnostics />}
-          </div>
+      <div className="admin-page">
+        <div className="admin-header">
+          <h1>Админ-панель</h1>
+          <button className="admin-logout-btn" onClick={handleLogout}>
+            Выйти
+          </button>
         </div>
-      </Page>
+
+        <div className="admin-tabs">
+          <button
+            className={`admin-tab ${currentTab === 'courses' ? 'active' : ''}`}
+            onClick={() => setCurrentTab('courses')}
+          >
+            Курсы
+          </button>
+          <button
+            className={`admin-tab ${currentTab === 'submissions' ? 'active' : ''}`}
+            onClick={() => setCurrentTab('submissions')}
+          >
+            Проверка ДЗ
+          </button>
+          <button
+            className={`admin-tab ${currentTab === 'gamification' ? 'active' : ''}`}
+            onClick={() => setCurrentTab('gamification')}
+          >
+            Геймификация
+          </button>
+          <button
+            className={`admin-tab ${currentTab === 'chats' ? 'active' : ''}`}
+            onClick={() => setCurrentTab('chats')}
+          >
+            Чаты
+          </button>
+          <button
+            className={`admin-tab ${currentTab === 'faq' ? 'active' : ''}`}
+            onClick={() => setCurrentTab('faq')}
+          >
+            FAQ
+          </button>
+          <button
+            className={`admin-tab ${currentTab === 'settings' ? 'active' : ''}`}
+            onClick={() => setCurrentTab('settings')}
+          >
+            Настройки
+          </button>
+          <button
+            className={`admin-tab ${currentTab === 'diagnostic' ? 'active' : ''}`}
+            onClick={() => setCurrentTab('diagnostic')}
+          >
+            🔍 R2 Диагностика
+          </button>
+        </div>
+
+        {currentTab === 'courses' && navigation.view !== 'courses' && (
+          <Breadcrumb
+            navigation={navigation}
+            onNavigate={setNavigation}
+          />
+        )}
+
+        <div className="admin-content">
+          {currentTab === 'courses' && (
+            <>
+              {navigation.view === 'courses' && (
+                <CoursesManager onCourseSelect={handleCourseSelect} />
+              )}
+
+              {navigation.view === 'stages' && navigation.courseId && (
+                <StagesManager
+                  courseId={navigation.courseId}
+                  onBack={handleNavigationBack}
+                  onStageSelect={handleStageSelect}
+                />
+              )}
+
+              {navigation.view === 'lessons' && navigation.stageId && (
+                <LessonsManager
+                  courseId={navigation.courseId!}
+                  stageId={navigation.stageId}
+                  onBack={handleNavigationBack}
+                  onLessonSelect={handleLessonSelect}
+                />
+              )}
+
+              {navigation.view === 'blocks' && navigation.lessonId && (
+                <BlocksManager
+                  courseId={navigation.courseId!}
+                  stageId={navigation.stageId!}
+                  lessonId={navigation.lessonId}
+                  onBack={handleNavigationBack}
+                />
+              )}
+            </>
+          )}
+          {currentTab === 'submissions' && (
+            <>
+              {submissionsNavigation.view === 'list' && (
+                <SubmissionsManager
+                  onSubmissionSelect={handleSubmissionSelect}
+                  currentUser={adminUser}
+                />
+              )}
+
+              {submissionsNavigation.view === 'detail' && submissionsNavigation.selectedSubmissionId && (
+                <SubmissionDetail
+                  submissionId={submissionsNavigation.selectedSubmissionId}
+                  onBack={handleSubmissionsBack}
+                  onSubmissionUpdated={handleSubmissionUpdated}
+                  currentUser={adminUser}
+                />
+              )}
+            </>
+          )}
+          {currentTab === 'gamification' && <div>Управление геймификацией</div>}
+          {currentTab === 'chats' && <div>Управление чатами</div>}
+          {currentTab === 'faq' && <div>Управление FAQ</div>}
+          {currentTab === 'settings' && <div>Настройки системы</div>}
+          {currentTab === 'diagnostic' && <CloudFlareR2Diagnostics />}
+        </div>
+      </div>
     </PlayerProvider>
   );
 };

@@ -5,16 +5,15 @@ import { ThemeParamsPage } from '@/pages/ThemeParamsPage';
 import { ProfilePage } from '@/pages/ProfilePage';
 import { TONConnectPage } from '@/pages/TONConnectPage/TONConnectPage';
 import { DiagnosticsPage } from '@/pages/DiagnosticsPage/DiagnosticsPage';
-import AdminPage from '@/pages/AdminPage/AdminPage';
 import LibraryPage from '@/pages/LibraryPage/LibraryPage';
 import StagePage from '@/pages/LibraryPage/StagePage';
 import LessonPage from '@/pages/LibraryPage/LessonPage';
-import {UserPage} from "@/pages/UserPage/UserPage.tsx";
-import {Chats} from "@/pages/Chats/Chats.tsx";
-import {HelpPage} from "@/pages/HelpPage/HelpPage.tsx";
-import {FaqPage} from "@/pages/FaqPage/FaqPage.tsx";
-import {CommonPage} from "@/pages/CommonPage/CommonPage.tsx";
-import {MainPage} from "@/pages/MainPage/MainPage.tsx";
+import { UserPage } from "@/pages/UserPage/UserPage.tsx";
+import { Chats } from "@/pages/Chats/Chats.tsx";
+import { HelpPage } from "@/pages/HelpPage/HelpPage.tsx";
+import { FaqPage } from "@/pages/FaqPage/FaqPage.tsx";
+import { CommonPage } from "@/pages/CommonPage/CommonPage.tsx";
+import { MainPage } from "@/pages/MainPage/MainPage.tsx";
 
 export const routers = [
   {
@@ -32,10 +31,6 @@ export const routers = [
   {
     path: '/library/lesson/:id',
     Component: LessonPage
-  },
-  {
-    path: '/admin',
-    Component: AdminPage
   },
   {
     path: '/old-index',
