@@ -80,6 +80,11 @@ const FixedSubmissionForm: React.FC<FixedSubmissionFormProps> = ({
             const uploadPromises = Array.from(files).map(async (file) => {
                 // Загружаем файл в R2 и получаем file path
                 const filePath = await uploadFileToR2(file);
+                // Проверяем, что filePath существует и является строкой
+                if (!filePath || typeof filePath !== 'string') {
+                    // Если filePath невалиден, кидаем ошибку, чтобы она была поймана ниже
+                    throw new Error('File path is invalid after upload.');
+                }
                 // Преобразуем file path в публичный URL
                 const fileUrl = buildFileUrl(filePath);
                 return fileUrl;
@@ -88,7 +93,7 @@ const FixedSubmissionForm: React.FC<FixedSubmissionFormProps> = ({
             const newFileUrls = await Promise.all(uploadPromises);
             setUploadedFiles(prev => [...prev, ...newFileUrls]);
         } catch (error) {
-            console.error('Ошибка загрузки файлов:', error);
+            console.error('Ошибка загрузки файлов:', error); // Теперь здесь будет более детальная ошибка
             // TODO: Добавить нормальное уведомление об ошибке вместо alert
         } finally {
             setIsUploading(false);

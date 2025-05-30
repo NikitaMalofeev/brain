@@ -130,7 +130,14 @@ export const uploadFileToR2 = async (
     ContentType: contentType,
   });
 
-  await s3.send(command);
+  // Улучшенная обработка ошибок при загрузке
+  try {
+    await s3.send(command);
+  } catch (error) {
+    console.error(`Failed to upload file ${fullKey} to R2:`, error);
+    // Перебрасываем ошибку, чтобы ее можно было поймать выше
+    throw new Error(`Upload failed for ${fullKey}: ${(error as Error).message}`);
+  }
 
   // НОВАЯ АРХИТЕКТУРА: возвращаем только путь к файлу
   return fullKey;
