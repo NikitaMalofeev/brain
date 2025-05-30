@@ -8,139 +8,93 @@
 
 ### Роуты приложения (React Router):
 ```
-/                     - Главная страница (MainScreen/IndexPage)
-/onboarding           - Онбординг
-/library              - Библиотека ступеней (LibraryPage)
-/library/stage/:id    - Детальная страница ступени
-/library/lesson/:id   - Урок
-/library/assignment/:id - Задание (в Figma названо "Квиз")
-/library/materials    - Дополнительные материалы (library_materials из PRD)
-/profile              - Профиль
-/profile/chats        - Важные чаты
+/                     - Главная страница (Main Screen - Figma ID: 682-4667)
+/onboarding           - Онбординг (Onboarding - Figma ID: 682-4669)
+/library              - Библиотека ступеней (Library - Figma ID: 682-4668)
+/library/stage/:id    - Детальная страница ступени (Course Detail - Figma ID: 682-4670)
+/library/lesson/:id   - Урок (Lesson View - Figma ID: 682-4671)
+/submissions          - Проверка заданий (Review Interface - Figma ID: 682-4672)
+/profile              - Профиль (Profile - Figma ID: 682-4673)
+/profile/chats        - Чаты (Messages - Figma ID: 682-4674)
 /profile/help         - Помощь
 /profile/faq          - FAQ
-/info/points          - Что такое баллы?
+/admin                - Админ панель (Admin Panel - Figma ID: 682-4675)
 ```
 
 ---
 
-## 🎯 1. БЛОК "ONBOARDING" (38-1421)
+## 🎯 1. БЛОК "ONBOARDING" (Figma ID: 682-4669)
 
-### 1.1 Экран "Добро пожаловать" (38:1423)
+### 1.1 Экран "Добро пожаловать"
 **Роут:** `/onboarding`  
-**Компонент:** `OnboardingWelcome.tsx`
+**Компонент:** `OnboardingWelcome.tsx`  
+**Figma ID:** 682-4669
 
 **🔽 Вводимые данные:**
 - Данные пользователя Telegram (автоматически через WebApp SDK)
 - Прогресс онбординга
 
 **🔼 Выводимые данные:**
-- Приветственное видео (URL из материалов)
-- Кнопка "Далее"
-- Индикатор прогресса (1/4)
-- Кнопка "Закрыть"
+- Центрированная welcome карточка с glass-эффектом
+- Приветственное видео/контент
+- Progress steps (высота 4px, активный цвет #B862EA)
+- Telegram кнопка авторизации (градиент secondary)
+- Кнопка "Далее" с primary градиентом
 
 **📊 Таблицы Supabase:**
 - `users` - создание/обновление профиля пользователя
 - `user_course_enrollments` - запись о начале курса
-- `lessons` - получение приветственного видео
+- `lessons` - получение приветственного контента
 - `users` - инициализация баллов/жизней (поля total_points: 0, lives_remaining: 3)
 
+**🎨 Дизайн-спецификация:**
+```yaml
+frameData:
+  background: '#FFFFFF'
+  layout: 'column, center, gap: 24'
+
+components:
+  welcomeCard:
+    background: 'gradient-glass'
+    backdropFilter: 'blur(20px)'
+    borderRadius: 32
+    padding: 24
+  
+  progressSteps:
+    height: 4
+    background: '#F3F3F3'
+    activeColor: '#B862EA'
+  
+  telegramButton:
+    background: 'gradient-secondary'
+    borderRadius: 16
+    height: 48
+```
+
 **🔗 Навигация:**
-- "Далее" → `/onboarding/main`
-- "Закрыть" → `/` (главная)
+- "Далее" → `/` (главная)
+- "Закрыть" → закрытие Telegram Mini App
 
 ---
 
-### 1.2 Экран "Главная" (38:1424)
-**Роут:** `/onboarding/main`  
-**Компонент:** `OnboardingMain.tsx`
+## 🏠 2. БЛОК "ГЛАВНАЯ" (Figma ID: 682-4667)
 
-**🔽 Вводимые данные:**
-- Статус завершения предыдущего экрана
-
-**🔼 Выводимые данные:**
-- Демонстрация интерфейса главной страницы
-- Объяснение функций главной
-- Кнопка "Далее"
-- Индикатор прогресса (2/4)
-
-**📊 Таблицы Supabase:**
-- `lessons` - демо-контент для показа
-
-**🔗 Навигация:**
-- "Далее" → `/onboarding/library`
-- "Назад" → `/onboarding`
-- "Закрыть" → `/`
-
----
-
-### 1.3 Экран "Библиотека" (38:1425)
-**Роут:** `/onboarding/library`  
-**Компонент:** `OnboardingLibrary.tsx`
-
-**🔽 Вводимые данные:**
-- Статус завершения предыдущих экранов
-
-**🔼 Выводимые данные:**
-- Демонстрация интерфейса библиотеки
-- Объяснение системы ступеней
-- Кнопка "Далее"
-- Индикатор прогресса (3/4)
-
-**📊 Таблицы Supabase:**
-- `course_stages` - демо-данные ступеней
-- `lessons` - демо-контент
-
-**🔗 Навигация:**
-- "Далее" → `/onboarding/profile`
-- "Назад" → `/onboarding/main`
-- "Закрыть" → `/`
-
----
-
-### 1.4 Экран "Профиль" (38:1426)
-**Роут:** `/onboarding/profile`  
-**Компонент:** `OnboardingProfile.tsx`
-
-**🔽 Вводимые данные:**
-- Статус завершения всех предыдущих экранов
-
-**🔼 Выводимые данные:**
-- Демонстрация интерфейса профиля
-- Объяснение системы поддержки
-- Кнопка "Завершить"
-- Индикатор прогресса (4/4)
-
-**📊 Таблицы Supabase:**
-- `users` - финальное обновление статуса онбординга
-- `user_course_enrollments` - активация участия в курсе
-
-**🔗 Навигация:**
-- "Завершить" → `/` (главная)
-- "Назад" → `/onboarding/library`
-
----
-
-## 🏠 2. БЛОК "ГЛАВНАЯ" (38-1422)
-
-### 2.1 Главная страница (38:1427)
+### 2.1 Главная страница
 **Роут:** `/`  
-**Компонент:** `MainScreen/IndexPage.tsx`
+**Компонент:** `MainScreen/IndexPage.tsx`  
+**Figma ID:** 682-4667
 
 **🔽 Вводимые данные:**
 - ID пользователя (Telegram)
 - Текущая сессия
 
 **🔼 Выводимые данные:**
+- TopBar с аватаром (32px, белая обводка) и счетчиком баллов
 - Приветствие "Привет, {имя пользователя}"
-- Аватар пользователя
-- Счетчик баллов с иконкой
-- Карточки ступеней с состояниями (разблокирована/заблокирована)
+- Карточки ступеней в grid layout (2 колонки, gap: 12px)
 - Прогресс-блок: "Выполнено X заданий"
-- Прогресс-бар
-- "Еще X заданий до следующей ступени"
-- Tab bar навигация
+- Progress indicators (линейные, высота 4px)
+- TabBar навигация (компонент 4-388)
 
 **📊 Таблицы Supabase:**
 ```sql
@@ -148,62 +102,68 @@
 SELECT 
   u.first_name, u.last_name, u.photo_url,
   u.total_points, u.lives_remaining,
-  cs.name, cs.order_num, 
-  usp.status, 
-  COUNT(a.id) as total_assignments,
-  COUNT(ulp.completed_at) as completed_lessons
+  cs.name, cs.order_num, cs.is_unlocked,
+  COUNT(l.id) as total_lessons,
+  COUNT(CASE WHEN lp.is_completed THEN 1 END) as completed_lessons
 FROM users u
 JOIN user_course_enrollments uce ON u.id = uce.user_id
 JOIN course_stages cs ON uce.course_id = cs.course_id
-LEFT JOIN user_stage_progress usp ON u.id = usp.user_id AND cs.id = usp.stage_id
 LEFT JOIN lessons l ON cs.id = l.stage_id
-LEFT JOIN assignments a ON l.id = a.lesson_id
-LEFT JOIN user_lesson_progress ulp ON u.id = ulp.user_id AND l.id = ulp.lesson_id
+LEFT JOIN lesson_progress lp ON u.id = lp.user_id AND l.id = lp.lesson_id
 WHERE u.id = $1
+GROUP BY u.id, cs.id
+ORDER BY cs.order_num;
 ```
 
 **Таблицы:**
 - `users` - имя, аватар, баллы, жизни пользователя
-- `course_stages` - информация о ступенях
-- `user_stage_progress` - прогресс по ступеням
-- `user_lesson_progress` - прогресс по урокам
-- `assignments` - общее количество заданий
+- `course_stages` - информация о ступенях (поле `is_unlocked`)
+- `lesson_progress` - прогресс по урокам
+- `lessons` - общее количество уроков
+
+**🎨 Дизайн-спецификация:**
+```yaml
+frameData:
+  background: 'gradient-primary'
+  layout: 'column, center, gap: 16'
+
+components:
+  topBar:
+    avatar: 
+      size: 32
+      border: '#FFFFFF 1.5px'
+    pointsCounter:
+      background: 'gradient-secondary'
+      borderRadius: 20
+  
+  stageCards:
+    variant: 'gradient-primary'
+    borderRadius: 24
+    shadow: '0px 4px 20px rgba(0,0,0,0.08)'
+    layout: grid
+    columns: 2
+    gap: 12
+
+  tabBar:
+    height: 60
+    background: '#FFFFFF'
+    activeTab: 'gradient-primary'
+```
 
 **🔗 Навигация:**
 - Карточка ступени → `/library/stage/{stage_id}` (если разблокирована)
 - Tab "Библиотека" → `/library`
+- Tab "Чаты" → `/profile/chats`
 - Tab "Профиль" → `/profile`
-- Счетчик баллов → `/info/points`
 
 ---
 
-### 2.2 Экран "Что такое баллы?" (38:1428)
-**Роут:** `/info/points`  
-**Компонент:** `InfoPage/PointsInfo.tsx`
+## 📚 3. БЛОК "БИБЛИОТЕКА" (Figma ID: 682-4668)
 
-**🔽 Вводимые данные:**
-- Переход с главной страницы
-
-**🔼 Выводимые данные:**
-- Детальное описание системы баллов
-- Объяснение типов заданий (видео, аудио)
-- Объяснение начисления баллов
-- Кнопка "Понятно" / "Назад"
-
-**📊 Таблицы Supabase:**
-- `lessons` - статическая информация о баллах (можно хранить в content_value)
-- Возможно статический контент в коде приложения
-
-**🔗 Навигация:**
-- "Назад" → `/` (главная)
-
----
-
-## 📚 3. БЛОК "БИБЛИОТЕКА" (38-917)
-
-### 3.1 Основной экран библиотеки (38:918)
+### 3.1 Основной экран библиотеки
 **Роут:** `/library`  
-**Компонент:** `LibraryPage/LibraryPage.tsx`
+**Компонент:** `LibraryPage/LibraryPage.tsx`  
+**Figma ID:** 682-4668
 
 **🔽 Вводимые данные:**
 - ID пользователя
@@ -211,36 +171,51 @@ WHERE u.id = $1
 
 **🔼 Выводимые данные:**
 - Заголовок "Библиотека"
+- SearchBar (background: rgba(225,225,225,0.6), blur: 32px)
 - Карточки ступеней в двухколоночной сетке
-- Подписи "1 ступень", "2 ступень" и т.д.
+- Progress indicators для каждой ступени
 - Статус каждой ступени (доступна/заблокирована)
-- Прогресс по каждой ступени
-- Tab bar навигация
+- TabBar навигация
 
 **📊 Таблицы Supabase:**
 ```sql
--- SQL-функция get_library_stages:
-SELECT 
-  cs.id, cs.name, cs.description, cs.order_num,
-  usp.status,
-  usp.started_at, usp.completed_at,
-  COUNT(l.id) as total_lessons,
-  COUNT(CASE WHEN ulp.completed_at IS NOT NULL THEN 1 END) as completed_lessons
-FROM course_stages cs
-LEFT JOIN user_stage_progress usp ON cs.id = usp.stage_id AND usp.user_id = $1
-LEFT JOIN lessons l ON cs.id = l.stage_id
-LEFT JOIN user_lesson_progress ulp ON l.id = ulp.lesson_id AND ulp.user_id = $1
-WHERE cs.course_id = $2
-GROUP BY cs.id, cs.name, cs.description, cs.order_num, usp.status, usp.started_at, usp.completed_at
-ORDER BY cs.order_num
+-- Используем функцию get_library_stages:
+SELECT * FROM get_library_stages($user_id, $course_id);
 ```
 
 **Таблицы:**
-- `course_stages` - список ступеней
-- `user_stage_progress` - прогресс пользователя по ступеням
-- `user_course_enrollments` - активный курс пользователя
+- `course_stages` - список ступеней с полем `is_unlocked`
+- `lesson_progress` - прогресс пользователя по урокам
 - `lessons` - для подсчета общего количества уроков
-- `user_lesson_progress` - для подсчета завершенных уроков
+
+**🎨 Дизайн-спецификация:**
+```yaml
+frameData:
+  background: '#FFFFFF'
+  layout: 'column, gap: 16'
+
+components:
+  searchBar:
+    background: 'rgba(225,225,225,0.6)'
+    backdropFilter: 'blur(32px)'
+    borderRadius: 16
+    height: 44
+  
+  stageCards:
+    layout: grid
+    columns: 2
+    gap: 12
+    cardStyle:
+      borderRadius: 24
+      shadow: '0px 2px 12px rgba(0,0,0,0.06)'
+      background: '#FFFFFF'
+  
+  progressIndicators:
+    type: linear
+    height: 4
+    background: '#EAEAEA'
+    fillColor: '#B862EA'
+```
 
 **🔗 Навигация:**
 - Карточка ступени → `/library/stage/{stage_id}` (если разблокирована)
@@ -249,37 +224,58 @@ ORDER BY cs.order_num
 
 ---
 
-### 3.2 Детальный экран ступени (38:919)
+### 3.2 Детальный экран ступени
 **Роут:** `/library/stage/:id`  
-**Компонент:** `LibraryPage/StagePage.tsx`
+**Компонент:** `LibraryPage/StagePage.tsx`  
+**Figma ID:** 682-4670
 
 **🔽 Вводимые данные:**
 - ID ступени из URL
 - ID пользователя
 
 **🔼 Выводимые данные:**
-- Заголовок ступени ("Первая ступень")
+- Hero section (высота 200px, background: gradient-primary)
 - Список уроков с индикаторами выполнения
-- Прогресс по ступени
-- Кнопка "Назад"
+- Completion badges (размер 24px, активный цвет #4EB3FF)
+- Navigation controls
 
 **📊 Таблицы Supabase:**
 ```sql
 -- Получение уроков ступени:
 SELECT 
-  l.id, l.title, l.content_type, l.order_num,
-  ulp.completed_at IS NOT NULL as is_completed,
-  ulp.progress_percentage
+  l.id, l.name, l.description, l.order_num, l.has_assignment,
+  lp.is_completed,
+  lp.completed_at
 FROM lessons l
-LEFT JOIN user_lesson_progress ulp ON l.id = ulp.lesson_id AND ulp.user_id = $1
+LEFT JOIN lesson_progress lp ON l.id = lp.lesson_id AND lp.user_id = $1
 WHERE l.stage_id = $2
-ORDER BY l.order_num
+ORDER BY l.order_num;
 ```
 
-**Таблицы:**
-- `lessons` - уроки ступени
-- `user_lesson_progress` - прогресс по урокам
-- `course_stages` - информация о ступени
+**🎨 Дизайн-спецификация:**
+```yaml
+frameData:
+  layout: 'column, gap: 20'
+
+components:
+  heroSection:
+    height: 200
+    background: 'gradient-primary'
+    borderRadius: '0 0 24 24'
+  
+  lessonList:
+    gap: 12
+    itemHeight: 72
+    itemStyle:
+      background: '#FFFFFF'
+      borderRadius: 16
+      border: '1px solid rgba(255,255,255,0.14)'
+  
+  completionBadge:
+    size: 24
+    activeColor: '#4EB3FF'
+    inactiveColor: '#D9D9D9'
+```
 
 **🔗 Навигация:**
 - Урок → `/library/lesson/{lesson_id}`
@@ -287,9 +283,10 @@ ORDER BY l.order_num
 
 ---
 
-### 3.3 Экран урока (38:920)
+### 3.3 Экран урока
 **Роут:** `/library/lesson/:id`  
-**Компонент:** `LibraryPage/LessonPage.tsx`
+**Компонент:** `LibraryPage/LessonPage.tsx`  
+**Figma ID:** 682-4671
 
 **🔽 Вводимые данные:**
 - ID урока из URL
@@ -297,336 +294,566 @@ ORDER BY l.order_num
 - Время просмотра/прослушивания
 
 **🔼 Выводимые данные:**
-- Заголовок урока
-- Видео/аудио контент
-- Элементы управления воспроизведением
-- Прогресс просмотра
+- AudioPlayer (высота 80px, glass-эффект)
+- PlayButton (размер 48px, gradient-primary, круглый)
+- Waveform visualization (40px высота, 12 баров)
+- Navigation controls (зафиксированы внизу)
+- Текстовый контент урока
 - Кнопка "Завершить урок"
-- Кнопка "Пройти квиз" (если есть)
+- Кнопка сдачи задания (если `has_assignment = true`)
 
 **📊 Таблицы Supabase:**
 ```sql
--- Получение контента урока:
-SELECT 
-  l.name, l.content_type, l.content_value, l.description,
-  a.id as assignment_id, a.title as assignment_title
-FROM lessons l
-LEFT JOIN assignments a ON l.id = a.lesson_id
-WHERE l.id = $1
+-- Получение блоков урока:
+SELECT * FROM get_lesson_blocks($lesson_id);
 
 -- Обновление прогресса:
-INSERT INTO user_lesson_progress (user_id, lesson_id, status, completed_at, progress_details)
-VALUES ($1, $2, 'completed', NOW(), '{"progress_percentage": 100}')
-ON CONFLICT (user_id, lesson_id) 
-UPDATE SET status = 'completed', completed_at = NOW(), progress_details = '{"progress_percentage": 100}'
+SELECT mark_lesson_completed($lesson_id, $user_id);
 ```
 
 **Таблицы:**
-- `lessons` - контент урока
-- `user_lesson_progress` - отслеживание прогресса
-- `assignments` - связанные задания/квизы
+- `lessons` - основная информация урока
+- `lesson_blocks` - блоки контента урока
+- `lesson_progress` - отслеживание прогресса
+- `submissions` - задания для сдачи
+
+**🎨 Дизайн-спецификация:**
+```yaml
+frameData:
+  layout: 'column, space-between'
+
+components:
+  audioPlayer:
+    height: 80
+    background: '#FFFFFF'
+    border: '1px solid rgba(89,89,89,0.14)'
+    borderRadius: 32
+    backdropFilter: 'blur(8px)'
+  
+  playButton:
+    size: 48
+    background: 'gradient-primary'
+    borderRadius: '50%'
+  
+  waveform:
+    height: 40
+    bars: 12
+    activeColor: '#B862EA'
+    inactiveColor: '#E7DBEF'
+  
+  navigationControls:
+    position: fixed
+    bottom: 80
+    background: '#FFFFFF'
+    borderRadius: '24 24 0 0'
+```
 
 **🔗 Навигация:**
-- "Пройти квиз" → `/library/assignment/{assignment_id}`
+- "Сдать задание" → форма сдачи или `/submissions`
 - "Назад" → `/library/stage/{stage_id}`
 
 ---
 
-### 3.4 Экран задания/квиза (38:921)
-**Роут:** `/library/assignment/:id`  
-**Компонент:** `LibraryPage/AssignmentPage.tsx`
+## 📝 4. БЛОК "ПРОВЕРКА ЗАДАНИЙ" (Figma ID: 682-4672)
+
+### 4.1 Интерфейс проверки заданий
+**Роут:** `/submissions` или `/admin/submissions`  
+**Компонент:** `AdminPage/SubmissionsManager.tsx`  
+**Figma ID:** 682-4672
 
 **🔽 Вводимые данные:**
-- ID задания из URL
-- Ответы пользователя (текст/файлы)
-- ID пользователя
+- Сдачи заданий от пользователей
+- ID куратора/админа
 
 **🔼 Выводимые данные:**
-- Заголовок задания
-- Описание задания
-- Форма сдачи (если `submission_type = 'tma'`):
-  - Поле для ввода текста
-  - Загрузка файлов
-  - Кнопка "Сдать задание"
-- Инструкции для чата (если `submission_type = 'chat_report'`):
-  - Описание что нужно сделать
-  - Кнопка "Я выполнил задание в чате"
-- Статус сдачи и обратная связь куратора
+- Split-screen layout (60%/40%)
+- Submission card слева
+- Review form справа
+- Status badges с цветовой кодировкой
+- Action buttons для быстрых действий
 
 **📊 Таблицы Supabase:**
 ```sql
--- Получение задания:
-SELECT a.title, a.description, a.assignment_type, a.config
-FROM assignments a 
-WHERE a.id = $1
-
--- В реальной схеме БД нет таблицы submissions!
--- Возможные варианты хранения сдач:
--- 1. Поле в user_lesson_progress.progress_details (JSON)
--- 2. Отдельная таблица submissions (требует создания)
--- 3. Интеграция через Telegram Bot API
-
--- Обновление баллов при одобрении:
-UPDATE users 
-SET total_points = total_points + $1 
-WHERE id = $2
+-- Получение сдач для проверки:
+SELECT s.*, u.first_name, u.last_name, u.photo_url,
+       l.name as lesson_name, cs.name as stage_name
+FROM submissions s
+JOIN users u ON s.user_id = u.id
+JOIN lessons l ON s.lesson_id = l.id
+JOIN course_stages cs ON l.stage_id = cs.id
+WHERE s.status IN ('submitted', 'pending_review')
+ORDER BY s.submitted_at DESC;
 ```
 
-**Таблицы:**
-- `assignments` - данные задания
-- `user_lesson_progress` - возможно хранение статуса сдачи в progress_details
-- `users` - начисление баллов (поле total_points)
+**🎨 Дизайн-спецификация:**
+```yaml
+frameData:
+  layout: 'row, gap: 24'
+
+components:
+  submissionCard:
+    width: '60%'
+    background: '#FFFFFF'
+    borderRadius: 16
+    padding: 20
+  
+  reviewForm:
+    width: '40%'
+    background: '#EAF5FE'
+    borderRadius: 16
+    padding: 20
+  
+  statusBadges:
+    submitted: '#FFE4A3'
+    approved: '#4EB3FF'
+    rejected: '#FF6B6B'
+    borderRadius: 8
+    padding: '4 8'
+  
+  actionButtons:
+    gap: 12
+    approve:
+      background: 'gradient-secondary'
+    reject:
+      background: 'gradient-neutral'
+```
 
 **🔗 Навигация:**
-- "Сдать" → обновление статуса, возврат к `/library/stage/{stage_id}`
-- "Назад" → `/library/lesson/{lesson_id}`
-
-**📝 Примечание:** В Figma этот экран назван "Квиз", но по PRD это обычное задание для сдачи. В реальной схеме БД отсутствует таблица submissions - требует доработки архитектуры или использования progress_details.
+- Доступно для кураторов и админов
+- Интегрировано в админ-панель
 
 ---
 
-### 3.5 Экран "Дополнительные материалы" (НЕТ В FIGMA)
-**Роут:** `/library/materials`  
-**Компонент:** `LibraryPage/MaterialsPage.tsx`
+## 👤 5. БЛОК "ПРОФИЛЬ" (Figma ID: 682-4673)
 
-**🔽 Вводимые данные:**
-- ID пользователя
-- Поисковый запрос (опционально)
-- Фильтр по категории
-
-**🔼 Выводимые данные:**
-- Заголовок "Дополнительные материалы"
-- Поиск по материалам
-- Фильтры по категориям
-- Список материалов с превью:
-  - Заголовок материала
-  - Тип контента (видео/аудио/текст/файл/ссылка)
-  - Категория
-  - Превью изображение
-- Пагинация или бесконечная прокрутка
-
-**📊 Таблицы Supabase:**
-```sql
--- В реальной схеме БД нет таблицы library_materials!
--- Возможные варианты реализации:
--- 1. Создать таблицу library_materials по спецификации PRD
--- 2. Использовать lessons с типом "library_material"
--- 3. Расширить существующую структуру
-
--- Пример структуры из PRD:
--- library_materials (id, title, content_type, content_url/text, category)
-
--- Временное решение через lessons:
-SELECT 
-  l.id, l.name as title, l.content_type, l.content_value,
-  'library' as category
-FROM lessons l
-WHERE l.content_type IN ('video', 'audio', 'text', 'file')
-  AND l.description LIKE '%библиотека%'
-ORDER BY l.created_at DESC
-```
-
-**Таблицы:**
-- `library_materials` - ОТСУТСТВУЕТ (нужно создать по PRD)
-- Временно: `lessons` с фильтрацией по типу
-
-**🔗 Навигация:**
-- Материал → открытие в соответствующем плеере/просмотрщике
-- "Назад" → `/library` 
-- Доступ через Tab "Библиотека" или отдельную кнопку на главной
-
-**📝 Примечание:** Этот раздел описан в PRD как отдельная сущность `library_materials`, но отсутствует в Figma макетах и реальной схеме БД. Требует создания соответствующей таблицы и UI.
-
----
-
-## 👤 4. БЛОК "ПРОФИЛЬ" (36-790)
-
-### 4.1 Основной экран профиля (4:200)
+### 5.1 Основной экран профиля
 **Роут:** `/profile`  
-**Компонент:** `ProfilePage/ProfilePage.tsx`
+**Компонент:** `ProfilePage/ProfilePage.tsx`  
+**Figma ID:** 682-4673
 
 **🔽 Вводимые данные:**
 - ID пользователя
 - Данные сессии
 
 **🔼 Выводимые данные:**
-- Аватар пользователя
-- Приветствие "Привет, {имя}"
-- Кнопки меню:
-  - "Важные чаты" (с иконкой стрелки)
-  - "Помощь" (с иконкой стрелки)  
-  - "FAQ" (с иконкой стрелки)
-- Tab bar навигация
+- User avatar (размер 80px, обводка #FFFFFF 2px)
+- Stats cards в grid layout (2 колонки)
+- Menu items (высота 56px каждый)
+- Модульная компоновка элементов
 
 **📊 Таблицы Supabase:**
-- `users` - данные пользователя (имя, аватар)
+- `users` - данные пользователя (имя, аватар, баллы, жизни)
+
+**🎨 Дизайн-спецификация:**
+```yaml
+frameData:
+  layout: 'column, gap: 24'
+
+components:
+  userAvatar:
+    size: 80
+    border: '#FFFFFF 2px'
+    shadow: '0px 4px 16px rgba(0,0,0,0.08)'
+  
+  statsCards:
+    layout: grid
+    columns: 2
+    gap: 12
+    cardStyle:
+      background: 'gradient-glass'
+      borderRadius: 16
+      padding: 16
+  
+  menuItems:
+    gap: 8
+    itemHeight: 56
+    itemStyle:
+      background: '#FFFFFF'
+      borderRadius: 12
+      border: '1px solid #F1F1F1'
+```
 
 **🔗 Навигация:**
-- "Важные чаты" → `/profile/chats`
+- "Чаты" → `/profile/chats`
 - "Помощь" → `/profile/help`
 - "FAQ" → `/profile/faq`
-- Tab "Главная" → `/`
-- Tab "Библиотека" → `/library`
 
 ---
 
-### 4.2 Экран "Важные чаты" (4:437)
+### 5.2 Экран "Чаты"
 **Роут:** `/profile/chats`  
-**Компонент:** `ProfilePage/ChatsPage.tsx`
+**Компонент:** `ProfilePage/ChatsPage.tsx`  
+**Figma ID:** 682-4674
 
 **🔽 Вводимые данные:**
-- ID пользователя
+- Список доступных чатов
+- История сообщений
 
 **🔼 Выводимые данные:**
-- Заголовок "Важные чаты"
-- Статический список чатов (в коде приложения):
-  - Общий чат
-  - Чат поддержки
-  - Чат с отчетами
-- Каждый чат содержит:
-  - Аватар/иконку чата
-  - Название чата
-  - Краткое описание
-  - Иконку стрелки для перехода
-- Кнопка "Назад"
+- Chat list (gap: 1px между элементами)
+- Message bubbles с максимальной шириной 70%
+- Chat input с glass-эффектом
 
-**📊 Таблицы Supabase:**
-- В реальной схеме БД нет таблиц telegram_chats, tariffs!
-- Список чатов хранится статично в коде приложения
-- Возможно хранение в lessons с типом "chat_info"
+**🎨 Дизайн-спецификация:**
+```yaml
+frameData:
+  layout: column
+
+components:
+  chatList:
+    gap: 1
+    itemHeight: 72
+    itemStyle:
+      background: '#FFFFFF'
+      borderBottom: '1px solid #F1F1F1'
+  
+  messageBubble:
+    maxWidth: '70%'
+    borderRadius: 16
+    padding: 12
+    sent:
+      background: 'gradient-primary'
+      color: '#FFFFFF'
+    received:
+      background: '#F3F3F3'
+      color: '#000000'
+  
+  chatInput:
+    height: 44
+    background: 'rgba(225,225,225,0.6)'
+    borderRadius: 22
+    backdropFilter: 'blur(32px)'
+```
 
 ---
 
-### 4.3 Экран "Помощь" (4:878)
-**Роут:** `/profile/help`  
-**Компонент:** `ProfilePage/HelpPage.tsx`
+## 🛠️ 6. БЛОК "АДМИН ПАНЕЛЬ" (Figma ID: 682-4675)
+
+### 6.1 Административная панель
+**Роут:** `/admin`  
+**Компонент:** `AdminPage/AdminPage.tsx`  
+**Figma ID:** 682-4675
 
 **🔽 Вводимые данные:**
-- ID пользователя
+- Данные кураторов и админов
+- Статистика приложения
 
 **🔼 Выводимые данные:**
-- Заголовок "Помощь"
-- Статический список контактов поддержки:
-  - Алена, Ваня, Макс, Маша, Ваня, Елена
-- Каждый контакт с:
-  - Аватаром (статическим)
-  - Именем
-  - Ролью/специализацией
-- Кнопка FAQ
-- Кнопка "Назад"
+- Tab navigation (высота 48px)
+- Data tables с заголовками
+- Action buttons (32x32px)
+- Modal dialogs для редактирования
 
-**📊 Таблицы Supabase:**
-- В реальной схеме БД нет таблиц roles, user_roles!
-- Контакты кураторов хранятся статично в коде приложения
-- Возможно расширение таблицы users флагом is_curator
+**🎨 Дизайн-спецификация:**
+```yaml
+frameData:
+  layout: column
 
----
-
-### 4.4 Экран "FAQ" (36:713)
-**Роут:** `/profile/faq`  
-**Компонент:** `ProfilePage/FAQPage.tsx`
-
-**🔽 Вводимые данные:**
-- Статический контент FAQ
-
-**🔼 Выводимые данные:**
-- Заголовок "FAQ"
-- Список часто задаваемых вопросов:
-  - Как работают пригласительные ссылки?
-  - Как работает оплата?
-  - Информация о списаниях и картах
-- Развернутые ответы
-- Кнопка "Назад"
-
-**📊 Таблицы Supabase:**
-- В реальной схеме БД нет таблицы faq_items!
-- FAQ хранится статично в коде приложения
-- Возможно использование lessons с типом "faq"
+components:
+  tabNavigation:
+    height: 48
+    background: '#FFFFFF'
+    activeTab:
+      background: 'gradient-primary'
+      borderRadius: 8
+  
+  dataTable:
+    background: '#FFFFFF'
+    border: '1px solid #E5E5E5'
+    borderRadius: 8
+    headerStyle:
+      background: '#F8F9FA'
+      height: 44
+    rowStyle:
+      height: 56
+      borderBottom: '1px solid #F1F1F1'
+  
+  actionButtons:
+    gap: 8
+    edit:
+      background: '#4EB3FF'
+      color: '#FFFFFF'
+    delete:
+      background: '#FF6B6B'
+      color: '#FFFFFF'
+    size: '32x32'
+    borderRadius: 6
+  
+  modalDialog:
+    maxWidth: 500
+    background: '#FFFFFF'
+    borderRadius: 16
+    shadow: '0px 8px 32px rgba(0,0,0,0.12)'
+```
 
 **🔗 Навигация:**
-- "Назад" → `/profile/help`
+- Управление курсами, уроками, блоками
+- Проверка домашних заданий
+- Система ролей и прав доступа
 
 ---
 
 ## 🔄 Общие компоненты и состояния
 
 ### Navigation Bar (глобальный)
-**Компонент:** `components/Navigation/NavigationBar.tsx`
+**Компонент:** `components/Navigation/NavigationBar.tsx`  
+**Figma ID:** 4-29
 
-**Данные:**
-- Время (статус-бар iPhone)
-- Заголовок текущей страницы
-- Кнопки навигации (Назад/Закрыть/Меню)
+**Компоненты:**
+- Back button (4-19) - иконка Arrow/Chevron_Left_MD
+- Close button (4-22) - иконка Menu/Close_SM  
+- Action buttons (chevron down, more vertical)
+- Status bar с временем и батареей
+
+**Дизайн-спецификация:**
+```yaml
+component: NavigationBar
+height: 44
+background: transparent
+paddingHorizontal: 16
+paddingTop: 12
+
+backButton:
+  icon: 'Arrow/Chevron_Left_MD'
+  size: 24
+  color: '#000000'
+  touchTarget: 44
+
+closeButton:
+  icon: 'Menu/Close_SM'
+  size: 24
+  color: '#000000'
+  touchTarget: 44
+```
 
 ### Tab Bar (глобальный)
-**Компонент:** `components/TabBar/TabBar.tsx`
+**Компонент:** `components/TabBar/TabBar.tsx`  
+**Figma ID:** 4-388
 
 **Навигация:**
-- Главная → `/`
-- Библиотека → `/library` 
-- Профиль → `/profile`
+- Главная (Navigation/House_01) → `/`
+- Библиотека (Library/Book_Open) → `/library` 
+- Чаты (Communication/Chat) → `/profile/chats`
+- Профиль (User/User_02) → `/profile`
+
+**Дизайн-спецификация:**
+```yaml
+component: TabBar
+height: 60
+background: '#FFFFFF'
+borderTop: '1px solid #F1F1F1'
+position: fixed
+bottom: 0
+
+tabItems:
+  home:
+    icon: 'Navigation/House_01'
+    iconSize: 24
+    activeState:
+      background: 'gradient-primary'
+      borderRadius: 100
+      iconColor: '#FFFFFF'
+    inactiveState:
+      iconColor: '#8D8D8D'
+      opacity: 0.6
+
+  library:
+    icon: 'Library/Book_Open'
+    iconSize: 24
+    
+  messages:
+    icon: 'Communication/Chat'
+    iconSize: 24
+    badge:
+      size: 16
+      background: '#FF6B6B'
+      color: '#FFFFFF'
+    
+  profile:
+    icon: 'User/User_02'
+    iconSize: 24
+
+homeIndicator:
+  component: 4-72
+  width: 134
+  height: 5
+  background: '#000000'
+  borderRadius: 2.5
+  opacity: 0.3
+  position: bottom-center
+```
 
 **Данные:**
 - Активная вкладка
-- Счетчики/бейджи (опционально)
+- Badge для сообщений (опционально)
+- Состояния hover/active для компонентов
 
-### Система уведомлений
-**Реализация:** Supabase Realtime + Edge Functions
+### Home Indicator (iOS)
+**Компонент:** Home indicator  
+**Figma ID:** 4-72
 
-**События:**
+Системный индикатор iOS для Telegram Mini App:
+- Ширина: 134px
+- Высота: 5px  
+- Цвет: #000000 с opacity 0.3
+- Позиция: центр низа экрана
+
+## 🎨 Дизайн-система компонентов
+
+### Карточки (Cards)
+**Базовые варианты:**
+- Default Card - белый фон, тонкая обводка
+- Gradient Card - градиентные фоны (primary/secondary)
+- Glass Card - стеклянный эффект с blur
+
+**Технические спецификации:**
+```yaml
+cardVariants:
+  default:
+    background: '#FFFFFF'
+    border: '1px solid rgba(255,255,255,0.14)'
+    borderRadius: 24
+    shadow: '0px 2px 12px rgba(0,0,0,0.06)'
+    
+  gradientPrimary:
+    background: 'linear-gradient(135deg, #E1C1F4 0%, #B862EA 100%)'
+    borderRadius: 24
+    shadow: '0px 4px 20px rgba(0,0,0,0.08)'
+    color: '#FFFFFF'
+    
+  glass:
+    background: 'rgba(255,255,255,0.25)'
+    backdropFilter: 'blur(20px)'
+    border: '1px solid rgba(255,255,255,0.3)'
+    borderRadius: 24
+```
+
+### Кнопки (Buttons)
+**Система кнопок (ComponentSet 4-168):**
+- Primary - gradient-primary фон
+- Secondary - gradient-secondary фон  
+- Outline - прозрачный с border
+- Ghost - glass-эффект
+
+**Состояния:**
+- Default, Hover, Active, Disabled
+- Icons left/right, с аватаром или без
+
+### Иконки (Icons)
+**Используемые семейства иконок:**
+- Navigation (House_01, Chevron_Left_MD, Chevron_Down)
+- Menu (Close_SM, More_Vertical)
+- Communication (Chat)
+- Library (Book_Open)
+- User (User_02)
+- Arrow (Chevron_Right)
+
+Все иконки имеют размер 24px и цвет #000000 по умолчанию.
+
+## 📊 Система уведомлений
+
+### Реализация
+- Supabase Realtime для real-time обновлений
+- Badge компоненты для счетчиков
+- Push уведомления через Telegram Bot API
+
+### События уведомлений
 - Разблокировка нового контента
-- Принятие/отклонение задания
-- Начисление баллов
-- Потеря жизней
-- Напоминания о дедлайнах
+- Проверка домашних заданий (approved/rejected)
+- Начисление/списание баллов
+- Системные сообщения от кураторов
 
-**Таблицы:**
-- В реальной схеме БД нет таблиц для уведомлений!
-- Возможно расширение через дополнительные таблицы
-- Или интеграция через Telegram Bot API
+### Badge система
+```yaml
+badgeComponent:
+  size: 16
+  background: '#FF6B6B'
+  color: '#FFFFFF'
+  borderRadius: 8
+  fontSize: 12
+  fontWeight: 600
+  position: absolute
+  top: -4
+  right: -4
+```
 
----
+## 🗄️ Обновленная сводка по таблицам Supabase
 
-## 🗄️ Сводка по таблицам Supabase
+### ✅ Основные таблицы (подтверждено в схеме):
+1. **Пользователи:** `users` - с полями role, total_points, lives_remaining
+2. **Курсы:** `courses`, `course_stages` (с полем is_unlocked), `lessons`, `assignments` 
+3. **Контент:** `lesson_blocks` - блоки контента уроков
+4. **Прогресс:** `lesson_progress` - упрощенная система прогресса  
+5. **Сдачи:** `submissions` - сдачи заданий для проверки
 
-### ✅ Реально существующие таблицы (согласно db_schema.md):
-1. **Пользователи:** `users` (с полями total_points, lives_remaining)
-2. **Курсы:** `courses`, `course_stages`, `lessons`, `assignments`
-3. **Прогресс:** `user_course_enrollments`, `user_stage_progress`, `user_lesson_progress`
+### 🔄 Упрощения архитектуры (относительно PRD):
+- `user_course_enrollments` → интегрировано в `users.course_id` 
+- `user_stage_progress` → убрано, используется только `lesson_progress`
+- `user_lesson_progress` → переименовано в `lesson_progress`
+- `user_gamification` → интегрировано в `users` (поля total_points, lives_remaining)
 
-### ❌ Таблицы из PRD, которых НЕТ в реальной схеме:
-- `profiles` → заменено на `users`
-- `user_gamification` → заменено полями в `users`
-- `submissions` → отсутствует (нужно создать или использовать progress_details)
-- `materials` → заменено на `lessons`
-- `telegram_chats`, `tariffs`, `tariff_chat_access` → отсутствуют
-- `faq_items`, `support_tickets` → отсутствуют
-- `notification_templates`, `user_notifications_log` → отсутствуют
-- `roles`, `user_roles` → отсутствуют
-- `gamification_events_log` → отсутствует
+### ❌ Таблицы из PRD, которых НЕТ в финальной схеме:
+- Система материалов (`library_materials`) - не реализована
+- Система ролей (`roles`, `user_roles`) - упрощена до поля `users.role`
+- FAQ система (`faq_items`) - статический контент  
+- Уведомления (`notification_templates`, `user_notifications_log`) - через Telegram
+- Чаты (`telegram_chats`, `tariff_chat_access`) - статические ссылки
 
-### 📝 Рекомендации по доработке:
-1. **Создать таблицу submissions** для сдачи заданий
-2. **Создать таблицу library_materials** для дополнительных материалов (по PRD)
-3. **Добавить систему ролей** (users.role_type)
-4. **Добавить таблицу notifications** для уведомлений
-5. **Расширить lessons** типом "faq", "chat_info" для статического контента
+### 📝 Рекомендации по архитектуре:
+1. **Упрощенная схема БД** соответствует MVP подходу
+2. **Статический контент** (FAQ, чаты) хранится в коде для простоты
+3. **Прогресс-система** упрощена до lesson-уровня (без детального stage progress)
+4. **Роли пользователей** реализованы через enum в users.role
 
 ---
 
 ## 📱 Техническая реализация
 
-### Размеры и адаптивность:
-- Базовый размер: **375x812px** (iPhone X)
-- Адаптивный дизайн для разных устройств
-- Поддержка Telegram WebApp constraints
+### Размеры и адаптивность
+- **Базовый размер:** 375x812px (iPhone X) - соответствует Figma фреймам
+- **Система компонентов:** основана на 12px grid system
+- **Отступы:** 16px для контента, 12px для навигации
+- **Скругления:** от 12px до 32px в зависимости от компонента
 
-### Состояния загрузки:
-- Loading states для всех экранов
-- Skeleton loaders для карточек
-- Обработка ошибок Supabase
+### Градиентная система
+```css
+/* Основные градиенты из Figma */
+--gradient-primary: linear-gradient(135deg, #E1C1F4 0%, #B862EA 100%);
+--gradient-secondary: linear-gradient(135deg, #8DC5F1 0%, #63ABE6 100%);
+--gradient-accent: linear-gradient(135deg, #FFE4A3 0%, #FFD166 100%);
+--gradient-neutral: linear-gradient(135deg, #F3F3F3 0%, #EAEAEA 100%);
 
-### Офлайн поддержка:
-- Кеширование данных через React Query
-- Оптимистичные обновления UI
-- Синхронизация при восстановлении соединения
+/* Glass эффекты */
+--glass-bg: rgba(255, 255, 255, 0.25);
+--glass-blur: blur(20px);
+--glass-border: rgba(255, 255, 255, 0.3);
+```
+
+### Состояния загрузки
+- **Skeleton loaders** для карточек курсов
+- **Loading states** для каждого экрана  
+- **Error boundaries** для обработки ошибок Supabase
+- **Optimistic updates** для улучшения UX
+
+### Performance оптимизации
+- **React Query** для кеширования запросов к Supabase
+- **Image optimization** для аватаров и превью
+- **Lazy loading** для тяжелых компонентов
+- **Code splitting** по роутам
+
+### Telegram Mini App интеграция
+- **WebApp SDK** для получения пользовательских данных
+- **Theme parameters** для адаптации под Telegram темы
+- **Haptic feedback** для кнопок и действий
+- **Main button** интеграция для ключевых действий
+
+### Accessibility 
+- **Keyboard navigation** для всех интерактивных элементов
+- **Screen reader support** с правильными ARIA атрибутами  
+- **High contrast mode** поддержка
+- **Touch targets** минимум 44px для мобильных устройств
+
+---
+
+**Документ обновлен:** 29.01.2025  
+**Статус:** Актуально для новой карты экранов Figma (Node: 682-4626)

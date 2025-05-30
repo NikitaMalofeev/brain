@@ -466,27 +466,27 @@ const SubmissionDetail: React.FC<SubmissionDetailProps> = ({
                 </button>
             </div>
 
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 400px', gap: '2rem' }}>
+            <div className="admin-grid">
                 {/* Левая панель - информация о сабмите */}
                 <div className="admin-card">
                     <h3>Информация о сабмите</h3>
 
                     {/* Данные пользователя */}
-                    <div style={{ marginBottom: '1.5rem' }}>
+                    <div className="admin-info-card">
                         <h4>Пользователь</h4>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+                        <div className="admin-user-card">
                             {submission.user_photo_url && (
                                 <img
                                     src={submission.user_photo_url}
                                     alt="Аватар"
-                                    style={{ width: '48px', height: '48px', borderRadius: '50%' }}
+                                    className="admin-user-avatar"
                                 />
                             )}
-                            <div>
-                                <div style={{ fontWeight: 'bold' }}>
+                            <div className="admin-user-info">
+                                <div className="admin-user-name">
                                     {submission.user_first_name} {submission.user_last_name}
                                 </div>
-                                <div style={{ fontSize: '0.9rem', color: '#666' }}>
+                                <div className="admin-user-meta">
                                     Баллы: {submission.user_total_points} | Жизни: {submission.user_lives_remaining}
                                 </div>
                             </div>
@@ -494,7 +494,7 @@ const SubmissionDetail: React.FC<SubmissionDetailProps> = ({
                     </div>
 
                     {/* Информация об уроке */}
-                    <div style={{ marginBottom: '1.5rem' }}>
+                    <div className="admin-info-card">
                         <h4>Урок</h4>
                         <div><strong>Название:</strong> {submission.lesson_name}</div>
                         <div><strong>Ступень:</strong> {submission.stage_name}</div>
@@ -503,31 +503,20 @@ const SubmissionDetail: React.FC<SubmissionDetailProps> = ({
                         )}
                     </div>
 
-                    {/* Детали сдачи */}
-                    <div style={{ marginBottom: '1.5rem' }}>
-                        <h4>Детали сдачи</h4>
-                        <div><strong>Дата сдачи:</strong> {formatDate(submission.submitted_at)}</div>
-                        <div><strong>Статус:</strong> {getStatusText(submission.status)}</div>
-                        {submission.reviewed_at && (
-                            <div><strong>Дата проверки:</strong> {formatDate(submission.reviewed_at)}</div>
-                        )}
-                        {submission.reviewer_name && (
-                            <div><strong>Куратор:</strong> {submission.reviewer_name}</div>
-                        )}
+                    {/* Время сдачи */}
+                    <div className="admin-info-card">
+                        <h4>Время сдачи</h4>
+                        <div>{formatDate(submission.submitted_at)}</div>
+                        <div className="admin-status">
+                            {getStatusText(submission.status)}
+                        </div>
                     </div>
 
                     {/* Текст ответа */}
                     {submission.content_text && (
-                        <div style={{ marginBottom: '1.5rem' }}>
+                        <div className="admin-info-card">
                             <h4>Текст ответа</h4>
-                            <div
-                                style={{
-                                    padding: '1rem',
-                                    backgroundColor: '#f9f9f9',
-                                    borderRadius: '8px',
-                                    whiteSpace: 'pre-wrap'
-                                }}
-                            >
+                            <div className="content-text">
                                 {submission.content_text}
                             </div>
                         </div>
@@ -535,17 +524,21 @@ const SubmissionDetail: React.FC<SubmissionDetailProps> = ({
 
                     {/* Прикрепленный файл */}
                     {submission.file_url && (
-                        <div style={{ marginBottom: '1.5rem' }}>
+                        <div className="admin-info-card">
                             <h4>Прикрепленный файл</h4>
-                            <div>
+                            <div className="file-attachment">
+                                <div className="file-attachment-icon">📎</div>
+                                <div className="file-attachment-info">
+                                    <div className="file-attachment-name">Прикрепленный файл</div>
+                                    <div className="file-attachment-meta">Нажмите чтобы открыть</div>
+                                </div>
                                 <a
                                     href={submission.file_url}
                                     target="_blank"
                                     rel="noopener noreferrer"
                                     className="admin-button"
-                                    style={{ display: 'inline-block', marginTop: '0.5rem' }}
                                 >
-                                    📎 Открыть файл
+                                    Открыть
                                 </a>
                             </div>
                         </div>
@@ -553,16 +546,9 @@ const SubmissionDetail: React.FC<SubmissionDetailProps> = ({
 
                     {/* Текущая обратная связь (если есть) */}
                     {submission.feedback_text && (
-                        <div style={{ marginBottom: '1.5rem' }}>
-                            <h4>Обратная связь куратора</h4>
-                            <div
-                                style={{
-                                    padding: '1rem',
-                                    backgroundColor: '#f0f8ff',
-                                    borderRadius: '8px',
-                                    whiteSpace: 'pre-wrap'
-                                }}
-                            >
+                        <div className="admin-info-card">
+                            <h4>Обратная связь</h4>
+                            <div className="content-text">
                                 {submission.feedback_text}
                             </div>
                         </div>
@@ -577,7 +563,7 @@ const SubmissionDetail: React.FC<SubmissionDetailProps> = ({
                             <h3>Форма проверки</h3>
 
                             {error && (
-                                <div className="admin-error" style={{ marginBottom: '1rem' }}>
+                                <div className="admin-error">
                                     {error}
                                 </div>
                             )}
@@ -640,26 +626,24 @@ const SubmissionDetail: React.FC<SubmissionDetailProps> = ({
                             </div>
 
                             {/* Быстрые действия */}
-                            <div style={{ marginTop: '1rem', borderTop: '1px solid #eee', paddingTop: '1rem' }}>
+                            <div className="quick-actions">
                                 <h4>Быстрые действия</h4>
-                                <div style={{ display: 'flex', gap: '0.5rem', flexDirection: 'column' }}>
-                                    <button
-                                        className="admin-button admin-yes"
-                                        onClick={() => {
-                                            setReviewForm({ status: 'approved', points: 100, feedback: 'Отличная работа!' });
-                                        }}
-                                    >
-                                        ✅ Принять с 100 баллами
-                                    </button>
-                                    <button
-                                        className="admin-button admin-no"
-                                        onClick={() => {
-                                            setReviewForm({ status: 'rejected', points: 0, feedback: 'Работа требует доработки.' });
-                                        }}
-                                    >
-                                        ❌ Отклонить
-                                    </button>
-                                </div>
+                                <button
+                                    className="admin-button admin-yes"
+                                    onClick={() => {
+                                        setReviewForm({ status: 'approved', points: 100, feedback: 'Отличная работа!' });
+                                    }}
+                                >
+                                    ✅ Принять с 100 баллами
+                                </button>
+                                <button
+                                    className="admin-button admin-no"
+                                    onClick={() => {
+                                        setReviewForm({ status: 'rejected', points: 0, feedback: 'Работа требует доработки.' });
+                                    }}
+                                >
+                                    ❌ Отклонить
+                                </button>
                             </div>
                         </>
                     )}
@@ -670,31 +654,28 @@ const SubmissionDetail: React.FC<SubmissionDetailProps> = ({
                             <h3>Результат проверки</h3>
 
                             {/* Отображение текущего результата */}
-                            <div style={{
-                                padding: '1rem',
-                                backgroundColor: submission.status === 'approved' ? '#f0f8f0' : '#fff0f0',
-                                borderRadius: '8px',
-                                marginBottom: '1rem'
-                            }}>
-                                <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.5rem' }}>
-                                    <span style={{ fontSize: '1.2rem' }}>
+                            <div className={`review-result ${submission.status}`}>
+                                <div className="review-result-header">
+                                    <span className="emoji">
                                         {submission.status === 'approved' ? '✅' : '❌'}
                                     </span>
-                                    <strong>
+                                    <span>
                                         {submission.status === 'approved' ? 'Принято' : 'Отклонено'}
-                                    </strong>
+                                    </span>
                                 </div>
-                                <div><strong>Баллы:</strong> {submission.points_awarded}</div>
-                                {submission.reviewed_at && (
-                                    <div><strong>Дата проверки:</strong> {formatDate(submission.reviewed_at)}</div>
-                                )}
-                                {submission.reviewer_name && (
-                                    <div><strong>Куратор:</strong> {submission.reviewer_name}</div>
-                                )}
+                                <div className="review-result-info">
+                                    <span><strong>Баллы:</strong> {submission.points_awarded}</span>
+                                    {submission.reviewed_at && (
+                                        <span><strong>Дата проверки:</strong> {formatDate(submission.reviewed_at)}</span>
+                                    )}
+                                    {submission.reviewer_name && (
+                                        <span><strong>Куратор:</strong> {submission.reviewer_name}</span>
+                                    )}
+                                </div>
                             </div>
 
                             {/* Кнопка изменения решения */}
-                            {!isEditingDecision && canEditDecision() && (
+                            {canEditDecision() && (
                                 <button
                                     className="admin-button"
                                     onClick={() => {
@@ -718,22 +699,17 @@ const SubmissionDetail: React.FC<SubmissionDetailProps> = ({
                             {isEditingDecision && (
                                 <>
                                     {error && (
-                                        <div className="admin-error" style={{ marginBottom: '1rem' }}>
+                                        <div className="admin-error">
                                             {error}
                                         </div>
                                     )}
 
-                                    <div style={{
-                                        padding: '1rem',
-                                        backgroundColor: '#fffacd',
-                                        borderRadius: '8px',
-                                        marginBottom: '1rem'
-                                    }}>
-                                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.5rem' }}>
+                                    <div className="admin-warning-block">
+                                        <div className="admin-warning-block-header">
                                             <span>⚠️</span>
-                                            <strong>Предупреждение</strong>
+                                            <span>Предупреждение</span>
                                         </div>
-                                        <div style={{ fontSize: '0.9rem' }}>
+                                        <div className="admin-warning-block-content">
                                             Баллы пользователя будут автоматически пересчитаны.
                                             Можно изменить статус или скорректировать количество баллов.
                                             Пользователь получит уведомление об изменении.
@@ -790,7 +766,7 @@ const SubmissionDetail: React.FC<SubmissionDetailProps> = ({
                                             rows={4}
                                             placeholder="Оставьте пустым чтобы сохранить старый комментарий..."
                                         />
-                                        <small style={{ color: '#666' }}>
+                                        <small>
                                             Если поле пустое - останется предыдущий комментарий
                                         </small>
                                     </div>
@@ -805,12 +781,12 @@ const SubmissionDetail: React.FC<SubmissionDetailProps> = ({
                                             placeholder="Обязательно укажите причину изменения решения..."
                                             style={{ borderColor: changeReason.trim() ? '#ccc' : '#ff6b6b' }}
                                         />
-                                        <small style={{ color: '#666' }}>
+                                        <small>
                                             Например: "Обнаружена ошибка в первоначальной проверке", "Пересмотр критериев оценки"
                                         </small>
                                     </div>
 
-                                    <div className="form-actions" style={{ display: 'flex', gap: '0.5rem' }}>
+                                    <div className="form-actions">
                                         <button
                                             className="admin-button"
                                             onClick={changeDecision}

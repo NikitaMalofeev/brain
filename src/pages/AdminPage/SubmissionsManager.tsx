@@ -287,19 +287,21 @@ const SubmissionsManager: React.FC<SubmissionsManagerProps> = ({
         <div className="admin-section">
             <div className="section-header">
                 <h2>Проверка домашних заданий</h2>
-                <div style={{ display: 'flex', gap: '1rem', alignItems: 'center' }}>
-                    <span className="admin-status">
-                        Ожидают проверки: <strong>{stats.pending}</strong>
-                    </span>
-                    <span className="admin-status">
-                        Проверено сегодня: <strong>{stats.reviewedToday}</strong>
-                    </span>
+                <div className="admin-stats">
+                    <div className="admin-stat-card">
+                        <div className="admin-stat-value">{stats.pending}</div>
+                        <div className="admin-stat-label">Ожидают проверки</div>
+                    </div>
+                    <div className="admin-stat-card">
+                        <div className="admin-stat-value">{stats.reviewedToday}</div>
+                        <div className="admin-stat-label">Проверено сегодня</div>
+                    </div>
                     <button
                         className="admin-refresh-btn"
                         onClick={loadSubmissions}
                         title="Обновить список"
                     >
-                        🔄
+
                     </button>
                 </div>
             </div>
@@ -311,14 +313,13 @@ const SubmissionsManager: React.FC<SubmissionsManagerProps> = ({
             )}
 
             {/* Фильтры */}
-            <div style={{ marginBottom: '1rem', display: 'flex', gap: '1rem', alignItems: 'center' }}>
-                <div>
-                    <label>Статус: </label>
+            <div className="admin-filters">
+                <div className="admin-filter-group">
+                    <label>Статус:</label>
                     <select
                         value={statusFilter}
                         onChange={(e) => setStatusFilter(e.target.value)}
                         className="admin-input"
-                        style={{ width: 'auto', marginLeft: '0.5rem' }}
                     >
                         <option value="all">Все</option>
                         <option value="pending">Ожидают проверки</option>
@@ -329,7 +330,7 @@ const SubmissionsManager: React.FC<SubmissionsManagerProps> = ({
             </div>
 
             {/* Таблица сабмитов */}
-            <div className="practices-table">
+            <div className="admin-table">
                 {submissions.length === 0 ? (
                     <div className="empty-table">
                         {statusFilter === 'pending'
@@ -355,16 +356,18 @@ const SubmissionsManager: React.FC<SubmissionsManagerProps> = ({
                             {submissions.map((submission) => (
                                 <tr key={submission.id}>
                                     <td>
-                                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                                        <div className="admin-user-card">
                                             {submission.user_photo_url && (
                                                 <img
                                                     src={submission.user_photo_url}
                                                     alt="Аватар"
-                                                    style={{ width: '32px', height: '32px', borderRadius: '50%' }}
+                                                    className="admin-avatar-sm"
                                                 />
                                             )}
-                                            <div>
-                                                <div>{submission.user_first_name} {submission.user_last_name}</div>
+                                            <div className="admin-user-info">
+                                                <div className="admin-user-name">
+                                                    {submission.user_first_name} {submission.user_last_name}
+                                                </div>
                                             </div>
                                         </div>
                                     </td>
