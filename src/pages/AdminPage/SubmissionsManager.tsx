@@ -267,6 +267,27 @@ const SubmissionsManager: React.FC<SubmissionsManagerProps> = ({
         });
     };
 
+    // Форматирование даты сдачи с индикатором пересдачи
+    const formatSubmissionDate = (submission: SubmissionWithDetails) => {
+        const isResubmission = submission.first_submitted_at &&
+            submission.first_submitted_at !== submission.submitted_at;
+
+        return (
+            <div>
+                <div>{formatDate(submission.submitted_at)}</div>
+                {isResubmission && (
+                    <div style={{
+                        fontSize: '11px',
+                        color: '#666',
+                        fontStyle: 'italic'
+                    }}>
+                        (пересдача)
+                    </div>
+                )}
+            </div>
+        );
+    };
+
     // Получение статуса на русском с учетом опоздания
     const getStatusText = (submission: SubmissionWithDetails) => {
         const { text } = getSubmissionDisplayStatus(
@@ -395,7 +416,7 @@ const SubmissionsManager: React.FC<SubmissionsManagerProps> = ({
                                     </td>
                                     <td>{submission.lesson_name}</td>
                                     <td>{submission.stage_name}</td>
-                                    <td>{formatDate(submission.submitted_at)}</td>
+                                    <td>{formatSubmissionDate(submission)}</td>
                                     <td>
                                         <span className={getStatusClass(submission)}>
                                             {getStatusText(submission)}

@@ -442,7 +442,43 @@ const SubmissionDetail: React.FC<SubmissionDetailProps> = ({
                     {/* Время сдачи */}
                     <div className="admin-info-card">
                         <h4>Время сдачи</h4>
-                        <div>{formatDate(submission.submitted_at)}</div>
+
+                        {/* Основное время сдачи */}
+                        <div style={{ marginBottom: '8px' }}>
+                            <strong>Текущая сдача:</strong> {formatDate(submission.submitted_at)}
+                        </div>
+
+                        {/* Время первой сдачи (если есть пересдача) */}
+                        {submission.first_submitted_at && submission.first_submitted_at !== submission.submitted_at && (
+                            <div style={{ marginBottom: '8px' }}>
+                                <strong>Первая сдача:</strong> {formatDate(submission.first_submitted_at)}
+                                <div style={{
+                                    fontSize: '12px',
+                                    color: '#666',
+                                    fontStyle: 'italic',
+                                    marginTop: '2px'
+                                }}>
+                                    (пересдача задания)
+                                </div>
+                            </div>
+                        )}
+
+                        {/* Дедлайн задания для контекста */}
+                        {submission.lesson_deadline && (
+                            <div style={{ marginBottom: '8px' }}>
+                                <strong>Дедлайн:</strong> {formatDate(submission.lesson_deadline)}
+                                <div style={{
+                                    fontSize: '12px',
+                                    color: '#888',
+                                    fontStyle: 'italic',
+                                    marginTop: '2px'
+                                }}>
+                                    (время окончания приема заданий)
+                                </div>
+                            </div>
+                        )}
+
+                        {/* Статус с учетом опоздания */}
                         <div className="admin-status">
                             {getStatusText()}
                         </div>
