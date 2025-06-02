@@ -140,15 +140,21 @@
 - `user_id` (uuid, FK → users.id, NOT NULL) - Ссылка на пользователя
 - `lesson_id` (bigint, FK → lessons.id, NOT NULL) - Ссылка на урок
 - `submitted_at` (timestamptz, default: now()) - Время сдачи
+- `first_submitted_at` (timestamptz) - Время первоначальной сдачи (для определения опоздания при пересдачах)
 - `content_text` (text) - Текстовая сдача
 - `file_url` (text) - URL файла в Supabase Storage
-- `status` (text, default: 'submitted', NOT NULL) - Статус: 'submitted', 'pending_review', 'approved', 'rejected', 'late'
+- `status` (text, default: 'submitted', NOT NULL) - Статус: 'submitted', 'pending_review', 'approved', 'rejected'
 - `reviewed_by_curator_id` (uuid, FK → users.id) - Куратор, который проверил
 - `reviewed_at` (timestamptz) - Время проверки
 - `feedback_text` (text) - Обратная связь от куратора
 - `points_awarded` (int4, default: 0) - Начисленные баллы
 - `created_at` (timestamptz, default: now()) - Время создания
 - `updated_at` (timestamptz, default: now()) - Время обновления
+
+**Особенности:**
+- Поле `first_submitted_at` заполняется автоматически при первой сдаче задания
+- При пересдаче обновляется только `submitted_at`, `first_submitted_at` остается неизменным
+- Определение опоздания происходит динамически на основе `first_submitted_at` и дедлайна урока
 
 **RLS:** Включен
 
@@ -370,7 +376,8 @@ FOREIGN KEY (user_id) REFERENCES public.users(id);
 - `pending_review` - Ожидает проверки
 - `approved` - Одобрено
 - `rejected` - Отклонено
-- `late` - Сдано с опозданием
+
+**Примечание:** Статус опоздания (`late`) больше не хранится в базе данных, а определяется динамически путем сравнения `first_submitted_at` с дедлайном урока (`lessons.deadline_at`).
 
 **Типы блоков `lesson_blocks.block_type`:**
 - `text` - Текстовый блок

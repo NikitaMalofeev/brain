@@ -1,4 +1,4 @@
-Вот подробное **саммари звонка** и **разбивка на задачи** по проекту “Brain Programming” с учётом документа *«Оценка стоимости разработки»*:
+Вот подробное **саммари звонка** и **разбивка на задачи** по проекту "Brain Programming" с учётом документа *«Оценка стоимости разработки»*:
 
 ---
 
@@ -117,9 +117,9 @@
 
      5. Основное обучение
 
-     6. “Доктор наук”
+     6. "Доктор наук"
 
-     7. “Спецслужбы”
+     7. "Спецслужбы"
 
 * Бонусы за баллы
 
@@ -328,13 +328,15 @@
 
    * **Таблицы:**
 
-     * `submissions` (id, assignment\_id, user\_id, submitted\_at, content\_text, file\_url (Supabase Storage), status \['not\_started', 'submitted', 'pending\_review', 'approved', 'rejected', 'late'\], reviewed\_by\_curator\_id, reviewed\_at, feedback\_text, points\_awarded)
+     * `submissions` (id, assignment\_id, user\_id, submitted\_at, first\_submitted\_at, content\_text, file\_url (Supabase Storage), status \['submitted', 'pending\_review', 'approved', 'rejected'\], reviewed\_by\_curator\_id, reviewed\_at, feedback\_text, points\_awarded)
 
    * **Функциональность:**
 
      * Пользователи сдают задания (TMA).
 
      * Кураторы проверяют задания, дают обратную связь, начисляют баллы (Панель администратора).
+
+     * Статус опоздания определяется динамически сравнением `first_submitted_at` с дедлайном урока.
 
      * Для `submission_type = 'chat_report'` (отчет в чате), `content_text` и `file_url` могут быть null; статус может обновляться пользователем в TMA или куратором в админке.
 
