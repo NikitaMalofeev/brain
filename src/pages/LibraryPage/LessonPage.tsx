@@ -1,15 +1,15 @@
-import React, {useEffect, useState} from 'react';
-import {useParams, useNavigate} from 'react-router-dom';
-import {useSignal, initDataState} from '@telegram-apps/sdk-react';
-import {User} from '@supabase/supabase-js';
-import {Page} from '@/components/Page';
-import {useSupabaseUser} from '@/lib/supabase/hooks/useSupabaseUser';
-import {useAppContext} from '@/contexts/AppContext';
-import {logger} from '@/lib/logger';
-import {supabase} from '@/lib/supabase/client';
-import {LessonWithBlocks, LessonBlock, Submission, LessonProgress} from '@/lib/supabase/types';
-import {VideoBlock, AudioBlock, FixedSubmissionForm, DocumentBlock, ImageBlock} from '@/components/LessonContent';
-import {Button} from '@/components/ui/button';
+import React, { useEffect, useState } from 'react';
+import { useParams, useNavigate } from 'react-router-dom';
+import { useSignal, initDataState } from '@telegram-apps/sdk-react';
+import { User } from '@supabase/supabase-js';
+import { Page } from '@/components/Page';
+import { useSupabaseUser } from '@/lib/supabase/hooks/useSupabaseUser';
+import { useAppContext } from '@/contexts/AppContext';
+import { logger } from '@/lib/logger';
+import { supabase } from '@/lib/supabase/client';
+import { LessonWithBlocks, LessonBlock, Submission, LessonProgress } from '@/lib/supabase/types';
+import { VideoBlock, AudioBlock, FixedSubmissionForm, DocumentBlock, ImageBlock } from '@/components/LessonContent';
+import { Button } from '@/components/ui/button';
 
 interface LessonPageState {
     lesson: LessonWithBlocks | null;
@@ -20,11 +20,11 @@ interface LessonPageState {
 }
 
 const LessonPage: React.FC = () => {
-    const {id: lessonId} = useParams<{ id: string }>();
+    const { id: lessonId } = useParams<{ id: string }>();
     const navigate = useNavigate();
-    const {isTelegramApp} = useAppContext();
+    const { isTelegramApp } = useAppContext();
     const initDataSignal = useSignal(initDataState);
-    const {supabaseUser, loading: supabaseUserLoading, error: supabaseUserError} = useSupabaseUser(initDataSignal);
+    const { supabaseUser, loading: supabaseUserLoading, error: supabaseUserError } = useSupabaseUser(initDataSignal);
 
     const [state, setState] = useState<LessonPageState>({
         lesson: null,
@@ -65,11 +65,11 @@ const LessonPage: React.FC = () => {
         const fetchLessonData = async () => {
             if (!lessonId || !supabase) return;
 
-            setState(prev => ({...prev, loading: true, error: null}));
+            setState(prev => ({ ...prev, loading: true, error: null }));
 
             try {
                 // Получаем урок с блоками
-                const {data: lessonData, error: lessonError} = await supabase
+                const { data: lessonData, error: lessonError } = await supabase
                     .from('lessons')
                     .select(`
             *,
@@ -98,10 +98,10 @@ const LessonPage: React.FC = () => {
                     loading: false,
                 }));
 
-                logger.debug('Lesson data loaded', {lessonId, blocksCount: sortedBlocks.length});
+                logger.debug('Lesson data loaded', { lessonId, blocksCount: sortedBlocks.length });
 
             } catch (error) {
-                logger.error('Failed to fetch lesson data', {lessonId, error});
+                logger.error('Failed to fetch lesson data', { lessonId, error });
                 setState(prev => ({
                     ...prev,
                     error: error instanceof Error ? error.message : 'Ошибка загрузки урока',
@@ -120,7 +120,7 @@ const LessonPage: React.FC = () => {
 
             try {
                 // Получаем сдачи с данными куратора
-                const {data: submission} = await supabase
+                const { data: submission } = await supabase
                     .from('submissions')
                     .select(`
                         *,
@@ -134,7 +134,7 @@ const LessonPage: React.FC = () => {
                     .maybeSingle();
 
                 // Получаем прогресс урока
-                const {data: progress} = await supabase
+                const { data: progress } = await supabase
                     .from('lesson_progress')
                     .select('*')
                     .eq('user_id', supabaseCompatUser.id)
@@ -147,10 +147,10 @@ const LessonPage: React.FC = () => {
                     progress,
                 }));
 
-                logger.debug('User data loaded', {lessonId, hasSubmission: !!submission, hasProgress: !!progress});
+                logger.debug('User data loaded', { lessonId, hasSubmission: !!submission, hasProgress: !!progress });
 
             } catch (error) {
-                logger.error('Failed to fetch user data', {lessonId, error});
+                logger.error('Failed to fetch user data', { lessonId, error });
                 // Не показываем ошибку пользовательских данных как критичную
             }
         };
@@ -160,7 +160,7 @@ const LessonPage: React.FC = () => {
 
     // Обработчик обновления submission
     const handleSubmissionUpdate = (submission: Submission) => {
-        setState(prev => ({...prev, submission}));
+        setState(prev => ({ ...prev, submission }));
 
         // Сбрасываем режим пересдачи после успешной отправки
         if (isRetryingSubmission) {
@@ -171,7 +171,7 @@ const LessonPage: React.FC = () => {
 
     // Обработчик обновления прогресса урока
     const handleProgressUpdate = (progress: LessonProgress) => {
-        setState(prev => ({...prev, progress}));
+        setState(prev => ({ ...prev, progress }));
     };
 
     // Обработчик завершения урока без задания
@@ -197,7 +197,7 @@ const LessonPage: React.FC = () => {
 
             if (state.progress) {
                 // Обновляем существующую запись
-                const {data, error} = await supabase
+                const { data, error } = await supabase
                     .from('lesson_progress')
                     .update({
                         is_completed: true,
@@ -214,7 +214,7 @@ const LessonPage: React.FC = () => {
                 updatedProgress = data;
             } else {
                 // Создаем новую запись
-                const {data, error} = await supabase
+                const { data, error } = await supabase
                     .from('lesson_progress')
                     .insert(progressData)
                     .select()
@@ -245,7 +245,7 @@ const LessonPage: React.FC = () => {
         // Просто активируем режим пересдачи, не обновляя базу данных
         setIsRetryingSubmission(true);
 
-        logger.debug('Retry submission mode activated', {submissionId: state.submission.id});
+        logger.debug('Retry submission mode activated', { submissionId: state.submission.id });
     };
 
     // Обработчик отмены пересдачи
@@ -310,7 +310,7 @@ const LessonPage: React.FC = () => {
 
                 {/* Ваш ответ */}
                 {submission.content_text && (
-                    <div style={{marginBottom: '16px'}}>
+                    <div style={{ marginBottom: '16px' }}>
                         <p style={{
                             fontSize: '14px',
                             fontWeight: 600,
@@ -334,7 +334,7 @@ const LessonPage: React.FC = () => {
 
                 {/* Прикрепленный файл */}
                 {submission.file_url && (
-                    <div style={{marginBottom: '16px'}}>
+                    <div style={{ marginBottom: '16px' }}>
                         {(() => {
                             const fileName = decodeURIComponent(submission.file_url.substring(submission.file_url.lastIndexOf('/') + 1));
                             const extension = fileName.split('.').pop()?.toLowerCase() || '';
@@ -368,7 +368,7 @@ const LessonPage: React.FC = () => {
 
                 {/* Комментарий куратора (для approved/rejected) */}
                 {config.showFeedback && feedback && (
-                    <div style={{marginBottom: '16px'}}>
+                    <div style={{ marginBottom: '16px' }}>
                         <p style={{
                             fontSize: '14px',
                             fontWeight: 600,
@@ -393,7 +393,7 @@ const LessonPage: React.FC = () => {
 
                 {/* Информация о проверке (для approved/rejected) */}
                 {config.showFeedback && (reviewerName || reviewedAt) && (
-                    <div style={{marginBottom: '16px'}}>
+                    <div style={{ marginBottom: '16px' }}>
                         {reviewerName && (
                             <p style={{
                                 fontSize: '14px',
@@ -417,7 +417,7 @@ const LessonPage: React.FC = () => {
 
                 {/* Мотивирующий текст для pending_review */}
                 {!config.showFeedback && (
-                    <div style={{marginBottom: '16px'}}>
+                    <div style={{ marginBottom: '16px' }}>
                         <p style={{
                             fontSize: '16px',
                             lineHeight: '1.5',
@@ -431,7 +431,7 @@ const LessonPage: React.FC = () => {
 
                 {/* Кнопка пересдачи для rejected */}
                 {config.showRetryButton && (
-                    <div style={{marginBottom: '16px'}}>
+                    <div style={{ marginBottom: '16px' }}>
                         {!isRetryingSubmission ? (
                             <>
                                 <Button
@@ -552,7 +552,7 @@ const LessonPage: React.FC = () => {
                                 {block.title}
                             </h3>
                         )}
-                        <VideoBlock block={block}/>
+                        <VideoBlock block={block} />
                         {block.content_text && (
                             <div className={'flex flex-col gap-3 mt-4'} style={{
                                 fontSize: '16px',
@@ -569,15 +569,15 @@ const LessonPage: React.FC = () => {
                 );
 
             case 'audio':
-                return <AudioBlock key={block.id} block={block}/>;
+                return <AudioBlock key={block.id} block={block} />;
 
             case 'image':
                 // Используем новый компонент ImageBlock
-                return <div key={block.id} style={commonBlockStyle}><ImageBlock block={block}/></div>;
+                return <div key={block.id} style={commonBlockStyle}><ImageBlock block={block} /></div>;
 
             case 'pdf':
                 // Используем новый компонент PdfBlock
-                return <div key={block.id} style={commonBlockStyle}><DocumentBlock block={block}/></div>;
+                return <div key={block.id} style={commonBlockStyle}><DocumentBlock block={block} /></div>;
 
             // assignment_instruction блоки больше не существуют
             // Инструкции к заданию теперь обычные текстовые блоки
@@ -627,7 +627,7 @@ const LessonPage: React.FC = () => {
                     color: '#c53030',
                     fontSize: '16px',
                 }}>
-                    <div style={{fontSize: '48px', marginBottom: '16px'}}>⚠️</div>
+                    <div style={{ fontSize: '48px', marginBottom: '16px' }}>⚠️</div>
                     <div>{error instanceof Error ? error.message : String(error)}</div>
                 </div>
             </Page>
@@ -667,7 +667,7 @@ const LessonPage: React.FC = () => {
         <Page back={true} showTabBar={false}>
             <div className={'text-black'}>
                 <img src={state.lesson.cover_image_url || '/test.png'}
-                     className={'h-[320px] rounded-b-3xl object-cover'} alt={''}/>
+                    className={'h-[320px] rounded-b-3xl object-cover'} alt={''} />
                 <div className={'p-4 flex flex-col gap-2'}>
                     <p className={'font-bold text-xl'}>{state.lesson.name}</p>
                     <div className={'flex flex-wrap gap-1'}>
@@ -681,14 +681,14 @@ const LessonPage: React.FC = () => {
                     {state.lesson.blocks.map((block: LessonBlock) => renderContentBlock(block))}
                 </div>
                 {state.submission && (
-                    <div style={{marginBottom: '32px'}}>
+                    <div style={{ marginBottom: '32px' }}>
                         {renderSubmissionResult(state.submission)}
                     </div>
                 )}
 
                 {/* Блок завершенного урока без задания */}
                 {!hasAssignment && isLessonCompleted && state.progress && (
-                    <div style={{marginBottom: '32px'}}>
+                    <div style={{ marginBottom: '32px' }}>
                         <div style={{
                             fontWeight: 700,
                             fontSize: '20px',
@@ -732,6 +732,7 @@ const LessonPage: React.FC = () => {
                         existingSubmission={state.submission}
                         onSubmissionUpdate={handleSubmissionUpdate}
                         isRetryMode={isRetryingSubmission}
+                        lessonDeadline={state.lesson.deadline_at}
                     />
                 )}
 

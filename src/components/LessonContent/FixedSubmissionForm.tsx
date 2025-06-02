@@ -15,6 +15,7 @@ interface FixedSubmissionFormProps {
     existingSubmission?: Submission | null;
     onSubmissionUpdate: (submission: Submission) => void;
     isRetryMode?: boolean; // Новый проп для режима пересдачи
+    lessonDeadline?: string; // Дедлайн урока для проверки опоздания
 }
 
 const FixedSubmissionForm: React.FC<FixedSubmissionFormProps> = ({
@@ -24,6 +25,7 @@ const FixedSubmissionForm: React.FC<FixedSubmissionFormProps> = ({
     existingSubmission,
     onSubmissionUpdate,
     isRetryMode,
+    lessonDeadline,
 }) => {
     const [submissionText, setSubmissionText] = useState('');
     const [isSubmitting, setIsSubmitting] = useState(false);
@@ -124,12 +126,18 @@ const FixedSubmissionForm: React.FC<FixedSubmissionFormProps> = ({
         setIsSubmitting(true);
 
         try {
+            // Определяем статус сдачи на основе дедлайна
+            const now = new Date();
+            const deadline = lessonDeadline ? new Date(lessonDeadline) : null;
+            const isLate = deadline && now > deadline;
+            const submissionStatus: 'submitted' | 'late' = isLate ? 'late' : 'submitted';
+
             const submissionData = {
                 user_id: user.id,
                 lesson_id: lessonId,
                 content_text: submissionText.trim(),
                 file_url: uploadedFiles.length > 0 ? uploadedFiles[0] : null,
-                status: 'submitted' as const,
+                status: submissionStatus,
                 submitted_at: new Date().toISOString(),
                 points_awarded: 0,
             };

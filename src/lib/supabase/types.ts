@@ -93,6 +93,8 @@ export interface Lesson extends TimestampFields {
   cover_image_url?: string;
   has_assignment?: boolean; // Есть ли домашнее задание
   estimated_duration_minutes?: number;
+  open_at?: string; // Дата и время открытия урока
+  deadline_at?: string; // Дедлайн сдачи задания
 }
 
 // Возможные типы блоков урока

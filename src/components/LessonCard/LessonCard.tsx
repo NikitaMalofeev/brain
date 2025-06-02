@@ -1,7 +1,7 @@
 import React from 'react';
 import { LessonData } from '@/lib/supabase/hooks/useStageDetails';
 import { buildImageUrl } from '@/lib/cloudflareR2Service';
-import {clsx} from "clsx";
+import { clsx } from "clsx";
 import NativeModal from "@/components/NativeModal.tsx";
 
 interface LessonCardProps {
@@ -17,6 +17,30 @@ const getDefaultCover = (): string => {
 // Функция для получения иконки статуса выполнения
 const getStatusIcon = (isCompleted: boolean): string => {
     return isCompleted ? '🟢' : '⚪';
+};
+
+// Функция для определения статуса урока относительно времени открытия
+const getLessonTimeStatus = (lesson: LessonData) => {
+    if (!lesson.open_at) return null;
+
+    const now = new Date();
+    const openAt = new Date(lesson.open_at);
+
+    // Получаем завтрашний день в 00:00
+    const tomorrow = new Date(now);
+    tomorrow.setDate(tomorrow.getDate() + 1);
+    tomorrow.setHours(0, 0, 0, 0);
+
+    // Получаем послезавтрашний день в 00:00
+    const dayAfterTomorrow = new Date(tomorrow);
+    dayAfterTomorrow.setDate(dayAfterTomorrow.getDate() + 1);
+
+    // Проверяем, открывается ли урок завтра
+    if (openAt >= tomorrow && openAt < dayAfterTomorrow) {
+        return 'opens_tomorrow';
+    }
+
+    return null;
 };
 
 const LessonCard: React.FC<LessonCardProps> = ({ lesson, onClick }) => {
@@ -44,10 +68,13 @@ const LessonCard: React.FC<LessonCardProps> = ({ lesson, onClick }) => {
         });
     }
 
+    // Определяем статус урока относительно времени
+    const timeStatus = getLessonTimeStatus(lesson);
+
     return (
         <div onClick={lesson.is_unlocked ? handleClick : undefined} className={'flex flex-col w-full bg-white rounded-3xl overflow-hidden'}>
             <div className={'relative w-full'}>
-                <img src={coverImageUrl} alt={''} className={clsx('h-[190px] w-full rounded-3xl object-cover', !lesson.is_unlocked && 'mix-blend-luminosity')}/>
+                <img src={coverImageUrl} alt={''} className={clsx('h-[190px] w-full rounded-3xl object-cover', !lesson.is_unlocked && 'mix-blend-luminosity')} />
                 {!lesson.is_unlocked && <div className={'p-[6px] rounded-full bg-[linear-gradient(109.65deg,_#E1C1F4_13.64%,_#B862EA_124.92%)] absolute top-1/2 left-1/2 -translate-y-1/2 -translate-x-1/2 z-[2]'}>
                     <img src={'/lock.svg'} alt={''} className={clsx('min-w-6 h-6')} />
                 </div>}
@@ -56,7 +83,17 @@ const LessonCard: React.FC<LessonCardProps> = ({ lesson, onClick }) => {
                 <p className={'font-semibold'}>{lesson.lesson_name}</p>
                 <div className={'flex flex-wrap gap-1'}>
                     <p className={'rounded-full px-2 py-1 text-white text-xs font-medium bg-[linear-gradient(135deg,_rgba(141,197,241)_-48.61%,_#63ABE6_105.56%)]'}>День {lesson.order_num}</p>
-                    {!lesson.is_completed && <p className={'rounded-full px-2 py-1 text-white text-xs font-medium bg-[linear-gradient(135deg,_rgba(141,197,241)_-48.61%,_#63ABE6_105.56%)]'}>Не начато</p>}
+
+                    {/* Плашка "Откроется завтра" - высший приоритет */}
+                    {timeStatus === 'opens_tomorrow' ? (
+                        <p className={'rounded-full px-2 py-1 text-white text-xs font-medium bg-[linear-gradient(135deg,_rgba(141,197,241)_-48.61%,_#63ABE6_105.56%)]'}>Откроется завтра</p>
+                    ) : lesson.is_completed ? (
+                        <p className={'rounded-full px-2 py-1 text-white text-xs font-medium bg-green-500'}>Завершено</p>
+                    ) : lesson.is_unlocked ? (
+                        <p className={'rounded-full px-2 py-1 text-white text-xs font-medium bg-[linear-gradient(135deg,_rgba(141,197,241)_-48.61%,_#63ABE6_105.56%)]'}>Не начато</p>
+                    ) : (
+                        <p className={'rounded-full px-2 py-1 text-white text-xs font-medium bg-gray-500'}>Заблокировано</p>
+                    )}
                 </div>
             </div>
         </div>

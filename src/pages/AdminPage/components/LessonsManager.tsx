@@ -9,6 +9,57 @@ interface LessonsManagerProps {
     onLessonSelect: (lessonId: number, lessonName: string) => void;
 }
 
+// Функции для работы с часовыми поясами
+const utcToLocal = (utcDateString?: string): string => {
+    if (!utcDateString) return '';
+    const date = new Date(utcDateString);
+    // Получаем локальное время в формате YYYY-MM-DDTHH:mm
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const day = String(date.getDate()).padStart(2, '0');
+    const hours = String(date.getHours()).padStart(2, '0');
+    const minutes = String(date.getMinutes()).padStart(2, '0');
+    return `${year}-${month}-${day}T${hours}:${minutes}`;
+};
+
+const localToUtc = (localDateString?: string): string | undefined => {
+    if (!localDateString) return undefined;
+    // Создаем дату как локальную и конвертируем в UTC
+    const date = new Date(localDateString);
+    return date.toISOString();
+};
+
+// Функция для автоматического расчета дедлайна (дата открытия + 2 дня)
+const calculateDeadline = (openAtString: string): string => {
+    if (!openAtString) return '';
+
+    const openDate = new Date(openAtString);
+    // Добавляем 2 дня (48 часов)
+    const deadlineDate = new Date(openDate.getTime() + (2 * 24 * 60 * 60 * 1000));
+
+    // Возвращаем в формате YYYY-MM-DDTHH:mm для datetime-local инпута
+    const year = deadlineDate.getFullYear();
+    const month = String(deadlineDate.getMonth() + 1).padStart(2, '0');
+    const day = String(deadlineDate.getDate()).padStart(2, '0');
+    const hours = String(deadlineDate.getHours()).padStart(2, '0');
+    const minutes = String(deadlineDate.getMinutes()).padStart(2, '0');
+
+    return `${year}-${month}-${day}T${hours}:${minutes}`;
+};
+
+// Функция для получения завтрашней даты с временем 9:00 утра
+const getDefaultOpenTime = (): string => {
+    const tomorrow = new Date();
+    tomorrow.setDate(tomorrow.getDate() + 1); // Завтра
+    tomorrow.setHours(9, 0, 0, 0); // 9:00 утра
+
+    const year = tomorrow.getFullYear();
+    const month = String(tomorrow.getMonth() + 1).padStart(2, '0');
+    const day = String(tomorrow.getDate()).padStart(2, '0');
+
+    return `${year}-${month}-${day}T09:00`;
+};
+
 const LessonsManager: React.FC<LessonsManagerProps> = ({ courseId, stageId, onBack, onLessonSelect }) => {
     const { lessons, loading, error, refetch, createLesson, updateLesson, deleteLesson } = useLessonsAdmin(stageId);
     const [updateLoading, setUpdateLoading] = useState<boolean>(false);
@@ -19,6 +70,8 @@ const LessonsManager: React.FC<LessonsManagerProps> = ({ courseId, stageId, onBa
     const [newDescription, setNewDescription] = useState('');
     const [newOrderNum, setNewOrderNum] = useState(1);
     const [newHasAssignment, setNewHasAssignment] = useState(false);
+    const [newOpenAt, setNewOpenAt] = useState('');
+    const [newDeadlineAt, setNewDeadlineAt] = useState('');
     const [addLoading, setAddLoading] = useState(false);
 
     // Редактируемый урок
@@ -27,6 +80,8 @@ const LessonsManager: React.FC<LessonsManagerProps> = ({ courseId, stageId, onBa
     const [editDescription, setEditDescription] = useState('');
     const [editOrderNum, setEditOrderNum] = useState(1);
     const [editHasAssignment, setEditHasAssignment] = useState(false);
+    const [editOpenAt, setEditOpenAt] = useState('');
+    const [editDeadlineAt, setEditDeadlineAt] = useState('');
 
     // Автоматически обновляем newOrderNum при изменении списка уроков
     useEffect(() => {
@@ -37,6 +92,34 @@ const LessonsManager: React.FC<LessonsManagerProps> = ({ courseId, stageId, onBa
             setNewOrderNum(1);
         }
     }, [lessons]);
+
+    // Устанавливаем время открытия по умолчанию при первом рендере
+    useEffect(() => {
+        if (!newOpenAt) {
+            const defaultTime = getDefaultOpenTime();
+            setNewOpenAt(defaultTime);
+        }
+    }, []); // Пустая зависимость - выполняется только при монтировании
+
+    // Автоматически устанавливаем дедлайн при изменении даты открытия для нового урока
+    useEffect(() => {
+        if (newOpenAt) {
+            const calculatedDeadline = calculateDeadline(newOpenAt);
+            if (calculatedDeadline !== newDeadlineAt) {
+                setNewDeadlineAt(calculatedDeadline);
+            }
+        }
+    }, [newOpenAt]);
+
+    // Автоматически устанавливаем дедлайн при изменении даты открытия для редактируемого урока
+    useEffect(() => {
+        if (editOpenAt && editingLesson) {
+            const calculatedDeadline = calculateDeadline(editOpenAt);
+            if (calculatedDeadline !== editDeadlineAt) {
+                setEditDeadlineAt(calculatedDeadline);
+            }
+        }
+    }, [editOpenAt, editingLesson]);
 
     // Добавление урока
     const handleAddLesson = async () => {
@@ -55,12 +138,16 @@ const LessonsManager: React.FC<LessonsManagerProps> = ({ courseId, stageId, onBa
                 description: newDescription.trim() || undefined,
                 order_num: newOrderNum,
                 has_assignment: newHasAssignment,
+                open_at: localToUtc(newOpenAt),
+                deadline_at: localToUtc(newDeadlineAt),
             });
 
             // Очищаем форму
             setNewName('');
             setNewDescription('');
             setNewHasAssignment(false);
+            setNewOpenAt(getDefaultOpenTime()); // Устанавливаем время по умолчанию
+            setNewDeadlineAt('');
 
         } catch (error: any) {
             console.error('Ошибка при добавлении урока:', error);
@@ -95,6 +182,8 @@ const LessonsManager: React.FC<LessonsManagerProps> = ({ courseId, stageId, onBa
         setEditDescription(lesson.description || '');
         setEditOrderNum(lesson.order_num);
         setEditHasAssignment(lesson.has_assignment || false);
+        setEditOpenAt(utcToLocal(lesson.open_at));
+        setEditDeadlineAt(utcToLocal(lesson.deadline_at));
     };
 
     // Отмена редактирования
@@ -104,6 +193,8 @@ const LessonsManager: React.FC<LessonsManagerProps> = ({ courseId, stageId, onBa
         setEditDescription('');
         setEditOrderNum(1);
         setEditHasAssignment(false);
+        setEditOpenAt('');
+        setEditDeadlineAt('');
     };
 
     // Сохранение отредактированного урока
@@ -123,6 +214,8 @@ const LessonsManager: React.FC<LessonsManagerProps> = ({ courseId, stageId, onBa
                 description: editDescription.trim() || undefined,
                 order_num: editOrderNum,
                 has_assignment: editHasAssignment,
+                open_at: localToUtc(editOpenAt),
+                deadline_at: localToUtc(editDeadlineAt),
             });
 
             cancelEditing();
@@ -206,7 +299,7 @@ const LessonsManager: React.FC<LessonsManagerProps> = ({ courseId, stageId, onBa
             {/* Форма добавления урока */}
             <div className="lesson-add-form">
                 <h3>Добавить урок</h3>
-                <div style={{ display: 'flex', gap: '12px', marginBottom: '16px', flexWrap: 'wrap' }}>
+                <div style={{ display: 'flex', gap: '12px', marginBottom: '8px', flexWrap: 'wrap' }}>
                     <input
                         className="admin-input"
                         placeholder="Название урока"
@@ -237,14 +330,42 @@ const LessonsManager: React.FC<LessonsManagerProps> = ({ courseId, stageId, onBa
                         />
                         Есть ДЗ
                     </label>
-                    <button
-                        className="admin-button"
-                        onClick={handleAddLesson}
-                        disabled={addLoading || !newName.trim()}
-                        style={{ flex: '0 0 120px' }}
-                    >
-                        {addLoading ? 'Добавление...' : 'Добавить'}
-                    </button>
+                </div>
+                <div style={{ display: 'flex', gap: '12px', marginBottom: '16px', flexWrap: 'wrap' }}>
+                    <div style={{ flex: '1 1 220px' }}>
+                        <label style={{ display: 'block', marginBottom: '4px', fontSize: '12px', fontWeight: '500' }}>
+                            Время открытия:
+                        </label>
+                        <input
+                            className="admin-input"
+                            type="datetime-local"
+                            value={newOpenAt}
+                            onChange={e => setNewOpenAt(e.target.value)}
+                            style={{ width: '100%', minWidth: '200px' }}
+                        />
+                    </div>
+                    <div style={{ flex: '1 1 220px' }}>
+                        <label style={{ display: 'block', marginBottom: '4px', fontSize: '12px', fontWeight: '500' }}>
+                            Дедлайн сдачи:
+                        </label>
+                        <input
+                            className="admin-input"
+                            type="datetime-local"
+                            value={newDeadlineAt}
+                            onChange={e => setNewDeadlineAt(e.target.value)}
+                            style={{ width: '100%', minWidth: '200px' }}
+                        />
+                    </div>
+                    <div style={{ flex: '0 0 120px', alignSelf: 'flex-end' }}>
+                        <button
+                            className="admin-button"
+                            onClick={handleAddLesson}
+                            disabled={addLoading || !newName.trim()}
+                            style={{ width: '100%' }}
+                        >
+                            {addLoading ? 'Добавление...' : 'Добавить'}
+                        </button>
+                    </div>
                 </div>
             </div>
 
@@ -270,6 +391,8 @@ const LessonsManager: React.FC<LessonsManagerProps> = ({ courseId, stageId, onBa
                                 <th>Порядок</th>
                                 <th>Блоков</th>
                                 <th>Есть ДЗ</th>
+                                <th>Открытие</th>
+                                <th>Дедлайн</th>
                                 <th>Действия</th>
                             </tr>
                         </thead>
@@ -283,10 +406,14 @@ const LessonsManager: React.FC<LessonsManagerProps> = ({ courseId, stageId, onBa
                                     editDescription={editDescription}
                                     editOrderNum={editOrderNum}
                                     editHasAssignment={editHasAssignment}
+                                    editOpenAt={editOpenAt}
+                                    editDeadlineAt={editDeadlineAt}
                                     onEditNameChange={setEditName}
                                     onEditDescriptionChange={setEditDescription}
                                     onEditOrderChange={setEditOrderNum}
                                     onEditHasAssignmentChange={setEditHasAssignment}
+                                    onEditOpenAtChange={setEditOpenAt}
+                                    onEditDeadlineAtChange={setEditDeadlineAt}
                                     onStartEditing={startEditing}
                                     onSaveLesson={saveLesson}
                                     onCancelEditing={cancelEditing}

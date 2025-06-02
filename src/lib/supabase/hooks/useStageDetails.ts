@@ -13,6 +13,7 @@ export interface LessonData {
     is_completed: boolean;
     is_unlocked: boolean; // Добавляем поле для отслеживания разблокировки
     completion_date?: string;
+    open_at?: string; // Добавляем время открытия урока
 }
 
 // Тип данных ступени
@@ -71,7 +72,8 @@ const useStageDetails = (user: User | null, stageId: string | number) => {
                         description,
                         order_num,
                         has_assignment,
-                        cover_image_path
+                        cover_image_path,
+                        open_at
                     `)
                     .eq('stage_id', stageId)
                     .order('order_num');
@@ -97,22 +99,20 @@ const useStageDetails = (user: User | null, stageId: string | number) => {
                     progressMap.set(progress.lesson_id, progress.completed_at);
                 });
 
-                // Формируем данные уроков с логикой последовательной разблокировки
+                // Формируем данные уроков с логикой разблокировки по времени
                 const lessons: LessonData[] = allLessonsData?.map((lesson, index) => {
                     const completionDate = progressMap.get(lesson.id);
                     const isCompleted = !!completionDate;
 
-                    // Логика разблокировки: первый урок всегда открыт, остальные открываются после завершения предыдущего
-                    let isUnlocked = false;
-                    if (index === 0) {
-                        // Первый урок всегда разблокирован
-                        isUnlocked = true;
-                    } else {
-                        // Остальные уроки разблокированы, если предыдущий урок завершен
-                        const previousLessonId = allLessonsData[index - 1].id;
-                        const previousLessonCompleted = !!progressMap.get(previousLessonId);
-                        isUnlocked = previousLessonCompleted;
-                    }
+                    // Новая логика разблокировки: уроки открываются только по времени
+                    // Не зависят от завершения предыдущих уроков
+                    const now = new Date();
+                    const openAt = lesson.open_at ? new Date(lesson.open_at) : null;
+
+                    // Урок разблокирован, если:
+                    // 1. Время открытия не установлено (открыт сразу)
+                    // 2. Или текущее время >= времени открытия
+                    const isUnlocked = !openAt || now >= openAt;
 
                     return {
                         lesson_id: lesson.id,
@@ -124,6 +124,7 @@ const useStageDetails = (user: User | null, stageId: string | number) => {
                         is_completed: isCompleted,
                         is_unlocked: isUnlocked,
                         completion_date: completionDate,
+                        open_at: lesson.open_at,
                     };
                 }) || [];
 

@@ -9,10 +9,14 @@ interface DraggableLessonRowProps {
     editDescription: string;
     editOrderNum: number;
     editHasAssignment: boolean;
+    editOpenAt: string;
+    editDeadlineAt: string;
     onEditNameChange: (value: string) => void;
     onEditDescriptionChange: (value: string) => void;
     onEditOrderChange: (value: number) => void;
     onEditHasAssignmentChange: (value: boolean) => void;
+    onEditOpenAtChange: (value: string) => void;
+    onEditDeadlineAtChange: (value: string) => void;
     onStartEditing: (lesson: any) => void;
     onSaveLesson: () => void;
     onCancelEditing: () => void;
@@ -29,10 +33,14 @@ const DraggableLessonRow: React.FC<DraggableLessonRowProps> = ({
     editDescription,
     editOrderNum,
     editHasAssignment,
+    editOpenAt,
+    editDeadlineAt,
     onEditNameChange,
     onEditDescriptionChange,
     onEditOrderChange,
     onEditHasAssignmentChange,
+    onEditOpenAtChange,
+    onEditDeadlineAtChange,
     onStartEditing,
     onSaveLesson,
     onCancelEditing,
@@ -135,6 +143,44 @@ const DraggableLessonRow: React.FC<DraggableLessonRowProps> = ({
                     <span className={`admin-status ${lesson.has_assignment ? 'admin-yes' : 'admin-no'}`}>
                         {lesson.has_assignment ? 'Да' : 'Нет'}
                     </span>
+                )}
+            </td>
+            <td>
+                {isEditing ? (
+                    <input
+                        className="admin-input"
+                        type="datetime-local"
+                        value={editOpenAt}
+                        onChange={e => onEditOpenAtChange(e.target.value)}
+                        style={{ width: '200px' }}
+                    />
+                ) : (
+                    lesson.open_at ? new Date(lesson.open_at).toLocaleString('ru-RU', {
+                        day: '2-digit',
+                        month: '2-digit',
+                        year: 'numeric',
+                        hour: '2-digit',
+                        minute: '2-digit'
+                    }) : '-'
+                )}
+            </td>
+            <td>
+                {isEditing ? (
+                    <input
+                        className="admin-input"
+                        type="datetime-local"
+                        value={editDeadlineAt}
+                        onChange={e => onEditDeadlineAtChange(e.target.value)}
+                        style={{ width: '200px' }}
+                    />
+                ) : (
+                    lesson.deadline_at ? new Date(lesson.deadline_at).toLocaleString('ru-RU', {
+                        day: '2-digit',
+                        month: '2-digit',
+                        year: 'numeric',
+                        hour: '2-digit',
+                        minute: '2-digit'
+                    }) : '-'
                 )}
             </td>
             <td className="actions-cell">
