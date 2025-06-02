@@ -10,6 +10,7 @@ import { supabase } from '@/lib/supabase/client';
 import { LessonWithBlocks, LessonBlock, Submission, LessonProgress } from '@/lib/supabase/types';
 import { VideoBlock, AudioBlock, FixedSubmissionForm, DocumentBlock, ImageBlock } from '@/components/LessonContent';
 import { Button } from '@/components/ui/button';
+import { getDeadlineStatus, formatDeadline } from '@/helpers/deadlineUtils';
 
 interface LessonPageState {
     lesson: LessonWithBlocks | null;
@@ -260,9 +261,11 @@ const LessonPage: React.FC = () => {
         const isLessonCompleted = !!state.progress?.is_completed;
         const submission = state.submission;
         const hasStarted = !!state.progress?.started_at || !!submission;
+        const deadlineStatus = getDeadlineStatus(state.lesson?.deadline_at);
 
         // Для урока с заданием
         if (hasAssignment) {
+            // Приоритет 1: Завершенный урок
             if (submission?.status === 'approved') {
                 return {
                     type: 'completed',
@@ -270,37 +273,78 @@ const LessonPage: React.FC = () => {
                     bgClass: 'bg-green-500',
                     icon: '✅'
                 };
-            } else if (submission?.status === 'submitted' || submission?.status === 'pending_review') {
+            }
+
+            // Приоритет 2: Пропущенный дедлайн (только если не завершен)
+            if (deadlineStatus === 'missed' && (!submission || (submission.status as string) !== 'approved')) {
+                return {
+                    type: 'deadline_missed',
+                    text: 'Опоздание',
+                    bgClass: 'bg-red-500',
+                    icon: '⏰'
+                };
+            }
+
+            // Приоритет 3: Дедлайн сегодня
+            if (deadlineStatus === 'today') {
+                return {
+                    type: 'deadline_today',
+                    text: 'Дедлайн сегодня',
+                    bgClass: 'bg-[linear-gradient(135deg,_rgba(255,152,0)_0%,_rgba(255,107,107)_100%)]',
+                    icon: '⏰'
+                };
+            }
+
+            // Приоритет 4: Дедлайн завтра
+            if (deadlineStatus === 'tomorrow') {
+                return {
+                    type: 'deadline_tomorrow',
+                    text: 'Дедлайн завтра',
+                    bgClass: 'bg-[linear-gradient(135deg,_rgba(255,193,7)_0%,_rgba(255,152,0)_100%)]',
+                    icon: '⏰'
+                };
+            }
+
+            // Приоритет 5: На проверке
+            if (submission?.status === 'submitted' || submission?.status === 'pending_review') {
                 return {
                     type: 'in_review',
                     text: 'На проверке',
                     bgClass: 'bg-[linear-gradient(135deg,_rgba(255,193,7)_0%,_rgba(255,152,0)_100%)]',
                     icon: '⏳'
                 };
-            } else if (submission?.status === 'rejected') {
+            }
+
+            // Приоритет 6: Нужна доработка
+            if (submission?.status === 'rejected') {
                 return {
                     type: 'needs_retry',
                     text: 'Нужна доработка',
                     bgClass: 'bg-[linear-gradient(135deg,_rgba(255,107,107)_0%,_rgba(255,82,82)_100%)]',
                     icon: '🔄'
                 };
-            } else if (hasStarted) {
+            }
+
+            // Приоритет 7: В процессе
+            if (hasStarted) {
                 return {
                     type: 'in_progress',
                     text: 'В процессе',
                     bgClass: 'bg-[linear-gradient(135deg,_rgba(141,197,241)_-48.61%,_#63ABE6_105.56%)]',
                     icon: '📝'
                 };
-            } else {
-                return {
-                    type: 'not_started',
-                    text: 'Не начато',
-                    bgClass: 'bg-[linear-gradient(135deg,_rgba(141,197,241)_-48.61%,_#63ABE6_105.56%)]',
-                    icon: '⚪'
-                };
             }
+
+            // Приоритет 8: Не начато
+            return {
+                type: 'not_started',
+                text: 'Не начато',
+                bgClass: 'bg-[linear-gradient(135deg,_rgba(141,197,241)_-48.61%,_#63ABE6_105.56%)]',
+                icon: '⚪'
+            };
         } else {
             // Для урока без задания
+            // Приоритет 1: Завершенный урок
             if (isLessonCompleted) {
                 return {
                     type: 'completed',
@@ -308,14 +352,45 @@ const LessonPage: React.FC = () => {
                     bgClass: 'bg-green-500',
                     icon: '✅'
                 };
-            } else {
+            }
+
+            // Приоритет 2: Пропущенный дедлайн (только если не завершен)
+            if (deadlineStatus === 'missed') {
                 return {
-                    type: 'not_started',
-                    text: 'Не начато',
-                    bgClass: 'bg-[linear-gradient(135deg,_rgba(141,197,241)_-48.61%,_#63ABE6_105.56%)]',
-                    icon: '⚪'
+                    type: 'deadline_missed',
+                    text: 'Опоздание',
+                    bgClass: 'bg-red-500',
+                    icon: '⏰'
                 };
             }
+
+            // Приоритет 3: Дедлайн сегодня
+            if (deadlineStatus === 'today') {
+                return {
+                    type: 'deadline_today',
+                    text: 'Дедлайн сегодня',
+                    bgClass: 'bg-[linear-gradient(135deg,_rgba(255,152,0)_0%,_rgba(255,107,107)_100%)]',
+                    icon: '⏰'
+                };
+            }
+
+            // Приоритет 4: Дедлайн завтра
+            if (deadlineStatus === 'tomorrow') {
+                return {
+                    type: 'deadline_tomorrow',
+                    text: 'Дедлайн завтра',
+                    bgClass: 'bg-[linear-gradient(135deg,_rgba(255,193,7)_0%,_rgba(255,152,0)_100%)]',
+                    icon: '⏰'
+                };
+            }
+
+            // Приоритет 5: Не начато (дефолтный статус для незавершенных уроков без задания)
+            return {
+                type: 'not_started',
+                text: 'Не начато',
+                bgClass: 'bg-[linear-gradient(135deg,_rgba(141,197,241)_-48.61%,_#63ABE6_105.56%)]',
+                icon: '⚪'
+            };
         }
     };
 
@@ -747,6 +822,13 @@ const LessonPage: React.FC = () => {
                                 </p>
                             );
                         })()}
+
+                        {/* Отображаем дедлайн если есть */}
+                        {state.lesson.deadline_at && (
+                            <p className={'rounded-full px-2 py-1 text-white text-xs font-medium bg-gray-600'}>
+                                До {formatDeadline(state.lesson.deadline_at)}
+                            </p>
+                        )}
                     </div>
                 </div>
                 <div className={'p-4 pb-8'}>

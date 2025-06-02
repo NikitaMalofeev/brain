@@ -3,6 +3,7 @@ import { LessonData } from '@/lib/supabase/hooks/useStageDetails';
 import { buildImageUrl } from '@/lib/cloudflareR2Service';
 import { clsx } from "clsx";
 import NativeModal from "@/components/NativeModal.tsx";
+import { getDeadlineStatus } from '@/helpers/deadlineUtils';
 
 interface LessonCardProps {
     lesson: LessonData;
@@ -46,6 +47,7 @@ const getLessonTimeStatus = (lesson: LessonData) => {
 // Функция для определения статуса урока
 const getLessonStatus = (lesson: LessonData) => {
     const timeStatus = getLessonTimeStatus(lesson);
+    const deadlineStatus = getDeadlineStatus(lesson.deadline_at);
 
     // Приоритет 1: "Откроется завтра" - высший приоритет
     if (timeStatus === 'opens_tomorrow') {
@@ -65,7 +67,7 @@ const getLessonStatus = (lesson: LessonData) => {
         };
     }
 
-    // Приоритет 3: Завершенный урок
+    // Приоритет 3: Завершенный урок (только если действительно завершен)
     if (lesson.is_completed) {
         return {
             type: 'completed',
@@ -74,7 +76,34 @@ const getLessonStatus = (lesson: LessonData) => {
         };
     }
 
-    // Приоритет 4: Урок с заданием - проверяем статус submission
+    // Приоритет 4: Пропущенный дедлайн (только если урок не завершен)
+    if (deadlineStatus === 'missed' && !lesson.is_completed) {
+        return {
+            type: 'deadline_missed',
+            text: 'Опоздание',
+            bgClass: 'bg-red-500'
+        };
+    }
+
+    // Приоритет 5: Дедлайн сегодня
+    if (deadlineStatus === 'today') {
+        return {
+            type: 'deadline_today',
+            text: 'Дедлайн сегодня',
+            bgClass: 'bg-[linear-gradient(135deg,_rgba(255,152,0)_0%,_rgba(255,107,107)_100%)]'
+        };
+    }
+
+    // Приоритет 6: Дедлайн завтра
+    if (deadlineStatus === 'tomorrow') {
+        return {
+            type: 'deadline_tomorrow',
+            text: 'Дедлайн завтра',
+            bgClass: 'bg-[linear-gradient(135deg,_rgba(255,193,7)_0%,_rgba(255,152,0)_100%)]'
+        };
+    }
+
+    // Приоритет 7: Урок с заданием - проверяем статус submission
     if (lesson.has_assignment) {
         if (lesson.submission_status) {
             switch (lesson.submission_status) {
@@ -109,7 +138,7 @@ const getLessonStatus = (lesson: LessonData) => {
         }
     }
 
-    // Приоритет 5: Не начато
+    // Приоритет 8: Не начато
     // Для урока БЕЗ задания: либо не начат, либо завершен (нет промежуточных состояний)
     // Для урока С заданием: не начат если нет started_at и нет submission
     return {

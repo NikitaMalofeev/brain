@@ -14,6 +14,7 @@ export interface LessonData {
     is_unlocked: boolean; // Добавляем поле для отслеживания разблокировки
     completion_date?: string;
     open_at?: string; // Добавляем время открытия урока
+    deadline_at?: string; // Добавляем время дедлайна урока
     // Добавляем поля для submissions
     submission_status?: 'submitted' | 'pending_review' | 'approved' | 'rejected' | null;
     submission_id?: number;
@@ -77,7 +78,8 @@ const useStageDetails = (user: User | null, stageId: string | number) => {
                         order_num,
                         has_assignment,
                         cover_image_path,
-                        open_at
+                        open_at,
+                        deadline_at
                     `)
                     .eq('stage_id', stageId)
                     .order('order_num');
@@ -160,6 +162,7 @@ const useStageDetails = (user: User | null, stageId: string | number) => {
                         is_unlocked: isUnlocked,
                         completion_date: progress?.completed_at,
                         open_at: lesson.open_at,
+                        deadline_at: lesson.deadline_at,
                         submission_status: submission?.status || null,
                         submission_id: submission?.id,
                         has_started: hasStarted,
