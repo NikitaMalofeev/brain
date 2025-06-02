@@ -117,13 +117,14 @@ export interface LessonBlock extends TimestampFields {
 }
 
 // Сдачи заданий
-export type SubmissionStatus = 'submitted' | 'pending_review' | 'approved' | 'rejected' | 'late';
+export type SubmissionStatus = 'submitted' | 'pending_review' | 'approved' | 'rejected';
 
 export interface Submission extends TimestampFields {
   id: number;
   user_id: string; // FK к User
   lesson_id: number; // FK к Lesson
   submitted_at?: string;
+  first_submitted_at?: string; // Время первоначальной сдачи (для определения опоздания)
   content_text?: string;
   file_url?: string;
   status: SubmissionStatus;
@@ -355,6 +356,56 @@ export type UpdateSubmission = Partial<Submission> & { id: number };
 // Проверка есть ли форма сдачи в уроке (через поле has_assignment)
 export const lessonHasSubmission = (lesson: Lesson): boolean => {
   return lesson.has_assignment === true;
+};
+
+// Helper функция для определения опоздания сдачи
+export const isSubmissionLate = (submittedAt: string, deadline?: string, firstSubmittedAt?: string): boolean => {
+  if (!deadline) return false;
+
+  // Используем время первоначальной сдачи для определения опоздания (если есть)
+  const timeToCheck = firstSubmittedAt || submittedAt;
+  const submissionDate = new Date(timeToCheck);
+  const deadlineDate = new Date(deadline);
+
+  return submissionDate > deadlineDate;
+};
+
+// Функция для получения человекочитаемого статуса с учетом опоздания
+export const getSubmissionDisplayStatus = (
+  status: SubmissionStatus,
+  submittedAt: string,
+  deadline?: string,
+  firstSubmittedAt?: string
+): { text: string; isLate: boolean } => {
+  const isLate = isSubmissionLate(submittedAt, deadline, firstSubmittedAt);
+
+  switch (status) {
+    case 'submitted':
+      return {
+        text: isLate ? '⏰ Поздняя сдача' : '📝 Сдано',
+        isLate
+      };
+    case 'pending_review':
+      return {
+        text: isLate ? '⏰ Поздняя сдача (на проверке)' : '⏳ На проверке',
+        isLate
+      };
+    case 'approved':
+      return {
+        text: '✅ Принято',
+        isLate
+      };
+    case 'rejected':
+      return {
+        text: '❌ Отклонено',
+        isLate
+      };
+    default:
+      return {
+        text: status,
+        isLate: false
+      };
+  }
 };
 
 // ============================================================================

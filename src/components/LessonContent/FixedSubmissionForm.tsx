@@ -126,18 +126,13 @@ const FixedSubmissionForm: React.FC<FixedSubmissionFormProps> = ({
         setIsSubmitting(true);
 
         try {
-            // Определяем статус сдачи на основе дедлайна
-            const now = new Date();
-            const deadline = lessonDeadline ? new Date(lessonDeadline) : null;
-            const isLate = deadline && now > deadline;
-            const submissionStatus: 'submitted' | 'late' = isLate ? 'late' : 'submitted';
-
+            // Всегда используем статус 'submitted', опоздание определяется динамически
             const submissionData = {
                 user_id: user.id,
                 lesson_id: lessonId,
                 content_text: submissionText.trim(),
                 file_url: uploadedFiles.length > 0 ? uploadedFiles[0] : null,
-                status: submissionStatus,
+                status: 'submitted' as const,
                 submitted_at: new Date().toISOString(),
                 points_awarded: 0,
             };
@@ -153,6 +148,7 @@ const FixedSubmissionForm: React.FC<FixedSubmissionFormProps> = ({
                         file_url: submissionData.file_url,
                         status: submissionData.status,
                         submitted_at: submissionData.submitted_at,
+                        // НЕ обновляем first_submitted_at - оставляем оригинальное время первой сдачи
                         points_awarded: 0,
                         // Сбрасываем данные проверки
                         reviewed_at: null,
@@ -176,9 +172,14 @@ const FixedSubmissionForm: React.FC<FixedSubmissionFormProps> = ({
                 data = updateData;
             } else {
                 // Первая сдача - создаем новую запись
+                const firstSubmissionData = {
+                    ...submissionData,
+                    first_submitted_at: submissionData.submitted_at, // Устанавливаем время первой сдачи
+                };
+
                 const { data: insertData, error } = await supabase
                     .from('submissions')
-                    .insert(submissionData)
+                    .insert(firstSubmissionData)
                     .select(`
                         *,
                         reviewer:users!submissions_reviewed_by_curator_id_fkey(

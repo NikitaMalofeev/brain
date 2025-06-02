@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { supabase } from '@/lib/supabase/client';
+import { SubmissionStatus, getSubmissionDisplayStatus } from '@/lib/supabase/types';
 
 // Интерфейс для детальной информации о сабмите
 interface SubmissionDetailData {
@@ -7,9 +8,10 @@ interface SubmissionDetailData {
     user_id: string;
     lesson_id: number;
     submitted_at: string;
+    first_submitted_at?: string; // Время первоначальной сдачи
     content_text?: string;
     file_url?: string;
-    status: 'submitted' | 'pending_review' | 'approved' | 'rejected';
+    status: SubmissionStatus;
     reviewed_by_curator_id?: string;
     reviewed_at?: string;
     feedback_text?: string;
@@ -25,6 +27,7 @@ interface SubmissionDetailData {
     // Данные урока
     lesson_name: string;
     lesson_description?: string;
+    lesson_deadline?: string;
     stage_name: string;
 
     // Куратор
@@ -115,31 +118,25 @@ const SubmissionDetail: React.FC<SubmissionDetailProps> = ({
             const { data, error: queryError } = await supabase
                 .from('submissions')
                 .select(`
-          id,
-          user_id,
-          lesson_id,
-          submitted_at,
-          content_text,
-          file_url,
-          status,
-          reviewed_by_curator_id,
-          reviewed_at,
-          feedback_text,
-          points_awarded,
-          users!submissions_user_id_fkey(
-            first_name, 
-            last_name, 
-            photo_url, 
-            total_points, 
-            lives_remaining
-          ),
-          lessons!submissions_lesson_id_fkey(
-            name,
-            description,
-            course_stages!lessons_stage_id_fkey(name)
-          ),
-          reviewer:users!submissions_reviewed_by_curator_id_fkey(first_name, last_name)
-        `)
+                    *,
+                    users!submissions_user_id_fkey(
+                        first_name, 
+                        last_name, 
+                        photo_url, 
+                        total_points, 
+                        lives_remaining
+                    ),
+                    lessons!submissions_lesson_id_fkey(
+                        name,
+                        description,
+                        deadline_at,
+                        course_stages!lessons_stage_id_fkey(name)
+                    ),
+                    reviewer:users!submissions_reviewed_by_curator_id_fkey(
+                        first_name, 
+                        last_name
+                    )
+                `)
                 .eq('id', submissionId)
                 .single();
 
@@ -160,9 +157,10 @@ const SubmissionDetail: React.FC<SubmissionDetailProps> = ({
                 user_id: data.user_id,
                 lesson_id: data.lesson_id,
                 submitted_at: data.submitted_at,
+                first_submitted_at: data.first_submitted_at,
                 content_text: data.content_text,
                 file_url: data.file_url,
-                status: data.status as 'submitted' | 'pending_review' | 'approved' | 'rejected',
+                status: data.status as SubmissionStatus,
                 reviewed_by_curator_id: data.reviewed_by_curator_id,
                 reviewed_at: data.reviewed_at,
                 feedback_text: data.feedback_text,
@@ -176,6 +174,7 @@ const SubmissionDetail: React.FC<SubmissionDetailProps> = ({
 
                 lesson_name: (data.lessons as any)?.name || 'Неизвестный урок',
                 lesson_description: (data.lessons as any)?.description,
+                lesson_deadline: (data.lessons as any)?.deadline_at,
                 stage_name: (data.lessons as any)?.course_stages?.name || 'Неизвестная ступень',
 
                 reviewer_name: (data.reviewer as any)?.first_name || undefined
@@ -436,15 +435,17 @@ const SubmissionDetail: React.FC<SubmissionDetailProps> = ({
         });
     };
 
-    // Получение статуса на русском
-    const getStatusText = (status: string) => {
-        switch (status) {
-            case 'submitted': return '📝 Сдано';
-            case 'pending_review': return '⏳ В проверке';
-            case 'approved': return '✅ Принято';
-            case 'rejected': return '❌ Отклонено';
-            default: return status;
-        }
+    // Получение статуса на русском с учетом опоздания
+    const getStatusText = () => {
+        if (!submission) return '';
+
+        const { text } = getSubmissionDisplayStatus(
+            submission.status,
+            submission.submitted_at,
+            submission.lesson_deadline,
+            submission.first_submitted_at
+        );
+        return text;
     };
 
     if (loading) {
@@ -518,7 +519,7 @@ const SubmissionDetail: React.FC<SubmissionDetailProps> = ({
                         <h4>Время сдачи</h4>
                         <div>{formatDate(submission.submitted_at)}</div>
                         <div className="admin-status">
-                            {getStatusText(submission.status)}
+                            {getStatusText()}
                         </div>
                     </div>
 
@@ -567,7 +568,7 @@ const SubmissionDetail: React.FC<SubmissionDetailProps> = ({
 
                 {/* Правая панель - форма проверки */}
                 <div className="admin-card">
-                    {/* Для новых сабмитов (submitted/pending_review) */}
+                    {/* Для новых сабмитов (submitted/pending_review/late) */}
                     {['submitted', 'pending_review'].includes(submission.status) && (
                         <>
                             <h3>Форма проверки</h3>

@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { supabase } from '@/lib/supabase/client';
+import { SubmissionStatus, getSubmissionDisplayStatus } from '@/lib/supabase/types';
 
 // Типы данных для сабмитов
 interface SubmissionWithDetails {
@@ -7,9 +8,10 @@ interface SubmissionWithDetails {
     user_id: string;
     lesson_id: number;
     submitted_at: string;
+    first_submitted_at?: string;
     content_text?: string;
     file_url?: string;
-    status: 'submitted' | 'pending_review' | 'approved' | 'rejected';
+    status: SubmissionStatus;
     reviewed_by_curator_id?: string;
     reviewed_at?: string;
     feedback_text?: string;
@@ -21,6 +23,8 @@ interface SubmissionWithDetails {
     lesson_name: string;
     stage_name: string;
     reviewer_name?: string;
+    // Добавляем поле для дедлайна из урока
+    lesson_deadline?: string;
 }
 
 interface SubmissionsManagerProps {
@@ -62,85 +66,61 @@ const SubmissionsManager: React.FC<SubmissionsManagerProps> = ({
                 return;
             }
 
-            // Используем переданного пользователя из props (для админки) или получаем через Supabase Auth
+            // Получаем текущего пользователя для админки
             let effectiveCurrentUser = propCurrentUser;
-
             if (!effectiveCurrentUser) {
-                // Загрузка данных текущего пользователя через Supabase Auth (для обычных пользователей)
                 const { data: { user } } = await supabase.auth.getUser();
-                if (!user) {
-                    setError('Пользователь не авторизован');
-                    return;
+                if (user) {
+                    effectiveCurrentUser = {
+                        id: user.id,
+                        role: 'admin', // По умолчанию админ для авторизованных в админке
+                        first_name: user.user_metadata?.first_name,
+                        last_name: user.user_metadata?.last_name
+                    };
                 }
-
-                // Получаем данные пользователя из таблицы users
-                const { data: userData, error: userError } = await supabase
-                    .from('users')
-                    .select('id, role')
-                    .eq('telegram_id', user.id)
-                    .single();
-
-                if (userError || !userData) {
-                    console.error('Ошибка получения данных пользователя:', userError);
-                    setError('Ошибка загрузки данных пользователя');
-                    return;
-                }
-
-                effectiveCurrentUser = { id: userData.id, role: userData.role };
             }
 
-            setCurrentUser(effectiveCurrentUser);
+            setCurrentUser(effectiveCurrentUser || null);
 
-            // Основной SQL запрос для получения сабмитов с деталями
-            let query = supabase
+            // Полный запрос со всеми JOIN-ами
+            const { data, error } = await supabase
                 .from('submissions')
                 .select(`
-          id,
-          user_id,
-          lesson_id,
-          submitted_at,
-          content_text,
-          file_url,
-          status,
-          reviewed_by_curator_id,
-          reviewed_at,
-          feedback_text,
-          points_awarded,
-          users!submissions_user_id_fkey(first_name, last_name, photo_url),
-          lessons!submissions_lesson_id_fkey(
-            name,
-            course_stages!lessons_stage_id_fkey(name)
-          ),
-          reviewer:users!submissions_reviewed_by_curator_id_fkey(first_name, last_name)
-        `)
+                    *,
+                    users!submissions_user_id_fkey (first_name, last_name, photo_url),
+                    lessons!submissions_lesson_id_fkey (
+                        name, 
+                        deadline_at,
+                        course_stages!lessons_stage_id_fkey (name)
+                    ),
+                    reviewer:users!submissions_reviewed_by_curator_id_fkey(first_name)
+                `)
                 .order('submitted_at', { ascending: false });
 
-            // Применяем фильтр по статусу
-            if (statusFilter !== 'all') {
-                if (statusFilter === 'pending') {
-                    query = query.in('status', ['submitted', 'pending_review']);
-                } else {
-                    query = query.eq('status', statusFilter);
-                }
-            }
-
-            const { data, error: queryError } = await query;
-
-            if (queryError) {
-                console.error('Ошибка загрузки сабмитов:', queryError);
-                setError(`Ошибка загрузки данных: ${queryError.message}`);
+            if (error) {
+                console.error('Ошибка загрузки сабмитов:', error);
+                console.error('Детали ошибки:', {
+                    message: error.message,
+                    details: error.details,
+                    hint: error.hint,
+                    code: error.code
+                });
+                setError(`Ошибка загрузки данных: ${error.message}`);
                 return;
             }
 
-            // Трансформируем данные для удобства
+            console.log('Загруженные submissions:', data);
+
+            // Полная трансформация с пользователями, уроками и этапами
             const transformedSubmissions: SubmissionWithDetails[] = (data || []).map((submission: any) => ({
                 id: submission.id,
                 user_id: submission.user_id,
                 lesson_id: submission.lesson_id,
                 submitted_at: submission.submitted_at,
+                first_submitted_at: submission.first_submitted_at,
                 content_text: submission.content_text,
                 file_url: submission.file_url,
-                status: submission.status as 'submitted' | 'pending_review' | 'approved' | 'rejected',
+                status: submission.status as SubmissionStatus,
                 reviewed_by_curator_id: submission.reviewed_by_curator_id,
                 reviewed_at: submission.reviewed_at,
                 feedback_text: submission.feedback_text,
@@ -149,13 +129,38 @@ const SubmissionsManager: React.FC<SubmissionsManagerProps> = ({
                 user_last_name: (submission.users as any)?.last_name || '',
                 user_photo_url: (submission.users as any)?.photo_url,
                 lesson_name: (submission.lessons as any)?.name || 'Неизвестный урок',
+                lesson_deadline: (submission.lessons as any)?.deadline_at,
                 stage_name: (submission.lessons as any)?.course_stages?.name || 'Неизвестная ступень',
                 reviewer_name: (submission.reviewer as any)?.first_name || undefined
             }));
 
-            setSubmissions(transformedSubmissions);
+            // Применяем фильтр по статусу
+            let filteredSubmissions = transformedSubmissions;
+            if (statusFilter !== 'all') {
+                if (statusFilter === 'pending') {
+                    filteredSubmissions = transformedSubmissions.filter(s =>
+                        ['submitted', 'pending_review'].includes(s.status)
+                    );
+                } else if (statusFilter === 'late') {
+                    // Фильтр поздних сдач - статус submitted/pending_review И опоздание по first_submitted_at
+                    filteredSubmissions = transformedSubmissions.filter(s => {
+                        if (!['submitted', 'pending_review'].includes(s.status)) return false;
+                        if (!s.lesson_deadline) return false;
 
-            // Подсчитываем статистику
+                        // Используем first_submitted_at если есть, иначе submitted_at
+                        const timeToCheck = s.first_submitted_at || s.submitted_at;
+                        const submissionDate = new Date(timeToCheck);
+                        const deadlineDate = new Date(s.lesson_deadline);
+                        return submissionDate > deadlineDate;
+                    });
+                } else {
+                    filteredSubmissions = transformedSubmissions.filter(s => s.status === statusFilter);
+                }
+            }
+
+            setSubmissions(filteredSubmissions);
+
+            // Подсчитываем статистику по всем данным (не фильтрованным)
             const pendingCount = transformedSubmissions.filter(s =>
                 ['submitted', 'pending_review'].includes(s.status)
             ).length;
@@ -262,25 +267,36 @@ const SubmissionsManager: React.FC<SubmissionsManagerProps> = ({
         });
     };
 
-    // Получение статуса на русском
-    const getStatusText = (status: string) => {
-        switch (status) {
-            case 'submitted': return '📝 Сдано';
-            case 'pending_review': return '⏳ В проверке';
-            case 'approved': return '✅ Принято';
-            case 'rejected': return '❌ Отклонено';
-            default: return status;
-        }
+    // Получение статуса на русском с учетом опоздания
+    const getStatusText = (submission: SubmissionWithDetails) => {
+        const { text } = getSubmissionDisplayStatus(
+            submission.status,
+            submission.submitted_at,
+            submission.lesson_deadline,
+            submission.first_submitted_at
+        );
+        return text;
     };
 
     // Получение CSS класса для статуса
-    const getStatusClass = (status: string) => {
-        switch (status) {
-            case 'submitted': return 'admin-status admin-no';
-            case 'pending_review': return 'admin-status admin-no';
-            case 'approved': return 'admin-status admin-yes';
-            case 'rejected': return 'admin-status admin-no';
-            default: return 'admin-status';
+    const getStatusClass = (submission: SubmissionWithDetails) => {
+        const { isLate } = getSubmissionDisplayStatus(
+            submission.status,
+            submission.submitted_at,
+            submission.lesson_deadline,
+            submission.first_submitted_at
+        );
+
+        switch (submission.status) {
+            case 'submitted':
+            case 'pending_review':
+                return isLate ? 'admin-status admin-no' : 'admin-status admin-no';
+            case 'approved':
+                return 'admin-status admin-yes';
+            case 'rejected':
+                return 'admin-status admin-no';
+            default:
+                return 'admin-status';
         }
     };
 
@@ -330,6 +346,7 @@ const SubmissionsManager: React.FC<SubmissionsManagerProps> = ({
                         <option value="pending">Ожидают проверки</option>
                         <option value="approved">Принятые</option>
                         <option value="rejected">Отклоненные</option>
+                        <option value="late">Поздние сдачи</option>
                     </select>
                 </div>
             </div>
@@ -380,8 +397,8 @@ const SubmissionsManager: React.FC<SubmissionsManagerProps> = ({
                                     <td>{submission.stage_name}</td>
                                     <td>{formatDate(submission.submitted_at)}</td>
                                     <td>
-                                        <span className={getStatusClass(submission.status)}>
-                                            {getStatusText(submission.status)}
+                                        <span className={getStatusClass(submission)}>
+                                            {getStatusText(submission)}
                                         </span>
                                     </td>
                                     <td>{submission.points_awarded || '-'}</td>
