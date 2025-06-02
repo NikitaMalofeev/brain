@@ -14,6 +14,10 @@ export interface LessonData {
     is_unlocked: boolean; // Добавляем поле для отслеживания разблокировки
     completion_date?: string;
     open_at?: string; // Добавляем время открытия урока
+    // Добавляем поля для submissions
+    submission_status?: 'submitted' | 'pending_review' | 'approved' | 'rejected' | null;
+    submission_id?: number;
+    has_started?: boolean; // Новое поле - начал ли пользователь урок
 }
 
 // Тип данных ступени
@@ -85,7 +89,7 @@ const useStageDetails = (user: User | null, stageId: string | number) => {
                 // Получаем прогресс пользователя по урокам
                 const { data: progressData, error: progressError } = await supabase
                     .from('lesson_progress')
-                    .select('lesson_id, completed_at')
+                    .select('lesson_id, completed_at, started_at')
                     .eq('user_id', user.id)
                     .in('lesson_id', allLessonsData?.map(l => l.id) || []);
 
@@ -93,26 +97,57 @@ const useStageDetails = (user: User | null, stageId: string | number) => {
                     console.warn('Ошибка загрузки прогресса уроков:', progressError.message);
                 }
 
-                // Создаем мапу прогресса для быстрого доступа
+                // Получаем submissions пользователя для уроков с заданиями
+                const lessonsWithAssignments = allLessonsData?.filter(l => l.has_assignment) || [];
+                const { data: submissionsData, error: submissionsError } = await supabase
+                    .from('submissions')
+                    .select('id, lesson_id, status')
+                    .eq('user_id', user.id)
+                    .in('lesson_id', lessonsWithAssignments.map(l => l.id));
+
+                if (submissionsError) {
+                    console.warn('Ошибка загрузки submissions:', submissionsError.message);
+                }
+
+                // Создаем мапы для быстрого доступа
                 const progressMap = new Map();
                 progressData?.forEach(progress => {
-                    progressMap.set(progress.lesson_id, progress.completed_at);
+                    progressMap.set(progress.lesson_id, {
+                        completed_at: progress.completed_at,
+                        started_at: progress.started_at
+                    });
                 });
 
-                // Формируем данные уроков с логикой разблокировки по времени
-                const lessons: LessonData[] = allLessonsData?.map((lesson, index) => {
-                    const completionDate = progressMap.get(lesson.id);
-                    const isCompleted = !!completionDate;
+                const submissionsMap = new Map();
+                submissionsData?.forEach(submission => {
+                    submissionsMap.set(submission.lesson_id, {
+                        id: submission.id,
+                        status: submission.status
+                    });
+                });
 
-                    // Новая логика разблокировки: уроки открываются только по времени
-                    // Не зависят от завершения предыдущих уроков
+                // Формируем данные уроков с улучшенной логикой статусов
+                const lessons: LessonData[] = allLessonsData?.map((lesson, index) => {
+                    const progress = progressMap.get(lesson.id);
+                    const submission = submissionsMap.get(lesson.id);
+
+                    // Определяем статус завершения
+                    let isCompleted = false;
+                    if (lesson.has_assignment) {
+                        // Для урока с заданием - завершен только если задание одобрено
+                        isCompleted = submission?.status === 'approved';
+                    } else {
+                        // Для урока без задания - завершен если есть completed_at
+                        isCompleted = !!progress?.completed_at;
+                    }
+
+                    // Логика разблокировки: уроки открываются только по времени
                     const now = new Date();
                     const openAt = lesson.open_at ? new Date(lesson.open_at) : null;
-
-                    // Урок разблокирован, если:
-                    // 1. Время открытия не установлено (открыт сразу)
-                    // 2. Или текущее время >= времени открытия
                     const isUnlocked = !openAt || now >= openAt;
+
+                    // Определяем, начал ли пользователь урок
+                    const hasStarted = !!progress?.started_at || !!submission;
 
                     return {
                         lesson_id: lesson.id,
@@ -123,8 +158,11 @@ const useStageDetails = (user: User | null, stageId: string | number) => {
                         has_assignment: lesson.has_assignment || false,
                         is_completed: isCompleted,
                         is_unlocked: isUnlocked,
-                        completion_date: completionDate,
+                        completion_date: progress?.completed_at,
                         open_at: lesson.open_at,
+                        submission_status: submission?.status || null,
+                        submission_id: submission?.id,
+                        has_started: hasStarted,
                     };
                 }) || [];
 

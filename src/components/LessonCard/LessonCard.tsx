@@ -43,6 +43,82 @@ const getLessonTimeStatus = (lesson: LessonData) => {
     return null;
 };
 
+// Функция для определения статуса урока
+const getLessonStatus = (lesson: LessonData) => {
+    const timeStatus = getLessonTimeStatus(lesson);
+
+    // Приоритет 1: "Откроется завтра" - высший приоритет
+    if (timeStatus === 'opens_tomorrow') {
+        return {
+            type: 'opens_tomorrow',
+            text: 'Откроется завтра',
+            bgClass: 'bg-[linear-gradient(135deg,_rgba(141,197,241)_-48.61%,_#63ABE6_105.56%)]'
+        };
+    }
+
+    // Приоритет 2: Заблокированный урок
+    if (!lesson.is_unlocked) {
+        return {
+            type: 'locked',
+            text: 'Заблокировано',
+            bgClass: 'bg-gray-500'
+        };
+    }
+
+    // Приоритет 3: Завершенный урок
+    if (lesson.is_completed) {
+        return {
+            type: 'completed',
+            text: 'Завершено',
+            bgClass: 'bg-green-500'
+        };
+    }
+
+    // Приоритет 4: Урок с заданием - проверяем статус submission
+    if (lesson.has_assignment) {
+        if (lesson.submission_status) {
+            switch (lesson.submission_status) {
+                case 'submitted':
+                case 'pending_review':
+                    return {
+                        type: 'in_review',
+                        text: 'На проверке',
+                        bgClass: 'bg-[linear-gradient(135deg,_rgba(255,193,7)_0%,_rgba(255,152,0)_100%)]'
+                    };
+                case 'rejected':
+                    return {
+                        type: 'needs_retry',
+                        text: 'Нужна доработка',
+                        bgClass: 'bg-[linear-gradient(135deg,_rgba(255,107,107)_0%,_rgba(255,82,82)_100%)]'
+                    };
+                default:
+                    // Есть submission, но статус неизвестен - считаем в процессе
+                    return {
+                        type: 'in_progress',
+                        text: 'В процессе',
+                        bgClass: 'bg-[linear-gradient(135deg,_rgba(141,197,241)_-48.61%,_#63ABE6_105.56%)]'
+                    };
+            }
+        } else if (lesson.has_started) {
+            // Урок с заданием начат, но еще нет submission - в процессе
+            return {
+                type: 'in_progress',
+                text: 'В процессе',
+                bgClass: 'bg-[linear-gradient(135deg,_rgba(141,197,241)_-48.61%,_#63ABE6_105.56%)]'
+            };
+        }
+    }
+
+    // Приоритет 5: Не начато
+    // Для урока БЕЗ задания: либо не начат, либо завершен (нет промежуточных состояний)
+    // Для урока С заданием: не начат если нет started_at и нет submission
+    return {
+        type: 'not_started',
+        text: 'Не начато',
+        bgClass: 'bg-[linear-gradient(135deg,_rgba(141,197,241)_-48.61%,_#63ABE6_105.56%)]'
+    };
+};
+
 const LessonCard: React.FC<LessonCardProps> = ({ lesson, onClick }) => {
     const handleClick = () => {
         // Проверяем доступность урока перед переходом
@@ -68,8 +144,8 @@ const LessonCard: React.FC<LessonCardProps> = ({ lesson, onClick }) => {
         });
     }
 
-    // Определяем статус урока относительно времени
-    const timeStatus = getLessonTimeStatus(lesson);
+    // Получаем статус урока
+    const status = getLessonStatus(lesson);
 
     return (
         <div onClick={lesson.is_unlocked ? handleClick : undefined} className={'flex flex-col w-full bg-white rounded-3xl overflow-hidden'}>
@@ -84,16 +160,10 @@ const LessonCard: React.FC<LessonCardProps> = ({ lesson, onClick }) => {
                 <div className={'flex flex-wrap gap-1'}>
                     <p className={'rounded-full px-2 py-1 text-white text-xs font-medium bg-[linear-gradient(135deg,_rgba(141,197,241)_-48.61%,_#63ABE6_105.56%)]'}>День {lesson.order_num}</p>
 
-                    {/* Плашка "Откроется завтра" - высший приоритет */}
-                    {timeStatus === 'opens_tomorrow' ? (
-                        <p className={'rounded-full px-2 py-1 text-white text-xs font-medium bg-[linear-gradient(135deg,_rgba(141,197,241)_-48.61%,_#63ABE6_105.56%)]'}>Откроется завтра</p>
-                    ) : lesson.is_completed ? (
-                        <p className={'rounded-full px-2 py-1 text-white text-xs font-medium bg-green-500'}>Завершено</p>
-                    ) : lesson.is_unlocked ? (
-                        <p className={'rounded-full px-2 py-1 text-white text-xs font-medium bg-[linear-gradient(135deg,_rgba(141,197,241)_-48.61%,_#63ABE6_105.56%)]'}>Не начато</p>
-                    ) : (
-                        <p className={'rounded-full px-2 py-1 text-white text-xs font-medium bg-gray-500'}>Заблокировано</p>
-                    )}
+                    {/* Отображаем статус урока */}
+                    <p className={`rounded-full px-2 py-1 text-white text-xs font-medium ${status.bgClass}`}>
+                        {status.text}
+                    </p>
                 </div>
             </div>
         </div>
