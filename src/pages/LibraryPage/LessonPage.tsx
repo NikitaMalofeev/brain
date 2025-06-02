@@ -254,6 +254,71 @@ const LessonPage: React.FC = () => {
         logger.debug('Retry submission mode cancelled');
     };
 
+    // Функция для определения статуса урока на странице урока
+    const getLessonPageStatus = () => {
+        const hasAssignment = state.lesson?.has_assignment === true;
+        const isLessonCompleted = !!state.progress?.is_completed;
+        const submission = state.submission;
+        const hasStarted = !!state.progress?.started_at || !!submission;
+
+        // Для урока с заданием
+        if (hasAssignment) {
+            if (submission?.status === 'approved') {
+                return {
+                    type: 'completed',
+                    text: 'Завершено',
+                    bgClass: 'bg-green-500',
+                    icon: '✅'
+                };
+            } else if (submission?.status === 'submitted' || submission?.status === 'pending_review') {
+                return {
+                    type: 'in_review',
+                    text: 'На проверке',
+                    bgClass: 'bg-[linear-gradient(135deg,_rgba(255,193,7)_0%,_rgba(255,152,0)_100%)]',
+                    icon: '⏳'
+                };
+            } else if (submission?.status === 'rejected') {
+                return {
+                    type: 'needs_retry',
+                    text: 'Нужна доработка',
+                    bgClass: 'bg-[linear-gradient(135deg,_rgba(255,107,107)_0%,_rgba(255,82,82)_100%)]',
+                    icon: '🔄'
+                };
+            } else if (hasStarted) {
+                return {
+                    type: 'in_progress',
+                    text: 'В процессе',
+                    bgClass: 'bg-[linear-gradient(135deg,_rgba(141,197,241)_-48.61%,_#63ABE6_105.56%)]',
+                    icon: '📝'
+                };
+            } else {
+                return {
+                    type: 'not_started',
+                    text: 'Не начато',
+                    bgClass: 'bg-[linear-gradient(135deg,_rgba(141,197,241)_-48.61%,_#63ABE6_105.56%)]',
+                    icon: '⚪'
+                };
+            }
+        } else {
+            // Для урока без задания
+            if (isLessonCompleted) {
+                return {
+                    type: 'completed',
+                    text: 'Завершено',
+                    bgClass: 'bg-green-500',
+                    icon: '✅'
+                };
+            } else {
+                return {
+                    type: 'not_started',
+                    text: 'Не начато',
+                    bgClass: 'bg-[linear-gradient(135deg,_rgba(141,197,241)_-48.61%,_#63ABE6_105.56%)]',
+                    icon: '⚪'
+                };
+            }
+        }
+    };
+
     // Функция рендера результатов проверки задания
     const renderSubmissionResult = (submission: any) => {
         const status = submission.status;
@@ -672,9 +737,16 @@ const LessonPage: React.FC = () => {
                     <p className={'font-bold text-xl'}>{state.lesson.name}</p>
                     <div className={'flex flex-wrap gap-1'}>
                         <p className={'rounded-full px-2 py-1 text-white text-xs font-medium bg-[linear-gradient(135deg,_rgba(141,197,241)_-48.61%,_#63ABE6_105.56%)]'}>День {state.lesson.order_num}</p>
-                        {!isLessonCompleted &&
-                            <p className={'rounded-full px-2 py-1 text-white text-xs font-medium bg-[linear-gradient(135deg,_rgba(141,197,241)_-48.61%,_#63ABE6_105.56%)]'}>Не
-                                начато</p>}
+
+                        {/* Отображаем статус урока с учетом submissions */}
+                        {(() => {
+                            const status = getLessonPageStatus();
+                            return (
+                                <p className={`rounded-full px-2 py-1 text-white text-xs font-medium ${status.bgClass}`}>
+                                    {status.text}
+                                </p>
+                            );
+                        })()}
                     </div>
                 </div>
                 <div className={'p-4 pb-8'}>
