@@ -8,9 +8,12 @@ import useStageDetails, { StageDetailsData } from '@/lib/supabase/hooks/useStage
 import { useSupabaseUser } from '@/lib/supabase/hooks/useSupabaseUser';
 import { useAppContext } from '@/contexts/AppContext';
 import { logger } from '@/lib/logger';
+import NativeModal from "@/components/NativeModal.tsx";
 
 const StagePage: React.FC = () => {
     const { id: stageId } = useParams<{ id: string }>();
+    const [isOpen, setIsOpen] = useState(false);
+
     const navigate = useNavigate();
 
     // Получаем информацию из глобального контекста
@@ -103,108 +106,31 @@ const StagePage: React.FC = () => {
     }
 
     return (
-        <Page>
-            <div style={{
-                width: '100%',
-                display: 'flex',
-                flexDirection: 'column',
-                alignItems: 'center',
-                flex: 1,
-                backgroundColor: '#F1F1F1',
-                minHeight: '100vh',
-            }}>
-                <div style={{
-                    width: '100%',
-                    maxWidth: '375px',
-                    margin: '0 auto',
-                    padding: '16px',
-                    flex: 1,
-                    boxSizing: 'border-box',
-                    display: 'flex',
-                    flexDirection: 'column',
-                }}>
-                    {/* Заголовок ступени */}
-                    <h1 style={{
-                        fontFamily: 'Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
-                        fontWeight: 700,
-                        fontSize: '28px',
-                        lineHeight: '1.2',
-                        textAlign: 'left',
-                        marginBottom: '8px',
-                        marginTop: '0',
-                        color: '#1a1a1a',
-                    }}>
-                        {stageDetails.stage_name}
-                    </h1>
-
-                    {/* Прогресс по ступени */}
-                    <div style={{
-                        fontFamily: 'Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
-                        fontSize: '16px',
-                        fontWeight: 400,
-                        color: '#4a4a4a',
-                        marginBottom: '24px',
-                        lineHeight: '1.5',
-                    }}>
-                        {stageDetails.completed_lessons} из {stageDetails.total_lessons} завершено
-                    </div>
-
-                    {/* Предупреждение о жизнях */}
-                    {showLivesWarning && (
-                        <div style={{
-                            backgroundColor: '#fff5f5',
-                            border: '1px solid #fed7d7',
-                            borderRadius: '12px',
-                            padding: '16px',
-                            marginBottom: '20px',
-                            color: '#c53030',
-                            fontFamily: 'Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
-                            fontSize: '14px',
-                            fontWeight: 500,
-                            lineHeight: '1.5',
-                            display: 'flex',
-                            alignItems: 'flex-start',
-                            gap: '8px',
-                        }}>
-                            <span style={{ fontSize: '16px' }}>⚠️</span>
-                            <span>У вас осталось 0 жизней! Будьте осторожны с дедлайнами.</span>
+        <Page showTabBar={false}>
+            <div className={'text-black'}>
+                <div className={'bg-white p-4 flex flex-col gap-3 p-4'}>
+                    <div className={'flex items-center justify-between'}>
+                        <div className={'flex flex-col'}>
+                            <p className={'font-bold text-xl'}>{stageDetails.stage_name}</p>
+                            <p className={'text-sm text-[#8C8C8C]'}>Еще {'[11]'} заданий до {'[третьей]'} ступени</p>
                         </div>
-                    )}
-
-                    {/* Список уроков */}
-                    <div style={{
-                        marginBottom: '100px',
-                        width: '100%',
-                        flex: 1,
-                        display: 'flex',
-                        flexDirection: 'column',
-                        gap: '12px',
-                    }}>
-                        {stageDetails.lessons.map((lesson) => (
-                            <LessonCard
-                                key={lesson.lesson_id}
-                                lesson={lesson}
-                                onClick={handleLessonClick}
-                            />
-                        ))}
+                        <img onClick={()=>setIsOpen(true)} src={'/ask-icon.svg'} alt={''}/>
                     </div>
-
-                    {/* Пустое состояние если нет уроков */}
-                    {stageDetails.lessons.length === 0 && (
-                        <div style={{
-                            textAlign: 'center',
-                            marginTop: '60px',
-                            color: '#6d6d6d',
-                            fontFamily: 'Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
-                            fontSize: '16px',
-                            fontWeight: 400,
-                            lineHeight: '1.5',
-                        }}>
-                            В этой ступени пока нет уроков
-                        </div>
-                    )}
+                    <div className="w-full bg-gray-200 rounded-full h-3">
+                        <div className="h-3 rounded-full bg-gradient-to-r from-[#ACD3F3] to-[#91C3EC] w-1/2"></div>
+                    </div>
+                </div>
+                <div className={'bg-[url("/bg3.jpg")] bg-cover bg-top p-4 rounded-t-3xl flex-1 flex flex-col gap-3'}>
+                    {stageDetails.lessons.map((lesson) => (
+                        <LessonCard
+                            key={lesson.lesson_id}
+                            lesson={lesson}
+                            onClick={handleLessonClick}
+                        />
+                    ))}
                 </div>
             </div>
+            <NativeModal title={stageDetails.stage_name} description={stageDetails.stage_description} isOpen={isOpen} setIsOpen={setIsOpen}/>
         </Page>
     );
 };

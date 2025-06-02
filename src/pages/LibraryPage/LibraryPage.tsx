@@ -173,24 +173,7 @@ const LibraryPage: React.FC = () => {
                         <p className={'font-bold text-black'}>Выполнено 12 заданий</p>
                         <p className={'text-sm text-[#8C8C8C]'}>Еще 24 задания до третьей ступени</p>
                     </div>
-                    <svg width="36" height="36" viewBox="0 0 36 36" fill="none" xmlns="http://www.w3.org/2000/svg">
-                        <rect width="36" height="36" rx="18" fill="#EAF5FE"/>
-                        <rect width="36" height="36" rx="18" fill="url(#paint0_linear_645_2944)"/>
-                        <path d="M15.5 12.1667L21.3333 18.0001L15.5 23.8334" stroke="url(#paint1_linear_645_2944)"
-                              stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
-                        <defs>
-                            <linearGradient id="paint0_linear_645_2944" x1="-2" y1="2" x2="36" y2="40"
-                                            gradientUnits="userSpaceOnUse">
-                                <stop stop-color="#8DC5F1" stop-opacity="0.2"/>
-                                <stop offset="1" stop-color="#8DC5F1"/>
-                            </linearGradient>
-                            <linearGradient id="paint1_linear_645_2944" x1="16.7406" y1="26.4998" x2="26.3868"
-                                            y2="-9.50024" gradientUnits="userSpaceOnUse">
-                                <stop stop-color="white"/>
-                                <stop offset="1" stop-color="white" stop-opacity="0.45"/>
-                            </linearGradient>
-                        </defs>
-                    </svg>
+                    <img src={'/arrow-icon.svg'} alt="" className={'w-[36px] h-[36px]'}/>
                 </div>
                 <div className="w-full bg-gray-200 rounded-full h-4">
                     <div className="h-4 rounded-full bg-gradient-to-r from-[#ACD3F3] to-[#91C3EC] w-1/2"></div>

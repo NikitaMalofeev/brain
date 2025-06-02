@@ -23,7 +23,6 @@ const ImageBlock: React.FC<ImageBlockProps> = ({ block }) => {
             {/* Заголовок, если есть */}
             {block.title && (
                 <h3 style={{
-                    fontFamily: 'Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
                     fontWeight: 700,
                     fontSize: '20px',
                     lineHeight: '1.2',
@@ -59,7 +58,6 @@ const ImageBlock: React.FC<ImageBlockProps> = ({ block }) => {
                     borderRadius: '12px',
                     color: '#6d6d6d',
                     fontSize: '16px',
-                    fontFamily: 'Inter, sans-serif', // Убедимся, что шрифт применяется
                 }}>
                     🖼 Изображение недоступно
                 </div>
@@ -67,15 +65,15 @@ const ImageBlock: React.FC<ImageBlockProps> = ({ block }) => {
 
             {/* Описание блока, если есть */}
             {block.content_text && (
-                <div style={{
-                    fontFamily: 'Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
+                <div className={'flex flex-col gap-3 mt-4'} style={{
                     fontSize: '16px',
-                    fontWeight: '400',
-                    lineHeight: '1.5em',
-                    color: '#424242',
-                    marginTop: '16px', // Отступ сверху от изображения
+                    lineHeight: '1.5',
+                    color: '#242424',
+                    whiteSpace: 'pre-wrap',
                 }}>
-                    {block.content_text}
+                    {block.content_text?.split('\n').map((line, i) => {
+                        return (<p>{line}</p>)
+                    })}
                 </div>
             )}
 

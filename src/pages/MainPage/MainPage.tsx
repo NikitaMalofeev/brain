@@ -8,6 +8,7 @@ import {useAppContext} from "@/contexts/AppContext.tsx";
 import {useSupabaseUser} from "@/lib/supabase/hooks";
 import {initDataState, useSignal} from "@telegram-apps/sdk-react";
 import {Link} from "react-router-dom";
+import {clsx} from "clsx";
 
 const COURSE_ID = COURSE_CONFIG.DEFAULT_COURSE_ID;
 
@@ -46,11 +47,6 @@ export const MainPage = () => {
     const error = stagesError || (isTelegramApp && supabaseUserError);
 
 
-    useEffect(() => {
-        if(!loading && !error){
-            window.scrollTo(0, document.body.scrollHeight);
-        }
-    }, [loading, error]);
     if (loading) {
         return (
             <Page>
@@ -78,50 +74,44 @@ export const MainPage = () => {
     }
     return(
         <Page>
-            <div className={'fixed z-50 top-6 flex items-center justify-between px-6 w-full'}>
-                <img src={supabaseUser?.photo_url || ''} className={'w-8 h-8 rounded-full'}/>
-                <div className={'flex items-center gap-1 py-[6px] px-2 bg-white rounded-full'}>
-                    <p className={'text-black font-semibold leading-4'}>{supabaseUser?.total_points}</p>
-                    <img src={'/eid.svg'} className={'w-5 h-5'}/>
+            <div className={'bg-[url("/bg3.jpg")] bg-cover bg-bottom p-4 rounded-b-3xl flex-1 flex flex-col gap-3'}>
+                <div className={'flex items-center justify-between w-full'}>
+                    <img src={supabaseUser?.photo_url || ''} className={'w-8 h-8 rounded-full border border-white'}
+                         alt={''}/>
+                    <Link to={'/points'} className={'flex items-center gap-1 py-[6px] px-2 bg-white rounded-full'}>
+                        <p className={'text-black font-semibold leading-4'}>{supabaseUser?.total_points}</p>
+                        <img src={'/eid.svg'} className={'w-5 h-5'}/>
+                    </Link>
                 </div>
+                {stages.map((stage, i) => (
+                    <Link to={`/library/stage/${stage.stage_id}`}
+                          className={clsx('relative bg-white/70 rounded-4xl overflow-hidden', stage.is_unlocked ? "cursor-pointer" : "pointer-events-none")}>
+                        <img src={`/step${i+1}${i+1}.png`}
+                             className={`h-[140px] w-full`}/>
+                        <div className={'absolute top-5 left-5 z-[2] flex flex-col gap-1'}>
+                            <p className={'font-bold uppercase text-black'}>{stage.stage_name}</p>
+                            <div className={'text-xs w-max font-medium bg-[linear-gradient(135deg,_rgba(141,197,241)_-48.61%,_#63ABE6_105.56%)] px-2 py-1 rounded-full flex items-center gap-1'}>
+                                LEVEL 0{i+1}
+                                {!stage.is_unlocked && <img src={'/lock.svg'} alt={''}/>}
+                            </div>
+                        </div>
+                    </Link>
+                ))}
+
             </div>
-            <div className={'relative min-h-screen overflow-hidden bg-[url("/bg.jpg")] bg-cover'}>
-                <div className={'flex flex-col gap-5 items-center'}>
-                    {[...stages].reverse().map((stage, i) => (
-                        <Link to={`/library/stage/${stage.stage_id}`} className={stage.is_unlocked ? "cursor-pointer transition duration-200 ease-in hover:scale-105" : "pointer-events-none"}>
-                            <img src={`/step${stage.stage_id}.png`}
-                                 className={`w-[75%] mx-auto ${!stage.is_unlocked && 'mix-blend-luminosity'}`}/>
-                        </Link>
-                    ))}
-                </div>
-            </div>
-            <div className={'bg-white py-4 px-6 flex flex-col gap-4'}>
+
+
+
+            <div className={'bg-white p-4 flex flex-col gap-3'}>
                 <div className={'flex items-center justify-between'}>
                     <div className={'flex flex-col'}>
-                        <p className={'font-bold text-black'}>Выполнено 12 заданий</p>
-                        <p className={'text-sm text-[#8C8C8C]'}>Еще 24 задания до третьей ступени</p>
+                        <p className={'font-bold text-black'}>Выполнено {'[11]'} заданий</p>
+                        <p className={'text-sm text-[#8C8C8C]'}>Еще {'[11]'} заданий до {'[третьей]'} ступени</p>
                     </div>
-                    <svg width="36" height="36" viewBox="0 0 36 36" fill="none" xmlns="http://www.w3.org/2000/svg">
-                        <rect width="36" height="36" rx="18" fill="#EAF5FE"/>
-                        <rect width="36" height="36" rx="18" fill="url(#paint0_linear_645_2944)"/>
-                        <path d="M15.5 12.1667L21.3333 18.0001L15.5 23.8334" stroke="url(#paint1_linear_645_2944)"
-                              stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
-                        <defs>
-                            <linearGradient id="paint0_linear_645_2944" x1="-2" y1="2" x2="36" y2="40"
-                                            gradientUnits="userSpaceOnUse">
-                                <stop stop-color="#8DC5F1" stop-opacity="0.2"/>
-                                <stop offset="1" stop-color="#8DC5F1"/>
-                            </linearGradient>
-                            <linearGradient id="paint1_linear_645_2944" x1="16.7406" y1="26.4998" x2="26.3868"
-                                            y2="-9.50024" gradientUnits="userSpaceOnUse">
-                                <stop stop-color="white"/>
-                                <stop offset="1" stop-color="white" stop-opacity="0.45"/>
-                            </linearGradient>
-                        </defs>
-                    </svg>
+                    <img src={'/arrow-icon.svg'} alt={''}/>
                 </div>
-                <div className="w-full bg-gray-200 rounded-full h-4">
-                    <div className="h-4 rounded-full bg-gradient-to-r from-[#ACD3F3] to-[#91C3EC] w-1/2"></div>
+                <div className="w-full bg-gray-200 rounded-full h-3">
+                    <div className="h-3 rounded-full bg-gradient-to-r from-[#ACD3F3] to-[#91C3EC] w-1/2"></div>
                 </div>
             </div>
         </Page>

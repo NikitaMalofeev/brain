@@ -212,7 +212,7 @@ const FixedSubmissionForm: React.FC<FixedSubmissionFormProps> = ({
     }
 
     return (
-        <div className="fixed bottom-0 left-0 right-0 z-50 bg-white border-t border-gray-200 shadow-lg">
+        <div className="fixed bottom-0 left-0 right-0 z-50 bg-[#E9E9E9] border-t border-gray-200 shadow-lg">
             {/* Прикрепленные файлы */}
             {uploadedFiles.length > 0 && (
                 <div className="px-4 pt-3">
@@ -250,9 +250,9 @@ const FixedSubmissionForm: React.FC<FixedSubmissionFormProps> = ({
             )}
 
             {/* Основная форма ввода - ВЫРАВНИВАНИЕ ПО НИЗУ */}
-            <div className="flex items-end gap-2 p-3">
+            <div className="flex items-end gap-2 p-4">
                 {/* Контейнер для поля ввода и кнопки скрепки - ДИНАМИЧЕСКОЕ ВЫРАВНИВАНИЕ */}
-                <div className={`flex-1 flex ${iconAlignment} gap-2 bg-neutral-100 rounded-[24px] border border-gray-200`} style={{ padding: '6px 12px', minHeight: '40px' }}>
+                <div className={`flex-1 flex ${iconAlignment} gap-2 bg-white rounded-[24px] border border-gray-200`} style={{ padding: '6px 12px', minHeight: '40px' }}>
                     <textarea
                         ref={textareaRef}
                         placeholder="Домашнее задание"
@@ -260,7 +260,6 @@ const FixedSubmissionForm: React.FC<FixedSubmissionFormProps> = ({
                         onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => setSubmissionText(e.target.value)}
                         className="flex-1 resize-none border-none bg-transparent text-sm text-black font-medium focus:outline-none placeholder:text-[#8D8D8D]"
                         style={{
-                            fontFamily: 'Montserrat, sans-serif',
                             fontSize: '14px',
                             lineHeight: '20px',
                             padding: '4px 8px 4px 0px', // py-1 эквивалент (4px top/bottom, 0px left, 8px right)
@@ -297,7 +296,7 @@ const FixedSubmissionForm: React.FC<FixedSubmissionFormProps> = ({
                     onClick={handleSubmit}
                     disabled={!submissionText.trim() || isSubmitting || !user}
                     className={`rounded-full flex items-center justify-center ${submissionText.trim() && !isSubmitting && user
-                        ? "bg-black hover:bg-gray-800 text-white"
+                        ? "bg-[linear-gradient(109.65deg,_#E1C1F4_13.64%,_#B862EA_124.92%)] hover:bg-gray-800 text-white"
                         : "bg-gray-300 cursor-not-allowed hover:bg-gray-300 text-gray-500"
                         }`}
                     style={{ padding: '0px', width: '40px', height: '40px' }}

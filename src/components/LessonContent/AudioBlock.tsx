@@ -358,7 +358,6 @@ const AudioBlock: React.FC<AudioBlockProps> = ({ block }) => {
                 {/* Заголовок отдельно */}
                 {block.title && (
                     <div style={{
-                        fontFamily: 'Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
                         fontSize: '18px',
                         fontWeight: '600',
                         color: '#242424',
@@ -487,7 +486,6 @@ const AudioBlock: React.FC<AudioBlockProps> = ({ block }) => {
                             flexShrink: 0,
                         }}>
                             <div style={{
-                                fontFamily: 'Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
                                 fontSize: '12px',
                                 fontWeight: '400',
                                 lineHeight: '1em',
@@ -522,7 +520,6 @@ const AudioBlock: React.FC<AudioBlockProps> = ({ block }) => {
                                     <span style={{
                                         fontSize: '12px',
                                         color: 'rgba(0, 0, 0, 0.5)',
-                                        fontFamily: 'Inter',
                                         minWidth: 'fit-content',
                                     }}>
                                         Скорость:
@@ -537,7 +534,6 @@ const AudioBlock: React.FC<AudioBlockProps> = ({ block }) => {
                                             border: 'none',
                                             borderRadius: '8px',
                                             padding: '4px 8px',
-                                            fontFamily: 'Inter',
                                             outline: 'none',
                                             cursor: 'pointer',
                                         }}
@@ -564,7 +560,6 @@ const AudioBlock: React.FC<AudioBlockProps> = ({ block }) => {
                                     <span style={{
                                         fontSize: '12px',
                                         color: 'rgba(0, 0, 0, 0.5)',
-                                        fontFamily: 'Inter',
                                     }}>
                                         <Volume2 size={16} color="rgba(0, 0, 0, 0.5)" />
                                     </span>
@@ -601,7 +596,6 @@ const AudioBlock: React.FC<AudioBlockProps> = ({ block }) => {
                 {/* Описание отдельно под плеером */}
                 {block.content_text && (
                     <div style={{
-                        fontFamily: 'Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
                         fontSize: '16px',
                         fontWeight: '400',
                         lineHeight: '1.5em',
