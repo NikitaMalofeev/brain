@@ -53,10 +53,12 @@ const SubmissionDetail: React.FC<SubmissionDetailProps> = ({
     onSubmissionUpdated,
     currentUser: propCurrentUser
 }) => {
-    const [submission, setSubmission] = useState<SubmissionDetailData | null>(null);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
     const [saving, setSaving] = useState(false);
+
+    // Данные submission и пользователя
+    const [submission, setSubmission] = useState<SubmissionDetailData | null>(null);
     const [currentUser, setCurrentUser] = useState<{
         id: string;
         role: string;
@@ -64,15 +66,13 @@ const SubmissionDetail: React.FC<SubmissionDetailProps> = ({
         last_name?: string;
     } | null>(null);
 
-    // Состояние для изменения решений
-    const [isEditingDecision, setIsEditingDecision] = useState(false);
-    const [changeReason, setChangeReason] = useState('');
+    const [showDecisionChange, setShowDecisionChange] = useState(false);
 
-    // Форма проверки
+    // Форма для изменения решения
     const [reviewForm, setReviewForm] = useState({
-        status: 'approved' as 'approved' | 'rejected',
-        points: 100,
-        feedback: ''
+        status: '' as SubmissionStatus,
+        feedback: '',
+        points: 0
     });
 
     // Загрузка детальной информации о сабмите
@@ -209,88 +209,16 @@ const SubmissionDetail: React.FC<SubmissionDetailProps> = ({
         loadSubmissionDetail();
     }, [submissionId, propCurrentUser]);
 
-    // Сохранение результата проверки
+    // Сохранение проверки (работает и для первичной проверки, и для изменения решения)
     const saveReview = async () => {
-        if (!submission) return;
-
-        try {
-            setSaving(true);
-            setError(null);
-
-            if (!supabase) {
-                setError('Supabase не инициализирован');
-                return;
-            }
-
-            const updateData: any = {
-                status: reviewForm.status,
-                reviewed_at: new Date().toISOString(),
-                feedback_text: reviewForm.feedback,
-                points_awarded: reviewForm.status === 'approved' ? reviewForm.points : 0,
-                reviewed_by_curator_id: currentUser?.id || null
-            };
-
-            const { error: updateError } = await supabase
-                .from('submissions')
-                .update(updateData)
-                .eq('id', submissionId);
-
-            if (updateError) {
-                console.error('Ошибка обновления сабмита:', updateError);
-                setError(`Ошибка обновления: ${updateError.message}`);
-                return;
-            }
-
-            // Начисляем баллы пользователю при одобрении
-            if (reviewForm.status === 'approved' && reviewForm.points > 0) {
-                // Сначала получаем текущие баллы пользователя
-                const { data: userData, error: userError } = await supabase
-                    .from('users')
-                    .select('total_points')
-                    .eq('id', submission.user_id)
-                    .single();
-
-                if (!userError && userData) {
-                    // Обновляем баллы
-                    const { error: pointsError } = await supabase
-                        .from('users')
-                        .update({
-                            total_points: (userData.total_points || 0) + reviewForm.points
-                        })
-                        .eq('id', submission.user_id);
-
-                    if (pointsError) {
-                        console.error('Ошибка начисления баллов:', pointsError);
-                        // Не блокируем сохранение из-за ошибки баллов
-                    }
-                }
-            }
-
-            // TODO: Отправить уведомление пользователю
-            console.log(`Уведомление: Сабмит ${submissionId} ${reviewForm.status === 'approved' ? 'принят' : 'отклонен'}`);
-
-            // Обновляем локальные данные
-            await loadSubmissionDetail();
-
-            // Уведомляем родительский компонент
-            if (onSubmissionUpdated) {
-                onSubmissionUpdated();
-            }
-
-            alert('Результат проверки сохранен успешно!');
-
-        } catch (err) {
-            console.error('Ошибка сохранения:', err);
-            setError('Произошла ошибка при сохранении результата проверки');
-        } finally {
-            setSaving(false);
+        if (!submission) {
+            setError('Данные о сдаче не загружены');
+            return;
         }
-    };
 
-    // Изменение решения по уже проверенному сабмиту
-    const changeDecision = async () => {
-        if (!submission || !changeReason.trim()) {
-            setError('Необходимо указать причину изменения решения');
+        // Проверяем обязательные поля
+        if (!reviewForm.feedback.trim()) {
+            setError('Обратная связь обязательна');
             return;
         }
 
@@ -308,16 +236,11 @@ const SubmissionDetail: React.FC<SubmissionDetailProps> = ({
             const newStatus = reviewForm.status;
             const newPoints = newStatus === 'approved' ? reviewForm.points : 0;
 
-            // Определяем итоговый комментарий: новый (если есть) или старый
-            const finalFeedback = reviewForm.feedback.trim()
-                ? reviewForm.feedback
-                : submission.feedback_text || '';
-
             // Обновляем сабмит
             const updateData: any = {
                 status: newStatus,
                 reviewed_at: new Date().toISOString(),
-                feedback_text: finalFeedback,
+                feedback_text: reviewForm.feedback,
                 points_awarded: newPoints,
                 reviewed_by_curator_id: currentUser?.id || null
             };
@@ -333,7 +256,7 @@ const SubmissionDetail: React.FC<SubmissionDetailProps> = ({
                 return;
             }
 
-            // Пересчитываем баллы пользователя
+            // Пересчитываем баллы пользователя при изменении
             let pointsDifference = 0;
 
             if (oldStatus === 'approved' && newStatus === 'rejected') {
@@ -343,8 +266,11 @@ const SubmissionDetail: React.FC<SubmissionDetailProps> = ({
                 // Начисляем новые баллы
                 pointsDifference = newPoints;
             } else if (oldStatus === 'approved' && newStatus === 'approved') {
-                // Корректируем разницу в баллах (НОВОЕ!)
+                // Корректируем разницу в баллах
                 pointsDifference = newPoints - oldPoints;
+            } else if ((oldStatus === 'submitted' || oldStatus === 'pending_review') && newStatus === 'approved') {
+                // Первичное одобрение
+                pointsDifference = newPoints;
             }
 
             if (pointsDifference !== 0) {
@@ -368,21 +294,15 @@ const SubmissionDetail: React.FC<SubmissionDetailProps> = ({
 
                     if (pointsError) {
                         console.error('Ошибка пересчета баллов:', pointsError);
-                        setError('Решение изменено, но произошла ошибка при пересчете баллов');
+                        setError('Решение сохранено, но произошла ошибка при пересчете баллов');
                     }
                 }
             }
 
-            // TODO: Отправить уведомление пользователю об изменении решения
-            if (oldStatus !== newStatus) {
-                console.log(`Уведомление: Статус сабмита ${submissionId} изменен с ${oldStatus} на ${newStatus}. Причина: ${changeReason}`);
-            } else if (pointsDifference !== 0) {
-                console.log(`Уведомление: Баллы за сабмит ${submissionId} изменены с ${oldPoints} на ${newPoints} (${pointsDifference > 0 ? '+' : ''}${pointsDifference}). Причина: ${changeReason}`);
+            // Если это было изменение решения - скрываем форму
+            if (showDecisionChange) {
+                setShowDecisionChange(false);
             }
-
-            // Сбрасываем состояние редактирования
-            setIsEditingDecision(false);
-            setChangeReason('');
 
             // Обновляем локальные данные
             await loadSubmissionDetail();
@@ -392,17 +312,22 @@ const SubmissionDetail: React.FC<SubmissionDetailProps> = ({
                 onSubmissionUpdated();
             }
 
-            if (oldStatus !== newStatus) {
-                alert('Решение успешно изменено!');
-            } else if (pointsDifference !== 0) {
-                alert(`Баллы успешно скорректированы! Изменение: ${pointsDifference > 0 ? '+' : ''}${pointsDifference} баллов`);
+            // Показываем соответствующее уведомление
+            if (showDecisionChange) {
+                if (oldStatus !== newStatus) {
+                    alert('Решение успешно изменено!');
+                } else if (pointsDifference !== 0) {
+                    alert(`Баллы успешно скорректированы! Изменение: ${pointsDifference > 0 ? '+' : ''}${pointsDifference} баллов`);
+                } else {
+                    alert('Изменения сохранены!');
+                }
             } else {
-                alert('Изменения сохранены!');
+                alert('Проверка сохранена!');
             }
 
         } catch (err) {
-            console.error('Ошибка изменения решения:', err);
-            setError('Произошла ошибка при изменении решения');
+            console.error('Ошибка сохранения проверки:', err);
+            setError('Произошла ошибка при сохранении проверки');
         } finally {
             setSaving(false);
         }
@@ -637,7 +562,7 @@ const SubmissionDetail: React.FC<SubmissionDetailProps> = ({
                             </div>
 
                             {/* Быстрые действия - только при первичной проверке */}
-                            {!isEditingDecision && (
+                            {!showDecisionChange && (
                                 <div className="quick-actions">
                                     <h4>Быстрые действия</h4>
                                     <div className="quick-actions-buttons">
@@ -694,15 +619,13 @@ const SubmissionDetail: React.FC<SubmissionDetailProps> = ({
                                 <button
                                     className="admin-button"
                                     onClick={() => {
-                                        setIsEditingDecision(true);
+                                        setShowDecisionChange(true);
                                         // Инициализируем форму текущими значениями для корректировки
                                         setReviewForm({
                                             status: submission.status as 'approved' | 'rejected',
                                             points: submission.points_awarded || 0,
                                             feedback: ''
                                         });
-                                        setChangeReason('');
-                                        setError(null);
                                     }}
                                     style={{ width: '100%', marginBottom: '1rem' }}
                                 >
@@ -711,7 +634,7 @@ const SubmissionDetail: React.FC<SubmissionDetailProps> = ({
                             )}
 
                             {/* Форма изменения решения */}
-                            {isEditingDecision && (
+                            {showDecisionChange && (
                                 <>
                                     {error && (
                                         <div className="admin-error">
@@ -786,26 +709,11 @@ const SubmissionDetail: React.FC<SubmissionDetailProps> = ({
                                         </small>
                                     </div>
 
-                                    <div className="form-group">
-                                        <label>Причина изменения решения *</label>
-                                        <textarea
-                                            value={changeReason}
-                                            onChange={(e) => setChangeReason(e.target.value)}
-                                            className="admin-input"
-                                            rows={3}
-                                            placeholder="Обязательно укажите причину изменения решения..."
-                                            style={{ borderColor: changeReason.trim() ? '#ccc' : '#ff6b6b' }}
-                                        />
-                                        <small>
-                                            Например: "Обнаружена ошибка в первоначальной проверке", "Пересмотр критериев оценки"
-                                        </small>
-                                    </div>
-
                                     <div className="form-actions">
                                         <button
                                             className="admin-button"
-                                            onClick={changeDecision}
-                                            disabled={saving || !changeReason.trim()}
+                                            onClick={saveReview}
+                                            disabled={saving || !reviewForm.feedback.trim()}
                                             style={{ flex: 1 }}
                                         >
                                             {saving ? 'Сохранение...' : 'Сохранить изменения'}
@@ -813,8 +721,7 @@ const SubmissionDetail: React.FC<SubmissionDetailProps> = ({
                                         <button
                                             className="admin-button"
                                             onClick={() => {
-                                                setIsEditingDecision(false);
-                                                setChangeReason('');
+                                                setShowDecisionChange(false);
                                                 setError(null);
                                             }}
                                             disabled={saving}
