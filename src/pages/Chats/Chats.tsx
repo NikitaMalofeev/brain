@@ -27,25 +27,24 @@ export const Chats = () => {
     return (
         <Page>
 
-            <div className={'flex flex-col gap-4 p-4 bg-gray-100 text-black/80 min-h-screen'}>
-                <h2 className={'font-bold text-3xl'}>Важные чаты</h2>
-                {chats.map(el => (
-                    <Link className={'p-4 rounded-2xl bg-white flex items-center justify-between'} to={el.link}>
-                        <div className={'flex items-center gap-4'}>
-                            <div className={'min-w-10 h-10 bg-gray-200 rounded-full'}>
+            <div className={'flex flex-col gap-2  text-black min-h-screen'}>
+                <h2 className={'font-bold text-xl p-4'}>Важные чаты</h2>
+                <div className={'bg-[url("/bg3.jpg")] bg-cover bg-top p-4 rounded-t-3xl flex-1 flex flex-col gap-3'}>
+                    {chats.map(el => (
+                        <Link className={'p-4 rounded-3xl bg-white flex items-center justify-between gap-3'} to={el.link}>
+                            <div className={'flex items-center gap-3'}>
+                                <div className={'min-w-[48px] h-[48px] bg-gray-200 rounded-full'}>
 
+                                </div>
+                                <div className={'flex flex-col gap-1'}>
+                                    <p className={' font-semibold'}>{el.title}</p>
+                                    <p className={'text-sm font-medium text-[#9F9F9F]'}>{el.description}</p>
+                                </div>
                             </div>
-                            <div className={'flex flex-col gap-1'}>
-                                <p className={'text-lg font-bold'}>{el.title}</p>
-                                <p>{el.description}</p>
-                            </div>
-                        </div>
-                        <svg className={'min-w-8'} width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                            <path d="M9 5L16 12L9 19" stroke="black" stroke-width="1.5" stroke-linecap="round"
-                                stroke-linejoin="round" />
-                        </svg>
-                    </Link>
-                ))}
+                            <img src={'/arrow-icon.svg'} alt="" className={'w-[36px] h-[36px]'}/>
+                        </Link>
+                    ))}
+                </div>
             </div>
         </Page>
     )

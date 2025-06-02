@@ -1,6 +1,8 @@
 import React from 'react';
 import { LessonData } from '@/lib/supabase/hooks/useStageDetails';
 import { buildImageUrl } from '@/lib/cloudflareR2Service';
+import {clsx} from "clsx";
+import NativeModal from "@/components/NativeModal.tsx";
 
 interface LessonCardProps {
     lesson: LessonData;
@@ -9,7 +11,7 @@ interface LessonCardProps {
 
 // Функция для получения дефолтной обложки в зависимости от типа контента
 const getDefaultCover = (): string => {
-    return '/assets/bp cover.jpg';
+    return '/test.png';
 };
 
 // Функция для получения иконки статуса выполнения
@@ -43,7 +45,23 @@ const LessonCard: React.FC<LessonCardProps> = ({ lesson, onClick }) => {
     }
 
     return (
-        <div onClick={handleClick} style={{
+        <div onClick={lesson.is_unlocked ? handleClick : undefined} className={'flex flex-col w-full bg-white rounded-3xl overflow-hidden'}>
+            <div className={'relative w-full'}>
+                <img src={coverImageUrl} alt={''} className={clsx('h-[190px] w-full rounded-3xl object-cover', !lesson.is_unlocked && 'mix-blend-luminosity')}/>
+                {!lesson.is_unlocked && <div className={'p-[6px] rounded-full bg-[linear-gradient(109.65deg,_#E1C1F4_13.64%,_#B862EA_124.92%)] absolute top-1/2 left-1/2 -translate-y-1/2 -translate-x-1/2 z-[2]'}>
+                    <img src={'/lock.svg'} alt={''} className={clsx('min-w-6 h-6')} />
+                </div>}
+            </div>
+            <div className={'p-4 flex flex-col gap-2'}>
+                <p className={'font-semibold'}>{lesson.lesson_name}</p>
+                <div className={'flex flex-wrap gap-1'}>
+                    <p className={'rounded-full px-2 py-1 text-white text-xs font-medium bg-[linear-gradient(135deg,_rgba(141,197,241)_-48.61%,_#63ABE6_105.56%)]'}>День {lesson.order_num}</p>
+                    {!lesson.is_completed && <p className={'rounded-full px-2 py-1 text-white text-xs font-medium bg-[linear-gradient(135deg,_rgba(141,197,241)_-48.61%,_#63ABE6_105.56%)]'}>Не начато</p>}
+                </div>
+            </div>
+        </div>
+
+        /*<div onClick={handleClick} style={{
             display: 'flex',
             flexDirection: 'column',
             backgroundColor: '#FFFFFF',
@@ -68,7 +86,7 @@ const LessonCard: React.FC<LessonCardProps> = ({ lesson, onClick }) => {
                 e.currentTarget.style.boxShadow = '0 2px 8px rgba(0, 0, 0, 0.04)';
             }}
         >
-            {/* Обложка урока - большая как в Figma */}
+            {/!* Обложка урока - большая как в Figma *!/}
             <div
                 style={{
                     width: '100%',
@@ -106,7 +124,7 @@ const LessonCard: React.FC<LessonCardProps> = ({ lesson, onClick }) => {
                     }}
                 />
 
-                {/* Иконка замка для заблокированных уроков */}
+                {/!* Иконка замка для заблокированных уроков *!/}
                 {!lesson.is_unlocked && (
                     <div style={{
                         position: 'absolute',
@@ -126,14 +144,14 @@ const LessonCard: React.FC<LessonCardProps> = ({ lesson, onClick }) => {
                 )}
             </div>
 
-            {/* Информация под обложкой */}
+            {/!* Информация под обложкой *!/}
             <div style={{
                 display: 'flex',
                 flexDirection: 'column',
                 gap: '4px',
                 width: '100%'
             }}>
-                {/* Верхняя строка: День X и статус */}
+                {/!* Верхняя строка: День X и статус *!/}
                 <div style={{
                     display: 'flex',
                     justifyContent: 'space-between',
@@ -162,7 +180,7 @@ const LessonCard: React.FC<LessonCardProps> = ({ lesson, onClick }) => {
                     </span>
                 </div>
 
-                {/* Название урока */}
+                {/!* Название урока *!/}
                 <h3 style={{
                     fontFamily: 'Montserrat, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
                     fontWeight: 600,
@@ -176,7 +194,7 @@ const LessonCard: React.FC<LessonCardProps> = ({ lesson, onClick }) => {
                     {lesson.lesson_name}
                 </h3>
 
-                {/* Индикатор задания */}
+                {/!* Индикатор задания *!/}
                 {lesson.has_assignment && (
                     <div style={{
                         marginTop: '4px'
@@ -199,7 +217,7 @@ const LessonCard: React.FC<LessonCardProps> = ({ lesson, onClick }) => {
                     </div>
                 )}
             </div>
-        </div>
+        </div>*/
     );
 };
 

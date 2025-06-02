@@ -34,7 +34,6 @@ const DocumentBlock: React.FC<DocumentBlockProps> = ({ block }) => {
             {/* Заголовок, если есть */}
             {block.title && (
                 <h3 style={{
-                    fontFamily: 'Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
                     fontWeight: 700,
                     fontSize: '20px',
                     lineHeight: '1.2',
@@ -59,13 +58,16 @@ const DocumentBlock: React.FC<DocumentBlockProps> = ({ block }) => {
                 }}>
                     {/* Отображаем описание блока, если оно есть. Иначе ничего не показываем */}
                     {block.content_text && (
-                        <span style={{
-                            fontFamily: 'Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
+                        <div className={'flex flex-col gap-3 mt-4'} style={{
                             fontSize: '16px',
+                            lineHeight: '1.5',
                             color: '#242424',
+                            whiteSpace: 'pre-wrap',
                         }}>
-                            {block.content_text}
-                        </span>
+                            {block.content_text?.split('\n').map((line, i) => {
+                                return (<p>{line}</p>)
+                            })}
+                        </div>
                     )}
                 </div>
 
@@ -82,7 +84,6 @@ const DocumentBlock: React.FC<DocumentBlockProps> = ({ block }) => {
                             color: '#ffffff',
                             textDecoration: 'none',
                             borderRadius: '8px',
-                            fontFamily: 'Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
                             fontSize: '14px',
                             fontWeight: 500,
                         }}

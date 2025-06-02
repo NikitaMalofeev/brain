@@ -1,15 +1,15 @@
-import React, { useEffect, useState } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
-import { useSignal, initDataState } from '@telegram-apps/sdk-react';
-import { User } from '@supabase/supabase-js';
-import { Page } from '@/components/Page';
-import { useSupabaseUser } from '@/lib/supabase/hooks/useSupabaseUser';
-import { useAppContext } from '@/contexts/AppContext';
-import { logger } from '@/lib/logger';
-import { supabase } from '@/lib/supabase/client';
-import { LessonWithBlocks, LessonBlock, Submission, LessonProgress } from '@/lib/supabase/types';
-import { VideoBlock, AudioBlock, FixedSubmissionForm, DocumentBlock, ImageBlock } from '@/components/LessonContent';
-import { Button } from '@/components/ui/button';
+import React, {useEffect, useState} from 'react';
+import {useParams, useNavigate} from 'react-router-dom';
+import {useSignal, initDataState} from '@telegram-apps/sdk-react';
+import {User} from '@supabase/supabase-js';
+import {Page} from '@/components/Page';
+import {useSupabaseUser} from '@/lib/supabase/hooks/useSupabaseUser';
+import {useAppContext} from '@/contexts/AppContext';
+import {logger} from '@/lib/logger';
+import {supabase} from '@/lib/supabase/client';
+import {LessonWithBlocks, LessonBlock, Submission, LessonProgress} from '@/lib/supabase/types';
+import {VideoBlock, AudioBlock, FixedSubmissionForm, DocumentBlock, ImageBlock} from '@/components/LessonContent';
+import {Button} from '@/components/ui/button';
 
 interface LessonPageState {
     lesson: LessonWithBlocks | null;
@@ -20,11 +20,11 @@ interface LessonPageState {
 }
 
 const LessonPage: React.FC = () => {
-    const { id: lessonId } = useParams<{ id: string }>();
+    const {id: lessonId} = useParams<{ id: string }>();
     const navigate = useNavigate();
-    const { isTelegramApp } = useAppContext();
+    const {isTelegramApp} = useAppContext();
     const initDataSignal = useSignal(initDataState);
-    const { supabaseUser, loading: supabaseUserLoading, error: supabaseUserError } = useSupabaseUser(initDataSignal);
+    const {supabaseUser, loading: supabaseUserLoading, error: supabaseUserError} = useSupabaseUser(initDataSignal);
 
     const [state, setState] = useState<LessonPageState>({
         lesson: null,
@@ -65,11 +65,11 @@ const LessonPage: React.FC = () => {
         const fetchLessonData = async () => {
             if (!lessonId || !supabase) return;
 
-            setState(prev => ({ ...prev, loading: true, error: null }));
+            setState(prev => ({...prev, loading: true, error: null}));
 
             try {
                 // Получаем урок с блоками
-                const { data: lessonData, error: lessonError } = await supabase
+                const {data: lessonData, error: lessonError} = await supabase
                     .from('lessons')
                     .select(`
             *,
@@ -98,10 +98,10 @@ const LessonPage: React.FC = () => {
                     loading: false,
                 }));
 
-                logger.debug('Lesson data loaded', { lessonId, blocksCount: sortedBlocks.length });
+                logger.debug('Lesson data loaded', {lessonId, blocksCount: sortedBlocks.length});
 
             } catch (error) {
-                logger.error('Failed to fetch lesson data', { lessonId, error });
+                logger.error('Failed to fetch lesson data', {lessonId, error});
                 setState(prev => ({
                     ...prev,
                     error: error instanceof Error ? error.message : 'Ошибка загрузки урока',
@@ -120,7 +120,7 @@ const LessonPage: React.FC = () => {
 
             try {
                 // Получаем сдачи с данными куратора
-                const { data: submission } = await supabase
+                const {data: submission} = await supabase
                     .from('submissions')
                     .select(`
                         *,
@@ -134,7 +134,7 @@ const LessonPage: React.FC = () => {
                     .maybeSingle();
 
                 // Получаем прогресс урока
-                const { data: progress } = await supabase
+                const {data: progress} = await supabase
                     .from('lesson_progress')
                     .select('*')
                     .eq('user_id', supabaseCompatUser.id)
@@ -147,10 +147,10 @@ const LessonPage: React.FC = () => {
                     progress,
                 }));
 
-                logger.debug('User data loaded', { lessonId, hasSubmission: !!submission, hasProgress: !!progress });
+                logger.debug('User data loaded', {lessonId, hasSubmission: !!submission, hasProgress: !!progress});
 
             } catch (error) {
-                logger.error('Failed to fetch user data', { lessonId, error });
+                logger.error('Failed to fetch user data', {lessonId, error});
                 // Не показываем ошибку пользовательских данных как критичную
             }
         };
@@ -160,7 +160,7 @@ const LessonPage: React.FC = () => {
 
     // Обработчик обновления submission
     const handleSubmissionUpdate = (submission: Submission) => {
-        setState(prev => ({ ...prev, submission }));
+        setState(prev => ({...prev, submission}));
 
         // Сбрасываем режим пересдачи после успешной отправки
         if (isRetryingSubmission) {
@@ -171,7 +171,7 @@ const LessonPage: React.FC = () => {
 
     // Обработчик обновления прогресса урока
     const handleProgressUpdate = (progress: LessonProgress) => {
-        setState(prev => ({ ...prev, progress }));
+        setState(prev => ({...prev, progress}));
     };
 
     // Обработчик завершения урока без задания
@@ -197,7 +197,7 @@ const LessonPage: React.FC = () => {
 
             if (state.progress) {
                 // Обновляем существующую запись
-                const { data, error } = await supabase
+                const {data, error} = await supabase
                     .from('lesson_progress')
                     .update({
                         is_completed: true,
@@ -214,7 +214,7 @@ const LessonPage: React.FC = () => {
                 updatedProgress = data;
             } else {
                 // Создаем новую запись
-                const { data, error } = await supabase
+                const {data, error} = await supabase
                     .from('lesson_progress')
                     .insert(progressData)
                     .select()
@@ -245,7 +245,7 @@ const LessonPage: React.FC = () => {
         // Просто активируем режим пересдачи, не обновляя базу данных
         setIsRetryingSubmission(true);
 
-        logger.debug('Retry submission mode activated', { submissionId: state.submission.id });
+        logger.debug('Retry submission mode activated', {submissionId: state.submission.id});
     };
 
     // Обработчик отмены пересдачи
@@ -295,10 +295,10 @@ const LessonPage: React.FC = () => {
         const config = getStatusConfig();
 
         return (
-            <div style={{ marginBottom: '32px' }}>
+
+            <div>
                 {/* Заголовок с иконкой и статусом */}
-                <div style={{
-                    fontFamily: 'Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
+                {/*<div style={{
                     fontWeight: 700,
                     fontSize: '20px',
                     lineHeight: '1.2',
@@ -306,13 +306,12 @@ const LessonPage: React.FC = () => {
                     marginBottom: '16px',
                 }}>
                     {config.icon} {config.title}
-                </div>
+                </div>*/}
 
                 {/* Ваш ответ */}
                 {submission.content_text && (
-                    <div style={{ marginBottom: '16px' }}>
+                    <div style={{marginBottom: '16px'}}>
                         <p style={{
-                            fontFamily: 'Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
                             fontSize: '14px',
                             fontWeight: 600,
                             color: '#666666',
@@ -321,7 +320,6 @@ const LessonPage: React.FC = () => {
                             Ваш ответ:
                         </p>
                         <div style={{
-                            fontFamily: 'Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
                             fontSize: '16px',
                             lineHeight: '1.5',
                             color: '#666666',
@@ -336,7 +334,7 @@ const LessonPage: React.FC = () => {
 
                 {/* Прикрепленный файл */}
                 {submission.file_url && (
-                    <div style={{ marginBottom: '16px' }}>
+                    <div style={{marginBottom: '16px'}}>
                         {(() => {
                             const fileName = decodeURIComponent(submission.file_url.substring(submission.file_url.lastIndexOf('/') + 1));
                             const extension = fileName.split('.').pop()?.toLowerCase() || '';
@@ -352,7 +350,6 @@ const LessonPage: React.FC = () => {
                                     target="_blank"
                                     rel="noopener noreferrer"
                                     style={{
-                                        fontFamily: 'Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
                                         fontSize: '16px',
                                         color: '#4e9bff',
                                         textDecoration: 'none',
@@ -371,9 +368,8 @@ const LessonPage: React.FC = () => {
 
                 {/* Комментарий куратора (для approved/rejected) */}
                 {config.showFeedback && feedback && (
-                    <div style={{ marginBottom: '16px' }}>
+                    <div style={{marginBottom: '16px'}}>
                         <p style={{
-                            fontFamily: 'Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
                             fontSize: '14px',
                             fontWeight: 600,
                             color: '#666666',
@@ -382,7 +378,6 @@ const LessonPage: React.FC = () => {
                             💬 Комментарий куратора:
                         </p>
                         <div style={{
-                            fontFamily: 'Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
                             fontSize: '16px',
                             lineHeight: '1.5',
                             color: '#666666',
@@ -398,10 +393,9 @@ const LessonPage: React.FC = () => {
 
                 {/* Информация о проверке (для approved/rejected) */}
                 {config.showFeedback && (reviewerName || reviewedAt) && (
-                    <div style={{ marginBottom: '16px' }}>
+                    <div style={{marginBottom: '16px'}}>
                         {reviewerName && (
                             <p style={{
-                                fontFamily: 'Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
                                 fontSize: '14px',
                                 color: '#666666',
                                 margin: '4px 0',
@@ -411,7 +405,6 @@ const LessonPage: React.FC = () => {
                         )}
                         {reviewedAt && (
                             <p style={{
-                                fontFamily: 'Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
                                 fontSize: '14px',
                                 color: '#666666',
                                 margin: '4px 0',
@@ -424,9 +417,8 @@ const LessonPage: React.FC = () => {
 
                 {/* Мотивирующий текст для pending_review */}
                 {!config.showFeedback && (
-                    <div style={{ marginBottom: '16px' }}>
+                    <div style={{marginBottom: '16px'}}>
                         <p style={{
-                            fontFamily: 'Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
                             fontSize: '16px',
                             lineHeight: '1.5',
                             color: '#666666',
@@ -439,7 +431,7 @@ const LessonPage: React.FC = () => {
 
                 {/* Кнопка пересдачи для rejected */}
                 {config.showRetryButton && (
-                    <div style={{ marginBottom: '16px' }}>
+                    <div style={{marginBottom: '16px'}}>
                         {!isRetryingSubmission ? (
                             <>
                                 <Button
@@ -456,7 +448,6 @@ const LessonPage: React.FC = () => {
                                     🔄 Попробовать снова
                                 </Button>
                                 <p style={{
-                                    fontFamily: 'Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
                                     fontSize: '14px',
                                     color: '#666666',
                                     textAlign: 'center',
@@ -481,7 +472,6 @@ const LessonPage: React.FC = () => {
                                     ✕ Отменить исправление
                                 </Button>
                                 <p style={{
-                                    fontFamily: 'Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
                                     fontSize: '14px',
                                     color: '#666666',
                                     textAlign: 'center',
@@ -523,7 +513,6 @@ const LessonPage: React.FC = () => {
                     <div key={block.id} style={commonBlockStyle}>
                         {block.title && (
                             <h3 style={{
-                                fontFamily: 'Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
                                 fontWeight: 700,
                                 fontSize: '20px',
                                 lineHeight: '1.2',
@@ -533,15 +522,18 @@ const LessonPage: React.FC = () => {
                                 {block.title}
                             </h3>
                         )}
-                        <div style={{
-                            fontFamily: 'Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
-                            fontSize: '16px',
-                            lineHeight: '1.5',
-                            color: '#242424',
-                            whiteSpace: 'pre-wrap',
-                        }}>
-                            {block.content_text}
-                        </div>
+                        {block.content_text && (
+                            <div className={'flex flex-col gap-3 mt-4'} style={{
+                                fontSize: '16px',
+                                lineHeight: '1.5',
+                                color: '#242424',
+                                whiteSpace: 'pre-wrap',
+                            }}>
+                                {block.content_text?.split('\n').map((line, i) => {
+                                    return (<p>{line}</p>)
+                                })}
+                            </div>
+                        )}
                     </div>
                 );
 
@@ -550,7 +542,7 @@ const LessonPage: React.FC = () => {
                     <div key={block.id} style={commonBlockStyle}>
                         {block.title && (
                             <h3 style={{
-                                fontFamily: 'Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
+
                                 fontWeight: 700,
                                 fontSize: '20px',
                                 lineHeight: '1.2',
@@ -560,32 +552,32 @@ const LessonPage: React.FC = () => {
                                 {block.title}
                             </h3>
                         )}
-                        <VideoBlock block={block} />
+                        <VideoBlock block={block}/>
                         {block.content_text && (
-                            <div style={{
-                                fontFamily: 'Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
+                            <div className={'flex flex-col gap-3 mt-4'} style={{
                                 fontSize: '16px',
                                 lineHeight: '1.5',
                                 color: '#242424',
                                 whiteSpace: 'pre-wrap',
-                                marginTop: '16px',
                             }}>
-                                {block.content_text}
+                                {block.content_text?.split('\n').map((line, i) => {
+                                    return (<p>{line}</p>)
+                                })}
                             </div>
                         )}
                     </div>
                 );
 
             case 'audio':
-                return <AudioBlock key={block.id} block={block} />;
+                return <AudioBlock key={block.id} block={block}/>;
 
             case 'image':
                 // Используем новый компонент ImageBlock
-                return <div key={block.id} style={commonBlockStyle}><ImageBlock block={block} /></div>;
+                return <div key={block.id} style={commonBlockStyle}><ImageBlock block={block}/></div>;
 
             case 'pdf':
                 // Используем новый компонент PdfBlock
-                return <div key={block.id} style={commonBlockStyle}><DocumentBlock block={block} /></div>;
+                return <div key={block.id} style={commonBlockStyle}><DocumentBlock block={block}/></div>;
 
             // assignment_instruction блоки больше не существуют
             // Инструкции к заданию теперь обычные текстовые блоки
@@ -617,7 +609,6 @@ const LessonPage: React.FC = () => {
                     justifyContent: 'center',
                     alignItems: 'center',
                     height: '200px',
-                    fontFamily: 'Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
                     fontSize: '16px',
                     color: '#6d6d6d',
                 }}>
@@ -634,10 +625,9 @@ const LessonPage: React.FC = () => {
                     textAlign: 'center',
                     marginTop: '60px',
                     color: '#c53030',
-                    fontFamily: 'Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
                     fontSize: '16px',
                 }}>
-                    <div style={{ fontSize: '48px', marginBottom: '16px' }}>⚠️</div>
+                    <div style={{fontSize: '48px', marginBottom: '16px'}}>⚠️</div>
                     <div>{error instanceof Error ? error.message : String(error)}</div>
                 </div>
             </Page>
@@ -651,7 +641,6 @@ const LessonPage: React.FC = () => {
                     textAlign: 'center',
                     marginTop: '60px',
                     color: '#6d6d6d',
-                    fontFamily: 'Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
                     fontSize: '16px',
                 }}>
                     Урок не найден
@@ -676,58 +665,31 @@ const LessonPage: React.FC = () => {
 
     return (
         <Page back={true} showTabBar={false}>
-            <div style={{
-                maxWidth: '768px',
-                margin: '0 auto',
-                padding: `0 16px ${bottomPadding} 16px`,
-                fontFamily: 'Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
-            }}>
-                {/* Заголовок урока */}
-                <div style={{
-                    marginBottom: '24px',
-                    marginTop: '33px',
-                    textAlign: 'left',
-                }}>
-                    <h1 style={{
-                        fontFamily: 'Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
-                        fontWeight: 700,
-                        fontSize: '24px',
-                        lineHeight: '1.2',
-                        color: '#000000',
-                        margin: '0 0 8px 0',
-                    }}>
-                        {state.lesson.name}
-                    </h1>
-                    {state.lesson.description && (
-                        <p style={{
-                            fontFamily: 'Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
-                            fontSize: '16px',
-                            lineHeight: '1.5',
-                            color: '#8C8C8C',
-                            margin: '0',
-                        }}>
-                            {state.lesson.description}
-                        </p>
-                    )}
+            <div className={'text-black'}>
+                <img src={state.lesson.cover_image_url || '/test.png'}
+                     className={'h-[320px] rounded-b-3xl object-cover'} alt={''}/>
+                <div className={'p-4 flex flex-col gap-2'}>
+                    <p className={'font-bold text-xl'}>{state.lesson.name}</p>
+                    <div className={'flex flex-wrap gap-1'}>
+                        <p className={'rounded-full px-2 py-1 text-white text-xs font-medium bg-[linear-gradient(135deg,_rgba(141,197,241)_-48.61%,_#63ABE6_105.56%)]'}>День {state.lesson.order_num}</p>
+                        {!isLessonCompleted &&
+                            <p className={'rounded-full px-2 py-1 text-white text-xs font-medium bg-[linear-gradient(135deg,_rgba(141,197,241)_-48.61%,_#63ABE6_105.56%)]'}>Не
+                                начато</p>}
+                    </div>
                 </div>
-
-                {/* Блоки контента */}
-                <div style={{ marginBottom: '32px' }}>
+                <div className={'p-4 pb-8'}>
                     {state.lesson.blocks.map((block: LessonBlock) => renderContentBlock(block))}
                 </div>
-
-                {/* Блок с результатом сданного задания */}
                 {state.submission && (
-                    <div style={{ marginBottom: '32px' }}>
+                    <div style={{marginBottom: '32px'}}>
                         {renderSubmissionResult(state.submission)}
                     </div>
                 )}
 
                 {/* Блок завершенного урока без задания */}
                 {!hasAssignment && isLessonCompleted && state.progress && (
-                    <div style={{ marginBottom: '32px' }}>
+                    <div style={{marginBottom: '32px'}}>
                         <div style={{
-                            fontFamily: 'Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
                             fontWeight: 700,
                             fontSize: '20px',
                             lineHeight: '1.2',
@@ -738,13 +700,13 @@ const LessonPage: React.FC = () => {
                         </div>
 
                         <p style={{
-                            fontFamily: 'Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
                             fontSize: '16px',
                             lineHeight: '1.5',
                             color: '#666666',
                             marginBottom: '20px',
                         }}>
-                            Урок завершен {state.progress.completed_at ? new Date(state.progress.completed_at).toLocaleDateString('ru-RU') : ''}
+                            Урок
+                            завершен {state.progress.completed_at ? new Date(state.progress.completed_at).toLocaleDateString('ru-RU') : ''}
                         </p>
 
                         {state.lesson && typeof state.lesson.stage_id === 'number' && (
@@ -759,34 +721,37 @@ const LessonPage: React.FC = () => {
                         )}
                     </div>
                 )}
+
+
+                {/* Fixed форма сдачи (если есть задание и оно не сдано ИЛИ идет пересдача) */}
+                {showSubmissionForm && state.lesson && (
+                    <FixedSubmissionForm
+                        lessonId={parseInt(lessonId || '0')}
+                        stageId={state.lesson.stage_id as number | undefined}
+                        user={supabaseCompatUser}
+                        existingSubmission={state.submission}
+                        onSubmissionUpdate={handleSubmissionUpdate}
+                        isRetryMode={isRetryingSubmission}
+                    />
+                )}
+
+                {/* Кнопка завершения урока (если нет задания и урок не завершен) */}
+                {!hasAssignment && !isLessonCompleted && state.lesson && (
+                    <div className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 p-4 pb-8 z-50">
+                        <Button
+                            variant="black"
+                            onClick={handleCompleteLesson}
+                            disabled={!supabaseCompatUser || isCompletingLesson}
+                            className="w-full h-12 text-base font-semibold"
+                            size="lg"
+                        >
+                            {isCompletingLesson ? 'Завершаем...' : '✓ Урок пройден'}
+                        </Button>
+                    </div>
+                )}
             </div>
 
-            {/* Fixed форма сдачи (если есть задание и оно не сдано ИЛИ идет пересдача) */}
-            {showSubmissionForm && state.lesson && (
-                <FixedSubmissionForm
-                    lessonId={parseInt(lessonId || '0')}
-                    stageId={state.lesson.stage_id as number | undefined}
-                    user={supabaseCompatUser}
-                    existingSubmission={state.submission}
-                    onSubmissionUpdate={handleSubmissionUpdate}
-                    isRetryMode={isRetryingSubmission}
-                />
-            )}
 
-            {/* Кнопка завершения урока (если нет задания и урок не завершен) */}
-            {!hasAssignment && !isLessonCompleted && state.lesson && (
-                <div className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 p-4 pb-8 z-50">
-                    <Button
-                        variant="black"
-                        onClick={handleCompleteLesson}
-                        disabled={!supabaseCompatUser || isCompletingLesson}
-                        className="w-full h-12 text-base font-semibold"
-                        size="lg"
-                    >
-                        {isCompletingLesson ? 'Завершаем...' : '✓ Урок пройден'}
-                    </Button>
-                </div>
-            )}
         </Page>
     );
 };

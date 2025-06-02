@@ -14,6 +14,7 @@ import { HelpPage } from "@/pages/HelpPage/HelpPage.tsx";
 import { FaqPage } from "@/pages/FaqPage/FaqPage.tsx";
 import { CommonPage } from "@/pages/CommonPage/CommonPage.tsx";
 import { MainPage } from "@/pages/MainPage/MainPage.tsx";
+import {InfoPoints} from "@/pages/InfoPoints.tsx";
 
 export const routers = [
   {
@@ -22,7 +23,7 @@ export const routers = [
   },
   {
     path: '/library',
-    Component: LibraryPage
+    Component: CommonPage
   },
   {
     path: '/library/stage/:id',
@@ -31,6 +32,10 @@ export const routers = [
   {
     path: '/library/lesson/:id',
     Component: LessonPage
+  },
+  {
+    path: '/points',
+    Component: InfoPoints
   },
   {
     path: '/old-index',

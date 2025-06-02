@@ -44,7 +44,6 @@ const VideoBlock: React.FC<VideoBlockProps> = ({ block }) => {
                 borderRadius: '12px',
                 color: '#6d6d6d',
                 fontSize: '16px',
-                fontFamily: 'Inter, sans-serif',
             }}>
                 🎥 Видео недоступно или неверный ID
             </div>
