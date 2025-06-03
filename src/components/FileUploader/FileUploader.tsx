@@ -1,60 +1,90 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useImperativeHandle, forwardRef } from 'react';
 import { uploadFileToR2, buildFileUrl, getFilePrefixByType, FILE_PREFIXES, FilePrefix } from '@/lib/cloudflareR2Service';
 
 interface FileUploaderProps {
-    onUploadComplete: (filePath: string, fileUrl: string) => void;
-    onUploadError: (error: string) => void;
-    acceptedTypes?: string; // MIME types (например: "image/*" или "audio/*,image/*")
-    filePrefix?: FilePrefix; // Принудительно указать префикс
-    currentFileUrl?: string; // Текущий URL файла для превью
+    onFileSelected: (file: File | null) => void;
+    onUploadComplete?: (filePath: string, fileUrl: string) => void;
+    onUploadError?: (error: string) => void;
+    onDelete?: () => Promise<void>;
+    acceptedTypes?: string;
+    filePrefix?: FilePrefix;
+    currentFileUrl?: string;
     disabled?: boolean;
     className?: string;
+    showDeleteButton?: boolean;
 }
 
-export const FileUploader: React.FC<FileUploaderProps> = ({
+export interface FileUploaderRef {
+    uploadFile: () => Promise<{ filePath: string, fileUrl: string } | null>;
+    clearFile: () => void;
+    hasSelectedFile: () => boolean;
+}
+
+export const FileUploader = forwardRef<FileUploaderRef, FileUploaderProps>(({
+    onFileSelected,
     onUploadComplete,
     onUploadError,
+    onDelete,
     acceptedTypes = "*/*",
     filePrefix,
     currentFileUrl,
     disabled = false,
-    className = ""
-}) => {
-    const [uploading, setUploading] = useState(false);
+    className = "",
+    showDeleteButton = true
+}, ref) => {
+    const [selectedFile, setSelectedFile] = useState<File | null>(null);
     const [dragOver, setDragOver] = useState(false);
+    const [uploading, setUploading] = useState(false);
     const fileInputRef = useRef<HTMLInputElement>(null);
 
-    const handleFileUpload = async (file: File) => {
-        if (!file) return;
+    // Публичная функция для загрузки файла (вызывается снаружи при сохранении)
+    const uploadFile = async (): Promise<{ filePath: string, fileUrl: string } | null> => {
+        if (!selectedFile) return null;
 
         try {
             setUploading(true);
 
-            // Определяем префикс для файла
-            const effectivePrefix = filePrefix || getFilePrefixByType(file);
-
-            // Загружаем файл в R2
-            const filePath = await uploadFileToR2(file, effectivePrefix);
-
-            // Строим публичный URL
+            const effectivePrefix = filePrefix || getFilePrefixByType(selectedFile);
+            const filePath = await uploadFileToR2(selectedFile, effectivePrefix);
             const fileUrl = buildFileUrl(filePath);
 
-            // Уведомляем родительский компонент
-            onUploadComplete(filePath, fileUrl);
+            onUploadComplete?.(filePath, fileUrl);
+            return { filePath, fileUrl };
 
         } catch (error: any) {
             console.error('Ошибка загрузки файла:', error);
-            onUploadError(error.message || 'Произошла ошибка при загрузке файла');
+            onUploadError?.(error.message || 'Произошла ошибка при загрузке файла');
+            return null;
         } finally {
             setUploading(false);
         }
     };
 
-    const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
-        const file = e.target.files?.[0];
-        if (file) {
-            handleFileUpload(file);
+    const clearFile = () => {
+        setSelectedFile(null);
+        onFileSelected(null);
+        if (fileInputRef.current) {
+            fileInputRef.current.value = '';
         }
+    };
+
+    const hasSelectedFile = () => !!selectedFile;
+
+    // Экспортируем функции через ref
+    useImperativeHandle(ref, () => ({
+        uploadFile,
+        clearFile,
+        hasSelectedFile
+    }));
+
+    const handleFileSelect = (file: File | null) => {
+        setSelectedFile(file);
+        onFileSelected(file);
+    };
+
+    const handleFileInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        const file = e.target.files?.[0] || null;
+        handleFileSelect(file);
     };
 
     const handleDrop = (e: React.DragEvent<HTMLDivElement>) => {
@@ -62,10 +92,8 @@ export const FileUploader: React.FC<FileUploaderProps> = ({
         e.stopPropagation();
         setDragOver(false);
 
-        const file = e.dataTransfer.files[0];
-        if (file) {
-            handleFileUpload(file);
-        }
+        const file = e.dataTransfer.files[0] || null;
+        handleFileSelect(file);
     };
 
     const handleDragOver = (e: React.DragEvent<HTMLDivElement>) => {
@@ -86,69 +114,90 @@ export const FileUploader: React.FC<FileUploaderProps> = ({
         }
     };
 
-    // Определяем тип файла по префиксу или URL для отображения превью
-    const getFileTypeFromUrl = (url: string): string => {
-        if (url.includes('/images/') || url.match(/\.(jpg|jpeg|png|gif|webp|svg|bmp)$/i)) {
-            return 'image';
+    // Определяем что показывать в превью
+    const getPreviewSource = () => {
+        if (selectedFile) {
+            return URL.createObjectURL(selectedFile);
         }
-        if (url.includes('/audio/') || url.match(/\.(mp3|wav|ogg|aac|flac|m4a)$/i)) {
-            return 'audio';
+        return currentFileUrl;
+    };
+
+    const getFileTypeFromSource = (source: string | File): string => {
+        if (selectedFile) {
+            const type = selectedFile.type.toLowerCase();
+            if (type.startsWith('image/')) return 'image';
+            if (type.startsWith('audio/')) return 'audio';
+            if (type === 'application/pdf') return 'pdf';
+            return 'file';
         }
-        if (url.includes('/documents/') || url.match(/\.(pdf)$/i)) {
-            return 'pdf';
+
+        if (typeof source === 'string') {
+            if (source.includes('/images/') || source.match(/\.(jpg|jpeg|png|gif|webp|svg|bmp)$/i)) {
+                return 'image';
+            }
+            if (source.includes('/audio/') || source.match(/\.(mp3|wav|ogg|aac|flac|m4a)$/i)) {
+                return 'audio';
+            }
+            if (source.includes('/documents/') || source.match(/\.(pdf)$/i)) {
+                return 'pdf';
+            }
         }
-        return 'unknown';
+        return 'file';
     };
 
     const renderPreview = () => {
-        if (!currentFileUrl) return null;
+        const previewSource = getPreviewSource();
+        if (!previewSource) return null;
 
-        const fileType = getFileTypeFromUrl(currentFileUrl);
+        const fileType = getFileTypeFromSource(previewSource);
+        const isNewFile = !!selectedFile;
 
-        switch (fileType) {
-            case 'image':
-                return (
-                    <div className="file-preview">
-                        <img
-                            src={currentFileUrl}
-                            alt="Превью изображения"
-                            style={{
-                                maxWidth: '200px',
-                                maxHeight: '120px',
-                                objectFit: 'cover',
-                                borderRadius: '8px',
-                                border: '1px solid var(--admin-border)'
-                            }}
-                        />
+        return (
+            <div className="file-preview" style={{ marginTop: '12px' }}>
+                {isNewFile && (
+                    <div style={{ marginBottom: '8px', fontSize: '12px', color: '#666' }}>
+                        📄 Новый файл: {selectedFile?.name} (будет загружен при сохранении)
                     </div>
-                );
-            case 'audio':
-                return (
-                    <div className="file-preview">
-                        <audio
-                            controls
-                            style={{ width: '100%', maxWidth: '300px' }}
-                            src={currentFileUrl}
-                        >
-                            Ваш браузер не поддерживает аудио элемент.
-                        </audio>
-                    </div>
-                );
-            case 'pdf':
-                return (
-                    <div className="file-preview">
-                        <div style={{
-                            padding: '12px',
-                            border: '1px solid var(--admin-border)',
+                )}
+
+                {fileType === 'image' && (
+                    <img
+                        src={previewSource}
+                        alt="Превью изображения"
+                        style={{
+                            maxWidth: '200px',
+                            maxHeight: '120px',
+                            objectFit: 'cover',
                             borderRadius: '8px',
-                            background: 'var(--admin-bg-lighter)',
-                            display: 'flex',
-                            alignItems: 'center',
-                            gap: '8px'
-                        }}>
-                            📄 PDF файл
+                            border: '1px solid var(--admin-border)'
+                        }}
+                    />
+                )}
+
+                {fileType === 'audio' && (
+                    <audio
+                        controls
+                        style={{ width: '100%', maxWidth: '300px' }}
+                        src={previewSource}
+                    >
+                        Ваш браузер не поддерживает аудио элемент.
+                    </audio>
+                )}
+
+                {fileType === 'pdf' && (
+                    <div style={{
+                        padding: '12px',
+                        border: '1px solid var(--admin-border)',
+                        borderRadius: '8px',
+                        background: 'var(--admin-bg-lighter)',
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '8px'
+                    }}>
+                        📄 PDF файл
+                        {!isNewFile && (
                             <a
-                                href={currentFileUrl}
+                                href={previewSource}
                                 target="_blank"
                                 rel="noopener noreferrer"
                                 style={{
@@ -158,23 +207,45 @@ export const FileUploader: React.FC<FileUploaderProps> = ({
                             >
                                 Открыть
                             </a>
-                        </div>
+                        )}
                     </div>
-                );
-            default:
-                return (
-                    <div className="file-preview">
-                        <div style={{
-                            padding: '12px',
-                            border: '1px solid var(--admin-border)',
-                            borderRadius: '8px',
-                            background: 'var(--admin-bg-lighter)'
-                        }}>
-                            📎 Файл загружен
-                        </div>
+                )}
+
+                {fileType === 'file' && (
+                    <div style={{
+                        padding: '12px',
+                        border: '1px solid var(--admin-border)',
+                        borderRadius: '8px',
+                        background: 'var(--admin-bg-lighter)'
+                    }}>
+                        📎 {selectedFile?.name || 'Файл'}
                     </div>
-                );
-        }
+                )}
+
+                {/* Кнопка очистки/удаления */}
+                {showDeleteButton && selectedFile && (
+                    <button
+                        type="button"
+                        onClick={async () => {
+                            // Если выбран новый файл - просто очищаем
+                            clearFile();
+                        }}
+                        style={{
+                            marginTop: '8px',
+                            padding: '4px 8px',
+                            background: 'var(--admin-danger)',
+                            color: 'white',
+                            border: 'none',
+                            borderRadius: '4px',
+                            fontSize: '12px',
+                            cursor: 'pointer'
+                        }}
+                    >
+                        Очистить
+                    </button>
+                )}
+            </div>
+        );
     };
 
     return (
@@ -184,7 +255,7 @@ export const FileUploader: React.FC<FileUploaderProps> = ({
                 ref={fileInputRef}
                 type="file"
                 accept={acceptedTypes}
-                onChange={handleFileSelect}
+                onChange={handleFileInputChange}
                 disabled={disabled || uploading}
                 style={{ display: 'none' }}
             />
@@ -202,27 +273,21 @@ export const FileUploader: React.FC<FileUploaderProps> = ({
                     padding: '20px',
                     textAlign: 'center',
                     cursor: disabled || uploading ? 'not-allowed' : 'pointer',
-                    background: dragOver ? 'rgba(139, 92, 246, 0.1)' : 'var(--admin-bg-lighter)',
-                    transition: 'all 0.3s ease',
-                    marginBottom: currentFileUrl ? '16px' : '0'
+                    backgroundColor: dragOver ? 'var(--admin-bg-lighter)' : 'transparent',
+                    transition: 'all 0.2s ease'
                 }}
             >
                 {uploading ? (
-                    <div style={{ color: 'var(--admin-text-secondary)' }}>
-                        <div>⏳ Загрузка файла...</div>
-                        <div style={{ fontSize: '12px', marginTop: '4px' }}>
-                            Пожалуйста, подождите
-                        </div>
-                    </div>
+                    <div>⏳ Загрузка файла...</div>
                 ) : (
-                    <div style={{ color: 'var(--admin-text-secondary)' }}>
-                        <div>📁 Нажмите или перетащите файл сюда</div>
-                        <div style={{ fontSize: '12px', marginTop: '4px' }}>
-                            {acceptedTypes === "image/*" && "Поддерживаются изображения"}
-                            {acceptedTypes === "audio/*" && "Поддерживаются аудиофайлы"}
-                            {acceptedTypes === "application/pdf" && "Поддерживаются PDF файлы"}
-                            {acceptedTypes === "*/*" && "Поддерживаются все типы файлов"}
-                        </div>
+                    <div>
+                        <div style={{ fontSize: '24px', marginBottom: '8px' }}>📁</div>
+                        <div>Перетащите файл сюда или нажмите для выбора</div>
+                        {acceptedTypes !== "*/*" && (
+                            <div style={{ fontSize: '12px', color: '#666', marginTop: '4px' }}>
+                                Поддерживаемые типы: {acceptedTypes}
+                            </div>
+                        )}
                     </div>
                 )}
             </div>
@@ -231,4 +296,6 @@ export const FileUploader: React.FC<FileUploaderProps> = ({
             {renderPreview()}
         </div>
     );
-}; 
+});
+
+FileUploader.displayName = 'FileUploader'; 

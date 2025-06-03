@@ -1,5 +1,6 @@
 // Компонент карточки ступени
 import React from 'react';
+import { buildImageUrl } from '@/lib/cloudflareR2Service';
 
 // Импортируем SVG как компонент React
 // Убедитесь, что у вас есть файл lock.svg в указанном пути
@@ -12,6 +13,7 @@ export interface StageCardProps {
     // progressText: string; // Убираем, нет в дизайне карточки
     isLocked: boolean;
     // lockReason?: string; // Убираем, нет в дизайне карточки
+    coverImagePath?: string; // Путь к обложке ступени
     onClick: (id: number) => void; // ИСПРАВЛЕНО: теперь number
 }
 
@@ -19,8 +21,38 @@ const StageCard: React.FC<StageCardProps> = ({
     id,
     name,
     isLocked,
+    coverImagePath,
     onClick
 }) => {
+    // Диагностика обложки в консоли (как в LessonCard)
+    React.useEffect(() => {
+        if (coverImagePath) {
+            console.log(`🖼️ StageCard #${id} (${name}): обложка найдена -`, coverImagePath);
+            try {
+                const fullUrl = buildImageUrl(coverImagePath);
+                console.log(`🔗 StageCard #${id}: полный URL обложки -`, fullUrl);
+            } catch (error) {
+                console.warn(`⚠️ StageCard #${id}: ошибка построения URL -`, error);
+            }
+        } else {
+            console.log(`📭 StageCard #${id} (${name}): обложка отсутствует, используется дефолтная`);
+        }
+    }, [id, name, coverImagePath]);
+
+    // Определяем URL обложки с фолбэком
+    const getCoverImageUrl = () => {
+        if (!coverImagePath) {
+            return '/assets/default-lesson-cover.svg'; // Дефолтная обложка для ступеней
+        }
+
+        try {
+            return buildImageUrl(coverImagePath);
+        } catch (error) {
+            console.warn(`⚠️ StageCard #${id}: ошибка при построении URL обложки, используется дефолтная`, error);
+            return '/assets/default-lesson-cover.svg';
+        }
+    };
+
     return (
         <div
             onClick={() => !isLocked && onClick(id)}
@@ -39,43 +71,68 @@ const StageCard: React.FC<StageCardProps> = ({
                 width: '100%', // Занимаем всю ширину родителя
                 height: '171px', // Высота как в Figma
                 boxSizing: 'border-box', // Чтобы padding и border не влияли на общую ширину/высоту
-                // position: 'relative', // Убираем, так как замок теперь в потоке
+                overflow: 'hidden', // Чтобы обложка не выходила за границы
+                position: 'relative',
             }}
         >
-            <h3
+            {/* Обложка ступени */}
+            <div
                 style={{
-                    fontFamily: 'SF Pro Text, sans-serif',
-                    fontWeight: 500,
-                    fontSize: '14px',
-                    lineHeight: '1.42', // Примерно 20px / 14px
-                    color: '#000000',
-                    margin: 0, // Убираем стандартные отступы
-                    // Добавляем небольшой отступ снизу, если есть замок, чтобы было пространство
-                    marginBottom: isLocked ? '8px' : '0',
+                    width: '100%',
+                    height: '100px', // Примерно 60% высоты карточки
+                    backgroundImage: `url(${getCoverImageUrl()})`,
+                    backgroundSize: 'cover',
+                    backgroundPosition: 'center',
+                    backgroundRepeat: 'no-repeat',
+                    borderRadius: '16px 16px 0 0',
+                    position: 'relative',
                 }}
             >
-                {name}
-            </h3>
-            {isLocked && (
-                <div
+                {/* Затемнение для заблокированных ступеней */}
+                {isLocked && (
+                    <div
+                        style={{
+                            position: 'absolute',
+                            top: 0,
+                            left: 0,
+                            right: 0,
+                            bottom: 0,
+                            backgroundColor: 'rgba(0, 0, 0, 0.5)',
+                            borderRadius: '16px 16px 0 0',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                        }}
+                    >
+                        <span role="img" aria-label="lock" style={{ fontSize: '32px', color: '#FFFFFF' }}>🔒</span>
+                    </div>
+                )}
+            </div>
+
+            {/* Текстовый контент внизу */}
+            <div
+                style={{
+                    padding: '12px 16px',
+                    flex: 1,
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    textAlign: 'center',
+                }}
+            >
+                <h3
                     style={{
-                        // Убираем абсолютное позиционирование
-                        // position: 'absolute',
-                        // top: '50%',
-                        // left: '50%',
-                        // transform: 'translate(-50%, -50%)',
-                        width: '32px',  // Размеры иконки из Figma
-                        height: '32px',
-                        // Можно добавить marginTop, если нужно отодвинуть от текста
-                        // marginTop: '8px', // Перенесли контроль отступа в h3.marginBottom
+                        fontFamily: 'SF Pro Text, sans-serif',
+                        fontWeight: 500,
+                        fontSize: '14px',
+                        lineHeight: '1.42',
+                        color: isLocked ? '#999' : '#000000',
+                        margin: 0,
                     }}
                 >
-                    {/* Используем импортированную SVG иконку */}
-                    {/* <LockIcon style={{ width: '100%', height: '100%', fill: '#515151' }} /> */}
-                    {/* Временная заглушка, пока нет SVG */}
-                    <span role="img" aria-label="lock" style={{ fontSize: '32px', color: '#515151' }}>🔒</span>
-                </div>
-            )}
+                    {name}
+                </h3>
+            </div>
         </div>
     );
 };

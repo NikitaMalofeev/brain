@@ -15,12 +15,14 @@ export interface LibraryStageData {
     completed_lessons: number;
     unlock_condition_type_val: string | null;
     unlock_condition_value_val: string | null;
+    cover_image_path: string | null; // Добавлено для поддержки обложек ступеней
 }
 
 interface UseLibraryStagesResult {
     stages: LibraryStageData[];
     loading: boolean;
     error: Error | null;
+    refresh: () => void; // Функция для принудительного обновления
 }
 
 // TODO: Определить, как получать ID текущего пользователя и ID курса
@@ -29,6 +31,13 @@ const useLibraryStages = (user: User | null, courseId: string | null): UseLibrar
     const [stages, setStages] = useState<LibraryStageData[]>([]);
     const [loading, setLoading] = useState<boolean>(true);
     const [error, setError] = useState<Error | null>(null);
+    const [refreshTrigger, setRefreshTrigger] = useState<number>(0);
+
+    // Функция для принудительного обновления данных
+    const refresh = () => {
+        console.log('🔄 useLibraryStages: Принудительное обновление данных');
+        setRefreshTrigger(prev => prev + 1);
+    };
 
     useEffect(() => {
         if (!user || !courseId) {
@@ -72,9 +81,9 @@ const useLibraryStages = (user: User | null, courseId: string | null): UseLibrar
         };
 
         fetchStages();
-    }, [user, courseId]); // Перезапускаем эффект, если изменился пользователь или ID курса
+    }, [user, courseId, refreshTrigger]); // Добавляем refreshTrigger в зависимости
 
-    return { stages, loading, error };
+    return { stages, loading, error, refresh };
 };
 
 export default useLibraryStages; 

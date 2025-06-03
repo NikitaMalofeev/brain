@@ -72,7 +72,7 @@ const ImageBlock: React.FC<ImageBlockProps> = ({ block }) => {
                     whiteSpace: 'pre-wrap',
                 }}>
                     {block.content_text?.split('\n').map((line, i) => {
-                        return (<p>{line}</p>)
+                        return (<p key={i}>{line}</p>)
                     })}
                 </div>
             )}

@@ -1,6 +1,7 @@
 import React, { useRef, useEffect, useState } from 'react';
 import { draggable, dropTargetForElements } from '@atlaskit/pragmatic-drag-and-drop/element/adapter';
 import { combine } from '@atlaskit/pragmatic-drag-and-drop/combine';
+import { buildFileUrl } from '@/lib/cloudflareR2Service';
 
 interface DraggableLessonRowProps {
     lesson: any;
@@ -24,6 +25,7 @@ interface DraggableLessonRowProps {
     onDeleteLesson: (id: number, name: string) => void;
     updateLoading: boolean;
     onReorder: (draggedLessonId: number, targetLessonId: number) => void;
+    onEditCover: (lesson: any) => void;
 }
 
 const DraggableLessonRow: React.FC<DraggableLessonRowProps> = ({
@@ -47,7 +49,8 @@ const DraggableLessonRow: React.FC<DraggableLessonRowProps> = ({
     onLessonSelect,
     onDeleteLesson,
     updateLoading,
-    onReorder
+    onReorder,
+    onEditCover
 }) => {
     const ref = useRef<HTMLTableRowElement>(null);
     const [isDraggedOver, setIsDraggedOver] = useState(false);
@@ -94,6 +97,47 @@ const DraggableLessonRow: React.FC<DraggableLessonRowProps> = ({
             }}
             className={isDraggedOver ? 'drag-over' : ''}
         >
+            <td>
+                {/* Столбец обложки урока */}
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    {lesson.cover_image_path ? (
+                        <img
+                            src={buildFileUrl(lesson.cover_image_path)}
+                            alt="Обложка урока"
+                            style={{
+                                width: '40px',
+                                height: '40px',
+                                objectFit: 'cover',
+                                borderRadius: '6px',
+                                border: '1px solid var(--admin-border)'
+                            }}
+                        />
+                    ) : (
+                        <div style={{
+                            width: '40px',
+                            height: '40px',
+                            backgroundColor: '#f0f0f0',
+                            border: '1px dashed #ccc',
+                            borderRadius: '8px',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            fontSize: '12px',
+                            color: '#999'
+                        }}>
+                            📷
+                        </div>
+                    )}
+                    <button
+                        className="action-btn edit-btn"
+                        onClick={() => onEditCover(lesson)}
+                        title="Редактировать обложку"
+                        style={{ fontSize: '12px', padding: '4px 8px' }}
+                    >
+                        {lesson.cover_image_path && lesson.cover_image_path.trim() ? 'Изменить' : 'Добавить'}
+                    </button>
+                </div>
+            </td>
             <td>
                 {isEditing ? (
                     <input

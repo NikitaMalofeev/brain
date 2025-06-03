@@ -26,23 +26,43 @@ export const useLessonsAdmin = (stageId: number): UseLessonsAdminResult => {
             setLoading(true);
             setError(null);
 
+            if (!supabase) {
+                throw new Error('Supabase клиент не инициализирован');
+            }
+
             const { data, error: fetchError } = await supabase
                 .from('lessons')
                 .select(`
-          *,
-          lesson_blocks(count)
+          id,
+          stage_id,
+          name,
+          description,
+          order_num,
+          created_at,
+          updated_at,
+          has_assignment,
+          open_at,
+          deadline_at,
+          cover_image_path,
+          lesson_blocks!inner(count)
         `)
                 .eq('stage_id', stageId)
-                .order('order_num', { ascending: true });
+                .order('order_num');
 
             if (fetchError) {
+                console.error('❌ Ошибка загрузки уроков:', fetchError);
                 throw new Error(fetchError.message);
             }
 
-            setLessons(data || []);
-        } catch (err) {
-            console.error('Ошибка при загрузке уроков:', err);
-            setError(err as Error);
+            if (!data) {
+                throw new Error('Данные уроков отсутствуют');
+            }
+
+            setLessons(data);
+
+        } catch (error: any) {
+            console.error('❌ Критическая ошибка в fetchLessons:', error);
+            setError(error);
         } finally {
             setLoading(false);
         }
@@ -50,6 +70,10 @@ export const useLessonsAdmin = (stageId: number): UseLessonsAdminResult => {
 
     const createLesson = async (data: LessonInsert) => {
         try {
+            if (!supabase) {
+                throw new Error('Supabase клиент не инициализирован');
+            }
+
             const { error: createError } = await supabase
                 .from('lessons')
                 .insert(data);
@@ -67,6 +91,10 @@ export const useLessonsAdmin = (stageId: number): UseLessonsAdminResult => {
 
     const updateLesson = async (id: number, data: LessonUpdate) => {
         try {
+            if (!supabase) {
+                throw new Error('Supabase клиент не инициализирован');
+            }
+
             const { error: updateError } = await supabase
                 .from('lessons')
                 .update(data)
@@ -85,6 +113,10 @@ export const useLessonsAdmin = (stageId: number): UseLessonsAdminResult => {
 
     const deleteLesson = async (id: number) => {
         try {
+            if (!supabase) {
+                throw new Error('Supabase клиент не инициализирован');
+            }
+
             const { error: deleteError } = await supabase
                 .from('lessons')
                 .delete()
@@ -101,8 +133,9 @@ export const useLessonsAdmin = (stageId: number): UseLessonsAdminResult => {
         }
     };
 
+    // Загружаем уроки при изменении stageId
     useEffect(() => {
-        if (stageId) {
+        if (stageId && stageId > 0) {
             fetchLessons();
         }
     }, [stageId]);

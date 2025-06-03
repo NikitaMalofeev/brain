@@ -76,6 +76,13 @@
 - `created_at` (timestamptz, default: CURRENT_TIMESTAMP) - Время создания
 - `updated_at` (timestamptz, default: CURRENT_TIMESTAMP) - Время обновления
 - `is_unlocked` (boolean, default: false, NOT NULL) - Флаг разблокировки этапа
+- `cover_image_path` (text) - Путь к файлу обложки ступени в CloudFlare R2 (например: images/stage_cover_123.jpg)
+
+**✅ НОВОЕ: Обложки ступеней (19.12.2024):**
+- Добавлено поле `cover_image_path` для хранения пути к обложке ступени
+- Файлы обложек хранятся в CloudFlare R2 в папке `images/`
+- Полный URL формируется динамически через `buildImageUrl(cover_image_path)`
+- При отсутствии обложки используется дефолтная заглушка
 
 **RLS:** ВЫКЛЮЧЕН
 
@@ -232,6 +239,7 @@
 - `completed_lessons` (bigint)
 - `unlock_condition_type_val` (text)
 - `unlock_condition_value_val` (text)
+- `cover_image_path` (text) - путь к обложке ступени в CloudFlare R2
 
 ### `lesson_has_submission(lesson_id_param BIGINT)` ⚠️ УСТАРЕВШАЯ
 **Назначение:** Проверяет есть ли в уроке форма сдачи.

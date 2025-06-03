@@ -1,6 +1,8 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useLessonsAdmin } from '@/lib/supabase/hooks';
 import DraggableLessonRow from './DraggableLessonRow';
+import { FileUploader, type FileUploaderRef } from '@/components/FileUploader/FileUploader';
+import { buildFileUrl, buildImageUrl, FILE_PREFIXES, deleteFileFromR2 } from '@/lib/cloudflareR2Service';
 
 interface LessonsManagerProps {
     courseId: string;
@@ -62,6 +64,7 @@ const getDefaultOpenTime = (): string => {
 
 const LessonsManager: React.FC<LessonsManagerProps> = ({ courseId, stageId, onBack, onLessonSelect }) => {
     const { lessons, loading, error, refetch, createLesson, updateLesson, deleteLesson } = useLessonsAdmin(stageId);
+
     const [updateLoading, setUpdateLoading] = useState<boolean>(false);
     const [updateError, setUpdateError] = useState<string | null>(null);
 
@@ -82,6 +85,15 @@ const LessonsManager: React.FC<LessonsManagerProps> = ({ courseId, stageId, onBa
     const [editHasAssignment, setEditHasAssignment] = useState(false);
     const [editOpenAt, setEditOpenAt] = useState('');
     const [editDeadlineAt, setEditDeadlineAt] = useState('');
+
+    // Состояния для модального окна обложки
+    const [coverModalOpen, setCoverModalOpen] = useState(false);
+    const [selectedLessonForCover, setSelectedLessonForCover] = useState<any | null>(null);
+    const [selectedCoverFile, setSelectedCoverFile] = useState<File | null>(null);
+    const [coverSaving, setCoverSaving] = useState(false);
+
+    // Ref для FileUploader
+    const fileUploaderRef = useRef<FileUploaderRef>(null);
 
     // Автоматически обновляем newOrderNum при изменении списка уроков
     useEffect(() => {
@@ -265,13 +277,88 @@ const LessonsManager: React.FC<LessonsManagerProps> = ({ courseId, stageId, onBa
                 await updateLesson(update.id, { order_num: update.order_num });
             }
 
-            console.log('✅ Порядок уроков успешно обновлен');
-
         } catch (error: any) {
             console.error('Ошибка при изменении порядка уроков:', error);
             setUpdateError(error.message || 'Произошла ошибка при изменении порядка уроков');
         } finally {
             setUpdateLoading(false);
+        }
+    };
+
+    const handleFileSelected = (file: File | null) => {
+        setSelectedCoverFile(file);
+    };
+
+    const handleFileUploadError = (error: string) => {
+        setUpdateError(`Ошибка загрузки файла: ${error}`);
+    };
+
+    const openCoverModal = (lesson: any) => {
+        setSelectedLessonForCover(lesson);
+        setSelectedCoverFile(null);
+        setCoverModalOpen(true);
+    };
+
+    const closeCoverModal = () => {
+        setCoverModalOpen(false);
+        setSelectedLessonForCover(null);
+        setSelectedCoverFile(null);
+    };
+
+    const saveLessonCover = async () => {
+        if (!selectedLessonForCover || !fileUploaderRef.current?.hasSelectedFile()) {
+            closeCoverModal();
+            return;
+        }
+
+        try {
+            setCoverSaving(true);
+
+            // Загружаем файл в R2
+            const uploadResult = await fileUploaderRef.current.uploadFile();
+            if (!uploadResult) {
+                throw new Error('Не удалось загрузить файл');
+            }
+
+            const { filePath } = uploadResult;
+
+            // Сохраняем путь в базе данных
+            await updateLesson(selectedLessonForCover.id, {
+                cover_image_path: filePath
+            });
+
+            closeCoverModal();
+        } catch (error: any) {
+            console.error('Ошибка сохранения обложки урока:', error);
+            setUpdateError(`Ошибка сохранения обложки: ${error.message}`);
+        } finally {
+            setCoverSaving(false);
+        }
+    };
+
+    const deleteLessonCover = async () => {
+        if (!selectedLessonForCover || !selectedLessonForCover.cover_image_path) return;
+
+        const confirmDelete = confirm('Вы уверены, что хотите удалить обложку урока? Файл будет удален из CloudFlare R2.');
+        if (!confirmDelete) return;
+
+        try {
+            setCoverSaving(true);
+
+            // Удаляем файл из CloudFlare R2
+            await deleteFileFromR2(selectedLessonForCover.cover_image_path);
+
+            // Удаляем путь из базы данных (устанавливаем пустую строку)
+            await updateLesson(selectedLessonForCover.id, {
+                cover_image_path: ''
+            });
+
+            closeCoverModal();
+        } catch (error: any) {
+            console.error('Ошибка удаления обложки урока:', error);
+            setUpdateError(`Ошибка удаления обложки: ${error.message}`);
+        } finally {
+            setCoverSaving(false);
         }
     };
 
@@ -386,6 +473,7 @@ const LessonsManager: React.FC<LessonsManagerProps> = ({ courseId, stageId, onBa
                     <table>
                         <thead>
                             <tr>
+                                <th>Обложка</th>
                                 <th>Название</th>
                                 <th>Описание</th>
                                 <th>Порядок</th>
@@ -421,10 +509,113 @@ const LessonsManager: React.FC<LessonsManagerProps> = ({ courseId, stageId, onBa
                                     onDeleteLesson={handleDeleteLesson}
                                     updateLoading={updateLoading}
                                     onReorder={handleLessonReorder}
+                                    onEditCover={openCoverModal}
                                 />
                             ))}
                         </tbody>
                     </table>
+                </div>
+            )}
+
+            {/* Модальное окно редактирования обложки урока */}
+            {coverModalOpen && (
+                <div className="admin-modal-backdrop" onClick={closeCoverModal}>
+                    <div className="admin-modal" onClick={(e) => e.stopPropagation()}>
+                        <button className="admin-modal-close" onClick={closeCoverModal}>×</button>
+
+                        <h3>Обложка урока: {selectedLessonForCover?.name}</h3>
+
+                        <div className="form-group">
+                            <label>Текущая обложка:</label>
+                            {selectedLessonForCover?.cover_image_path ? (
+                                <div style={{ marginBottom: '16px' }}>
+                                    <img
+                                        src={buildFileUrl(selectedLessonForCover.cover_image_path)}
+                                        alt="Текущая обложка урока"
+                                        style={{
+                                            width: '200px',
+                                            height: '120px',
+                                            borderRadius: '8px',
+                                            objectFit: 'cover',
+                                            border: '1px solid #e0e0e0'
+                                        }}
+                                        onError={(e) => {
+                                            console.warn('Ошибка загрузки обложки урока:', selectedLessonForCover.cover_image_path);
+                                            e.currentTarget.style.display = 'none';
+                                        }}
+                                    />
+                                    <div style={{ marginTop: '8px', fontSize: '12px', color: '#666' }}>
+                                        {selectedLessonForCover.cover_image_path}
+                                    </div>
+                                </div>
+                            ) : (
+                                <div style={{
+                                    width: '200px',
+                                    height: '120px',
+                                    borderRadius: '8px',
+                                    background: '#f5f5f5',
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    justifyContent: 'center',
+                                    marginBottom: '16px',
+                                    color: '#999',
+                                    border: '2px dashed #ddd'
+                                }}>
+                                    Обложка не установлена
+                                </div>
+                            )}
+                        </div>
+
+                        <div className="form-group">
+                            <label>Загрузить новую обложку:</label>
+                            <FileUploader
+                                ref={fileUploaderRef}
+                                onFileSelected={handleFileSelected}
+                                onUploadError={handleFileUploadError}
+                                acceptedTypes="image/*"
+                                filePrefix="images/"
+                                currentFileUrl={selectedLessonForCover?.cover_image_path ? buildImageUrl(selectedLessonForCover.cover_image_path) : undefined}
+                                disabled={coverSaving}
+                            />
+                            <small style={{ color: 'var(--admin-text-secondary)', marginTop: '8px', display: 'block' }}>
+                                💡 Поддерживаются форматы: JPG, PNG, WEBP. Рекомендуемый размер: 380x190px<br />
+                                📐 Соотношение 2:1 идеально для карточек уроков (высота 190px в приложении)
+                            </small>
+                        </div>
+
+                        <div className="form-actions">
+                            <button
+                                type="button"
+                                className="admin-button"
+                                onClick={saveLessonCover}
+                                disabled={coverSaving}
+                            >
+                                {coverSaving ? 'Сохранение...' : 'Сохранить'}
+                            </button>
+
+                            {selectedLessonForCover?.cover_image_path && (
+                                <button
+                                    type="button"
+                                    className="admin-button"
+                                    style={{ background: 'var(--admin-danger)' }}
+                                    onClick={deleteLessonCover}
+                                    disabled={coverSaving}
+                                >
+                                    Удалить обложку
+                                </button>
+                            )}
+
+                            <button
+                                type="button"
+                                className="admin-button"
+                                style={{ background: 'var(--admin-secondary)' }}
+                                onClick={closeCoverModal}
+                                disabled={coverSaving}
+                            >
+                                Отмена
+                            </button>
+                        </div>
+                    </div>
                 </div>
             )}
         </div>

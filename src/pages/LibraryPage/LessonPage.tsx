@@ -11,6 +11,7 @@ import { LessonWithBlocks, LessonBlock, Submission, LessonProgress } from '@/lib
 import { VideoBlock, AudioBlock, FixedSubmissionForm, DocumentBlock, ImageBlock } from '@/components/LessonContent';
 import { Button } from '@/components/ui/button';
 import { getDeadlineStatus, formatDeadline } from '@/helpers/deadlineUtils';
+import { buildImageUrl } from '@/lib/cloudflareR2Service';
 
 interface LessonPageState {
     lesson: LessonWithBlocks | null;
@@ -670,7 +671,7 @@ const LessonPage: React.FC = () => {
                                 whiteSpace: 'pre-wrap',
                             }}>
                                 {block.content_text?.split('\n').map((line, i) => {
-                                    return (<p>{line}</p>)
+                                    return (<p key={i}>{line}</p>)
                                 })}
                             </div>
                         )}
@@ -701,7 +702,7 @@ const LessonPage: React.FC = () => {
                                 whiteSpace: 'pre-wrap',
                             }}>
                                 {block.content_text?.split('\n').map((line, i) => {
-                                    return (<p>{line}</p>)
+                                    return (<p key={i}>{line}</p>)
                                 })}
                             </div>
                         )}
@@ -806,8 +807,14 @@ const LessonPage: React.FC = () => {
     return (
         <Page back={true} showTabBar={false}>
             <div className={'text-black'}>
-                <img src={state.lesson.cover_image_url || '/test.png'}
-                    className={'h-[320px] rounded-b-3xl object-cover'} alt={''} />
+                <img
+                    src={state.lesson.cover_image_path ? buildImageUrl(state.lesson.cover_image_path) : '/test.png'}
+                    className={'w-full h-[193px] object-cover'}
+                    style={{
+                        borderRadius: '0 0 24px 24px', // Скругление только снизу как в Figma
+                    }}
+                    alt={state.lesson.name}
+                />
                 <div className={'p-4 flex flex-col gap-2'}>
                     <p className={'font-bold text-xl'}>{state.lesson.name}</p>
                     <div className={'flex flex-wrap gap-1'}>

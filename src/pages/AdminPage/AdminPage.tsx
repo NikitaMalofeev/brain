@@ -1,15 +1,17 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { FileUploader, CloudFlareR2Diagnostics } from '@/components';
+import type { FileUploaderRef } from '@/components/FileUploader/FileUploader';
 import { supabase } from '@/lib/supabase/client';
 import { useCoursesAdmin, useStagesAdmin, useLessonsAdmin, useBlocksAdmin } from '@/lib/supabase/hooks';
-import { FILE_PREFIXES } from '@/lib/cloudflareR2Service';
+import { FILE_PREFIXES, buildImageUrl, deleteFileFromR2 } from '@/lib/cloudflareR2Service';
 import { PlayerProvider } from '@/contexts/PlayerContext';
 import './AdminPage.css';
 import { MdRefresh, MdLogout, MdArrowBack } from 'react-icons/md';
 import { Database } from '../../lib/supabase/types';
 import { draggable, dropTargetForElements } from '@atlaskit/pragmatic-drag-and-drop/element/adapter';
 import { combine } from '@atlaskit/pragmatic-drag-and-drop/combine';
+import { logger } from '@/lib/logger';
 
 // Импорты для компонентов проверки ДЗ
 import SubmissionsManager from './SubmissionsManager';
@@ -19,6 +21,7 @@ import { DiagnosticsPage } from '../DiagnosticsPage/DiagnosticsPage';
 // Импорты отдельных компонентов админки
 import LessonsManager from './components/LessonsManager';
 import DraggableBlockRow from './components/DraggableBlockRow';
+import DraggableLessonRow from './components/DraggableLessonRow';
 
 type SupabaseUser = Database['public']['Tables']['users']['Row'];
 
@@ -338,6 +341,7 @@ const StagesManager: React.FC<StagesManagerProps> = ({ courseId, onBack, onStage
   const [newDescription, setNewDescription] = useState('');
   const [newOrderNum, setNewOrderNum] = useState(1);
   const [newIsUnlocked, setNewIsUnlocked] = useState(false);
+  const [newCoverImagePath, setNewCoverImagePath] = useState('');
   const [addLoading, setAddLoading] = useState(false);
 
   // Редактируемая ступень
@@ -346,6 +350,17 @@ const StagesManager: React.FC<StagesManagerProps> = ({ courseId, onBack, onStage
   const [editDescription, setEditDescription] = useState('');
   const [editOrderNum, setEditOrderNum] = useState(1);
   const [editIsUnlocked, setEditIsUnlocked] = useState(false);
+  const [editCoverImagePath, setEditCoverImagePath] = useState('');
+
+  // Состояние для загрузки файлов
+  const [uploadError, setUploadError] = useState<string | null>(null);
+
+  // Модальное окно для редактирования обложки
+  const [isCoverModalOpen, setIsCoverModalOpen] = useState(false);
+  const [editingCoverStage, setEditingCoverStage] = useState<any | null>(null);
+
+  // Ref для FileUploader
+  const fileUploaderRef = useRef<FileUploaderRef>(null);
 
   // Автоматически обновляем newOrderNum при изменении списка ступеней
   useEffect(() => {
@@ -356,6 +371,105 @@ const StagesManager: React.FC<StagesManagerProps> = ({ courseId, onBack, onStage
       setNewOrderNum(1);
     }
   }, [stages]);
+
+  // Обработчики для загрузки файлов
+  const handleFileUploadComplete = (filePath: string, fileUrl: string) => {
+    if (editingStage) {
+      setEditCoverImagePath(filePath);
+    } else if (editingCoverStage) {
+      setEditingCoverStage((prev: any) => ({ ...prev, cover_image_path: filePath }));
+    } else {
+      setNewCoverImagePath(filePath);
+    }
+    setUploadError(null);
+  };
+
+  const handleFileUploadError = (error: string) => {
+    setUploadError(error);
+  };
+
+  const handleFileSelected = (file: File | null) => {
+    // Пока что ничего не делаем - файл будет загружен при сохранении
+    console.log('Файл выбран для ступени:', file?.name);
+  };
+
+  // Открыть модал для редактирования обложки
+  const openCoverModal = (stage: any) => {
+    setEditingCoverStage({ ...stage });
+    setUploadError(null);
+    setIsCoverModalOpen(true);
+  };
+
+  // Закрыть модал обложки
+  const closeCoverModal = () => {
+    setIsCoverModalOpen(false);
+    setEditingCoverStage(null);
+    setUploadError(null);
+  };
+
+  // Сохранить обложку ступени
+  const saveStageCover = async () => {
+    if (!editingCoverStage) return;
+
+    try {
+      setUpdateLoading(true);
+      setUpdateError(null);
+
+      let coverImagePath = editingCoverStage.cover_image_path;
+
+      // Если выбран новый файл, загружаем его в R2
+      if (fileUploaderRef.current?.hasSelectedFile()) {
+        const uploadResult = await fileUploaderRef.current.uploadFile();
+        if (uploadResult) {
+          coverImagePath = uploadResult.filePath;
+        }
+      }
+
+      await updateStage(editingCoverStage.id, {
+        cover_image_path: coverImagePath || '',
+      });
+
+      closeCoverModal();
+
+    } catch (error: any) {
+      console.error('Ошибка при сохранении обложки ступени:', error);
+      setUpdateError(error.message || 'Произошла ошибка при сохранении обложки');
+    } finally {
+      setUpdateLoading(false);
+    }
+  };
+
+  // Удалить обложку ступени
+  const deleteStageCover = async () => {
+    if (!editingCoverStage || !editingCoverStage.cover_image_path) return;
+
+    const confirmDelete = confirm('Вы уверены, что хотите удалить обложку ступени? Файл будет удален из CloudFlare R2.');
+    if (!confirmDelete) return;
+
+    try {
+      setUpdateLoading(true);
+      setUpdateError(null);
+
+      // Удаляем файл из CloudFlare R2
+      await deleteFileFromR2(editingCoverStage.cover_image_path);
+
+      // Обновляем запись в БД - используем null вместо undefined
+      await updateStage(editingCoverStage.id, {
+        cover_image_path: null as any
+      });
+
+      // Принудительно обновляем данные
+      await refetch();
+
+      closeCoverModal();
+
+    } catch (error: any) {
+      console.error('❌ Ошибка при удалении обложки ступени:', error);
+      setUpdateError(error.message || 'Произошла ошибка при удалении обложки');
+    } finally {
+      setUpdateLoading(false);
+    }
+  };
 
   // Добавление ступени
   const handleAddStage = async () => {
@@ -374,12 +488,14 @@ const StagesManager: React.FC<StagesManagerProps> = ({ courseId, onBack, onStage
         description: newDescription.trim() || undefined,
         order_num: newOrderNum,
         is_unlocked: newIsUnlocked,
+        cover_image_path: newCoverImagePath || undefined,
       });
 
       // Очищаем форму
       setNewName('');
       setNewDescription('');
       setNewIsUnlocked(false);
+      setNewCoverImagePath('');
 
     } catch (error: any) {
       console.error('Ошибка при добавлении ступени:', error);
@@ -416,6 +532,8 @@ const StagesManager: React.FC<StagesManagerProps> = ({ courseId, onBack, onStage
     setEditDescription(stage.description || '');
     setEditOrderNum(stage.order_num);
     setEditIsUnlocked(stage.is_unlocked || false);
+    setEditCoverImagePath(stage.cover_image_path || '');
+    setUploadError(null);
   };
 
   // Отмена редактирования
@@ -425,6 +543,8 @@ const StagesManager: React.FC<StagesManagerProps> = ({ courseId, onBack, onStage
     setEditDescription('');
     setEditOrderNum(1);
     setEditIsUnlocked(false);
+    setEditCoverImagePath('');
+    setUploadError(null);
   };
 
   // Сохранение отредактированной ступени
@@ -444,6 +564,7 @@ const StagesManager: React.FC<StagesManagerProps> = ({ courseId, onBack, onStage
         description: editDescription.trim() || undefined,
         order_num: editOrderNum,
         is_unlocked: editIsUnlocked,
+        cover_image_path: editCoverImagePath || undefined,
       });
 
       // Очищаем форму редактирования
@@ -545,6 +666,7 @@ const StagesManager: React.FC<StagesManagerProps> = ({ courseId, onBack, onStage
                 <th>Порядок</th>
                 <th>Уроков</th>
                 <th>Разблокирована</th>
+                <th>Обложка</th>
                 <th>Действия</th>
               </tr>
             </thead>
@@ -602,6 +724,48 @@ const StagesManager: React.FC<StagesManagerProps> = ({ courseId, onBack, onStage
                       </span>
                     )}
                   </td>
+                  <td>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                      {stage.cover_image_path ? (
+                        <img
+                          src={buildImageUrl(stage.cover_image_path)}
+                          alt="Обложка ступени"
+                          style={{
+                            width: '40px',
+                            height: '40px',
+                            borderRadius: '8px',
+                            objectFit: 'cover'
+                          }}
+                          onError={(e) => {
+                            console.warn('Ошибка загрузки обложки ступени:', stage.cover_image_path);
+                            e.currentTarget.style.display = 'none';
+                          }}
+                        />
+                      ) : (
+                        <div style={{
+                          width: '40px',
+                          height: '40px',
+                          borderRadius: '8px',
+                          background: '#f0f0f0',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          fontSize: '12px',
+                          color: '#999'
+                        }}>
+                          📷
+                        </div>
+                      )}
+                      <button
+                        className="action-btn edit-btn"
+                        onClick={() => openCoverModal(stage)}
+                        title="Редактировать обложку"
+                        style={{ fontSize: '12px' }}
+                      >
+                        {stage.cover_image_path ? 'Изменить' : 'Добавить'}
+                      </button>
+                    </div>
+                  </td>
                   <td className="actions-cell">
                     {editingStage?.id === stage.id ? (
                       <>
@@ -651,6 +815,109 @@ const StagesManager: React.FC<StagesManagerProps> = ({ courseId, onBack, onStage
               ))}
             </tbody>
           </table>
+        </div>
+      )}
+
+      {/* Модальное окно для редактирования обложки ступени */}
+      {isCoverModalOpen && editingCoverStage && (
+        <div className="admin-modal-backdrop" onClick={closeCoverModal}>
+          <div className="admin-modal" onClick={(e) => e.stopPropagation()}>
+            <button className="admin-modal-close" onClick={closeCoverModal}>×</button>
+
+            <h3>Обложка ступени: {editingCoverStage.name}</h3>
+
+            <div className="form-group">
+              <label>Текущая обложка:</label>
+              {editingCoverStage.cover_image_path ? (
+                <div style={{ marginBottom: '16px' }}>
+                  <img
+                    src={buildImageUrl(editingCoverStage.cover_image_path)}
+                    alt="Текущая обложка ступени"
+                    style={{
+                      width: '200px',
+                      height: '120px',
+                      borderRadius: '8px',
+                      objectFit: 'cover',
+                      border: '1px solid #e0e0e0'
+                    }}
+                    onError={(e) => {
+                      console.warn('Ошибка загрузки обложки ступени:', editingCoverStage.cover_image_path);
+                      e.currentTarget.style.display = 'none';
+                    }}
+                  />
+                  <div style={{ marginTop: '8px', fontSize: '12px', color: '#666' }}>
+                    {editingCoverStage.cover_image_path}
+                  </div>
+                </div>
+              ) : (
+                <div style={{
+                  width: '200px',
+                  height: '120px',
+                  borderRadius: '8px',
+                  background: '#f5f5f5',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  marginBottom: '16px',
+                  color: '#999',
+                  border: '2px dashed #ddd'
+                }}>
+                  Обложка не установлена
+                </div>
+              )}
+            </div>
+
+            <div className="form-group">
+              <label>Загрузить новую обложку:</label>
+              {uploadError && (
+                <div className="admin-error" style={{ marginBottom: '12px' }}>
+                  {uploadError}
+                </div>
+              )}
+              <FileUploader
+                ref={fileUploaderRef}
+                onFileSelected={handleFileSelected}
+                onUploadError={handleFileUploadError}
+                acceptedTypes="image/*"
+                filePrefix="images/"
+                currentFileUrl={editingCoverStage?.cover_image_path ? buildImageUrl(editingCoverStage.cover_image_path) : undefined}
+                disabled={updateLoading}
+                showDeleteButton={true}
+              />
+              <small style={{ color: 'var(--admin-text-secondary)', marginTop: '8px', display: 'block' }}>
+                💡 Поддерживаются форматы: JPG, PNG, WEBP. Рекомендуемый размер: 380x190px<br />
+                📐 Соотношение 2:1 оптимально для карточек в приложении
+              </small>
+            </div>
+
+            <div className="form-actions">
+              <button
+                className="admin-button"
+                onClick={saveStageCover}
+                disabled={updateLoading}
+              >
+                {updateLoading ? 'Сохранение...' : 'Сохранить обложку'}
+              </button>
+              {editingCoverStage?.cover_image_path && (
+                <button
+                  className="admin-button"
+                  onClick={deleteStageCover}
+                  disabled={updateLoading}
+                  style={{ background: 'var(--admin-warning)' }}
+                >
+                  Удалить обложку
+                </button>
+              )}
+              <button
+                className="admin-button"
+                onClick={closeCoverModal}
+                disabled={updateLoading}
+                style={{ background: 'var(--admin-danger)' }}
+              >
+                Отмена
+              </button>
+            </div>
+          </div>
         </div>
       )}
     </div>
@@ -966,6 +1233,11 @@ const BlocksManager: React.FC<BlocksManagerProps> = ({ courseId, stageId, lesson
     }
   };
 
+  const handleFileSelected = (file: File | null) => {
+    // Пока что ничего не делаем - файл будет загружен при сохранении
+    console.log('Файл выбран для ступени:', file?.name);
+  };
+
   return (
     <div className="admin-section">
       <div className="section-header">
@@ -1140,19 +1412,11 @@ const BlocksManager: React.FC<BlocksManagerProps> = ({ courseId, stageId, lesson
                     </div>
                   )}
                   <FileUploader
+                    onFileSelected={handleFileSelected}
                     onUploadComplete={handleFileUploadComplete}
                     onUploadError={handleFileUploadError}
-                    acceptedTypes={
-                      modalData.block_type === 'audio' ? 'audio/*' :
-                        modalData.block_type === 'image' ? 'image/*' :
-                          modalData.block_type === 'pdf' ? 'application/pdf' :
-                            '*/*'
-                    }
-                    filePrefix={
-                      modalData.block_type === 'audio' ? FILE_PREFIXES.AUDIO :
-                        modalData.block_type === 'image' ? FILE_PREFIXES.IMAGE :
-                          FILE_PREFIXES.DOCUMENTS
-                    }
+                    acceptedTypes="image/*"
+                    filePrefix="images/"
                     currentFileUrl={modalData.content_url}
                     disabled={updateLoading}
                   />

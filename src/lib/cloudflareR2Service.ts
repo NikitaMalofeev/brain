@@ -1,4 +1,4 @@
-import { S3Client, PutObjectCommand } from '@aws-sdk/client-s3';
+import { S3Client, PutObjectCommand, DeleteObjectCommand } from '@aws-sdk/client-s3';
 
 // Получаем переменные окружения (с префиксом VITE_ для работы в браузере)
 const CLOUDFLARE_ACCOUNT_ID = import.meta.env.VITE_CLOUDFLARE_R2_ACCOUNT_ID;
@@ -198,7 +198,10 @@ export const buildFileUrl = (filePath: string): string => {
  * @returns полный URL изображения
  */
 export const buildImageUrl = (imagePath: string): string => {
+  console.log(`🔗 buildImageUrl: входящий путь -`, imagePath);
+
   if (!imagePath) {
+    console.error(`❌ buildImageUrl: пустой путь изображения`);
     throw new Error('Image path is required');
   }
 
@@ -208,5 +211,50 @@ export const buildImageUrl = (imagePath: string): string => {
     ? imagePath
     : `images/${imagePath}`;
 
-  return buildFileUrl(fullPath);
+  console.log(`🛠️ buildImageUrl: полный путь после обработки -`, fullPath);
+
+  const finalUrl = buildFileUrl(fullPath);
+  console.log(`✅ buildImageUrl: финальный URL -`, finalUrl);
+
+  return finalUrl;
+};
+
+/**
+ * Удаление файла из CloudFlare R2
+ * @param filePath - путь к файлу в формате "images/filename.jpg" или "audio/track.mp3"
+ * @returns Promise<void>
+ */
+export const deleteFileFromR2 = async (filePath: string): Promise<void> => {
+  if (!filePath) {
+    throw new Error('File path is required for deletion');
+  }
+
+  // Убираем ведущий слеш, если есть
+  const cleanPath = filePath.startsWith('/') ? filePath.slice(1) : filePath;
+
+  const command = new DeleteObjectCommand({
+    Bucket: BUCKET_NAME,
+    Key: cleanPath,
+  });
+
+  try {
+    await s3.send(command);
+    console.log(`✅ File ${cleanPath} successfully deleted from R2`);
+  } catch (error) {
+    // Логируем полный объект ошибки для детального анализа
+    console.error(`Full error object for deleting ${cleanPath} from R2:`, JSON.stringify(error, null, 2));
+
+    // Формируем более информативное сообщение об ошибке
+    let errorMessage = 'Unknown deletion error';
+    if (typeof error === 'object' && error !== null) {
+      const awsError = error as any;
+      errorMessage = awsError.message || awsError.name || JSON.stringify(error);
+    } else if (error instanceof Error) {
+      errorMessage = error.message;
+    }
+
+    console.error(`Failed to delete file ${cleanPath} from R2:`, errorMessage);
+    // Перебрасываем ошибку, чтобы ее можно было поймать выше
+    throw new Error(`Deletion failed for ${cleanPath}: ${errorMessage}`);
+  }
 }; 

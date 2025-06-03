@@ -81,6 +81,7 @@ export interface CourseStage extends TimestampFields {
   unlock_condition_type?: string;
   unlock_condition_value?: string;
   is_unlocked?: boolean; // Разблокирована ли ступень
+  cover_image_path?: string; // Путь к файлу обложки ступени в CloudFlare R2
 }
 
 // Уроки (упрощенные, без полей сдачи)
@@ -90,7 +91,7 @@ export interface Lesson extends TimestampFields {
   name: string;
   description?: string;
   order_num: number;
-  cover_image_url?: string;
+  cover_image_path?: string; // Путь к файлу обложки (консистентно со ступенями)
   has_assignment?: boolean; // Есть ли домашнее задание
   estimated_duration_minutes?: number;
   open_at?: string; // Дата и время открытия урока
