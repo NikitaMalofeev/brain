@@ -242,7 +242,6 @@ const CoursesManager: React.FC<CoursesManagerProps> = ({ onCourseSelect }) => {
               <tr>
                 <th>Название</th>
                 <th>Подзаголовок</th>
-                <th>Ступеней</th>
                 <th>Дата создания</th>
                 <th>Действия</th>
               </tr>
@@ -274,7 +273,6 @@ const CoursesManager: React.FC<CoursesManagerProps> = ({ onCourseSelect }) => {
                       course.subtitle || '-'
                     )}
                   </td>
-                  <td>{(course as any).course_stages?.count || 0}</td>
                   <td>{new Date(course.created_at || '').toLocaleDateString()}</td>
                   <td className="actions-cell">
                     {editingCourse?.id === course.id ? (
@@ -661,69 +659,17 @@ const StagesManager: React.FC<StagesManagerProps> = ({ courseId, onBack, onStage
           <table>
             <thead>
               <tr>
+                <th>Обложка</th>
                 <th>Название</th>
                 <th>Описание</th>
                 <th>Порядок</th>
-                <th>Уроков</th>
                 <th>Разблокирована</th>
-                <th>Обложка</th>
                 <th>Действия</th>
               </tr>
             </thead>
             <tbody>
               {stages.map((stage) => (
                 <tr key={stage.id}>
-                  <td>
-                    {editingStage?.id === stage.id ? (
-                      <input
-                        className="admin-input"
-                        value={editName}
-                        onChange={e => setEditName(e.target.value)}
-                        style={{ width: '100%' }}
-                      />
-                    ) : (
-                      stage.name
-                    )}
-                  </td>
-                  <td>
-                    {editingStage?.id === stage.id ? (
-                      <input
-                        className="admin-input"
-                        value={editDescription}
-                        onChange={e => setEditDescription(e.target.value)}
-                        style={{ width: '100%' }}
-                      />
-                    ) : (
-                      stage.description || '-'
-                    )}
-                  </td>
-                  <td>
-                    {editingStage?.id === stage.id ? (
-                      <input
-                        className="admin-input"
-                        type="number"
-                        value={editOrderNum}
-                        onChange={e => setEditOrderNum(parseInt(e.target.value) || 1)}
-                        style={{ width: '80px' }}
-                      />
-                    ) : (
-                      stage.order_num
-                    )}
-                  </td>
-                  <td>{(stage as any).lessons?.count || 0}</td>
-                  <td>
-                    {editingStage?.id === stage.id ? (
-                      <input
-                        type="checkbox"
-                        checked={editIsUnlocked}
-                        onChange={e => setEditIsUnlocked(e.target.checked)}
-                      />
-                    ) : (
-                      <span className={`admin-status ${stage.is_unlocked ? 'admin-yes' : 'admin-no'}`}>
-                        {stage.is_unlocked ? 'Да' : 'Нет'}
-                      </span>
-                    )}
-                  </td>
                   <td>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                       {stage.cover_image_path ? (
@@ -765,6 +711,56 @@ const StagesManager: React.FC<StagesManagerProps> = ({ courseId, onBack, onStage
                         {stage.cover_image_path ? 'Изменить' : 'Добавить'}
                       </button>
                     </div>
+                  </td>
+                  <td>
+                    {editingStage?.id === stage.id ? (
+                      <input
+                        className="admin-input"
+                        value={editName}
+                        onChange={e => setEditName(e.target.value)}
+                        style={{ width: '100%' }}
+                      />
+                    ) : (
+                      stage.name
+                    )}
+                  </td>
+                  <td>
+                    {editingStage?.id === stage.id ? (
+                      <input
+                        className="admin-input"
+                        value={editDescription}
+                        onChange={e => setEditDescription(e.target.value)}
+                        style={{ width: '100%' }}
+                      />
+                    ) : (
+                      stage.description || '-'
+                    )}
+                  </td>
+                  <td>
+                    {editingStage?.id === stage.id ? (
+                      <input
+                        className="admin-input"
+                        type="number"
+                        value={editOrderNum}
+                        onChange={e => setEditOrderNum(parseInt(e.target.value) || 1)}
+                        style={{ width: '80px' }}
+                      />
+                    ) : (
+                      stage.order_num
+                    )}
+                  </td>
+                  <td>
+                    {editingStage?.id === stage.id ? (
+                      <input
+                        type="checkbox"
+                        checked={editIsUnlocked}
+                        onChange={e => setEditIsUnlocked(e.target.checked)}
+                      />
+                    ) : (
+                      <span className={`admin-status ${stage.is_unlocked ? 'admin-yes' : 'admin-no'}`}>
+                        {stage.is_unlocked ? 'Да' : 'Нет'}
+                      </span>
+                    )}
                   </td>
                   <td className="actions-cell">
                     {editingStage?.id === stage.id ? (

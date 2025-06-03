@@ -477,7 +477,6 @@ const LessonsManager: React.FC<LessonsManagerProps> = ({ courseId, stageId, onBa
                                 <th>Название</th>
                                 <th>Описание</th>
                                 <th>Порядок</th>
-                                <th>Блоков</th>
                                 <th>Есть ДЗ</th>
                                 <th>Открытие</th>
                                 <th>Дедлайн</th>

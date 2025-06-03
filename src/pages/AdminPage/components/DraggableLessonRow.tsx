@@ -175,7 +175,6 @@ const DraggableLessonRow: React.FC<DraggableLessonRowProps> = ({
                     lesson.order_num
                 )}
             </td>
-            <td>{(lesson as any).lesson_blocks?.count || 0}</td>
             <td>
                 {isEditing ? (
                     <input
