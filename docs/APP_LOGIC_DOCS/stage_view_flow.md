@@ -1,11 +1,11 @@
-# 🧩 Stage View Flow (ОБНОВЛЕНО 29.01.2025)
+# 🧩 Stage View Flow (ОБНОВЛЕНО 04.06.2025)
 **Экран: "Ступень" / Детализация этапа обучения**
 
 ---
 
 ## 🎯 Цель флоу
 
-Позволить пользователю зайти в конкретную ступень курса, изучить список уроков с реальными обложками из CloudFlare R2 и перейти к их просмотру или выполнению задания через новую архитектуру has_assignment.
+Позволить пользователю зайти в конкретную ступень курса, изучить список уроков с реальными обложками из CloudFlare R2 и перейти к их просмотру или выполнению задания через архитектуру has_assignment.
 
 ---
 
@@ -96,7 +96,7 @@ const showLivesWarning = livesRemaining === 0;
 
 ---
 
-### 📥 Загрузка данных (useStageDetails хук) - ОБНОВЛЕНО
+### 📥 Загрузка данных (useStageDetails хук) - реализовано
 
 ```typescript
 // 1. Данные ступени
@@ -106,7 +106,7 @@ const stageData = await supabase
   .eq('id', stageId)
   .single();
 
-// 2. Все уроки ступени (ОБНОВЛЕНО: добавлены has_assignment и cover_image_path)
+// 2. Все уроки ступени (реализовано: добавлены has_assignment и cover_image_path)
 const allLessonsData = await supabase
   .from('lessons')
   .select(`
@@ -131,16 +131,16 @@ const progressData = await supabase
 // has_assignment теперь поле в таблице lessons
 ```
 
-### 📊 Структура данных - ОБНОВЛЕНО
+### 📊 Структура данных - реализовано
 
 ```typescript
 interface LessonData {
   lesson_id: number;
   lesson_name: string;
   content_type: string;        // 'mixed' для всех уроков
-  cover_image_path?: string;   // НОВОЕ: путь к обложке в CloudFlare R2
+  cover_image_path?: string;   // реализовано: путь к обложке в CloudFlare R2
   order_num: number;
-  has_assignment: boolean;     // ИЗМЕНЕНО: поле из таблицы lessons
+  has_assignment: boolean;     // реализовано: поле из таблицы lessons
   is_completed: boolean;       // Есть ли запись в lesson_progress
   is_unlocked: boolean;        // Логика последовательности
   completion_date?: string;
@@ -202,15 +202,15 @@ if (lesson.is_unlocked) {
 
 ---
 
-## 🗄 Задействованные таблицы (ОБНОВЛЕНО)
+## 🗄 Задействованные таблицы (реализовано)
 
 | Таблица             | Назначение                       | Изменения                    |
 | ------------------- | -------------------------------- | ---------------------------- |
 | `course_stages`     | ID, название, описание ступени   | Без изменений                |
-| `lessons`           | Уроки + has_assignment + cover_image_path | **ОБНОВЛЕНО**: добавлены поля has_assignment, cover_image_path |
+| `lessons`           | Уроки + has_assignment + cover_image_path | **реализовано**: добавлены поля has_assignment, cover_image_path |
 | `lesson_progress`   | Завершенность уроков            | Обновлена логика создания при сдаче заданий |
 | `users`             | lives_remaining для предупреждения | Без изменений                |
-| `submissions`       | **ДОБАВЛЕНО**: Сданные задания пользователей | Новая таблица для ДЗ        |
+| `submissions`       | **реализовано**: Сданные задания пользователей | Таблица для ДЗ        |
 
 **НЕ используются:**
 - `assignments` - старая схема
@@ -218,7 +218,7 @@ if (lesson.is_unlocked) {
 - `material_status` - заменено на lesson_progress
 - `user_gamification` - lives_remaining в users
 
-**CloudFlare R2:**
+**CloudFlare R2 (реализовано):**
 - Бакет `brain-programming` с папками `images/`, `audio/`, `documents/`
 - Публичный URL: `https://pub-77b01fa701e84f019ef02376a7fb67f1.r2.dev`
 
@@ -226,7 +226,7 @@ if (lesson.is_unlocked) {
 
 ## 🎨 Визуальные компоненты
 
-### LessonCard (реализованный) - ОБНОВЛЕНО
+### LessonCard (реализованный) - обновлено с обложками
 
 ```typescript
 <div style={{
@@ -237,7 +237,7 @@ if (lesson.is_unlocked) {
   opacity: lesson.is_unlocked ? 1 : 0.6,
   cursor: lesson.is_unlocked ? 'pointer' : 'not-allowed'
 }}>
-  {/* Обложка 171px высота - ОБНОВЛЕНО: CloudFlare R2 */}
+  {/* Обложка 171px высота - реализовано: CloudFlare R2 */}
   <div style={{ height: '171px', borderRadius: '12px' }}>
     <img 
       src={lesson.cover_image_path 
@@ -271,7 +271,7 @@ if (lesson.is_unlocked) {
       <span>{lesson.is_completed ? 'Завершено' : lesson.is_unlocked ? 'Доступно' : 'Заблокировано'}</span>
     </div>
     <h3>{lesson.lesson_name}</h3>
-    {/* ОБНОВЛЕНО: has_assignment из поля БД */}
+    {/* реализовано: has_assignment из поля БД */}
     {lesson.has_assignment && (
       <span style={{ backgroundColor: '#4e9bff' }}>ЗАДАНИЕ</span>
     )}
@@ -300,19 +300,19 @@ if (lesson.is_unlocked) {
 
 ---
 
-## ✅ Acceptance Criteria (ОБНОВЛЕНО)
+## ✅ Acceptance Criteria (реализовано)
 
 - ✅ Ступень загружается с правильным списком уроков
 - ✅ Последовательная разблокировка: следующий урок доступен после завершения предыдущего
-- ✅ **ОБНОВЛЕНО**: has_assignment теперь поле в таблице lessons (не через lesson_blocks)
-- ✅ **НОВОЕ**: Реальные обложки уроков загружаются из CloudFlare R2
-- ✅ **НОВОЕ**: buildImageUrl() корректно строит URL изображений
-- ✅ **НОВОЕ**: Диагностические логи для отладки загрузки изображений
+- ✅ **реализовано**: has_assignment теперь поле в таблице lessons (не через lesson_blocks)
+- ✅ **реализовано**: Реальные обложки уроков загружаются из CloudFlare R2
+- ✅ **реализовано**: buildImageUrl() корректно строит URL изображений
+- ✅ **реализовано**: Диагностические логи для отладки загрузки изображений
 - ✅ Предупреждение о жизнях показывается при `lives_remaining = 0`
 - ✅ Заблокированные уроки неактивны (opacity, cursor, иконка замка на обложке)
 - ✅ Навигация к уроку работает только для разблокированных
 - ✅ Прогресс ступени подсчитывается корректно
-- ✅ **НОВОЕ**: Fallback на дефолтные обложки при ошибке загрузки
+- ✅ **реализовано**: Fallback на дефолтные обложки при ошибке загрузки
 
 ---
 
@@ -361,17 +361,17 @@ src/lib/supabase/hooks/useStageDetails.ts    - хук загрузки данн�
 
 ## 🔧 Особенности реализации
 
-### ✅ Что реализовано (ОБНОВЛЕНО):
+### ✅ Что реализовано:
 
 - **Последовательная разблокировка** - через логику в useStageDetails
 - **Визуальная блокировка** - opacity + cursor + иконка замка на обложке
-- **ОБНОВЛЕНО: Определение заданий** - через поле has_assignment в таблице lessons
-- **НОВОЕ: CloudFlare R2 интеграция** - реальные обложки уроков
-- **НОВОЕ: buildImageUrl функция** - правильные URL для изображений
-- **НОВОЕ: Диагностика изображений** - логи в консоли для отладки
+- **реализовано: Определение заданий** - через поле has_assignment в таблице lessons
+- **реализовано: CloudFlare R2 интеграция** - реальные обложки уроков
+- **реализовано: buildImageUrl функция** - правильные URL для изображений
+- **реализовано: Диагностика изображений** - логи в консоли для отладки
 - **Адаптивный дизайн** - максимум 375px ширина
 - **Предупреждения о жизнях** - без блокировки функционала
-- **НОВОЕ: Fallback обложки** - дефолтные изображения при ошибке
+- **реализовано: Fallback обложки** - дефолтные изображения при ошибке
 
 ### ⚠️ Ограничения:
 
