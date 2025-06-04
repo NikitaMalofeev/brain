@@ -6,4 +6,12 @@ export { useCoursesAdmin } from './useCoursesAdmin';
 export { useStagesAdmin } from './useStagesAdmin';
 export { useLessonsAdmin } from './useLessonsAdmin';
 export { useBlocksAdmin } from './useBlocksAdmin';
-export { useAccessCheck } from './useAccessCheck'; 
+export { useAccessCheck } from './useAccessCheck';
+
+// Новые хуки для управления учениками и кураторами
+export { useStudentsAdmin } from './useStudentsAdmin';
+export { useStudentDetails } from './useStudentDetails';
+export { useStudentActions } from './useStudentActions';
+export { useCuratorsAdmin } from './useCuratorsAdmin';
+export { useCuratorDetails } from './useCuratorDetails';
+export { useCuratorActions } from './useCuratorActions'; 

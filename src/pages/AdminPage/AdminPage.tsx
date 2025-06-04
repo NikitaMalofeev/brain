@@ -23,6 +23,7 @@ import LessonsManager from './components/LessonsManager';
 import DraggableBlockRow from './components/DraggableBlockRow';
 import DraggableLessonRow from './components/DraggableLessonRow';
 import MaterialsManager from './components/MaterialsManager/MaterialsManager';
+import StudentsManager from './components/StudentsManager/StudentsManager';
 
 type SupabaseUser = Database['public']['Tables']['users']['Row'];
 
@@ -1558,7 +1559,7 @@ const Breadcrumb: React.FC<BreadcrumbProps> = ({ navigation, onNavigate }) => {
 };
 
 // Основные вкладки админки (без "Ступени")
-type AdminTab = 'users' | 'courses' | 'submissions' | 'materials' | 'gamification' | 'chats' | 'faq' | 'settings' | 'diagnostic';
+type AdminTab = 'students' | 'users' | 'courses' | 'submissions' | 'materials' | 'gamification' | 'chats' | 'faq' | 'settings' | 'diagnostic';
 
 const AdminPage: React.FC = () => {
   const navigate = useNavigate();
@@ -1879,6 +1880,12 @@ const AdminPage: React.FC = () => {
             Курсы
           </button>
           <button
+            className={`admin-tab ${currentTab === 'students' ? 'active' : ''}`}
+            onClick={() => handleTabChange('students')}
+          >
+            Ученики
+          </button>
+          <button
             className={`admin-tab ${currentTab === 'submissions' ? 'active' : ''}`}
             onClick={() => handleTabChange('submissions')}
           >
@@ -1930,6 +1937,7 @@ const AdminPage: React.FC = () => {
         )}
 
         <div className="admin-content">
+          {currentTab === 'students' && <StudentsManager />}
           {currentTab === 'courses' && (
             <>
               {navigation.view === 'courses' && (

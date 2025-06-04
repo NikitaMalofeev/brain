@@ -29,6 +29,7 @@
 - `role` (text, default: 'user') - Роль пользователя: 'user', 'curator', 'admin'
 - `web_login` (text, UNIQUE) - Логин для веб-авторизации админов/кураторов (nullable)
 - `web_password_hash` (text) - Хеш пароля для веб-авторизации (nullable)
+- `web_last_login` (timestamptz, nullable) - Время последнего входа через веб-интерфейс
 
 **❌ ОТСУТСТВУЮЩИЕ поля из документации:**
 - `is_admin` (boolean, default: false) - Флаг администратора (⚠️ **ЗАМЕНЕН** на поле `role`)

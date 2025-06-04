@@ -602,6 +602,23 @@ body.admin-mode {
   border-top-right-radius: var(--admin-radius-lg);
 }
 
+/* Сортируемые заголовки */
+.sortable-header {
+  cursor: pointer;
+  user-select: none;
+  transition: var(--admin-transition);
+  position: relative;
+}
+
+.sortable-header:hover {
+  background: rgba(184, 98, 234, 0.1);
+  color: var(--admin-primary);
+}
+
+.sortable-header:active {
+  transform: scale(0.98);
+}
+
 .admin-table tbody tr {
   transition: var(--admin-transition);
 }
