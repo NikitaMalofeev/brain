@@ -22,6 +22,7 @@ import { DiagnosticsPage } from '../DiagnosticsPage/DiagnosticsPage';
 import LessonsManager from './components/LessonsManager';
 import DraggableBlockRow from './components/DraggableBlockRow';
 import DraggableLessonRow from './components/DraggableLessonRow';
+import MaterialsManager from './components/MaterialsManager/MaterialsManager';
 
 type SupabaseUser = Database['public']['Tables']['users']['Row'];
 
@@ -874,7 +875,9 @@ const StagesManager: React.FC<StagesManagerProps> = ({ courseId, onBack, onStage
                 ref={fileUploaderRef}
                 onFileSelected={handleFileSelected}
                 onUploadError={handleFileUploadError}
-                acceptedTypes="image/*"
+                acceptedTypes={
+                  editingCoverStage.cover_image_path ? 'image/*' : 'image/*'
+                }
                 filePrefix="images/"
                 currentFileUrl={editingCoverStage?.cover_image_path ? buildImageUrl(editingCoverStage.cover_image_path) : undefined}
                 disabled={updateLoading}
@@ -1411,8 +1414,16 @@ const BlocksManager: React.FC<BlocksManagerProps> = ({ courseId, stageId, lesson
                     onFileSelected={handleFileSelected}
                     onUploadComplete={handleFileUploadComplete}
                     onUploadError={handleFileUploadError}
-                    acceptedTypes="image/*"
-                    filePrefix="images/"
+                    acceptedTypes={
+                      modalData.block_type === 'audio' ? 'audio/mpeg,audio/wav,audio/mp3,audio/mp4,audio/m4a,audio/ogg,audio/aac,audio/flac' :
+                        modalData.block_type === 'image' ? 'image/jpeg,image/png,image/webp,image/gif,image/svg+xml' :
+                          modalData.block_type === 'pdf' ? 'application/pdf' : '*/*'
+                    }
+                    filePrefix={
+                      modalData.block_type === 'audio' ? 'audio/' :
+                        modalData.block_type === 'image' ? 'images/' :
+                          modalData.block_type === 'pdf' ? 'documents/' : 'documents/'
+                    }
                     currentFileUrl={modalData.content_url}
                     disabled={updateLoading}
                   />
@@ -1547,7 +1558,7 @@ const Breadcrumb: React.FC<BreadcrumbProps> = ({ navigation, onNavigate }) => {
 };
 
 // Основные вкладки админки (без "Ступени")
-type AdminTab = 'users' | 'courses' | 'submissions' | 'gamification' | 'chats' | 'faq' | 'settings' | 'diagnostic';
+type AdminTab = 'users' | 'courses' | 'submissions' | 'materials' | 'gamification' | 'chats' | 'faq' | 'settings' | 'diagnostic';
 
 const AdminPage: React.FC = () => {
   const navigate = useNavigate();
@@ -1874,6 +1885,12 @@ const AdminPage: React.FC = () => {
             Проверка ДЗ
           </button>
           <button
+            className={`admin-tab ${currentTab === 'materials' ? 'active' : ''}`}
+            onClick={() => handleTabChange('materials')}
+          >
+            Материалы
+          </button>
+          <button
             className={`admin-tab ${currentTab === 'gamification' ? 'active' : ''}`}
             onClick={() => handleTabChange('gamification')}
           >
@@ -1965,6 +1982,7 @@ const AdminPage: React.FC = () => {
               )}
             </>
           )}
+          {currentTab === 'materials' && <MaterialsManager />}
           {currentTab === 'gamification' && <div>Управление геймификацией</div>}
           {currentTab === 'chats' && <div>Управление чатами</div>}
           {currentTab === 'faq' && <div>Управление FAQ</div>}

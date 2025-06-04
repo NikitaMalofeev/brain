@@ -19,6 +19,8 @@
 /profile/help         - Помощь
 /profile/faq          - FAQ
 /admin                - Админ панель (Admin Panel - Figma ID: 682-4675)
+/library/materials    - Список доп. материалов (Figma ID: 957-7253)
+/library/material/:id - Просмотр доп. материала (Figma ID: 957-7279)
 ```
 
 ---
@@ -590,6 +592,95 @@ components:
 - Управление курсами, уроками, блоками
 - Проверка домашних заданий
 - Система ролей и прав доступа
+
+---
+
+## 💎 7. БЛОК "БИБЛИОТЕКА ДОПОЛНИТЕЛЬНЫХ МАТЕРИАЛОВ"
+
+### 7.1 Список дополнительных материалов
+**Роут:** `/library/materials`  
+**Компонент:** `AdditionalMaterialsPage/AdditionalMaterialsListPage.tsx` (предполагаемый)  
+**Figma ID:** 957-7253
+
+**🔽 Вводимые данные:**
+- ID пользователя
+- Фильтры (категория, тип)
+
+**🔼 Выводимые данные:**
+- Заголовок "Дополнительные материалы"
+- Фильтры/теги для сортировки
+- Список карточек материалов (изображение, название, тип, краткое описание)
+- Возможно, поиск
+
+**📊 Таблицы Supabase:**
+- `lessons` (с флагом `is_additional_material = true`) или новая таблица `additional_materials`
+- `lesson_blocks` (если материалы структурированы как уроки)
+- `user_material_progress` (если нужен трекинг)
+
+**🎨 Дизайн-спецификация (предполагаемая):**
+```yaml
+frameData:
+  background: '#FFFFFF'
+  layout: 'column, gap: 16'
+
+components:
+  filterChips:
+    gap: 8
+  
+  materialCards:
+    layout: grid
+    columns: 1 or 2 (адаптивно)
+    gap: 12
+    cardStyle:
+      borderRadius: 16
+      shadow: '0px 2px 12px rgba(0,0,0,0.06)'
+      background: '#FFFFFF'
+```
+
+**🔗 Навигация:**
+- Карточка материала → `/library/material/{material_id}`
+- Возможно, фильтры изменяют отображаемый список
+
+### 7.2 Просмотр дополнительного материала (Видео)
+**Роут:** `/library/material/:id` (если :id это ID видео материала)  
+**Компонент:** `AdditionalMaterialsPage/VideoMaterialPage.tsx` (предполагаемый)  
+**Figma ID:** 957-7279 (для видео)
+
+**🔽 Вводимые данные:**
+- ID материала из URL
+- ID пользователя
+
+**🔼 Выводимые данные:**
+- Видео плеер (например, Kinescope)
+- Название материала
+- Описание/транскрипция (если есть)
+- Кнопка "Назад" или "Завершить"
+
+**📊 Таблицы Supabase:**
+- `lessons` (или `additional_materials`) - для получения URL видео и метаданных
+- `lesson_blocks` (если видео это блок)
+- `user_material_progress` - для отметки о просмотре
+
+**🎨 Дизайн-спецификация (предполагаемая, аналог Lesson View):**
+```yaml
+frameData:
+  layout: 'column, space-between'
+
+components:
+  videoPlayer:
+    width: '100%'
+    // Kinescope или аналогичный
+  
+  textContent:
+    padding: 16
+  
+  navigationControls:
+    position: fixed
+    bottom: 0 // или в зависимости от наличия TabBar
+```
+
+**🔗 Навигация:**
+- "Назад" → `/library/materials`
 
 ---
 

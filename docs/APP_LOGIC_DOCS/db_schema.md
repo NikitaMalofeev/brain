@@ -3,7 +3,7 @@
 
 ## Обзор
 
-База данных приложения "Brain Programming" построена на PostgreSQL через Supabase и содержит 9 основных таблиц для управления пользователями, курсами, этапами обучения, уроками, блоками контента и прогрессом пользователей.
+База данных приложения "Brain Programming" построена на PostgreSQL через Supabase и содержит 12 основных таблиц для управления пользователями, курсами, этапами обучения, уроками, блоками контента и прогрессом пользователей.
 
 **Проект Supabase:** `bzbpwmzhywaqwsjthwid` (EU Central 1)
 
@@ -203,6 +203,52 @@
 **⚠️ ПРОБЛЕМА:** FK ссылается на `auth.users`, а должен на `public.users`
 
 **RLS:** ВЫКЛЮЧЕН
+
+### 10. `materials` - Дополнительные материалы
+**Назначение:** Хранение информации о дополнительных материалах.
+
+**Поля:**
+- `id` (uuid, PK, default: `gen_random_uuid()`) - Уникальный идентификатор материала.
+- `name` (text, NOT NULL) - Название материала.
+- `description` (text, nullable) - Описание материала.
+- `cover_image_path` (text, nullable) - Путь к файлу обложки в CloudFlare R2.
+- `material_type` (text, NOT NULL) - Тип материала (например, 'video', 'article', 'link', 'file'). В админке будет выбор из списка.
+- `order_num` (int4, default: 0, NOT NULL) - Порядковый номер для сортировки.
+- `created_at` (timestamptz, default: `now()`, NOT NULL) - Время создания.
+- `updated_at` (timestamptz, default: `now()`, NOT NULL) - Время последнего обновления.
+
+**RLS:** (Будет определено позже, вероятно, чтение для всех аутентифицированных)
+
+### 11. `material_blocks` - Блоки контента дополнительных материалов
+**Назначение:** Блоки контента внутри одного дополнительного материала (текст, видео Kinescope, аудио, изображения, файлы PDF).
+
+**Поля:**
+- `id` (bigint, PK, auto-increment) - Уникальный идентификатор блока.
+- `material_id` (uuid, FK -> `materials.id`, NOT NULL, onDelete: CASCADE) - Ссылка на материал.
+- `order_num` (int4, NOT NULL) - Порядковый номер блока в материале.
+- `title` (text, nullable) - Заголовок блока.
+- `block_type` (text, NOT NULL) - Тип блока: 'text', 'video' (для Kinescope), 'audio', 'image', 'pdf'.
+- `content_text` (text, nullable) - Текстовое содержимое для 'text' блоков.
+- `content_url` (text, nullable) - URL для 'video', 'audio', 'image', 'pdf' блоков (файлы из R2 или Kinescope URL).
+- `meta_json` (jsonb, default: '{}', nullable) - Дополнительные метаданные (например, длительность видео).
+- `created_at` (timestamptz, default: `now()`, NOT NULL) - Время создания.
+- `updated_at` (timestamptz, default: `now()`, NOT NULL) - Время последнего обновления.
+
+**RLS:** (Будет определено позже, вероятно, чтение для всех аутентифицированных)
+
+### 12. `user_material_views` - Просмотры дополнительных материалов
+**Назначение:** Отслеживание просмотров/взаимодействий пользователей с дополнительными материалами.
+
+**Поля:**
+- `id` (bigint, PK, auto-increment) - Уникальный идентификатор записи.
+- `user_id` (uuid, FK -> `users.id`, NOT NULL, onDelete: CASCADE) - Ссылка на пользователя.
+- `material_id` (uuid, FK -> `materials.id`, NOT NULL, onDelete: CASCADE) - Ссылка на материал.
+- `first_viewed_at` (timestamptz, default: `now()`, NOT NULL) - Время первого просмотра.
+- `last_viewed_at` (timestamptz, default: `now()`, NOT NULL) - Время последнего просмотра (обновляется при каждом открытии).
+- `is_completed` (boolean, default: `false`, NOT NULL) - Флаг "материал просмотрен/завершен".
+- `CONSTRAINT uq_user_material UNIQUE (user_id, material_id)` - Уникальная пара пользователь-материал.
+
+**RLS:** (Будет определено позже, пользователи видят только свои просмотры)
 
 ## Функции базы данных
 

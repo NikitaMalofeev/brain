@@ -410,6 +410,686 @@ components:
     shadow: '0px 8px 32px rgba(0,0,0,0.12)'
 ```
 
+---
+
+## 💎 Экраны дополнительных материалов (Additional Materials Screens)
+
+### 1. Список дополнительных материалов
+- **Figma ID**: 957-7253
+- **Описание**: Экран со списком дополнительных материалов, фильтрами и поиском.
+- **Компоненты**: FilterChips, MaterialCard (по аналогии с CourseCard/StageCard)
+- **Стиль**: Grid layout, карточная система.
+
+**Техническая метадата (предполагаемая на основе Figma и аналогии с Library):**
+```yaml
+frameData:
+  id: 957-7253
+  name: Additional Materials List
+  type: FRAME
+  fills:
+    - type: solid
+      color: '#FFFFFF'
+  layout:
+    mode: column
+    gap: 16
+
+components:
+  searchBar: # Если будет поиск
+    background: 'rgba(225,225,225,0.6)'
+    backdropFilter: 'blur(32px)'
+    borderRadius: 16
+    height: 44
+  
+  filterChips: # Для категорий/типов материалов
+    gap: 8
+    chipStyle:
+      background: '#F3F3F3'
+      borderRadius: 16
+      padding: '8px 12px'
+      activeColor: '#B862EA'
+
+  materialCards:
+    layout: grid
+    columns: 1 # или 2, в зависимости от дизайна карточки
+    gap: 12
+    cardStyle:
+      borderRadius: 16 # Меньше, чем у stageCards
+      shadow: '0px 2px 12px rgba(0,0,0,0.06)'
+      background: '#FFFFFF'
+      padding: 12
+      imageHeight: 120 # Примерная высота для превью
+```
+
+### 2. Просмотр дополнительного материала (Видео)
+- **Figma ID**: 957-7279
+- **Описание**: Экран для просмотра видео материала.
+- **Компоненты**: VideoPlayer (Kinescope), TextContent, NavigationControls (возможно, упрощенные)
+- **Стиль**: Full-screen layout, фокус на видео.
+
+**Техническая метадата (предполагаемая на основе Figma и аналогии с Lesson View):**
+```yaml
+frameData:
+  id: 957-7279
+  name: Video Material View
+  type: FRAME
+  layout:
+    mode: column
+    justifyContent: space-between # Если есть контролы внизу
+
+components:
+  videoPlayer:
+    # Настройки для Kinescope или аналогичного плеера
+    width: '100%' 
+    # aspectRatio: 16/9 - или другие размеры в зависимости от видео
+
+  titleArea: # Если название и описание под плеером
+    padding: '16px'
+    layout: 'column'
+    gap: 8
+    titleStyle:
+      fontFamily: 'Nunito' # или основной шрифт заголовков
+      fontSize: 20
+      fontWeight: 700
+    descriptionStyle:
+      fontFamily: 'Inter' # или основной шрифт текста
+      fontSize: 16
+      lineHeight: 1.5
+
+  navigationControls: # Если есть (например, "Назад" или "Завершить")
+    position: fixed 
+    bottom: 20 # или другое значение
+    left: 16
+    right: 16
+    # Стили для кнопок
+```
+
+## Система навигации
+
+### Нижняя навигация (Bottom TabBar)
+- **Главная** - Home icon
+- **Библиотека** - Library icon  
+- **Чаты** - Messages icon
+- **Профиль** - User icon
+
+**Техническая метадата:**
+```yaml
+component: TabBar
+id: 4-388
+metadata:
+  height: 60
+  background: '#FFFFFF'
+  borderTop: '1px solid #F1F1F1'
+  position: fixed
+  bottom: 0
+
+tabItems:
+  home:
+    icon: 'Navigation/House_01'
+    iconSize: 24
+    activeState:
+      background: 'gradient-primary'
+      borderRadius: 100
+      iconColor: '#FFFFFF'
+    inactiveState:
+      iconColor: '#8D8D8D'
+      opacity: 0.6
+
+  library:
+    icon: 'Library/Book_Open'
+    iconSize: 24
+    
+  messages:
+    icon: 'Communication/Chat'
+    iconSize: 24
+    badge:
+      size: 16
+      background: '#FF6B6B'
+      color: '#FFFFFF'
+    
+  profile:
+    icon: 'User/User_02'
+    iconSize: 24
+
+homeIndicator:
+  component: 4-72
+  width: 134
+  height: 5
+  background: '#000000'
+  borderRadius: 2.5
+  opacity: 0.3
+  position: bottom-center
+```
+
+### Верхняя навигация (Top Navigation)
+- **Back button** - для внутренних экранов
+- **Action buttons** - контекстные действия
+- **Status indicators** - индикаторы статуса
+
+**Техническая метадата:**
+```yaml
+component: NavigationBar
+id: 4-29
+metadata:
+  height: 44
+  background: transparent
+  paddingHorizontal: 16
+  paddingTop: 12
+
+backButton:
+  component: 4-19
+  icon: 'Arrow/Chevron_Left_MD'
+  size: 24
+  color: '#000000'
+  touchTarget: 44
+
+closeButton:
+  component: 4-22
+  icon: 'Menu/Close_SM'
+  size: 24
+  color: '#000000'
+  touchTarget: 44
+
+actionButtons:
+  moreVertical:
+    component: 4-27
+    icon: 'Menu/More_Vertical'
+    size: 24
+  
+  chevronDown:
+    component: 4-25
+    icon: 'Arrow/Chevron_Down'
+    size: 24
+
+statusBar:
+  height: 44
+  background: transparent
+  textColor: '#000000'
+  batteryIndicator: true
+  timeDisplay: true
+```
+
+## Ключевые компоненты дизайна
+
+### Карточки (Cards)
+```typescript
+interface CardProps {
+  variant: 'default' | 'gradient' | 'glass' | 'compact'
+  elevation: 'none' | 'low' | 'medium' | 'high'
+  borderRadius: 12 | 16 | 20 | 24 | 32
+}
+```
+
+**Техническая метадата карточек:**
+```yaml
+components:
+  defaultCard:
+    background: '#FFFFFF'
+    border: '1px solid rgba(255,255,255,0.14)'
+    borderRadius: 24
+    shadow: '0px 2px 12px rgba(0,0,0,0.06)'
+    padding: 16
+    
+  gradientCard:
+    background: 'linear-gradient(135deg, #E1C1F4 0%, #B862EA 100%)'
+    borderRadius: 24
+    shadow: '0px 4px 20px rgba(0,0,0,0.08)'
+    color: '#FFFFFF'
+    
+  glassCard:
+    background: 'rgba(255,255,255,0.25)'
+    backdropFilter: 'blur(20px)'
+    border: '1px solid rgba(255,255,255,0.3)'
+    borderRadius: 24
+    shadow: '0px 4px 20px rgba(0,0,0,0.08)'
+    
+  compactCard:
+    background: '#FFFFFF'
+    borderRadius: 16
+    shadow: '0px 2px 8px rgba(0,0,0,0.04)'
+    padding: 12
+
+elevationLevels:
+  none: 'none'
+  low: '0px 2px 8px rgba(0,0,0,0.04)'
+  medium: '0px 4px 16px rgba(0,0,0,0.08)'
+  high: '0px 8px 32px rgba(0,0,0,0.12)'
+```
+
+### Кнопки (Buttons)  
+```typescript
+interface ButtonProps {
+  variant: 'primary' | 'secondary' | 'outline' | 'ghost' | 'link'
+  size: 'sm' | 'md' | 'lg' | 'xl'
+  gradientType: 'primary' | 'secondary' | 'accent'
+}
+```
+
+**Техническая метадата кнопок:**
+```yaml
+components:
+  primaryButton:
+    componentSet: 4-168
+    background: 'linear-gradient(135deg, #E1C1F4 0%, #B862EA 100%)'
+    borderRadius: 32
+    color: '#FFFFFF'
+    fontFamily: 'Nunito'
+    fontWeight: 700
+    fontSize: 16
+    lineHeight: 1.25
+    padding: '16px'
+    shadow: '0px 2px 8px rgba(0,0,0,0.1)'
+    
+  secondaryButton:
+    background: 'linear-gradient(135deg, #8DC5F1 0%, #63ABE6 100%)'
+    borderRadius: 32
+    color: '#FFFFFF'
+    fontFamily: 'Nunito'
+    fontWeight: 700
+    fontSize: 16
+    
+  outlineButton:
+    background: 'transparent'
+    border: '1.5px solid #B862EA'
+    borderRadius: 32
+    color: '#B862EA'
+    
+  ghostButton:
+    background: 'rgba(255,255,255,0.25)'
+    backdropFilter: 'blur(12px)'
+    border: '1px solid rgba(255,255,255,0.3)'
+    borderRadius: 32
+    
+  disabledButton:
+    background: 'linear-gradient(135deg, #D0DFEA 0%, #BDD8EE 100%)'
+    opacity: 0.4
+    borderRadius: 32
+
+buttonSizes:
+  sm:
+    padding: '8px 16px'
+    fontSize: 14
+    height: 32
+  md:
+    padding: '12px 24px'
+    fontSize: 16
+    height: 44
+  lg:
+    padding: '16px 32px'
+    fontSize: 16
+    height: 48
+  xl:
+    padding: '20px 40px'
+    fontSize: 18
+    height: 56
+
+states:
+  hover:
+    transform: 'translateY(-2px)'
+    shadow: '0px 4px 16px rgba(0,0,0,0.15)'
+  active:
+    transform: 'translateY(0)'
+    scale: 0.98
+  focus:
+    outline: '2px solid #B862EA'
+    outlineOffset: 2
+```
+
+### Цветовая система
+- **Primary Gradient**: #E1C1F4 → #B862EA
+- **Secondary Gradient**: #8DC5F1 → #63ABE6
+- **Accent Gradient**: #FFE4A3 → #FFD166
+- **Neutral Gradient**: #F3F3F3 → #EAEAEA
+
+**Расширенная цветовая палитра:**
+```yaml
+colorSystem:
+  primary:
+    gradient: 'linear-gradient(135deg, #E1C1F4 0%, #B862EA 100%)'
+    light: '#E1C1F4'
+    main: '#B862EA'
+    dark: '#A04FD9'
+    
+  secondary:
+    gradient: 'linear-gradient(135deg, #8DC5F1 0%, #63ABE6 100%)'
+    light: '#8DC5F1'
+    main: '#63ABE6'
+    dark: '#4A9EE0'
+    
+  accent:
+    gradient: 'linear-gradient(135deg, #FFE4A3 0%, #FFD166 100%)'
+    light: '#FFE4A3'
+    main: '#FFD166'
+    dark: '#FFC633'
+    
+  neutral:
+    gradient: 'linear-gradient(135deg, #F3F3F3 0%, #EAEAEA 100%)'
+    light: '#F3F3F3'
+    main: '#EAEAEA'
+    dark: '#D9D9D9'
+    
+  semantic:
+    success: '#4EB3FF'
+    warning: '#FFD166'
+    error: '#FF6B6B'
+    info: '#63ABE6'
+    
+  text:
+    primary: '#000000'
+    secondary: '#9F9F9F'
+    tertiary: '#8C8C8C'
+    disabled: '#D9D9D9'
+    
+  background:
+    primary: '#FFFFFF'
+    secondary: '#F1F1F1'
+    tertiary: '#EAF5FE'
+    overlay: 'rgba(0,0,0,0.5)'
+    
+  borders:
+    light: 'rgba(255,255,255,0.14)'
+    medium: 'rgba(89,89,89,0.14)'
+    strong: '#F1F1F1'
+```
+
+### Типографика
+- **Заголовки**: SF Pro Display Bold/SemiBold
+- **Основной текст**: SF Pro Text Regular/Medium  
+- **Accent текст**: SF Pro Text Medium (цветной)
+
+**Техническая спецификация типографики:**
+```yaml
+typography:
+  fontFamilies:
+    primary: 'Nunito, -apple-system, BlinkMacSystemFont, sans-serif'
+    secondary: 'SF Pro Display, -apple-system, BlinkMacSystemFont, sans-serif'
+    
+  fontSizes:
+    xs: 12
+    sm: 14
+    base: 16
+    lg: 18
+    xl: 20
+    '2xl': 24
+    '3xl': 30
+    
+  fontWeights:
+    light: 300
+    regular: 400
+    medium: 500
+    semibold: 600
+    bold: 700
+    extrabold: 800
+    
+  lineHeights:
+    tight: 1.25
+    normal: 1.36
+    relaxed: 1.43
+    loose: 1.5
+    
+  textStyles:
+    h1:
+      fontFamily: 'Inter'
+      fontSize: 24
+      fontWeight: 700
+      lineHeight: 1
+      color: '#000000'
+      
+    h2:
+      fontFamily: 'Nunito'
+      fontSize: 20
+      fontWeight: 700
+      lineHeight: 1.36
+      color: '#000000'
+      
+    h3:
+      fontFamily: 'Montserrat'
+      fontSize: 16
+      fontWeight: 600
+      lineHeight: 1.25
+      color: '#000000'
+      
+    body:
+      fontFamily: 'Inter'
+      fontSize: 16
+      fontWeight: 400
+      lineHeight: 1.5
+      letterSpacing: '-3%'
+      color: '#000000'
+      
+    bodySmall:
+      fontFamily: 'Inter'
+      fontSize: 14
+      fontWeight: 400
+      lineHeight: 1.2857142857142858
+      color: '#000000'
+      
+    caption:
+      fontFamily: 'Montserrat'
+      fontSize: 16
+      fontWeight: 500
+      lineHeight: 1.25
+      color: '#000000'
+```
+
+### Эффекты
+- **Glass Effect**: backdrop-filter: blur(20px)
+- **Shadow System**: 0px 4px 20px rgba(0,0,0,0.08)
+- **Border Radius**: 12px-32px range
+- **Transitions**: 200ms ease-in-out
+
+**Техническая спецификация эффектов:**
+```yaml
+effects:
+  glassMorphism:
+    primary:
+      background: 'rgba(255,255,255,0.25)'
+      backdropFilter: 'blur(20px)'
+      border: '1px solid rgba(255,255,255,0.3)'
+    
+    secondary:
+      background: 'rgba(225,225,225,0.6)'
+      backdropFilter: 'blur(32px)'
+      border: '1px solid #F1F1F1'
+      
+  shadows:
+    card: '0px 2px 12px rgba(0,0,0,0.06)'
+    button: '0px 2px 8px rgba(0,0,0,0.1)'
+    glass: '0px 4px 20px rgba(0,0,0,0.08)'
+    floating: '0px 8px 32px rgba(0,0,0,0.12)'
+    
+  borderRadius:
+    xs: 12
+    sm: 16
+    md: 20
+    lg: 24
+    xl: 32
+    full: 100
+    
+  transitions:
+    fast: '200ms ease-in-out'
+    medium: '300ms ease-in-out'
+    slow: '500ms ease-in-out'
+    
+  animations:
+    fadeIn:
+      from: 'opacity: 0'
+      to: 'opacity: 1'
+      duration: '300ms'
+      easing: 'ease-in-out'
+      
+    slideUp:
+      from: 'transform: translateY(20px); opacity: 0'
+      to: 'transform: translateY(0); opacity: 1'
+      duration: '300ms'
+      easing: 'ease-out'
+      
+    scaleIn:
+      from: 'transform: scale(0.95); opacity: 0'
+      to: 'transform: scale(1); opacity: 1'
+      duration: '200ms'
+      easing: 'ease-out'
+```
+
+## Адаптивность
+
+### Breakpoints
+- **Mobile**: 375px - 768px (основной фокус)
+- **Tablet**: 768px - 1024px
+- **Desktop**: 1024px+ (опционально)
+
+### Mobile-first подход
+- Все компоненты проектируются сначала для мобильных
+- Telegram Mini App constraints учтены
+- Touch-friendly интерфейсы (44px минимум для кнопок)
+
+## Состояния компонентов
+
+### Интерактивные состояния
+- **Default** - базовое состояние
+- **Hover** - при наведении (desktop)
+- **Active** - при нажатии
+- **Disabled** - неактивное состояние
+- **Loading** - состояние загрузки
+
+### Статусы данных
+- **Empty** - пустое состояние
+- **Loading** - загрузка данных
+- **Error** - ошибка загрузки
+- **Success** - успешная операция
+
+## Анимации и переходы
+
+### Принципы анимации
+- **Duration**: 200-300ms для быстрых переходов
+- **Easing**: ease-in-out для натуральности
+- **Transform-based**: для лучшей производительности
+
+### Типы анимаций
+- **Page transitions** - slide, fade
+- **Component entrance** - fade-up, scale
+- **Loading states** - skeleton, spinner
+- **Micro-interactions** - button press, toggle
+
+## Руководство по обновлению
+
+При изменениях в Figma:
+1. Обновить Node ID в документации
+2. Проверить новые компоненты и стили  
+3. Синхронизировать цветовую палитру
+4. Обновить типографику если изменилась
+5. Добавить новые экраны в карту навигации
+
+### Основной экран библиотеки:
+- Navigation Bar
+- Заголовок "Библиотека"
+- Карточки ступеней с прогрессом
+- Tab bar
+
+### Экран ступени:
+- Список уроков с индикаторами выполнения
+- Прогресс по ступени
+
+### Экран урока:
+- Видео/аудио контент
+- Элементы управления воспроизведением
+
+### Экран квиза:
+- Вопросы с вариантами ответов
+- Кнопки навигации
+
+---
+
+## 💎 Экраны дополнительных материалов (Additional Materials Screens)
+
+### 1. Список дополнительных материалов
+- **Figma ID**: 957-7253
+- **Описание**: Экран со списком дополнительных материалов, фильтрами и поиском.
+- **Компоненты**: FilterChips, MaterialCard (по аналогии с CourseCard/StageCard)
+- **Стиль**: Grid layout, карточная система.
+
+**Техническая метадата (предполагаемая на основе Figma и аналогии с Library):**
+```yaml
+frameData:
+  id: 957-7253
+  name: Additional Materials List
+  type: FRAME
+  fills:
+    - type: solid
+      color: '#FFFFFF'
+  layout:
+    mode: column
+    gap: 16
+
+components:
+  searchBar: # Если будет поиск
+    background: 'rgba(225,225,225,0.6)'
+    backdropFilter: 'blur(32px)'
+    borderRadius: 16
+    height: 44
+  
+  filterChips: # Для категорий/типов материалов
+    gap: 8
+    chipStyle:
+      background: '#F3F3F3'
+      borderRadius: 16
+      padding: '8px 12px'
+      activeColor: '#B862EA'
+
+  materialCards:
+    layout: grid
+    columns: 1 # или 2, в зависимости от дизайна карточки
+    gap: 12
+    cardStyle:
+      borderRadius: 16 # Меньше, чем у stageCards
+      shadow: '0px 2px 12px rgba(0,0,0,0.06)'
+      background: '#FFFFFF'
+      padding: 12
+      imageHeight: 120 # Примерная высота для превью
+```
+
+### 2. Просмотр дополнительного материала (Видео)
+- **Figma ID**: 957-7279
+- **Описание**: Экран для просмотра видео материала.
+- **Компоненты**: VideoPlayer (Kinescope), TextContent, NavigationControls (возможно, упрощенные)
+- **Стиль**: Full-screen layout, фокус на видео.
+
+**Техническая метадата (предполагаемая на основе Figma и аналогии с Lesson View):**
+```yaml
+frameData:
+  id: 957-7279
+  name: Video Material View
+  type: FRAME
+  layout:
+    mode: column
+    justifyContent: space-between # Если есть контролы внизу
+
+components:
+  videoPlayer:
+    # Настройки для Kinescope или аналогичного плеера
+    width: '100%' 
+    # aspectRatio: 16/9 - или другие размеры в зависимости от видео
+
+  titleArea: # Если название и описание под плеером
+    padding: '16px'
+    layout: 'column'
+    gap: 8
+    titleStyle:
+      fontFamily: 'Nunito' # или основной шрифт заголовков
+      fontSize: 20
+      fontWeight: 700
+    descriptionStyle:
+      fontFamily: 'Inter' # или основной шрифт текста
+      fontSize: 16
+      lineHeight: 1.5
+
+  navigationControls: # Если есть (например, "Назад" или "Завершить")
+    position: fixed 
+    bottom: 20 # или другое значение
+    left: 16
+    right: 16
+    # Стили для кнопок
+```
+
 ## Система навигации
 
 ### Нижняя навигация (Bottom TabBar)

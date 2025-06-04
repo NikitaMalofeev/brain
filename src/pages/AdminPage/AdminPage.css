@@ -1943,40 +1943,92 @@ body.admin-mode {
 /* ========================================= */
 
 /* Контейнер фильтров */
-.admin-filters {
-  background: rgba(55, 65, 81, 0.8);
-  border: 1px solid rgba(107, 114, 128, 0.5);
-  border-radius: 8px;
-  padding: 16px;
-  margin-bottom: 24px;
+.admin-toolbar {
+  background: var(--admin-glass-bg-light);
+  backdrop-filter: var(--admin-backdrop-filter-card);
+  border-radius: var(--admin-radius-md);
+  padding: 16px 20px;
+  border: 1px solid var(--admin-glass-border);
+  box-shadow: var(--admin-shadow-card);
   display: flex;
-  gap: 16px;
-  flex-wrap: wrap;
   align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 16px;
+}
+
+.admin-filters {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+  flex-wrap: wrap;
+  width: 100%;
+  justify-content: space-between;
 }
 
 .admin-filter-group {
   display: flex;
-  flex-direction: column;
-  gap: 4px;
+  align-items: center;
+  gap: 8px;
 }
 
 .admin-filter-group label {
-  font-size: 12px;
   font-weight: 600;
-  color: var(--admin-text-secondary);
-  text-transform: uppercase;
+  color: var(--admin-text-label);
+  font-size: 14px;
+  white-space: nowrap;
 }
 
 .admin-filter-group select,
 .admin-filter-group input {
-  padding: 6px 12px;
-  border: 1px solid rgba(107, 114, 128, 0.5);
-  border-radius: 6px;
-  background: rgba(31, 41, 55, 0.8);
-  color: var(--admin-text);
-  font-size: 14px;
-  min-width: 120px;
+  min-width: 150px;
+  margin: 0;
+}
+
+.admin-filter-info {
+  font-size: 13px;
+  color: var(--admin-text-secondary);
+  font-weight: 500;
+  padding: 8px 12px;
+  background: rgba(184, 98, 234, 0.05);
+  border-radius: var(--admin-radius-sm);
+  border: 1px solid rgba(184, 98, 234, 0.1);
+  white-space: nowrap;
+}
+
+@media (max-width: 768px) {
+  .admin-toolbar {
+    padding: 12px 16px;
+  }
+
+  .admin-filters {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 12px;
+  }
+
+  .admin-filter-group {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 6px;
+  }
+
+  .admin-filter-group select,
+  .admin-filter-group input {
+    min-width: auto;
+    width: 100%;
+  }
+
+  .admin-filter-info {
+    text-align: center;
+  }
+}
+
+/* Обновление таблицы с дополнительной колонкой даты */
+.admin-table th:nth-child(6),
+.admin-table td:nth-child(6) {
+  min-width: 140px;
+  font-size: 13px;
 }
 
 /* ========================================= */
