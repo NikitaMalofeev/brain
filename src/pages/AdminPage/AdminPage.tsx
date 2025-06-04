@@ -1559,7 +1559,7 @@ const Breadcrumb: React.FC<BreadcrumbProps> = ({ navigation, onNavigate }) => {
 };
 
 // Основные вкладки админки (без "Ступени")
-type AdminTab = 'students' | 'users' | 'courses' | 'submissions' | 'materials' | 'gamification' | 'chats' | 'faq' | 'settings' | 'diagnostic';
+type AdminTab = 'students' | 'users' | 'courses' | 'submissions' | 'materials' /*| 'gamification' | 'chats' | 'faq' | 'settings' | 'diagnostic'*/;
 
 const AdminPage: React.FC = () => {
   const navigate = useNavigate();
@@ -1897,7 +1897,7 @@ const AdminPage: React.FC = () => {
           >
             Материалы
           </button>
-          <button
+          {/*<button
             className={`admin-tab ${currentTab === 'gamification' ? 'active' : ''}`}
             onClick={() => handleTabChange('gamification')}
           >
@@ -1925,8 +1925,8 @@ const AdminPage: React.FC = () => {
             className={`admin-tab ${currentTab === 'diagnostic' ? 'active' : ''}`}
             onClick={() => handleTabChange('diagnostic')}
           >
-            🔍 R2 Диагностика
-          </button>
+            R2 Диагностика
+          </button>*/}
         </div>
 
         {currentTab === 'courses' && navigation.view !== 'courses' && (
@@ -1991,15 +1991,15 @@ const AdminPage: React.FC = () => {
             </>
           )}
           {currentTab === 'materials' && <MaterialsManager />}
-          {currentTab === 'gamification' && <div>Управление геймификацией</div>}
+          {/*{currentTab === 'gamification' && <div>Управление геймификацией</div>}
           {currentTab === 'chats' && <div>Управление чатами</div>}
           {currentTab === 'faq' && <div>Управление FAQ</div>}
           {currentTab === 'settings' && <div>Настройки системы</div>}
-          {currentTab === 'diagnostic' && <CloudFlareR2Diagnostics />}
+          {currentTab === 'diagnostic' && <CloudFlareR2Diagnostics />}*/}
         </div>
       </div>
     </PlayerProvider>
   );
 };
 
-export default AdminPage; 
+export default AdminPage;
