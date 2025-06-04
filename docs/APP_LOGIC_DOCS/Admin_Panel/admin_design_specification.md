@@ -12,6 +12,7 @@
 - **Консистентность** - единая система компонентов на основе CSS переменных
 - **Быстрота работы** - оптимизация для массовых операций
 - **Оптимизированные таблицы** - убраны избыточные счетчики для лучшего UX
+- **Унифицированный интерфейс** - одинаковая логика для уроков и дополнительных материалов
 
 > **Важно:** Документация описывает РЕАЛЬНОЕ состояние админки из файла `src/pages/AdminPage/AdminPage.css`
 
@@ -917,3 +918,77 @@ body.admin-mode {
 **Документ обновлен:** 04.06.2025  
 **Статус:** Зафиксировано РЕАЛЬНОЕ состояние админки  
 **Источник:** Анализ файлов `src/pages/AdminPage/AdminPage.css` и компонентов 
+
+## 🆕 Новые компоненты (РЕАЛИЗОВАНО)
+
+### MaterialsManager - Управление дополнительными материалами
+**Статус:** ✅ ПОЛНОСТЬЮ РЕАЛИЗОВАНО в `MaterialsManager.tsx`
+
+**Основные возможности:**
+- Список всех дополнительных материалов с фильтрами по типу (video/audio)
+- Инлайн-редактирование названий, описаний и порядка материалов
+- Модальные окна создания/редактирования материалов с загрузкой обложек
+- Управление блоками материалов с поддержкой всех типов контента
+- Интеграция с CloudFlare R2 для загрузки файлов
+- Поддержка m4a формата аудио файлов
+
+### DraggableMaterialBlockRow - Drag & Drop для блоков
+**Статус:** ✅ РЕАЛИЗОВАНО
+
+**Функционал:**
+- Перетаскивание блоков для изменения порядка
+- Визуальная обратная связь при перетаскивании
+- Автоматическое сохранение нового порядка
+- Плавные анимации переходов
+
+### Новые модальные окна
+**Статус:** ✅ РЕАЛИЗОВАНО
+
+1. **Модальное окно материала** - создание/редактирование материалов
+2. **Модальное окно блока материала** - управление контентом блоков
+3. **Улучшенная система фильтров** - фильтры по типам материалов
+
+### CSS стили для новых компонентов
+```css
+/* Drag & Drop для блоков материалов */
+.draggable-block-row {
+  cursor: grab;
+  transition: var(--admin-transition);
+  border-radius: var(--admin-radius-md);
+}
+
+.draggable-block-row:hover {
+  background: var(--admin-glass-bg-light);
+  transform: translateY(-1px);
+  box-shadow: var(--admin-shadow-card);
+}
+
+.draggable-block-row.dragging {
+  opacity: 0.7;
+  transform: rotate(2deg);
+  z-index: 1000;
+  box-shadow: var(--admin-shadow-floating);
+}
+
+/* Фильтры материалов */
+.admin-filters .material-type-filter {
+  background: var(--admin-glass-bg);
+  backdrop-filter: var(--admin-backdrop-filter);
+  border: 1px solid var(--admin-glass-border);
+  border-radius: var(--admin-radius-md);
+}
+
+/* Превью обложек материалов */
+.material-cover-preview {
+  border-radius: var(--admin-radius-md);
+  overflow: hidden;
+  box-shadow: var(--admin-shadow-card);
+  background: var(--admin-glass-bg-light);
+}
+
+.material-cover-preview img {
+  width: 100%;
+  height: auto;
+  display: block;
+}
+``` 
