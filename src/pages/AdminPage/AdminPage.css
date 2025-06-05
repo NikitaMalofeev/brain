@@ -2258,3 +2258,56 @@ body.admin-mode {
   box-shadow: var(--admin-shadow-button);
   transform: translateY(-2px);
 }
+
+/* ========================================= */
+/* DRAG & DROP СТИЛИ ДЛЯ FAQ И ЧАТОВ */
+/* Интерактивные элементы для перетаскивания */
+/* ========================================= */
+
+/* Строка, которую можно перетаскивать */
+.draggable-row {
+  cursor: grab;
+  transition: var(--admin-transition);
+  border-radius: var(--admin-radius-md);
+}
+
+.draggable-row:hover {
+  background: rgba(184, 98, 234, 0.05);
+  transform: translateY(-1px);
+  box-shadow: var(--admin-shadow-card);
+}
+
+.draggable-row:active {
+  cursor: grabbing;
+}
+
+/* Строка в процессе перетаскивания */
+.draggable-row.dragging {
+  opacity: 0.7;
+  transform: rotate(2deg) scale(1.02);
+  z-index: 1000;
+  box-shadow: var(--admin-shadow-floating);
+  background: rgba(184, 98, 234, 0.1);
+  border: 2px dashed var(--admin-primary);
+}
+
+/* Ручка для перетаскивания */
+.drag-handle {
+  cursor: grab;
+  width: 20px;
+  text-align: center;
+  color: var(--admin-text-secondary);
+  font-weight: bold;
+  user-select: none;
+  transition: var(--admin-transition);
+}
+
+.drag-handle:hover {
+  color: var(--admin-primary);
+  transform: scale(1.2);
+}
+
+.drag-handle:active {
+  cursor: grabbing;
+  color: var(--admin-primary-hover);
+}

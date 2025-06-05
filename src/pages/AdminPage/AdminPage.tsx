@@ -25,6 +25,9 @@ import DraggableLessonRow from './components/DraggableLessonRow';
 import MaterialsManager from './components/MaterialsManager/MaterialsManager';
 import StudentsManager from './components/StudentsManager/StudentsManager';
 import CuratorsManager from './components/CuratorsManager/CuratorsManager';
+import ChatsManager from './components/ChatsManager/ChatsManager';
+import FaqManager from './components/FaqManager/FaqManager';
+import BroadcastsManager from './components/BroadcastsManager/BroadcastsManager';
 
 type SupabaseUser = Database['public']['Tables']['users']['Row'];
 
@@ -1560,7 +1563,7 @@ const Breadcrumb: React.FC<BreadcrumbProps> = ({ navigation, onNavigate }) => {
 };
 
 // Основные вкладки админки (без "Ступени")
-type AdminTab = 'students' | 'curators' | 'courses' | 'submissions' | 'materials';
+type AdminTab = 'students' | 'curators' | 'courses' | 'submissions' | 'materials' | 'chats' | 'faq' | 'broadcasts';
 
 const AdminPage: React.FC = () => {
   const navigate = useNavigate();
@@ -1904,6 +1907,24 @@ const AdminPage: React.FC = () => {
           >
             Материалы
           </button>
+          <button
+            className={`admin-tab ${currentTab === 'chats' ? 'active' : ''}`}
+            onClick={() => handleTabChange('chats')}
+          >
+            Чаты
+          </button>
+          <button
+            className={`admin-tab ${currentTab === 'faq' ? 'active' : ''}`}
+            onClick={() => handleTabChange('faq')}
+          >
+            FAQ
+          </button>
+          <button
+            className={`admin-tab ${currentTab === 'broadcasts' ? 'active' : ''}`}
+            onClick={() => handleTabChange('broadcasts')}
+          >
+            Эфиры
+          </button>
         </div>
 
         {currentTab === 'courses' && navigation.view !== 'courses' && (
@@ -1969,6 +1990,9 @@ const AdminPage: React.FC = () => {
             </>
           )}
           {currentTab === 'materials' && <MaterialsManager />}
+          {currentTab === 'chats' && <ChatsManager />}
+          {currentTab === 'faq' && <FaqManager />}
+          {currentTab === 'broadcasts' && <BroadcastsManager />}
         </div>
       </div>
     </PlayerProvider>

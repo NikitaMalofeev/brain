@@ -14,4 +14,9 @@ export { useStudentDetails } from './useStudentDetails';
 export { useStudentActions } from './useStudentActions';
 export { useCuratorsAdmin } from './useCuratorsAdmin';
 export { useCuratorDetails } from './useCuratorDetails';
-export { useCuratorActions } from './useCuratorActions'; 
+export { useCuratorActions } from './useCuratorActions';
+
+// Хуки для новых табов админки
+export { useChatsAdmin } from './useChatsAdmin';
+export { useFaqAdmin } from './useFaqAdmin';
+export { useBroadcastsAdmin } from './useBroadcastsAdmin'; 
