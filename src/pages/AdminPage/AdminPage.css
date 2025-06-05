@@ -914,6 +914,42 @@ body.admin-mode {
   }
 }
 
+/* Алерты и уведомления */
+.admin-alert {
+  padding: 16px 20px;
+  border-radius: var(--admin-radius-md);
+  margin-bottom: 16px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  font-family: var(--admin-font-family);
+  font-weight: 500;
+  border: 1px solid;
+}
+
+.admin-alert.error {
+  background: rgba(255, 107, 107, 0.1);
+  color: var(--admin-danger);
+  border-color: rgba(255, 107, 107, 0.2);
+}
+
+.admin-alert.success {
+  background: rgba(78, 179, 255, 0.1);
+  color: var(--admin-success);
+  border-color: rgba(78, 179, 255, 0.2);
+}
+
+.admin-alert.warning {
+  background: rgba(255, 209, 102, 0.1);
+  color: var(--admin-warning);
+  border-color: rgba(255, 209, 102, 0.2);
+}
+
+.admin-alert p {
+  margin: 0;
+  flex: 1;
+}
+
 /* ========================================= */
 /* ИНДИКАТОРЫ СТАТУСА */
 /* Цветные badges для отображения статусов */
@@ -2202,4 +2238,23 @@ body.admin-mode {
 
 .drop-success {
   animation: dropSuccess 0.6s ease-out;
+}
+
+/* Кнопка назначения ученика - оранжевый */
+.assign-btn {
+  background: rgba(255, 209, 102, 0.1);
+  color: var(--admin-warning);
+  border: 1px solid rgba(255, 209, 102, 0.2);
+}
+
+.assign-btn::before {
+  content: '👤';
+  /* Иконка пользователя */
+  font-size: 14px;
+}
+
+.assign-btn:hover {
+  background: rgba(255, 209, 102, 0.2);
+  box-shadow: var(--admin-shadow-button);
+  transform: translateY(-2px);
 }

@@ -122,7 +122,7 @@ export function useCuratorActions(): CuratorActionsResult {
         }
     };
 
-    // Получить список доступных для назначения учеников (не назначенных данному куратору)
+    // Получить список доступных для назначения учеников (не назначенных никому)
     const getAvailableStudents = async (curatorId: string): Promise<AvailableStudent[]> => {
         if (!supabase) {
             throw new Error('Supabase клиент не инициализирован');
@@ -152,19 +152,18 @@ export function useCuratorActions(): CuratorActionsResult {
 
             if (studentsError) throw studentsError;
 
-            // Получаем список учеников, уже назначенных данному куратору
-            const { data: assignedStudents, error: assignedError } = await supabase
+            // Получаем список ВСЕХ учеников, уже назначенных любому куратору
+            const { data: allAssignedStudents, error: assignedError } = await supabase
                 .from('user_curator')
-                .select('student_id')
-                .eq('curator_id', curatorId);
+                .select('student_id');
 
             if (assignedError) throw assignedError;
 
             const assignedStudentIds = new Set(
-                (assignedStudents || []).map(assignment => assignment.student_id)
+                (allAssignedStudents || []).map(assignment => assignment.student_id)
             );
 
-            // Фильтруем доступных учеников (не назначенных данному куратору)
+            // Фильтруем доступных учеников (не назначенных никому)
             const availableStudents: AvailableStudent[] = (allStudents || [])
                 .filter(student => !assignedStudentIds.has(student.id))
                 .map(student => {
@@ -176,7 +175,7 @@ export function useCuratorActions(): CuratorActionsResult {
                         id: student.id,
                         full_name: `${student.first_name} ${student.last_name || ''}`.trim(),
                         telegram_id: student.telegram_id,
-                        course_title: activeCourse?.courses?.title || 'Курс не найден',
+                        course_title: (activeCourse?.courses as any)?.title || 'Курс не найден',
                         created_at: student.created_at,
                     };
                 });

@@ -24,6 +24,7 @@ import DraggableBlockRow from './components/DraggableBlockRow';
 import DraggableLessonRow from './components/DraggableLessonRow';
 import MaterialsManager from './components/MaterialsManager/MaterialsManager';
 import StudentsManager from './components/StudentsManager/StudentsManager';
+import CuratorsManager from './components/CuratorsManager/CuratorsManager';
 
 type SupabaseUser = Database['public']['Tables']['users']['Row'];
 
@@ -1559,7 +1560,7 @@ const Breadcrumb: React.FC<BreadcrumbProps> = ({ navigation, onNavigate }) => {
 };
 
 // Основные вкладки админки (без "Ступени")
-type AdminTab = 'students' | 'users' | 'courses' | 'submissions' | 'materials' /*| 'gamification' | 'chats' | 'faq' | 'settings' | 'diagnostic'*/;
+type AdminTab = 'students' | 'curators' | 'courses' | 'submissions' | 'materials';
 
 const AdminPage: React.FC = () => {
   const navigate = useNavigate();
@@ -1886,6 +1887,12 @@ const AdminPage: React.FC = () => {
             Ученики
           </button>
           <button
+            className={`admin-tab ${currentTab === 'curators' ? 'active' : ''}`}
+            onClick={() => handleTabChange('curators')}
+          >
+            Кураторы
+          </button>
+          <button
             className={`admin-tab ${currentTab === 'submissions' ? 'active' : ''}`}
             onClick={() => handleTabChange('submissions')}
           >
@@ -1897,36 +1904,6 @@ const AdminPage: React.FC = () => {
           >
             Материалы
           </button>
-          {/*<button
-            className={`admin-tab ${currentTab === 'gamification' ? 'active' : ''}`}
-            onClick={() => handleTabChange('gamification')}
-          >
-            Геймификация
-          </button>
-          <button
-            className={`admin-tab ${currentTab === 'chats' ? 'active' : ''}`}
-            onClick={() => handleTabChange('chats')}
-          >
-            Чаты
-          </button>
-          <button
-            className={`admin-tab ${currentTab === 'faq' ? 'active' : ''}`}
-            onClick={() => handleTabChange('faq')}
-          >
-            FAQ
-          </button>
-          <button
-            className={`admin-tab ${currentTab === 'settings' ? 'active' : ''}`}
-            onClick={() => handleTabChange('settings')}
-          >
-            Настройки
-          </button>
-          <button
-            className={`admin-tab ${currentTab === 'diagnostic' ? 'active' : ''}`}
-            onClick={() => handleTabChange('diagnostic')}
-          >
-            R2 Диагностика
-          </button>*/}
         </div>
 
         {currentTab === 'courses' && navigation.view !== 'courses' && (
@@ -1938,6 +1915,7 @@ const AdminPage: React.FC = () => {
 
         <div className="admin-content">
           {currentTab === 'students' && <StudentsManager />}
+          {currentTab === 'curators' && <CuratorsManager />}
           {currentTab === 'courses' && (
             <>
               {navigation.view === 'courses' && (
@@ -1991,11 +1969,6 @@ const AdminPage: React.FC = () => {
             </>
           )}
           {currentTab === 'materials' && <MaterialsManager />}
-          {/*{currentTab === 'gamification' && <div>Управление геймификацией</div>}
-          {currentTab === 'chats' && <div>Управление чатами</div>}
-          {currentTab === 'faq' && <div>Управление FAQ</div>}
-          {currentTab === 'settings' && <div>Настройки системы</div>}
-          {currentTab === 'diagnostic' && <CloudFlareR2Diagnostics />}*/}
         </div>
       </div>
     </PlayerProvider>

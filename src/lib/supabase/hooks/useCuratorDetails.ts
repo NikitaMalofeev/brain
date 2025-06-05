@@ -119,32 +119,47 @@ export function useCuratorDetails(): CuratorDetailsResult {
                     let completedPercent = 0;
 
                     if (activeCourse && supabase) {
-                        // Получаем прогресс по урокам
-                        const { data: progressData, error: progressError } = await supabase
-                            .from('lesson_progress')
-                            .select(`
-                                is_completed,
-                                lessons!inner (
-                                    has_assignment,
-                                    course_stages!inner (
-                                        course_id
-                                    )
-                                )
-                            `)
-                            .eq('user_id', student.id)
-                            .eq('lessons.course_stages.course_id', activeCourse.id);
+                        // Логика расчета прогресса как в useStudentDetails
 
-                        if (!progressError && progressData) {
-                            const totalLessonsWithAssignment = progressData.filter(
-                                (p: any) => p.lessons?.has_assignment
-                            ).length;
-                            const completedLessons = progressData.filter(
-                                (p: any) => p.is_completed && p.lessons?.has_assignment
-                            ).length;
+                        // 1. Получаем все стадии активного курса
+                        const { data: stagesOfActiveCourse, error: stagesError } = await supabase
+                            .from('course_stages')
+                            .select('id')
+                            .eq('course_id', activeCourse.id);
 
-                            completedPercent = totalLessonsWithAssignment > 0
-                                ? Math.round((completedLessons / totalLessonsWithAssignment) * 100)
-                                : 0;
+                        if (!stagesError && stagesOfActiveCourse) {
+                            const activeCourseStageIds = stagesOfActiveCourse.map(s => s.id);
+
+                            // 2. Получаем общее количество ВСЕХ уроков в активном курсе
+                            const { count: totalLessonsCount, error: countError } = await supabase
+                                .from('lessons')
+                                .select('id', { count: 'exact', head: true })
+                                .in('stage_id', activeCourseStageIds);
+
+                            if (!countError) {
+                                const totalLessonsInCourse = totalLessonsCount || 0;
+
+                                // 3. Получаем прогресс ученика по урокам активного курса
+                                const { data: progressData, error: progressError } = await supabase
+                                    .from('lesson_progress')
+                                    .select(`
+                                        lesson_id,
+                                        is_completed,
+                                        lessons!inner (
+                                            stage_id
+                                        )
+                                    `)
+                                    .eq('user_id', student.id)
+                                    .in('lessons.stage_id', activeCourseStageIds);
+
+                                if (!progressError && progressData) {
+                                    const completedLessons = progressData.filter((p: any) => p.is_completed).length;
+
+                                    completedPercent = totalLessonsInCourse > 0
+                                        ? Math.round((completedLessons / totalLessonsInCourse) * 100)
+                                        : 0;
+                                }
+                            }
                         }
                     }
 
