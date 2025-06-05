@@ -13,6 +13,7 @@ alwaysApply: true
 *   **Конфигурация:** `[package.json](mdc:package.json)`, `[vite.config.ts](mdc:vite.config.ts)`, `[tailwind.config.js](mdc:tailwind.config.js)`
 *   **TypeScript:** `[tsconfig.json](mdc:tsconfig.json)`, `[eslint.config.js](mdc:eslint.config.js)`
 *   **Документация:** `[docs/APP_LOGIC_DOCS/](mdc:docs/APP_LOGIC_DOCS)`
+*   **Документация по UI** `@docs/APP_LOGIC_DOCS/UI_UX`
 *   **Supabase Хуки:** `[src/lib/supabase/hooks/](mdc:src/lib/supabase/hooks)`
 
 ### Архитектурная Структура
