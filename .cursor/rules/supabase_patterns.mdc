@@ -1,0 +1,150 @@
+---
+description: 
+globs: 
+alwaysApply: false
+---
+# Supabase: Паттерны и Хуки для Brain Programming
+
+Специфичные паттерны работы с Supabase в проекте Brain Programming.
+
+## Архитектура Хуков
+
+### Существующие Хуки (Всегда используй их)
+
+**Студенты:**
+*   `[useStudentDetails](mdc:src/lib/supabase/hooks/useStudentDetails.ts)` - полная информация о студенте
+*   `[useStudentActions](mdc:src/lib/supabase/hooks/useStudentActions.ts)` - действия со студентами
+*   `[useStudentsAdmin](mdc:src/lib/supabase/hooks/useStudentsAdmin.ts)` - админские операции
+
+**Кураторы:**
+*   `[useCuratorDetails](mdc:src/lib/supabase/hooks/useCuratorDetails.ts)` - информация о кураторе
+*   `[useCuratorActions](mdc:src/lib/supabase/hooks/useCuratorActions.ts)` - действия с кураторами  
+*   `[useCuratorsAdmin](mdc:src/lib/supabase/hooks/useCuratorsAdmin.ts)` - админские операции
+
+**Контент и Структура:**
+*   `[useLibraryStages](mdc:src/lib/supabase/hooks/useLibraryStages.ts)` - этапы для пользователей
+*   `[useStageDetails](mdc:src/lib/supabase/hooks/useStageDetails.ts)` - детали этапа
+*   `[useStagesAdmin](mdc:src/lib/supabase/hooks/useStagesAdmin.ts)` - админские операции с этапами
+*   `[useLessonsAdmin](mdc:src/lib/supabase/hooks/useLessonsAdmin.ts)` - управление уроками
+*   `[useBlocksAdmin](mdc:src/lib/supabase/hooks/useBlocksAdmin.ts)` - управление блоками
+*   `[useCoursesAdmin](mdc:src/lib/supabase/hooks/useCoursesAdmin.ts)` - управление курсами
+
+**Система:**
+*   `[useSupabaseUser](mdc:src/lib/supabase/hooks/useSupabaseUser.ts)` - текущий пользователь
+*   `[useAccessCheck](mdc:src/lib/supabase/hooks/useAccessCheck.ts)` - проверка доступов
+
+### Паттерн Создания Нового Хука
+
+При создании нового хука следуй структуре из `[src/lib/supabase/hooks/index.ts](mdc:src/lib/supabase/hooks/index.ts)`:
+
+```typescript
+// Стандартный паттерн хука
+export function useNewFeature() {
+  const [data, setData] = useState(null);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState(null);
+
+  // Основная функция получения данных
+  const fetchData = useCallback(async () => {
+    setLoading(true);
+    setError(null);
+    try {
+      // Supabase запрос
+      const result = await supabase.from('table').select();
+      setData(result.data);
+    } catch (err) {
+      setError(err);
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  return {
+    data,
+    loading,
+    error,
+    fetchData,
+    // Дополнительные методы
+  };
+}
+```
+
+## База Данных и Миграции
+
+### Структура Таблиц
+*   `students` - студенты и их прогресс
+*   `curators` - кураторы и их роли  
+*   `courses`, `stages`, `lessons`, `blocks` - структура контента
+*   `user_progress`, `lesson_completions` - прогресс пользователей
+*   `admin_users` - админские права
+
+### Правила Миграций
+**ВАЖНО:** НЕ применяй миграции через Supabase MCP!
+
+**Процесс:**
+1. Генерируй SQL скрипт для миграции
+2. Передавай пользователю для ручного применения
+3. Документируй изменения в комментариях
+
+```sql
+-- Пример миграции: добавление новой колонки
+ALTER TABLE students 
+ADD COLUMN new_field VARCHAR(255) DEFAULT '';
+
+-- Индексы для производительности
+CREATE INDEX IF NOT EXISTS idx_students_user_id 
+ON students(user_id);
+
+-- Комментарии на русском
+COMMENT ON COLUMN students.new_field IS 'Новое поле для хранения ...';
+```
+
+## Edge Functions (Ограниченное Использование)
+
+### Существующие Functions
+*   `[admin-get-student-details](mdc:supabase/functions/admin-get-student-details)` - админская детализация студента
+*   `[admin-get-students](mdc:supabase/functions/admin-get-students)` - список студентов для админки
+
+### Когда НЕ нужна Edge Function
+*   Простые CRUD операции → используй хуки
+*   Фильтрация и сортировка → используй Supabase запросы в хуках
+*   Проверка доступов → используй RLS (Row Level Security) + хуки
+
+### Когда НУЖНА Edge Function
+*   Комплексная бизнес-логика с секретными данными
+*   Интеграция с внешними API (TON, OpenAI)
+*   Обработка файлов/изображений
+*   Webhook обработка
+
+## Аутентификация и Доступы
+
+### TON Connect Integration
+*   Основная аутентификация через Supabase Auth
+*   TON Connect как дополнительный провайдер
+*   Используй `[useSupabaseUser](mdc:src/lib/supabase/hooks/useSupabaseUser.ts)` для проверки статуса
+
+### Row Level Security (RLS)
+*   Админские операции через специальные политики
+*   Используй `[useAccessCheck](mdc:src/lib/supabase/hooks/useAccessCheck.ts)` для проверки на фронтенде
+
+## Производительность и Оптимизация
+
+### Кэширование в Хуках
+*   Используй `useMemo` для тяжелых вычислений
+*   Используй `useCallback` для функций, передаваемых как props
+*   Реализуй локальное кэширование для частых запросов
+
+### Пагинация и Лимиты
+*   Всегда устанавливай лимиты на запросы (обычно 50-100 записей)
+*   Используй cursor-based пагинацию для больших списков
+*   Ленивая загрузка для списков с прокруткой
+
+### Real-time Subscriptions
+*   Используй только для критичных данных (чаты, уведомления)
+*   Отписывайся от подписок в useEffect cleanup
+*   Группируй подписки по логическим блокам
+
+---
+
+*Специфичные паттерны Supabase для Brain Programming. Общая архитектура - см. brain_programming_guidelines.*
+
