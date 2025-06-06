@@ -12,6 +12,7 @@ import { useAppContext } from '@/contexts/AppContext';
 import { Page } from '@/components/Page';
 import { COURSE_CONFIG } from '@/lib/config/constants';
 import { buildImageUrl } from '@/lib/cloudflareR2Service';
+import { StageProgressData, UserProgress } from "@/components/UserProgress/UserProgress.tsx";
 
 // Расширяем глобальный объект Window, добавляя Telegram
 declare global {
@@ -172,18 +173,7 @@ const LibraryPage: React.FC = () => {
                     ))}
                 </div>
             </div>
-            <div className={'bg-white py-4 px-6 flex flex-col gap-4'}>
-                <div className={'flex items-center justify-between'}>
-                    <div className={'flex flex-col'}>
-                        <p className={'font-bold text-black'}>Выполнено 0 заданий</p>
-                        <p className={'text-sm text-[#8C8C8C]'}>Еще 5 заданий до второй ступени</p>
-                    </div>
-                    <img src={'/arrow-icon.svg'} alt="" className={'w-[36px] h-[36px]'} />
-                </div>
-                <div className="w-full bg-gray-200 rounded-full h-4">
-                    <div className="h-4 rounded-full bg-gradient-to-r from-[#ACD3F3] to-[#91C3EC] w-1/2"></div>
-                </div>
-            </div>
+            <UserProgress stages={stages as StageProgressData[]} />
         </Page>
     );
 };

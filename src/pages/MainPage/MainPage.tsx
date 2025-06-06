@@ -5,8 +5,9 @@ import { initDataState, useSignal } from "@telegram-apps/sdk-react";
 import { Link } from "react-router-dom";
 import { clsx } from "clsx";
 import { buildImageUrl } from "@/lib/cloudflareR2Service.ts";
-import {useQuery} from "@tanstack/react-query";
-import {supabase} from "@/lib/supabase/client.ts";
+import { useQuery } from "@tanstack/react-query";
+import { supabase } from "@/lib/supabase/client.ts";
+import { StageProgressData, UserProgress } from "@/components/UserProgress/UserProgress.tsx";
 
 const COURSE_ID = COURSE_CONFIG.DEFAULT_COURSE_ID;
 
@@ -14,10 +15,10 @@ export const MainPage = () => {
     const initDataSignal = useSignal(initDataState);
     const { supabaseUser } = useSupabaseUser(initDataSignal);
 
-    const {data: stages, isLoading} = useQuery({
-        queryFn: async () => {
+    const { data: stages, isLoading } = useQuery({
+        queryFn: async (): Promise<StageProgressData[]> => {
             // 1) Формируем запрос, вызываем .select(...).maybeSingle()/.then()/.throwOnError()
-            if (!supabase) return []
+            if (!supabase || !supabaseUser?.id) return []
 
             const { data, error } = await supabase.rpc('get_library_stages', {
                 p_user_id: supabaseUser?.id,
@@ -25,13 +26,13 @@ export const MainPage = () => {
             });
 
             if (error) {
-                // выбрасываем ошибку, чтобы React-Query перевёл загрузку в состояние “isError”
+                // выбрасываем ошибку, чтобы React-Query перевёл загрузку в состояние "isError"
                 throw new Error(error.message)
             }
             // data здесь — это массив User[] (или null/[]), в зависимости от схемы
             return data || []
         },
-        queryKey: ['stages'],
+        queryKey: ['stages', supabaseUser?.id],
         enabled: !!supabaseUser?.id
     })
 
@@ -87,23 +88,7 @@ export const MainPage = () => {
                 ))}
 
             </div>
-
-
-
-            <div className={'bg-white p-4 flex flex-col gap-3 sticky bottom-0'}>
-                <div className={'flex items-center justify-between'}>
-                    <div className={'flex flex-col'}>
-                        <p className={'font-bold text-black'}>Выполнено 0 заданий</p>
-                        <p className={'text-sm text-[#8C8C8C]'}>Еще 5 заданий до второй ступени</p>
-                    </div>
-                    <Link to={`/library/stage/${stages?.filter(stage => stage.is_unlocked).reverse()[0].stage_id}`}>
-                        <img src={'/arrow-icon.svg'} alt={''}/>
-                    </Link>
-                </div>
-                <div className="w-full bg-gray-200 rounded-full h-3">
-                    <div className="h-3 rounded-full bg-gradient-to-r from-[#ACD3F3] to-[#91C3EC] w-0"></div>
-                </div>
-            </div>
+            <UserProgress stages={stages || []} />
         </Page>
     )
 }

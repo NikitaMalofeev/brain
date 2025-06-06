@@ -110,6 +110,14 @@ const StagePage: React.FC = () => {
         );
     }
 
+    const completedLessons = stageDetails.lessons.filter(lesson => lesson.is_completed).length;
+    const totalLessons = stageDetails.lessons.length;
+    const progressPercentage = totalLessons > 0 ? (completedLessons / totalLessons) * 100 : 0;
+    const lessonsRemaining = totalLessons - completedLessons;
+    const progressText = lessonsRemaining > 0
+        ? `Еще ${lessonsRemaining} заданий до завершения ступени`
+        : 'Ступень пройдена!';
+
     return (
         <Page showTabBar={false}>
             <div className={'text-black'}>
@@ -117,12 +125,15 @@ const StagePage: React.FC = () => {
                     <div className={'flex items-center justify-between'}>
                         <div className={'flex flex-col'}>
                             <p className={'font-bold text-xl'}>{stageDetails.stage_name}</p>
-                            <p className={'text-sm text-[#8C8C8C]'}>Еще 5 заданий до второй ступени</p>
+                            <p className={'text-sm text-[#8C8C8C]'}>{progressText}</p>
                         </div>
-                        <img onClick={()=>setIsOpen(true)} src={'/ask-icon.svg'} alt={''}/>
+                        <img onClick={() => setIsOpen(true)} src={'/ask-icon.svg'} alt={''} />
                     </div>
                     <div className="w-full bg-gray-200 rounded-full h-3">
-                        <div className="h-3 rounded-full bg-gradient-to-r from-[#ACD3F3] to-[#91C3EC] w-0"></div>
+                        <div
+                            className="h-3 rounded-full bg-gradient-to-r from-[#ACD3F3] to-[#91C3EC]"
+                            style={{ width: `${progressPercentage}%` }}
+                        ></div>
                     </div>
                 </div>
                 <div className={'bg-[url("/bg3.jpg")] bg-cover bg-top p-4 rounded-t-3xl flex-1 flex flex-col gap-3'}>
@@ -135,7 +146,7 @@ const StagePage: React.FC = () => {
                     ))}
                 </div>
             </div>
-            <NativeModal title={stageDetails.stage_name} description={stageDetails.stage_description} isOpen={isOpen} setIsOpen={setIsOpen}/>
+            <NativeModal title={stageDetails.stage_name} description={stageDetails.stage_description} isOpen={isOpen} setIsOpen={setIsOpen} />
         </Page>
     );
 };
