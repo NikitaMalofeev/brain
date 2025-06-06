@@ -168,6 +168,7 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({ videoId, title: _title, descr
             onPause={handlePause}
             onTimeUpdate={handleTimeUpdate}
             onEnded={handleEnded}
+
             onError={() => {
               // Оставляем только критичные ошибки
             }}

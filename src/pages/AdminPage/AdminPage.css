@@ -2187,7 +2187,7 @@ body.admin-mode {
 }
 
 .admin-table tbody tr:hover {
-  background: rgba(75, 85, 99, 0.3);
+  background: rgba(75, 85, 99, 0.1);
 }
 
 .admin-table tbody tr[style*="cursor: grab"] {

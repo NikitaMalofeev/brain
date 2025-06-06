@@ -911,7 +911,7 @@ const MaterialsManager: React.FC = () => {
                                                 onClick={() => handleOpenMaterialModal(material)}
                                                 title="Редактировать материал"
                                             >
-                                                ✎
+
                                             </button>
                                             <button
                                                 className="action-btn"
@@ -926,7 +926,7 @@ const MaterialsManager: React.FC = () => {
                                                 onClick={() => handleDeleteMaterial(material)}
                                                 title="Удалить материал"
                                             >
-                                                ✕
+
                                             </button>
                                         </td>
                                     </tr>

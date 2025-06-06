@@ -31,9 +31,8 @@ export const InfoPoints = () => {
         <Page>
             <div className={'text-black flex flex-col gap-6'}>
                 <div
-                    className={'relative flex p-5 items-end rounded-b-3xl bg-[url("/bg3.jpg")] bg-cover bg-bottom h-[328px] overflow-hidden'}>
-                    <img src={'/ed.png'} alt={''}
-                         className={'object-cover w-[404px] -rotate-[24deg] absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2'}/>
+                    className={'relative flex p-5 items-end rounded-b-3xl bg-[url("/eid.png")] bg-cover bg-bottom h-[328px] overflow-hidden'}>
+
                     <div className={'p-3 rounded-full overflow-hidden bg-white'}>
                         <img src={'/eid.svg'} alt={''} className={'w-[38px] h-[38px]'}/>
                     </div>
@@ -43,7 +42,7 @@ export const InfoPoints = () => {
                 </p>
                 <div
                     className={'mx-4 bg-[linear-gradient(91.99deg,_#F7F7F7_0%,_#F3F3F3_100%)] p-4 rounded-2xl flex flex-col gap-3'}>
-                    <h3 className={'font-semibold text-xl'}>Получить их можно за:</h3>
+                    <h3 className={'font-bold text-xl'}>Получить их можно за:</h3>
                     {rewards.map(el => (<div className={'flex flex-col gap-1'}>
                         <div className={'flex items-center gap-4 justify-between'}>
                             <p className={'font-medium'}>{el.title}</p>

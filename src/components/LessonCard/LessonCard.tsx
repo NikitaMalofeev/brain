@@ -80,7 +80,7 @@ const getLessonStatus = (lesson: LessonData) => {
     if (deadlineStatus === 'missed' && !lesson.is_completed) {
         return {
             type: 'deadline_missed',
-            text: 'Опоздание',
+            text: 'Просрочено',
             bgClass: 'bg-red-500'
         };
     }

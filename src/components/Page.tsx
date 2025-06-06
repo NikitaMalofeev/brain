@@ -73,7 +73,7 @@ export function Page({
 
   return (
     <div
-      className={`page-container ${showTabBar ? 'with-tab-bar' : ''}`}
+      className={`max-w-[600px] mx-auto page-container  ${showTabBar ? 'with-tab-bar' : ''}`}
       style={{ ...containerStyle, backgroundColor: '#ffffff' }}
       ref={containerRef}
     >
