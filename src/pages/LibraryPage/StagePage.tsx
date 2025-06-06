@@ -113,16 +113,16 @@ const StagePage: React.FC = () => {
     return (
         <Page showTabBar={false}>
             <div className={'text-black'}>
-                <div className={'bg-white p-4 flex flex-col gap-3 p-4 pt-16'}>
+                <div className={'bg-white p-4 flex flex-col gap-3 p-4 pt-12'}>
                     <div className={'flex items-center justify-between'}>
                         <div className={'flex flex-col'}>
                             <p className={'font-bold text-xl'}>{stageDetails.stage_name}</p>
-                            <p className={'text-sm text-[#8C8C8C]'}>Еще 11 заданий до третьей ступени</p>
+                            <p className={'text-sm text-[#8C8C8C]'}>Еще 5 заданий до второй ступени</p>
                         </div>
                         <img onClick={()=>setIsOpen(true)} src={'/ask-icon.svg'} alt={''}/>
                     </div>
                     <div className="w-full bg-gray-200 rounded-full h-3">
-                        <div className="h-3 rounded-full bg-gradient-to-r from-[#ACD3F3] to-[#91C3EC] w-1/2"></div>
+                        <div className="h-3 rounded-full bg-gradient-to-r from-[#ACD3F3] to-[#91C3EC] w-0"></div>
                     </div>
                 </div>
                 <div className={'bg-[url("/bg3.jpg")] bg-cover bg-top p-4 rounded-t-3xl flex-1 flex flex-col gap-3'}>

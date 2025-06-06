@@ -17,7 +17,8 @@ export const HelpPage = ()=> {
             const { data, error } = await supabase?.from('user_curator').select('*').eq('student_id', supabaseUser.id).single()
             if (error) {
                 // выбрасываем ошибку, чтобы React-Query перевёл загрузку в состояние “isError”
-                throw new Error(error.message)
+                return undefined
+                //throw new Error(error.message)
             }
             // data здесь — это массив User[] (или null/[]), в зависимости от схемы
             return data || []
