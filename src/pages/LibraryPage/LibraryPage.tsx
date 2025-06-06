@@ -175,8 +175,8 @@ const LibraryPage: React.FC = () => {
             <div className={'bg-white py-4 px-6 flex flex-col gap-4'}>
                 <div className={'flex items-center justify-between'}>
                     <div className={'flex flex-col'}>
-                        <p className={'font-bold text-black'}>Выполнено 12 заданий</p>
-                        <p className={'text-sm text-[#8C8C8C]'}>Еще 24 задания до третьей ступени</p>
+                        <p className={'font-bold text-black'}>Выполнено 0 заданий</p>
+                        <p className={'text-sm text-[#8C8C8C]'}>Еще 5 заданий до второй ступени</p>
                     </div>
                     <img src={'/arrow-icon.svg'} alt="" className={'w-[36px] h-[36px]'} />
                 </div>
