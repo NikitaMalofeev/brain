@@ -1,145 +1,147 @@
 # Схема базы данных Supabase - Brain Programming
-*Обновлено: 27.05.2025 - Актуальное состояние БД*
+*Обновлено: 06.06.2025 - Актуальное состояние БД*
 
 ## Обзор
 
-База данных приложения "Brain Programming" построена на PostgreSQL через Supabase и содержит 12 основных таблиц для управления пользователями, курсами, этапами обучения, уроками, блоками контента и прогрессом пользователей.
+База данных приложения "Brain Programming" построена на PostgreSQL через Supabase и содержит 16 основных таблиц для управления пользователями, курсами, этапами обучения, уроками, блоками контента, прогрессом пользователей, а также новые таблицы для чатов, FAQ и эфиров.
 
 **Проект Supabase:** `bzbpwmzhywaqwsjthwid` (EU Central 1)
 
 ## Таблицы и их назначение
 
-### 1. `users` - Пользователи
+### 1. `users` - Пользователи ✅ АКТУАЛИЗИРОВАНО
 **Назначение:** Хранение информации о пользователях приложения, интегрированных через Telegram Web App.
 
 **Поля:**
 - `id` (uuid, PK, default: gen_random_uuid()) - Уникальный идентификатор пользователя
-- `telegram_id` (text, UNIQUE) - ID пользователя в Telegram (⚠️ **ИСПРАВЛЕНИЕ:** тип TEXT, не bigint)
-- `first_name` (text) - Имя пользователя
-- `last_name` (text) - Фамилия пользователя  
-- `username` (text) - Username в Telegram
-- `photo_url` (text) - URL аватара пользователя
-- `auth_date` (text) - Дата авторизации в Telegram (⚠️ **ИСПРАВЛЕНИЕ:** тип TEXT, не bigint)
-- `hash` (text) - Хеш для проверки подлинности данных Telegram
-- `last_login` (timestamptz) - Время последнего входа
+- `telegram_id` (text, UNIQUE, NOT NULL) - ID пользователя в Telegram
+- `first_name` (text, nullable) - Имя пользователя
+- `last_name` (text, nullable) - Фамилия пользователя  
+- `username` (text, nullable) - Username в Telegram
+- `photo_url` (text, nullable) - URL аватара пользователя
+- `auth_date` (text, nullable) - Дата авторизации в Telegram
+- `hash` (text, nullable) - Хеш для проверки подлинности данных Telegram
+- `last_login` (timestamptz, nullable) - Время последнего входа через Telegram
 - `created_at` (timestamptz, default: now()) - Время создания записи
 - `updated_at` (timestamptz, default: now()) - Время последнего обновления
 - `total_points` (int4, default: 0) - Общее количество очков пользователя
 - `lives_remaining` (int4, default: 3) - Количество оставшихся жизней
-- `role` (text, default: 'user') - Роль пользователя: 'user', 'curator', 'admin'
-- `web_login` (text, UNIQUE) - Логин для веб-авторизации админов/кураторов (nullable)
-- `web_password_hash` (text) - Хеш пароля для веб-авторизации (nullable)
-- `web_last_login` (timestamptz, nullable) - Время последнего входа через веб-интерфейс
+- `role` (user_role ENUM, default: 'user', NOT NULL) - Роль пользователя: 'user', 'curator', 'admin'
+- `access_till` (timestamptz, nullable) - Дата окончания доступа (NULL = бессрочный доступ)
+- `web_login` (varchar, UNIQUE, nullable) - Логин для веб-авторизации админов/кураторов
+- `web_password_hash` (text, nullable) - Хеш пароля для веб-авторизации
+- `web_last_login` (timestamptz, nullable) - Время   последнего входа через веб-интерфейс
+- `onboarding_completed` (boolean, default: false, NOT NULL) - Флаг завершения онбординга
 
-**❌ ОТСУТСТВУЮЩИЕ поля из документации:**
-- `is_admin` (boolean, default: false) - Флаг администратора (⚠️ **ЗАМЕНЕН** на поле `role`)
-- `access_till` (timestamptz) - Дата окончания доступа (nullable)
+**✅ НОВОЕ: Onboarding система:**
+- Добавлено поле `onboarding_completed` для отслеживания завершения вводного процесса
 
 **🔒 Система ролей:**
 - **user** - обычный пользователь, доступ только к материалам курса
 - **curator** - куратор, может проверять домашние задания и выставлять баллы
 - **admin** - администратор, полный доступ к админке включая управление контентом
 
-**✅ НОВОЕ: Веб-авторизация (30.01.2025):**
-- Добавлены поля `web_login` и `web_password_hash` для входа в админку
-- Создана функция `authenticate_web_user(login, password)` для проверки логина/пароля
-- Система сохранения сессии в localStorage (больше не разлогинивает при refresh)
+**✅ Веб-авторизация:**
+- Поля `web_login` и `web_password_hash` для входа в админку
+- Ограничения: `web_login` может содержать только буквы, цифры, _ и -
+- Система сохранения сессии в localStorage
 - Работает только для пользователей с ролями 'admin' и 'curator'
-
-**Проверка прав доступа:**
-- SQL функция `is_curator_or_admin()` проверяет роль пользователя
-- В админке интерфейс адаптируется под роль пользователя
 
 **RLS:** Включен (Row Level Security)
 
-### 2. `courses` - Курсы
+### 2. `courses` - Курсы ✅ АКТУАЛИЗИРОВАНО
 **Назначение:** Основные курсы обучения в приложении.
 
 **Поля:**
 - `id` (uuid, PK, default: gen_random_uuid()) - Уникальный идентификатор курса
 - `title` (text, NOT NULL) - Название курса
-- `subtitle` (text) - Подзаголовок курса
+- `subtitle` (text, nullable) - Подзаголовок курса
 - `created_at` (timestamptz, default: now()) - Время создания
 
 **RLS:** ВЫКЛЮЧЕН
 
-### 3. `course_stages` - Этапы курса
+### 3. `course_stages` - Этапы курса ✅ АКТУАЛИЗИРОВАНО
 **Назначение:** Этапы (ступени) внутри курсов, которые пользователи проходят последовательно.
 
 **Поля:**
 - `id` (bigint, PK, auto-increment) - Уникальный идентификатор этапа
 - `course_id` (uuid, FK → courses.id, NOT NULL) - Ссылка на курс
 - `name` (text, NOT NULL) - Название этапа
-- `description` (text) - Описание этапа
+- `description` (text, nullable) - Описание этапа
 - `order_num` (int4, NOT NULL) - Порядковый номер этапа в курсе
-- `unlock_condition_type` (text) - Тип условия разблокировки
-- `unlock_condition_value` (text) - Значение условия разблокировки
+- `unlock_condition_type` (text, nullable) - Тип условия разблокировки
+- `unlock_condition_value` (text, nullable) - Значение условия разблокировки
 - `created_at` (timestamptz, default: CURRENT_TIMESTAMP) - Время создания
 - `updated_at` (timestamptz, default: CURRENT_TIMESTAMP) - Время обновления
 - `is_unlocked` (boolean, default: false, NOT NULL) - Флаг разблокировки этапа
-- `cover_image_path` (text) - Путь к файлу обложки ступени в CloudFlare R2 (например: images/stage_cover_123.jpg)
+- `cover_image_path` (text, nullable) - Путь к файлу обложки ступени в CloudFlare R2 (например: images/stage_cover_123.jpg)
 
-**✅ НОВОЕ: Обложки ступеней (19.12.2024):**
-- Добавлено поле `cover_image_path` для хранения пути к обложке ступени
+**✅ Система обложек:**
+- Поле `cover_image_path` для хранения пути к обложке ступени
 - Файлы обложек хранятся в CloudFlare R2 в папке `images/`
 - Полный URL формируется динамически через `buildImageUrl(cover_image_path)`
 - При отсутствии обложки используется дефолтная заглушка
 
 **RLS:** ВЫКЛЮЧЕН
 
-### 4. `lessons` - Уроки
+### 4. `lessons` - Уроки ✅ АКТУАЛИЗИРОВАНО
 **Назначение:** Отдельные уроки внутри этапов курса. Урок содержит блоки контента.
 
 **Поля:**
 - `id` (bigint, PK, auto-increment) - Уникальный идентификатор урока
 - `stage_id` (bigint, FK → course_stages.id, NOT NULL) - Ссылка на этап
 - `name` (text, NOT NULL) - Название урока
-- `description` (text) - Описание урока
+- `description` (text, nullable) - Описание урока
 - `order_num` (int4, NOT NULL) - Порядковый номер урока в этапе
 - `created_at` (timestamptz, default: CURRENT_TIMESTAMP) - Время создания
 - `updated_at` (timestamptz, default: CURRENT_TIMESTAMP) - Время обновления
-- `cover_image_path` (text) - Путь к файлу обложки в CloudFlare R2 (например: images/filename.webp)
+- `cover_image_path` (text, nullable) - Путь к файлу обложки в CloudFlare R2 (например: images/filename.webp)
 - `has_assignment` (boolean, default: false) - Есть ли в уроке домашнее задание для сдачи
-- `open_at` (timestamptz) - Дата и время открытия урока (до этого времени урок недоступен)
-- `deadline_at` (timestamptz) - Дедлайн сдачи задания (после этого времени поздняя сдача)
+- `open_at` (timestamptz, nullable) - Дата и время открытия урока (до этого времени урок недоступен)
+- `deadline_at` (timestamptz, nullable) - Дедлайн сдачи задания (после этого времени поздняя сдача)
 
-**⭐ Новые поля для временного управления (добавлены 30.01.2025):**
+**✅ Система временного управления:**
 - `open_at` - позволяет настроить точное время открытия урока для пользователей
 - `deadline_at` - автоматически устанавливается как open_at + 2 дня в админке
 - Используются для определения статуса "Откроется завтра" и просроченных сдач
 
+**✅ Система обложек:**
+- Поле `cover_image_path` для хранения пути к обложке урока
+- Интеграция с CloudFlare R2 в папке `images/`
+- Полный URL строится через buildImageUrl()
+
 **RLS:** ВЫКЛЮЧЕН
 
-### 5. `lesson_blocks` - Блоки контента урока
+### 5. `lesson_blocks` - Блоки контента урока ✅ АКТУАЛИЗИРОВАНО
 **Назначение:** Блоки контента внутри уроков (текст, видео, аудио, изображения, файлы).
 
 **Поля:**
 - `id` (bigint, PK, auto-increment) - Уникальный идентификатор блока
 - `lesson_id` (bigint, FK → lessons.id, NOT NULL) - Ссылка на урок
 - `order_num` (int4, NOT NULL) - Порядковый номер блока в уроке
-- `title` (text) - Заголовок блока
-- `block_type` (text, NOT NULL) - Тип блока: 'text', 'video', 'audio', 'image', 'pdf'
-- `content_text` (text) - Текстовое содержимое для text-блоков
-- `content_url` (text) - URL для файлов/медиа контента
+- `title` (text, nullable) - Заголовок блока
+- `block_type` (text, NOT NULL) - Тип блока: 'text', 'video', 'audio', 'image', 'pdf', 'assignment_instruction'
+- `content_text` (text, nullable) - Текстовое содержимое для text-блоков
+- `content_url` (text, nullable) - URL для файлов/медиа контента
 - `meta_json` (jsonb, default: '{}') - Дополнительные поля: длительность видео, подписи и т.п.
 - `created_at` (timestamptz, default: now()) - Время создания
 - `updated_at` (timestamptz, default: now()) - Время обновления
 
-**⚠️ ПРОБЛЕМА:** В CHECK constraint еще есть тип 'assignment_instruction', который должен быть удален
+**⚠️ УСТАРЕВШИЙ ТИП БЛОКА:** В CHECK constraint еще есть тип 'assignment_instruction', который должен быть удален в пользу `lessons.has_assignment`
 
 **RLS:** Включен
 
-### 6. `lesson_progress` - Прогресс по урокам
+### 6. `lesson_progress` - Прогресс по урокам ✅ АКТУАЛИЗИРОВАНО
 **Назначение:** Детальное отслеживание прогресса пользователей по отдельным урокам.
 
 **Поля:**
 - `id` (bigint, PK, auto-increment) - Уникальный идентификатор записи
 - `user_id` (uuid, FK → users.id, NOT NULL) - Ссылка на пользователя
 - `lesson_id` (bigint, FK → lessons.id, NOT NULL) - Ссылка на урок
-- `started_at` (timestamptz) - Время начала урока
-- `completed_at` (timestamptz) - Время завершения урока
+- `started_at` (timestamptz, nullable) - Время начала урока
+- `completed_at` (timestamptz, nullable) - Время завершения урока
 - `is_completed` (bool, default: false) - Флаг завершения урока
-- `submission_id` (bigint, FK → submissions.id) - Связь с сдачей, если есть
+- `submission_id` (bigint, FK → submissions.id, nullable) - Связь с сдачей, если есть
 - `created_at` (timestamptz, default: now()) - Время создания
 - `updated_at` (timestamptz, default: now()) - Время обновления
 
@@ -148,7 +150,7 @@
 
 **RLS:** Включен
 
-### 7. `submissions` - Сдачи заданий
+### 7. `submissions` - Сдачи заданий ✅ АКТУАЛИЗИРОВАНО
 **Назначение:** Хранение сдач заданий пользователями и результатов их проверки.
 
 **Поля:**
@@ -156,13 +158,13 @@
 - `user_id` (uuid, FK → users.id, NOT NULL) - Ссылка на пользователя
 - `lesson_id` (bigint, FK → lessons.id, NOT NULL) - Ссылка на урок
 - `submitted_at` (timestamptz, default: now()) - Время сдачи
-- `first_submitted_at` (timestamptz) - Время первоначальной сдачи (для определения опоздания при пересдачах)
-- `content_text` (text) - Текстовая сдача
-- `file_url` (text) - URL файла в Supabase Storage
+- `first_submitted_at` (timestamptz, nullable) - Время первоначальной сдачи (для определения опоздания при пересдачах)
+- `content_text` (text, nullable) - Текстовая сдача
+- `file_url` (text, nullable) - URL файла в Supabase Storage
 - `status` (text, default: 'submitted', NOT NULL) - Статус: 'submitted', 'pending_review', 'approved', 'rejected'
-- `reviewed_by_curator_id` (uuid, FK → users.id) - Куратор, который проверил
-- `reviewed_at` (timestamptz) - Время проверки
-- `feedback_text` (text) - Обратная связь от куратора
+- `reviewed_by_curator_id` (uuid, FK → users.id, nullable) - Куратор, который проверил
+- `reviewed_at` (timestamptz, nullable) - Время проверки
+- `feedback_text` (text, nullable) - Обратная связь от куратора
 - `points_awarded` (int4, default: 0) - Начисленные баллы
 - `created_at` (timestamptz, default: now()) - Время создания
 - `updated_at` (timestamptz, default: now()) - Время обновления
@@ -174,7 +176,7 @@
 
 **RLS:** Включен
 
-### 8. `user_course_enrollments` - Зачисления на курсы
+### 8. `user_course_enrollments` - Зачисления на курсы ✅ АКТУАЛИЗИРОВАНО
 **Назначение:** Связь между пользователями и курсами, на которые они записаны.
 
 **Поля:**
@@ -188,68 +190,127 @@
 
 **RLS:** ВЫКЛЮЧЕН
 
-### 9. `user_stage_progress` - Прогресс по этапам
+### 9. `user_stage_progress` - Прогресс по этапам ⚠️ ТРЕБУЕТ ИСПРАВЛЕНИЯ
 **Назначение:** Отслеживание прогресса пользователей по этапам курсов.
 
 **Поля:**
 - `id` (bigint, PK, auto-increment) - Уникальный идентификатор записи
-- `user_id` (uuid, FK → user_stage_progress.user_id, NOT NULL) - Ссылка на пользователя
+- `user_id` (uuid, FK → users.id, NOT NULL) - Ссылка на пользователя
 - `stage_id` (bigint, FK → course_stages.id, NOT NULL) - Ссылка на этап
 - `status` (text, default: 'not_started') - Статус прохождения этапа
-- `started_at` (timestamptz) - Время начала этапа
-- `completed_at` (timestamptz) - Время завершения этапа
+- `started_at` (timestamptz, nullable) - Время начала этапа
+- `completed_at` (timestamptz, nullable) - Время завершения этапа
 - `created_at` (timestamptz, default: CURRENT_TIMESTAMP) - Время создания
 - `updated_at` (timestamptz, default: CURRENT_TIMESTAMP) - Время обновления
 
-**⚠️ ПРОБЛЕМА:** FK ссылается на `auth.users`, а должен на `public.users`
+**⚠️ ПРОБЛЕМА:** FK ссылается на `auth.users`, а должен на `public.users` (требует исправления)
 
 **RLS:** ВЫКЛЮЧЕН
 
-### 10. `materials` - Дополнительные материалы
+### 10. `materials` - Дополнительные материалы ✅ АКТУАЛИЗИРОВАНО
 **Назначение:** Хранение информации о дополнительных материалах.
 
 **Поля:**
-- `id` (uuid, PK, default: `gen_random_uuid()`) - Уникальный идентификатор материала.
-- `name` (text, NOT NULL) - Название материала.
-- `description` (text, nullable) - Описание материала.
-- `cover_image_path` (text, nullable) - Путь к файлу обложки в CloudFlare R2.
-- `material_type` (text, NOT NULL) - Тип материала (например, 'video', 'article', 'link', 'file'). В админке будет выбор из списка.
-- `order_num` (int4, default: 0, NOT NULL) - Порядковый номер для сортировки.
-- `created_at` (timestamptz, default: `now()`, NOT NULL) - Время создания.
-- `updated_at` (timestamptz, default: `now()`, NOT NULL) - Время последнего обновления.
+- `id` (uuid, PK, default: gen_random_uuid()) - Уникальный идентификатор материала
+- `name` (text, NOT NULL) - Название материала
+- `description` (text, nullable) - Описание материала
+- `cover_image_path` (text, nullable) - Путь к файлу обложки в CloudFlare R2
+- `material_type` (text, NOT NULL) - Тип материала ('video', 'audio', 'article', 'link', 'file')
+- `order_num` (int4, default: 0, NOT NULL) - Порядковый номер для сортировки
+- `created_at` (timestamptz, default: now(), NOT NULL) - Время создания
+- `updated_at` (timestamptz, default: now(), NOT NULL) - Время последнего обновления
 
-**RLS:** (Будет определено позже, вероятно, чтение для всех аутентифицированных)
+**RLS:** ВЫКЛЮЧЕН
 
-### 11. `material_blocks` - Блоки контента дополнительных материалов
+### 11. `material_blocks` - Блоки контента дополнительных материалов ✅ АКТУАЛИЗИРОВАНО
 **Назначение:** Блоки контента внутри одного дополнительного материала (текст, видео Kinescope, аудио, изображения, файлы PDF).
 
 **Поля:**
-- `id` (bigint, PK, auto-increment) - Уникальный идентификатор блока.
-- `material_id` (uuid, FK -> `materials.id`, NOT NULL, onDelete: CASCADE) - Ссылка на материал.
-- `order_num` (int4, NOT NULL) - Порядковый номер блока в материале.
-- `title` (text, nullable) - Заголовок блока.
-- `block_type` (text, NOT NULL) - Тип блока: 'text', 'video' (для Kinescope), 'audio', 'image', 'pdf'.
-- `content_text` (text, nullable) - Текстовое содержимое для 'text' блоков.
-- `content_url` (text, nullable) - URL для 'video', 'audio', 'image', 'pdf' блоков (файлы из R2 или Kinescope URL).
-- `meta_json` (jsonb, default: '{}', nullable) - Дополнительные метаданные (например, длительность видео).
-- `created_at` (timestamptz, default: `now()`, NOT NULL) - Время создания.
-- `updated_at` (timestamptz, default: `now()`, NOT NULL) - Время последнего обновления.
+- `id` (bigint, PK, auto-increment) - Уникальный идентификатор блока
+- `material_id` (uuid, FK → materials.id, NOT NULL, onDelete: CASCADE) - Ссылка на материал
+- `order_num` (int4, NOT NULL) - Порядковый номер блока в материале
+- `title` (text, nullable) - Заголовок блока
+- `block_type` (text, NOT NULL) - Тип блока: 'text', 'video' (для Kinescope), 'audio', 'image', 'pdf'
+- `content_text` (text, nullable) - Текстовое содержимое для 'text' блоков
+- `content_url` (text, nullable) - URL для 'video', 'audio', 'image', 'pdf' блоков (файлы из R2 или Kinescope URL)
+- `meta_json` (jsonb, default: '{}', nullable) - Дополнительные метаданные (например, длительность видео)
+- `created_at` (timestamptz, default: now(), NOT NULL) - Время создания
+- `updated_at` (timestamptz, default: now(), NOT NULL) - Время последнего обновления
 
-**RLS:** (Будет определено позже, вероятно, чтение для всех аутентифицированных)
+**RLS:** ВЫКЛЮЧЕН
 
-### 12. `user_material_views` - Просмотры дополнительных материалов
+### 12. `user_material_views` - Просмотры дополнительных материалов ✅ АКТУАЛИЗИРОВАНО
 **Назначение:** Отслеживание просмотров/взаимодействий пользователей с дополнительными материалами.
 
 **Поля:**
-- `id` (bigint, PK, auto-increment) - Уникальный идентификатор записи.
-- `user_id` (uuid, FK -> `users.id`, NOT NULL, onDelete: CASCADE) - Ссылка на пользователя.
-- `material_id` (uuid, FK -> `materials.id`, NOT NULL, onDelete: CASCADE) - Ссылка на материал.
-- `first_viewed_at` (timestamptz, default: `now()`, NOT NULL) - Время первого просмотра.
-- `last_viewed_at` (timestamptz, default: `now()`, NOT NULL) - Время последнего просмотра (обновляется при каждом открытии).
-- `is_completed` (boolean, default: `false`, NOT NULL) - Флаг "материал просмотрен/завершен".
-- `CONSTRAINT uq_user_material UNIQUE (user_id, material_id)` - Уникальная пара пользователь-материал.
+- `id` (bigint, PK, auto-increment) - Уникальный идентификатор записи
+- `user_id` (uuid, FK → users.id, NOT NULL, onDelete: CASCADE) - Ссылка на пользователя
+- `material_id` (uuid, FK → materials.id, NOT NULL, onDelete: CASCADE) - Ссылка на материал
+- `first_viewed_at` (timestamptz, default: now(), NOT NULL) - Время первого просмотра
+- `last_viewed_at` (timestamptz, default: now(), NOT NULL) - Время последнего просмотра (обновляется при каждом открытии)
+- `is_completed` (boolean, default: false, NOT NULL) - Флаг "материал просмотрен/завершен"
 
-**RLS:** (Будет определено позже, пользователи видят только свои просмотры)
+**Ограничения:**
+- `CONSTRAINT uq_user_material UNIQUE (user_id, material_id)` - Уникальная пара пользователь-материал
+
+**RLS:** ВЫКЛЮЧЕН
+
+### 13. `user_curator` - Связи куратор-ученик ✅ НОВАЯ ТАБЛИЦА
+**Назначение:** Связь между кураторами и учениками для персонализированного сопровождения.
+
+**Поля:**
+- `id` (bigint, PK, auto-increment) - Уникальный идентификатор записи
+- `curator_id` (uuid, FK → users.id, NOT NULL) - ID куратора (пользователь с ролью curator или admin)
+- `student_id` (uuid, FK → users.id, NOT NULL) - ID ученика (пользователь с ролью user)
+- `created_at` (timestamptz, default: now(), NOT NULL) - Дата назначения ученика куратору
+
+**Особенности:**
+- Один ученик может быть назначен только одному куратору
+- Один куратор может иметь множество учеников
+- Используется для фильтрации заданий в админке и персонализации
+
+**RLS:** Включен
+
+### 14. `chats` - Telegram-чаты ✅ НОВАЯ ТАБЛИЦА
+**Назначение:** Список Telegram-чатов для пользователей.
+
+**Поля:**
+- `id` (uuid, PK, default: gen_random_uuid()) - Уникальный идентификатор чата
+- `name` (text, NOT NULL) - Название чата
+- `description` (text, nullable) - Краткое описание
+- `link` (text, NOT NULL) - Ссылка на чат
+- `order_num` (int4, default: 0, NOT NULL) - Порядковый номер для сортировки
+- `created_at` (timestamptz, default: now(), NOT NULL) - Время создания
+
+**RLS:** Включен (SELECT для всех, INSERT/UPDATE/DELETE только для админов)
+
+### 15. `faq` - Часто задаваемые вопросы ✅ НОВАЯ ТАБЛИЦА
+**Назначение:** Часто задаваемые вопросы и ответы.
+
+**Поля:**
+- `id` (uuid, PK, default: gen_random_uuid()) - Уникальный идентификатор записи
+- `question` (text, NOT NULL) - Вопрос
+- `answer` (text, NOT NULL) - Ответ
+- `order_num` (int4, default: 0, NOT NULL) - Порядковый номер для сортировки
+- `created_at` (timestamptz, default: now(), NOT NULL) - Время создания
+
+**RLS:** Включен (SELECT для всех, INSERT/UPDATE/DELETE только для админов)
+
+### 16. `broadcasts` - Эфиры и трансляции ✅ НОВАЯ ТАБЛИЦА
+**Назначение:** Список эфиров и трансляций.
+
+**Поля:**
+- `id` (uuid, PK, default: gen_random_uuid()) - Уникальный идентификатор эфира
+- `name` (text, NOT NULL) - Название эфира
+- `description` (text, nullable) - Описание
+- `broadcast_url` (text, nullable) - Ссылка на трансляцию (Zoom, YouTube)
+- `start_time` (timestamptz, nullable) - Дата и время начала
+- `status` (text, default: 'planned', NOT NULL) - Статус эфира: 'planned', 'live', 'completed'
+- `recording_url` (text, nullable) - Ссылка на запись (добавляется после)
+- `created_at` (timestamptz, default: now(), NOT NULL) - Время создания
+- `order_num` (int4, default: 0, NOT NULL) - Порядковый номер для сортировки
+
+**RLS:** Включен (SELECT для всех, INSERT/UPDATE/DELETE только для админов)
 
 ## Функции базы данных
 
@@ -267,7 +328,6 @@
 - `content_text` (text)
 - `content_url` (text) 
 - `meta_json` (jsonb)
-- `is_required` (boolean) - ⚠️ **ПРОБЛЕМА:** поля `is_required` нет в таблице!
 
 ### `get_library_stages(p_user_id UUID, p_course_id UUID)`
 **Назначение:** Получает список этапов курса с прогрессом пользователя (используется в LibraryPage).
@@ -304,6 +364,20 @@
 
 **Возвращает:** `BOOLEAN`
 
+### `is_curator_or_admin()` ✅ НОВАЯ ФУНКЦИЯ
+**Назначение:** Проверяет, является ли текущий пользователь куратором или администратором.
+
+**Возвращает:** `BOOLEAN`
+
+### `authenticate_web_user(login TEXT, password TEXT)` ✅ НОВАЯ ФУНКЦИЯ
+**Назначение:** Аутентификация пользователей для веб-интерфейса админки.
+
+**Параметры:**
+- `login` - веб-логин пользователя
+- `password` - пароль в открытом виде
+
+**Возвращает:** Запись пользователя или NULL
+
 ## Триггеры
 
 ### Автоматическое обновление `updated_at`
@@ -321,19 +395,6 @@
 ### Каскадное удаление
 - `lesson_progress_deletion_trigger` - при удалении `lesson_progress` обрабатывает связанные записи (AFTER DELETE)
 - `handle_submission_deletion_trigger` - при удалении `submissions` обрабатывает связанные записи (AFTER DELETE)
-
-## Представления (Views)
-
-### `user_lesson_progress_view` ⚠️ УСТАРЕВШЕЕ
-**Назначение:** Объединяет прогресс пользователя по урокам с данными о сдачах заданий.
-
-**⚠️ ПРОБЛЕМА:** В поле `has_submission` используется старая логика проверки блоков `assignment_instruction`, а должно использоваться поле `lessons.has_assignment`.
-
-**Поля:**
-- `user_id`, `lesson_id`, `lesson_name`, `stage_id`
-- `started_at`, `completed_at`, `is_completed`, `submission_id`
-- `submission_status`, `points_awarded`, `feedback_text`, `reviewed_at`
-- `has_submission` - ⚠️ **ПРОБЛЕМА:** проверяет блоки вместо поля `has_assignment`
 
 ## Политики RLS (Row Level Security)
 
@@ -355,19 +416,19 @@
 - `Анонимные пользователи могут созд` - INSERT для анонимных пользователей
 - `Анонимные пользователи могут обно` - UPDATE для анонимных пользователей (через Telegram ID)
 
+### `chats`, `faq`, `broadcasts`
+- SELECT для всех аутентифицированных пользователей
+- INSERT, UPDATE, DELETE только для пользователей с ролью 'admin'
+
+### `user_curator`
+- Политики доступа настроены для админов и кураторов
+
 ## Выявленные проблемы и несоответствия
 
 ### 🚨 Критические проблемы
 1. **Функция `lesson_has_submission`** - использует устаревшую логику блоков `assignment_instruction`
-2. **Представление `user_lesson_progress_view`** - использует устаревшую логику в поле `has_submission`
-3. **CHECK constraint в `lesson_blocks`** - до сих пор разрешает тип `assignment_instruction`
-4. **FK в `user_stage_progress`** - ссылается на `auth.users` вместо `public.users`
-
-### ⚠️ Несоответствия документации
-1. **`users.telegram_id`** - тип TEXT вместо bigint
-2. **`users.auth_date`** - тип TEXT вместо bigint
-3. **Отсутствуют поля** `users.is_admin` и `users.access_till`
-4. **Функция `get_lesson_blocks`** - возвращает несуществующее поле `is_required`
+2. **CHECK constraint в `lesson_blocks`** - до сих пор разрешает тип `assignment_instruction`
+3. **FK в `user_stage_progress`** - ссылается на `auth.users` вместо `public.users`
 
 ### 🔧 Требуемые исправления
 
@@ -384,30 +445,7 @@ END;
 $$;
 ```
 
-2. **Обновить представление `user_lesson_progress_view`:**
-```sql
-CREATE OR REPLACE VIEW user_lesson_progress_view AS
-SELECT 
-    lp.user_id,
-    l.id AS lesson_id,
-    l.name AS lesson_name,
-    l.stage_id,
-    lp.started_at,
-    lp.completed_at,
-    lp.is_completed,
-    lp.submission_id,
-    s.status AS submission_status,
-    s.points_awarded,
-    s.feedback_text,
-    s.reviewed_at,
-    l.has_assignment AS has_submission  -- ИСПРАВЛЕНИЕ
-FROM lesson_progress lp
-JOIN lessons l ON lp.lesson_id = l.id
-LEFT JOIN submissions s ON lp.submission_id = s.id
-ORDER BY l.order_num;
-```
-
-3. **Обновить CHECK constraint для `lesson_blocks`:**
+2. **Обновить CHECK constraint для `lesson_blocks`:**
 ```sql
 ALTER TABLE lesson_blocks 
 DROP CONSTRAINT IF EXISTS lesson_blocks_block_type_check;
@@ -417,7 +455,7 @@ ADD CONSTRAINT lesson_blocks_block_type_check
 CHECK (block_type = ANY (ARRAY['text'::text, 'video'::text, 'audio'::text, 'image'::text, 'pdf'::text]));
 ```
 
-4. **Исправить FK в `user_stage_progress`:**
+3. **Исправить FK в `user_stage_progress`:**
 ```sql
 ALTER TABLE user_stage_progress 
 DROP CONSTRAINT IF EXISTS user_stage_progress_user_id_fkey;
@@ -427,7 +465,12 @@ ADD CONSTRAINT user_stage_progress_user_id_fkey
 FOREIGN KEY (user_id) REFERENCES public.users(id);
 ```
 
-## Статусы прогресса
+## Статусы и енумы
+
+**ENUM `user_role`:**
+- `user` - обычный пользователь
+- `curator` - куратор
+- `admin` - администратор
 
 **Статусы `user_stage_progress.status`:**
 - `not_started` - Не начато
@@ -440,6 +483,11 @@ FOREIGN KEY (user_id) REFERENCES public.users(id);
 - `approved` - Одобрено
 - `rejected` - Отклонено
 
+**Статусы `broadcasts.status`:**
+- `planned` - Запланировано
+- `live` - В эфире
+- `completed` - Завершено
+
 **Примечание:** Статус опоздания (`late`) больше не хранится в базе данных, а определяется динамически путем сравнения `first_submitted_at` с дедлайном урока (`lessons.deadline_at`).
 
 **Типы блоков `lesson_blocks.block_type`:**
@@ -450,10 +498,17 @@ FOREIGN KEY (user_id) REFERENCES public.users(id);
 - `pdf` - PDF файл
 - ~~`assignment_instruction`~~ - **УСТАРЕЛ** (заменен на `lessons.has_assignment`)
 
+**Типы материалов `materials.material_type`:**
+- `video` - Видео материал
+- `audio` - Аудио материал
+- `article` - Статья
+- `link` - Ссылка
+- `file` - Файл
+
 ## Схема взаимосвязей
 
 ```
-users
+users (roles: user/curator/admin)
     ↓ (1:M)
 user_course_enrollments
     ↓ (M:1)
@@ -475,6 +530,16 @@ lesson_progress [через submission_id]
 users → user_stage_progress → course_stages
 users → lesson_progress → lessons
 users → submissions → lessons
+
+Дополнительные материалы:
+materials → material_blocks
+users → user_material_views → materials
+
+Админские сущности:
+users (admin) → chats, faq, broadcasts
+
+Кураторская система:
+users (curator) ← user_curator → users (student)
 ```
 
 ## Примеры использования
@@ -484,11 +549,9 @@ users → submissions → lessons
 SELECT * FROM get_lesson_blocks(4);
 ```
 
-### Проверка наличия формы сдачи (ИСПРАВЛЕННАЯ):
+### Проверка наличия формы сдачи:
 ```sql
 SELECT has_assignment FROM lessons WHERE id = 4;
--- ИЛИ (после исправления функции):
-SELECT lesson_has_submission(4);
 ```
 
 ### Получение этапов курса для пользователя:
@@ -500,4 +563,11 @@ SELECT * FROM get_library_stages($user_id, $course_id);
 ```sql
 INSERT INTO submissions (user_id, lesson_id, content_text)
 VALUES ($user_id, $lesson_id, $content);
+```
+
+### Получение учеников куратора:
+```sql
+SELECT u.* FROM users u
+JOIN user_curator uc ON u.id = uc.student_id
+WHERE uc.curator_id = $curator_id;
 ```
