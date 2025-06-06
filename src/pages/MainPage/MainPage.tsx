@@ -70,7 +70,7 @@ export const MainPage = () => {
                     <Link key={stage.stage_id} to={`/library/stage/${stage.stage_id}`}
                         className={clsx('relative bg-white/70 rounded-4xl overflow-hidden', stage.is_unlocked ? "cursor-pointer" : "pointer-events-none")}>
                         <img src={stage.cover_image_path ? buildImageUrl(stage.cover_image_path) : `/step${i + 1}${i + 1}.png`}
-                            className={`h-[140px] w-full object-cover`}
+                            className={`h-[140px] md:h-[200px] w-full object-cover`}
                             onError={(e) => {
                                 // Fallback при ошибке загрузки: переключаемся на статичное изображение
                                 console.log(`🔄 MainPage: Fallback для ступени ${stage.stage_id}, используем статическое изображение`);

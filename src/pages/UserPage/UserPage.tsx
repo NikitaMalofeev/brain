@@ -67,7 +67,7 @@ export const UserPage = () => {
     return (
         <Page>
             <div className={'text-black min-h-screen bg-white pt-[180px]'}>
-                <img src={'/but.png'} alt={''} className={'absolute top-0 left-0'}/>
+                <img src={'/but.png'} alt={''} className={'absolute top-0 left-0 object-cover'}/>
                 <div className={'rounded-t-3xl bg-[url("/bg3.jpg")] bg-cover bg-bottom relative'}>
                     <div className={'flex flex-col gap-4 items-center absolute -top-[94px] left-1/2 -translate-x-1/2'}>
                         {user?.photo_url ? <img className={'w-36 h-36 rounded-full'} src={user.photo_url} alt=""/> :
