@@ -57,7 +57,7 @@ export const MainPage = () => {
     }
     return (
         <Page back={false}>
-            <div className={'bg-[url("/bg3.jpg")] bg-cover bg-bottom p-4 pt-16 rounded-b-3xl flex-1 flex flex-col gap-3'}>
+            <div className={'bg-[url("/bg3.jpg")] bg-cover bg-bottom p-4 pt-12 rounded-b-3xl flex-1 flex flex-col gap-3'}>
                 <div className={'flex items-center justify-between w-full'}>
                     <img src={supabaseUser?.photo_url || ''} className={'w-8 h-8 rounded-full border border-white'}
                         alt={''} />
@@ -90,7 +90,7 @@ export const MainPage = () => {
 
 
 
-            <div className={'bg-white p-4 flex flex-col gap-3'}>
+            <div className={'bg-white p-4 flex flex-col gap-3 sticky bottom-0'}>
                 <div className={'flex items-center justify-between'}>
                     <div className={'flex flex-col'}>
                         <p className={'font-bold text-black'}>Выполнено 11 заданий</p>

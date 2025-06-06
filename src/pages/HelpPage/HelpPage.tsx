@@ -55,7 +55,7 @@ export const HelpPage = ()=> {
     return(
         <Page>
             <div className={'flex flex-col gap-4 text-black min-h-[calc(100vh-60px)]'}>
-                <h2 className={'font-bold text-xl p-4 pb-0 pt-8'}>Ваш куратор</h2>
+                <h2 className={'font-bold text-xl p-4 pb-0 pt-12'}>Ваш куратор</h2>
                 {userCurator && <Link to={`https://t.me/${data?.filter(el => el.id === userCurator?.curator_id)?.[0].username}`} className={'px-4 flex items-center gap-4 justify-between'}>
                     <div className={'flex items-center gap-3'}>
                         <img src={data?.filter(el => el.id === userCurator?.curator_id)?.[0].photo_url} alt={''}
