@@ -7,9 +7,9 @@ import VideoPlayer from "@/components/Player/VideoPlayer.tsx";
 
 const slides = [
     { title: 'Добро пожаловать', description: 'Это вводное видео поможет тебе быстро разобраться в устройстве курса и возможностях приложения. Посмотри его до конца, чтобы начать обучение на полной скорости.', img: '' },
-    { title: 'Главная', description: 'Главная страница — это твой личный центр управления. Здесь ты видишь свой прогресс, баллы и путь по ступеням курса.', img: '/o1.jpg' },
-    { title: 'Библиотека', description: 'Библиотека — это центр твоего обучения. Здесь ты смотришь и слушаешь материалы, а после сразу выполняешь домашние задания. Всё, что нужно для погружения и практики в одном месте.', img: '/o2.jpg' },
-    { title: 'Профиль', description: 'Профиль — твоя личная навигация. Здесь всё важное под рукой: чаты, помощь, FAQ и твои эдельштейны. Заглядывай сюда, когда нужен быстрый доступ или поддержка.\n', img: '/o3.jpg' },
+    { title: 'Главная', description: 'Главная страница — это твой личный центр управления. Здесь ты видишь свой прогресс, баллы и путь по ступеням курса.', img: '/o1.jpg', icon: '/icon1-active.svg' },
+    { title: 'Библиотека', description: 'Библиотека — это центр твоего обучения. Здесь ты смотришь и слушаешь материалы, а после сразу выполняешь домашние задания. Всё, что нужно для погружения и практики в одном месте.', img: '/o2.jpg', icon: '/icon2-active.svg' },
+    { title: 'Профиль', description: 'Профиль — твоя личная навигация. Здесь всё важное под рукой: чаты, помощь, FAQ и твои эдельштейны. Заглядывай сюда, когда нужен быстрый доступ или поддержка.\n', img: '/o3.jpg', icon: '/icon3-active.svg' },
 ];
 
 export const Onboarding = ({ onClose }: {onClose: () => void})=>  {
@@ -47,8 +47,12 @@ export const Onboarding = ({ onClose }: {onClose: () => void})=>  {
                                     videoId={getKinescopeId('https://kinescope.io/oXiWoXBWQpcb3GQ9AARE3Q') || ''}
                                 />
                             </div> : <img alt={''} className={'max-h-[375px] aspect-square w-full object-cover'} src={slide.img}/>}
-                            <div className={'flex flex-col gap-1 items-center px-4'}>
-                                <h2 className="w-max  text-2xl font-bold">{slide.title}</h2>
+                            <div className={'flex flex-col gap-1 items-center px-4 relative'}>
+                                {index > 0 && <div
+                                    className={'absolute -top-1/2 left-1/2 -translate-y-1/2 -translate-x-1/2 p-3 rounded-full bg-[linear-gradient(109.65deg,_#E1C1F4_13.64%,_#B862EA_124.92%)]'}>
+                                    <img className={'w-11 h-11'} src={slide.icon} alt={''}/>
+                                </div>}
+                                <h2 className="w-max text-2xl font-bold">{slide.title}</h2>
                                 <p className="text-center text-sm text-[#242424]">{slide.description}</p>
                             </div>
                         </div>

@@ -56,8 +56,8 @@ export const MainPage = () => {
         );
     }
     return (
-        <Page>
-            <div className={'bg-[url("/bg3.jpg")] bg-cover bg-bottom p-4 rounded-b-3xl flex-1 flex flex-col gap-3'}>
+        <Page back={false}>
+            <div className={'bg-[url("/bg3.jpg")] bg-cover bg-bottom p-4 pt-16 rounded-b-3xl flex-1 flex flex-col gap-3'}>
                 <div className={'flex items-center justify-between w-full'}>
                     <img src={supabaseUser?.photo_url || ''} className={'w-8 h-8 rounded-full border border-white'}
                         alt={''} />
@@ -78,7 +78,7 @@ export const MainPage = () => {
                             }} />
                         <div className={'absolute top-5 left-5 z-[2] flex flex-col gap-1'}>
                             <p className={'font-bold uppercase text-black'}>{stage.stage_name}</p>
-                            <div className={'text-xs w-max font-medium bg-[linear-gradient(135deg,_rgba(141,197,241)_-48.61%,_#63ABE6_105.56%)] px-2 py-1 rounded-full flex items-center gap-1'}>
+                            <div className={'text-xs text-white w-max font-medium bg-[linear-gradient(135deg,_rgba(141,197,241)_-48.61%,_#63ABE6_105.56%)] px-2 py-1 rounded-full flex items-center gap-1'}>
                                 LEVEL 0{i + 1}
                                 {!stage.is_unlocked && <img src={'/lock.svg'} alt={''} />}
                             </div>
@@ -93,10 +93,12 @@ export const MainPage = () => {
             <div className={'bg-white p-4 flex flex-col gap-3'}>
                 <div className={'flex items-center justify-between'}>
                     <div className={'flex flex-col'}>
-                        <p className={'font-bold text-black'}>Выполнено {'[11]'} заданий</p>
-                        <p className={'text-sm text-[#8C8C8C]'}>Еще {'[11]'} заданий до {'[третьей]'} ступени</p>
+                        <p className={'font-bold text-black'}>Выполнено 11 заданий</p>
+                        <p className={'text-sm text-[#8C8C8C]'}>Еще 11 заданий до третьей ступени</p>
                     </div>
-                    <img src={'/arrow-icon.svg'} alt={''} />
+                    <Link to={`/library/stage/${stages?.filter(stage => stage.is_unlocked).reverse()[0].stage_id}`}>
+                        <img src={'/arrow-icon.svg'} alt={''}/>
+                    </Link>
                 </div>
                 <div className="w-full bg-gray-200 rounded-full h-3">
                     <div className="h-3 rounded-full bg-gradient-to-r from-[#ACD3F3] to-[#91C3EC] w-1/2"></div>
