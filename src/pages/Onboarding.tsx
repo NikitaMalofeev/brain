@@ -28,7 +28,7 @@ export const Onboarding = ({ onClose }: {onClose: () => void})=>  {
 
 
     return (
-        <div className="min-h-screen flex flex-col justify-between bg-white z-[100] ">
+        <div className="min-h-screen flex flex-col justify-between bg-white z-[100] max-w-[600px] mx-auto">
 
             {/* Слайдер */}
             <Swiper
@@ -46,7 +46,7 @@ export const Onboarding = ({ onClose }: {onClose: () => void})=>  {
                                 <VideoPlayer
                                     videoId={getKinescopeId('https://kinescope.io/oXiWoXBWQpcb3GQ9AARE3Q') || ''}
                                 />
-                            </div> : <img className={'max-h-[375px] aspect-square w-full'} src={slide.img}/>}
+                            </div> : <img alt={''} className={'max-h-[375px] aspect-square w-full object-cover'} src={slide.img}/>}
                             <div className={'flex flex-col gap-1 items-center px-4'}>
                                 <h2 className="w-max  text-2xl font-bold">{slide.title}</h2>
                                 <p className="text-center text-sm text-[#242424]">{slide.description}</p>

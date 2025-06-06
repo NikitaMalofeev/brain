@@ -728,16 +728,10 @@ const LessonPage: React.FC = () => {
 
     if (loading) {
         return (
-            <Page back={true}>
-                <div style={{
-                    display: 'flex',
-                    justifyContent: 'center',
-                    alignItems: 'center',
-                    height: '200px',
-                    fontSize: '16px',
-                    color: '#6d6d6d',
-                }}>
-                    Загрузка урока...
+            <Page>
+                <div className="profile-loading">
+                    <div className="profile-loading-spinner" aria-hidden="true" />
+                    <p>Загрузка урока...</p>
                 </div>
             </Page>
         );

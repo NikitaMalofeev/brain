@@ -11,7 +11,11 @@ import { logger } from '@/lib/logger';
 import NativeModal from "@/components/NativeModal.tsx";
 
 const StagePage: React.FC = () => {
+
+
     const { id: stageId } = useParams<{ id: string }>();
+
+
     const [isOpen, setIsOpen] = useState(false);
 
     const navigate = useNavigate();
@@ -78,8 +82,9 @@ const StagePage: React.FC = () => {
     if (loading) {
         return (
             <Page>
-                <div style={{ textAlign: 'center', marginTop: '50px' }}>
-                    Загрузка ступени...
+                <div className="profile-loading">
+                    <div className="profile-loading-spinner" aria-hidden="true" />
+                    <p>Загрузка прогресса по урокам...</p>
                 </div>
             </Page>
         );

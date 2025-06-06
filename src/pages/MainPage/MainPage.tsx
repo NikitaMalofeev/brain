@@ -1,72 +1,54 @@
 import { Page } from "@/components";
-import useLibraryStages from "@/lib/supabase/hooks/useLibraryStages.ts";
 import { COURSE_CONFIG } from "@/lib/config/constants.ts";
-import { useEffect, useState } from "react";
-import { User } from "@supabase/supabase-js";
-import { logger } from "@/lib/logger.ts";
-import { useAppContext } from "@/contexts/AppContext.tsx";
 import { useSupabaseUser } from "@/lib/supabase/hooks";
 import { initDataState, useSignal } from "@telegram-apps/sdk-react";
 import { Link } from "react-router-dom";
 import { clsx } from "clsx";
 import { buildImageUrl } from "@/lib/cloudflareR2Service.ts";
+import {useQuery} from "@tanstack/react-query";
+import {supabase} from "@/lib/supabase/client.ts";
 
 const COURSE_ID = COURSE_CONFIG.DEFAULT_COURSE_ID;
 
 export const MainPage = () => {
-
-
-    const [supabaseCompatUser, setSupabaseCompatUser] = useState<User | null>(null);
-    const { isTelegramApp } = useAppContext();
     const initDataSignal = useSignal(initDataState);
-    const { supabaseUser, loading: supabaseUserLoading, error: supabaseUserError } = useSupabaseUser(initDataSignal);
+    const { supabaseUser } = useSupabaseUser(initDataSignal);
 
-    const { stages, loading: stagesLoading, error: stagesError } = useLibraryStages(supabaseCompatUser, COURSE_ID);
-    useEffect(() => {
-        if (supabaseUser) { // Условие изменено: теперь зависит только от наличия supabaseUser
-            // Создаем Supabase User-совместимый объект из supabaseUser
-            const compatUser: User = {
-                id: supabaseUser.id, // UUID из Supabase
-                app_metadata: {}, // Можно добавить нужные метаданные, если они есть в supabaseUser
-                user_metadata: { // Можно добавить нужные метаданные
-                    full_name: supabaseUser.first_name, // Пример, если first_name есть в SupabaseUser
-                    // ... другие поля из supabaseUser.user_metadata при необходимости
-                },
-                aud: '', // Обычно 'authenticated' для реальных сессий, для мока можно оставить пустым или настроить
-                created_at: supabaseUser.created_at || new Date().toISOString(), // Обеспечиваем наличие created_at
-            } as User; // Используем as User для гибкости, но следим за полями
+    const {data: stages, isLoading} = useQuery({
+        queryFn: async () => {
+            // 1) Формируем запрос, вызываем .select(...).maybeSingle()/.then()/.throwOnError()
+            if (!supabase) return []
 
-            setSupabaseCompatUser(compatUser);
-            logger.debug('Created Supabase-compatible user', { userId: compatUser.id, source: isTelegramApp ? 'Telegram' : 'Mocked InitData' });
-        } else {
-            setSupabaseCompatUser(null); // Если supabaseUser нет, сбрасываем compatUser
-        }
-    }, [supabaseUser, isTelegramApp]);
-    const loading = stagesLoading || (isTelegramApp && supabaseUserLoading);
+            const { data, error } = await supabase.rpc('get_library_stages', {
+                p_user_id: supabaseUser?.id,
+                p_course_id: COURSE_ID,
+            });
 
-    // Объединяем ошибки
-    const error = stagesError || (isTelegramApp && supabaseUserError);
+            if (error) {
+                // выбрасываем ошибку, чтобы React-Query перевёл загрузку в состояние “isError”
+                throw new Error(error.message)
+            }
+            // data здесь — это массив User[] (или null/[]), в зависимости от схемы
+            return data || []
+        },
+        queryKey: ['stages'],
+        enabled: !!supabaseUser?.id
+    })
 
 
-    if (loading) {
+    if (!supabaseUser?.id || isLoading) {
         return (
             <Page>
-                <div style={{ textAlign: 'center', marginTop: '50px' }}>Загрузка ступеней...</div>
-            </Page>
-        );
-    }
-
-    if (error) {
-        return (
-            <Page>
-                <div style={{ textAlign: 'center', marginTop: '50px', color: 'red' }}>
-                    Ошибка загрузки: {error.message}
+                <div className="profile-loading">
+                    <div className="profile-loading-spinner" aria-hidden="true" />
+                    <p>Загрузка ступеней...</p>
                 </div>
             </Page>
         );
     }
 
-    if (stages.length === 0 && !loading) {
+
+    if (stages?.length === 0 && !isLoading) {
         return (
             <Page>
                 <div style={{ textAlign: 'center', marginTop: '50px' }}>Нет доступных этапов для этого курса.</div>
@@ -84,11 +66,11 @@ export const MainPage = () => {
                         <img src={'/eid.svg'} className={'w-5 h-5'} />
                     </Link>
                 </div>
-                {stages.map((stage, i) => (
+                {stages?.map((stage, i) => (
                     <Link key={stage.stage_id} to={`/library/stage/${stage.stage_id}`}
                         className={clsx('relative bg-white/70 rounded-4xl overflow-hidden', stage.is_unlocked ? "cursor-pointer" : "pointer-events-none")}>
                         <img src={stage.cover_image_path ? buildImageUrl(stage.cover_image_path) : `/step${i + 1}${i + 1}.png`}
-                            className={`h-[140px] w-full object-cover`}
+                            className={`h-[140px] md:h-[200px] w-full object-cover`}
                             onError={(e) => {
                                 // Fallback при ошибке загрузки: переключаемся на статичное изображение
                                 console.log(`🔄 MainPage: Fallback для ступени ${stage.stage_id}, используем статическое изображение`);
