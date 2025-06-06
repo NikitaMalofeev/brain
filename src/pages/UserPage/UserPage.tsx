@@ -109,7 +109,7 @@ export const UserPage = () => {
                                 <img className={'bg-transparent'} src={'/coin.png'} width={46} height={46}/>
                                 <div className={'flex flex-col'}>
                                     <p className={'text-sm font-medium text-[#9F9F9F]'}>Ваш баланс</p>
-                                    <p className={'text-sm font-bold'}>{supabaseUser?.total_points} эйденштельнов</p>
+                                    <p className={'text-sm font-bold'}>{supabaseUser?.total_points} эдельштейнов</p>
                                 </div>
                             </div>
                             <Link to={'/points'}

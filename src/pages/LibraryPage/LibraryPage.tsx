@@ -146,7 +146,7 @@ const LibraryPage: React.FC = () => {
 
     return (
         <Page>
-            <div className={'fixed z-50 top-6 flex items-center justify-between px-6 w-full'}>
+            <div className={'fixed z-50 top-6 flex items-center justify-between px-6 w-full pt-16'}>
                 <img src={supabaseUser?.photo_url || ''} className={'w-8 h-8 rounded-full'} />
                 <div className={'flex items-center gap-2 py-2 px-3 bg-white rounded-full'}>
                     <p className={'text-black font-medium'}>{supabaseUser?.total_points}</p>
