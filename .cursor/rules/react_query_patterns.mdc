@@ -1,0 +1,107 @@
+---
+description: Используй react query, когда надо работать с запросами к Supabase
+globs: 
+alwaysApply: false
+---
+# Правила работы с React Query (TanStack Query)
+
+В нашем проекте для всех асинхронных операций с данными (загрузка, кэширование, обновление) используется библиотека `@tanstack/react-query`. Это стандарт, которому мы следуем для обеспечения консистентности и производительности.
+
+## Основные Принципы
+
+1.  **Хуки — наш основной инструмент:** Вся работа с данными должна быть инкапсулирована в кастомные хуки. Не используйте `useQuery` или `useMutation` напрямую в компонентах.
+2.  **`QueryClientProvider` уже настроен:** Он находится в `[src/index.tsx](mdc:src/index.tsx)` и доступен во всем приложении. Никакой дополнительной настройки не требуется.
+3.  **Ключи для квери:** Используйте структурированные ключи в виде массивов. Это упрощает инвалидацию и управление кэшем.
+
+    *   `['students']` — для списка студентов.
+    *   `['student', studentId]` — для конкретного студента.
+    *   `['stages', libraryId]` — для этапов конкретной библиотеки.
+
+## Создание нового хука с `useQuery`
+
+Когда вам нужно получить данные, создайте новый хук в `[src/lib/supabase/hooks/](mdc:src/lib/supabase/hooks)`.
+
+**Пример: Хук для получения списка студентов**
+
+```typescript
+// src/lib/supabase/hooks/useStudents.ts
+import { useQuery } from '@tanstack/react-query';
+import { supabase } from '@/lib/supabase/client'; // Пример пути к клиенту Supabase
+
+// Функция для получения данных
+const fetchStudents = async () => {
+  const { data, error } = await supabase.from('students').select('*');
+
+  if (error) {
+    throw new Error(error.message);
+  }
+
+  return data;
+};
+
+// Кастомный хук
+export const useStudents = () => {
+  return useQuery({
+    queryKey: ['students'], // Ключ для квери
+    queryFn: fetchStudents, // Функция, которая выполняет запрос
+  });
+};
+```
+
+## Использование хука в компоненте
+
+```tsx
+// src/pages/AdminPage/StudentsManager.tsx
+import { useStudents } from '@/lib/supabase/hooks/useStudents';
+
+const StudentsManager = () => {
+  const { data: students, isLoading, isError, error } = useStudents();
+
+  if (isLoading) {
+    return <div>Загрузка...</div>;
+  }
+
+  if (isError) {
+    return <div>Ошибка: {error.message}</div>;
+  }
+
+  return (
+    <ul>
+      {students.map(student => (
+        <li key={student.id}>{student.name}</li>
+      ))}
+    </ul>
+  );
+};
+```
+
+## Операции изменения данных с `useMutation`
+
+Для создания, обновления или удаления данных используйте `useMutation`. Это также должно быть обернуто в кастомный хук.
+
+**Ключевая особенность:** После успешной мутации не забудьте инвалидировать соответствующие квери, чтобы данные на странице обновились.
+
+```typescript
+// src/lib/supabase/hooks/useUpdateStudent.ts
+import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { supabase } from '@/lib/supabase/client';
+
+const updateStudentName = async ({ id, name }) => {
+  // ... логика обновления ...
+};
+
+export const useUpdateStudent = () => {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: updateStudentName,
+    onSuccess: (data) => {
+      // Инвалидация кэша студентов после успешного обновления
+      queryClient.invalidateQueries({ queryKey: ['students'] });
+      // Можно инвалидировать и конкретного студента
+      queryClient.invalidateQueries({ queryKey: ['student', data.id] });
+    },
+  });
+};
+```
+
