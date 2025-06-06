@@ -15,6 +15,7 @@ export interface SupabaseUser {
   access_till?: string | null; // timestamptz, nullable - дата окончания доступа
   total_points?: number | null; // integer, default 0 - общее количество очков пользователя
   lives_remaining?: number | null; // integer, default 3 - количество оставшихся жизней
+  onboarding_completed?: boolean | null; // boolean, default false - завершен ли онбординг
 }
 
 // Тип для данных пользователя из Telegram initData (только нужные поля)

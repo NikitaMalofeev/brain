@@ -2,8 +2,10 @@ import { useRef, useState } from 'react';
 import { Swiper, SwiperSlide } from 'swiper/react';
 import { Pagination } from 'swiper/modules';
 import 'swiper/css';
-import {getKinescopeId} from "@/components/LessonContent/VideoBlock.tsx";
+import { getKinescopeId } from "@/components/LessonContent/VideoBlock.tsx";
 import VideoPlayer from "@/components/Player/VideoPlayer.tsx";
+import { useSupabaseUser } from '@/lib/supabase/hooks';
+import { useSignal, initDataState } from '@telegram-apps/sdk-react';
 
 const slides = [
     { title: 'Добро пожаловать', description: 'Это вводное видео поможет тебе быстро разобраться в устройстве курса и возможностях приложения. Посмотри его до конца, чтобы начать обучение на полной скорости.', img: '' },
@@ -12,17 +14,22 @@ const slides = [
     { title: 'Профиль', description: 'Профиль — твоя личная навигация. Здесь всё важное под рукой: чаты, помощь, FAQ и твои эдельштейны. Заглядывай сюда, когда нужен быстрый доступ или поддержка.\n', img: '/o3.jpg', icon: '/icon3-active.svg' },
 ];
 
-export const Onboarding = ({ onClose }: {onClose: () => void})=>  {
+export const Onboarding = ({ onClose }: { onClose: () => void }) => {
     const swiperRef = useRef<any>(null);
     const [activeIndex, setActiveIndex] = useState(0);
 
+    // Получаем доступ к функции отметки завершения онбординга
+    const initData = useSignal(initDataState);
+    const { markOnboardingCompleted } = useSupabaseUser(initData);
+
     const handleNext = () => {
         if (swiperRef.current && swiperRef.current.swiper) {
-            if(swiperRef.current.swiper.isEnd){
-                onClose()
+            if (swiperRef.current.swiper.isEnd) {
+                // На последнем слайде отмечаем онбординг как завершенный
+                markOnboardingCompleted();
+                onClose();
             }
             swiperRef.current.swiper.slideNext();
-
         }
     };
 
@@ -46,11 +53,11 @@ export const Onboarding = ({ onClose }: {onClose: () => void})=>  {
                                 <VideoPlayer
                                     videoId={getKinescopeId('https://kinescope.io/oXiWoXBWQpcb3GQ9AARE3Q') || ''}
                                 />
-                            </div> : <img alt={''} className={'max-h-[375px] aspect-square w-full object-cover'} src={slide.img}/>}
+                            </div> : <img alt={''} className={'max-h-[375px] aspect-square w-full object-cover'} src={slide.img} />}
                             <div className={'flex flex-col gap-1 items-center px-4 relative'}>
                                 {index > 0 && <div
                                     className={'absolute -top-1/2 left-1/2 -translate-y-1/2 -translate-x-1/2 p-3 rounded-full bg-[linear-gradient(109.65deg,_#E1C1F4_13.64%,_#B862EA_124.92%)]'}>
-                                    <img className={'w-11 h-11'} src={slide.icon} alt={''}/>
+                                    <img className={'w-11 h-11'} src={slide.icon} alt={''} />
                                 </div>}
                                 <h2 className="w-max text-2xl font-bold">{slide.title}</h2>
                                 <p className="text-center text-sm text-[#242424]">{slide.description}</p>
@@ -66,9 +73,8 @@ export const Onboarding = ({ onClose }: {onClose: () => void})=>  {
                 {slides.map((_, index) => (
                     <div
                         key={index}
-                        className={`w-[10px] h-[10px] rounded-full transition-colors duration-300 ${
-                            activeIndex >= index ? 'bg-gradient-to-tr from-[#E1C1F4] to-[#B862EA]' : 'bg-[#E7DBEF]'
-                        }`}
+                        className={`w-[10px] h-[10px] rounded-full transition-colors duration-300 ${activeIndex >= index ? 'bg-gradient-to-tr from-[#E1C1F4] to-[#B862EA]' : 'bg-[#E7DBEF]'
+                            }`}
                     ></div>
                 ))}
             </div>
