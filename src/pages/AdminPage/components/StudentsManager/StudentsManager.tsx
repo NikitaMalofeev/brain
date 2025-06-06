@@ -2,11 +2,20 @@ import React, { useEffect, useState } from 'react';
 import StudentCard from './StudentCard';
 import { useStudentsAdmin } from '@/lib/supabase/hooks/useStudentsAdmin';
 
+interface StudentsManagerProps {
+    currentUser?: {
+        id: string;
+        role: string;
+        first_name?: string;
+        last_name?: string;
+    } | null;
+}
+
 /**
  * Компонент для вкладки "Ученики"
  * Отображает список учеников с пагинацией и сортировкой
  */
-const StudentsManager: React.FC = () => {
+const StudentsManager: React.FC<StudentsManagerProps> = ({ currentUser }) => {
     const { students, loading, error, pagination, loadStudents } = useStudentsAdmin();
     const [selectedStudentId, setSelectedStudentId] = useState<string | null>(null);
     const [currentSort, setCurrentSort] = useState<{
@@ -17,6 +26,9 @@ const StudentsManager: React.FC = () => {
         order: 'DESC'
     });
 
+    // Фильтрованные ученики для кураторов
+    const [filteredStudents, setFilteredStudents] = useState(students);
+
     useEffect(() => {
         loadStudents({
             page: 1,
@@ -25,6 +37,23 @@ const StudentsManager: React.FC = () => {
             sortOrder: currentSort.order
         });
     }, [currentSort]);
+
+    // Применяем фильтрацию для кураторов
+    useEffect(() => {
+        if (currentUser?.role === 'curator') {
+            // Для кураторов фильтруем только их учеников
+            // Используем простую фильтрацию на основе curator_name
+            const curatorFullName = `${currentUser.first_name || ''} ${currentUser.last_name || ''}`.trim();
+            const filtered = students.filter(student =>
+                student.curator_name === curatorFullName ||
+                student.curator_name === currentUser.first_name
+            );
+            setFilteredStudents(filtered);
+        } else {
+            // Для админов показываем всех
+            setFilteredStudents(students);
+        }
+    }, [students, currentUser]);
 
     if (selectedStudentId) {
         return <StudentCard studentId={selectedStudentId} onBack={() => setSelectedStudentId(null)} />;
@@ -91,7 +120,7 @@ const StudentsManager: React.FC = () => {
     return (
         <div className="admin-section">
             <div className="section-header">
-                <h2>Ученики</h2>
+                <h2>{currentUser?.role === 'curator' ? 'Мои ученики' : 'Ученики'}</h2>
             </div>
 
             {loading && <div className="admin-loading">Загрузка...</div>}
@@ -133,7 +162,7 @@ const StudentsManager: React.FC = () => {
                                 </tr>
                             </thead>
                             <tbody>
-                                {students.map((student) => (
+                                {filteredStudents.map((student) => (
                                     <tr key={student.user_id}>
                                         <td>{student.full_name}</td>
                                         <td>
@@ -163,6 +192,11 @@ const StudentsManager: React.FC = () => {
                             </tbody>
                         </table>
                     </div>
+                    {currentUser?.role === 'curator' && filteredStudents.length === 0 && !loading && (
+                        <div className="empty-table">
+                            У вас пока нет назначенных учеников
+                        </div>
+                    )}
                     <div className="form-actions">
                         <button
                             className="admin-button"

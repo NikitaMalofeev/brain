@@ -177,7 +177,9 @@ const SubmissionDetail: React.FC<SubmissionDetailProps> = ({
                 lesson_deadline: (data.lessons as any)?.deadline_at,
                 stage_name: (data.lessons as any)?.course_stages?.name || 'Неизвестная ступень',
 
-                reviewer_name: (data.reviewer as any)?.first_name || undefined
+                reviewer_name: (data.reviewer as any)?.first_name && (data.reviewer as any)?.last_name
+                    ? `${(data.reviewer as any).first_name} ${(data.reviewer as any).last_name}`
+                    : (data.reviewer as any)?.first_name || undefined
             };
 
             setSubmission(submissionDetail);

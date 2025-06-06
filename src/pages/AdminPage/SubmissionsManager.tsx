@@ -82,8 +82,8 @@ const SubmissionsManager: React.FC<SubmissionsManagerProps> = ({
 
             setCurrentUser(effectiveCurrentUser || null);
 
-            // Полный запрос со всеми JOIN-ами
-            const { data, error } = await supabase
+            // Строим запрос в зависимости от роли пользователя
+            let query = supabase
                 .from('submissions')
                 .select(`
                     *,
@@ -93,9 +93,38 @@ const SubmissionsManager: React.FC<SubmissionsManagerProps> = ({
                         deadline_at,
                         course_stages!lessons_stage_id_fkey (name)
                     ),
-                    reviewer:users!submissions_reviewed_by_curator_id_fkey(first_name)
-                `)
-                .order('submitted_at', { ascending: false });
+                    reviewer:users!submissions_reviewed_by_curator_id_fkey(first_name, last_name)
+                `);
+
+            // Если пользователь - куратор, фильтруем только по его ученикам
+            if (effectiveCurrentUser?.role === 'curator') {
+                // Сначала получаем список учеников куратора
+                const { data: curatorStudents, error: curatorError } = await supabase
+                    .from('user_curator')
+                    .select('student_id')
+                    .eq('curator_id', effectiveCurrentUser.id);
+
+                if (curatorError) {
+                    console.error('Ошибка загрузки учеников куратора:', curatorError);
+                    setError(`Ошибка получения списка учеников: ${curatorError.message}`);
+                    return;
+                }
+
+                const studentIds = curatorStudents?.map(item => item.student_id) || [];
+
+                if (studentIds.length === 0) {
+                    // Если у куратора нет учеников, показываем пустой список
+                    setSubmissions([]);
+                    setStats({ pending: 0, reviewedToday: 0 });
+                    return;
+                }
+
+                // Фильтруем сабмиты только от учеников куратора
+                query = query.in('user_id', studentIds);
+            }
+
+            // Выполняем запрос с сортировкой
+            const { data, error } = await query.order('submitted_at', { ascending: false });
 
             if (error) {
                 console.error('Ошибка загрузки сабмитов:', error);
@@ -131,7 +160,9 @@ const SubmissionsManager: React.FC<SubmissionsManagerProps> = ({
                 lesson_name: (submission.lessons as any)?.name || 'Неизвестный урок',
                 lesson_deadline: (submission.lessons as any)?.deadline_at,
                 stage_name: (submission.lessons as any)?.course_stages?.name || 'Неизвестная ступень',
-                reviewer_name: (submission.reviewer as any)?.first_name || undefined
+                reviewer_name: (submission.reviewer as any)?.first_name && (submission.reviewer as any)?.last_name
+                    ? `${(submission.reviewer as any).first_name} ${(submission.reviewer as any).last_name}`
+                    : (submission.reviewer as any)?.first_name || undefined
             }));
 
             // Применяем фильтр по статусу
@@ -391,7 +422,6 @@ const SubmissionsManager: React.FC<SubmissionsManagerProps> = ({
                                 <th>Дата сдачи</th>
                                 <th>Статус</th>
                                 <th>Баллы</th>
-                                <th>Куратор</th>
                                 <th>Действия</th>
                             </tr>
                         </thead>
@@ -423,7 +453,6 @@ const SubmissionsManager: React.FC<SubmissionsManagerProps> = ({
                                         </span>
                                     </td>
                                     <td>{submission.points_awarded || '-'}</td>
-                                    <td>{submission.reviewer_name || '-'}</td>
                                     <td className="actions-cell">
                                         <button
                                             className="action-btn edit-btn"

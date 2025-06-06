@@ -1976,6 +1976,13 @@ const AdminPage: React.FC = () => {
     }
   };
 
+  // Для куратора сразу переключаемся на вкладку "Проверка ДЗ"
+  useEffect(() => {
+    if (adminUser?.role === 'curator') {
+      setCurrentTab('submissions');
+    }
+  }, [adminUser]);
+
   // Если пользователь не авторизован - показываем форму входа
   if (!passwordAuth) {
     return (
@@ -2022,66 +2029,95 @@ const AdminPage: React.FC = () => {
       <div className="admin-page">
         <div className="admin-header">
           <h1>Админ-панель</h1>
-          <button className="admin-logout-btn" onClick={handleLogout}>
-            Выйти
-          </button>
+          <div className="admin-header-right">
+            <div className="admin-user-info-header">
+              <span className="admin-user-name-header">
+                {adminUser?.last_name} {adminUser?.first_name}
+              </span>
+              <span className="admin-user-role-header">
+                Роль: {adminUser?.role}
+              </span>
+            </div>
+            <button className="admin-logout-btn" onClick={handleLogout}>
+              Выйти
+            </button>
+          </div>
         </div>
 
         <div className="admin-tabs">
-          <button
-            className={`admin-tab ${currentTab === 'courses' ? 'active' : ''}`}
-            onClick={() => handleTabChange('courses')}
-          >
-            Курсы
-          </button>
-          <button
-            className={`admin-tab ${currentTab === 'students' ? 'active' : ''}`}
-            onClick={() => handleTabChange('students')}
-          >
-            Ученики
-          </button>
-          <button
-            className={`admin-tab ${currentTab === 'curators' ? 'active' : ''}`}
-            onClick={() => handleTabChange('curators')}
-          >
-            Кураторы
-          </button>
-          <button
-            className={`admin-tab ${currentTab === 'submissions' ? 'active' : ''}`}
-            onClick={() => handleTabChange('submissions')}
-          >
-            Проверка ДЗ
-          </button>
-          <button
-            className={`admin-tab ${currentTab === 'materials' ? 'active' : ''}`}
-            onClick={() => handleTabChange('materials')}
-          >
-            Материалы
-          </button>
-          <button
-            className={`admin-tab ${currentTab === 'tariffs' ? 'active' : ''}`}
-            onClick={() => handleTabChange('tariffs')}
-          >
-            Тарифы
-          </button>
-          <button
-            className={`admin-tab ${currentTab === 'chats' ? 'active' : ''}`}
-            onClick={() => handleTabChange('chats')}
-          >
-            Чаты
-          </button>
-          <button
-            className={`admin-tab ${currentTab === 'faq' ? 'active' : ''}`}
-            onClick={() => handleTabChange('faq')}
-          >
-            FAQ
-          </button>
-          <button
-            className={`admin-tab ${currentTab === 'broadcasts' ? 'active' : ''}`}
-            onClick={() => handleTabChange('broadcasts')}
-          >
-            Эфиры
-          </button>
+          {adminUser?.role === 'curator' ? (
+            <>
+              <button
+                className={`admin-tab ${currentTab === 'submissions' ? 'active' : ''}`}
+                onClick={() => handleTabChange('submissions')}
+              >
+                Проверка ДЗ
+              </button>
+              <button
+                className={`admin-tab ${currentTab === 'students' ? 'active' : ''}`}
+                onClick={() => handleTabChange('students')}
+              >
+                Ученики
+              </button>
+            </>
+          ) : (
+            <>
+              <button
+                className={`admin-tab ${currentTab === 'courses' ? 'active' : ''}`}
+                onClick={() => handleTabChange('courses')}
+              >
+                Курсы
+              </button>
+              <button
+                className={`admin-tab ${currentTab === 'students' ? 'active' : ''}`}
+                onClick={() => handleTabChange('students')}
+              >
+                Ученики
+              </button>
+              <button
+                className={`admin-tab ${currentTab === 'curators' ? 'active' : ''}`}
+                onClick={() => handleTabChange('curators')}
+              >
+                Кураторы
+              </button>
+              <button
+                className={`admin-tab ${currentTab === 'submissions' ? 'active' : ''}`}
+                onClick={() => handleTabChange('submissions')}
+              >
+                Проверка ДЗ
+              </button>
+              <button
+                className={`admin-tab ${currentTab === 'materials' ? 'active' : ''}`}
+                onClick={() => handleTabChange('materials')}
+              >
+                Материалы
+              </button>
+              <button
+                className={`admin-tab ${currentTab === 'tariffs' ? 'active' : ''}`}
+                onClick={() => handleTabChange('tariffs')}
+              >
+                Тарифы
+              </button>
+              <button
+                className={`admin-tab ${currentTab === 'chats' ? 'active' : ''}`}
+                onClick={() => handleTabChange('chats')}
+              >
+                Чаты
+              </button>
+              <button
+                className={`admin-tab ${currentTab === 'faq' ? 'active' : ''}`}
+                onClick={() => handleTabChange('faq')}
+              >
+                FAQ
+              </button>
+              <button
+                className={`admin-tab ${currentTab === 'broadcasts' ? 'active' : ''}`}
+                onClick={() => handleTabChange('broadcasts')}
+              >
+                Эфиры
+              </button>
+            </>
+          )}
         </div>
 
         {currentTab === 'courses' && navigation.view !== 'courses' && (
@@ -2093,7 +2129,7 @@ const AdminPage: React.FC = () => {
 
         <div className="admin-content">
           {currentTab === 'tariffs' && <TariffsManager />}
-          {currentTab === 'students' && <StudentsManager />}
+          {currentTab === 'students' && <StudentsManager currentUser={adminUser} />}
           {currentTab === 'curators' && <CuratorsManager />}
           {currentTab === 'courses' && (
             <>
