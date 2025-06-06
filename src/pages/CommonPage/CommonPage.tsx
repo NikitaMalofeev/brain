@@ -43,7 +43,7 @@ export const CommonPage = () => {
     }
     return (
         <Page>
-            <div className={'flex flex-col min-h-[calc(100vh-60px)] text-black '}>
+            <div className={'flex flex-col min-h-[calc(100vh-60px)] text-black pt-16'}>
                 <div className={'p-4 flex flex-col gap-2'}>
                     <h2 className={'font-bold text-xl'}>Библиотека</h2>
                     <div className={'flex items-center gap-1'}>

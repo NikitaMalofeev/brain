@@ -38,7 +38,7 @@ export const MainPage = () => {
 
     if (!supabaseUser?.id || isLoading) {
         return (
-            <Page>
+            <Page back={false}>
                 <div className="profile-loading">
                     <div className="profile-loading-spinner" aria-hidden="true" />
                     <p>Загрузка ступеней...</p>
@@ -50,7 +50,7 @@ export const MainPage = () => {
 
     if (stages?.length === 0 && !isLoading) {
         return (
-            <Page>
+            <Page back={false}>
                 <div style={{ textAlign: 'center', marginTop: '50px' }}>Нет доступных этапов для этого курса.</div>
             </Page>
         );
