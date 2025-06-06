@@ -1,6 +1,6 @@
 ---
 description: 
-globs: src\lib\supabase\*
+globs: *.tsx
 alwaysApply: false
 ---
 # Supabase: Паттерны и Хуки для Brain Programming
