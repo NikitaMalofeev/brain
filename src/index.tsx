@@ -9,9 +9,9 @@ import './css/index.css';
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 
 // Инициализация Stagewise Toolbar только в DEV режиме
-if (import.meta.env.DEV) {
+/*if (import.meta.env.DEV) {
   initStagewise();
-}
+}*/
 
 const root = ReactDOM.createRoot(document.getElementById('root')!);
 

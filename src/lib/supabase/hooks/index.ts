@@ -19,4 +19,7 @@ export { useCuratorActions } from './useCuratorActions';
 // Хуки для новых табов админки
 export { useChatsAdmin } from './useChatsAdmin';
 export { useFaqAdmin } from './useFaqAdmin';
-export { useBroadcastsAdmin } from './useBroadcastsAdmin'; 
+export { useBroadcastsAdmin } from './useBroadcastsAdmin';
+export { useTariffsAdmin } from './useTariffsAdmin';
+export { useTariffLimits } from './useTariffLimits';
+export { useMaterialTariffAccess, useChatTariffAccess } from './useTariffAccess'; 

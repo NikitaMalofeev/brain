@@ -3,6 +3,7 @@ import { FileUploader, FileUploaderRef } from '@/components/FileUploader/FileUpl
 import { buildFileUrl, buildImageUrl, FILE_PREFIXES, deleteFileFromR2 } from '@/lib/cloudflareR2Service';
 import { supabase } from '../../../../lib/supabase/client';
 import DraggableMaterialBlockRow from './DraggableMaterialBlockRow';
+import { useTariffsAdmin, useMaterialTariffAccess } from '@/lib/supabase/hooks';
 
 // TODO: Определить типы для Material и MaterialBlock на основе db_schema.md
 interface Material {
@@ -47,6 +48,7 @@ interface BlockFormData {
 
 const MaterialsManager: React.FC = () => {
     const fileUploaderRef = useRef<FileUploaderRef>(null);
+    const tariffsAdmin = useTariffsAdmin();
     const blockFileUploaderRef = useRef<FileUploaderRef>(null);
 
     // Материалы
@@ -76,6 +78,9 @@ const MaterialsManager: React.FC = () => {
     const [editingBlock, setEditingBlock] = useState<MaterialBlock | null>(null);
     const [selectedMaterialForCover, setSelectedMaterialForCover] = useState<Material | null>(null);
 
+    // Хук для работы с доступами тарифов к материалу
+    const materialTariffAccess = useMaterialTariffAccess(editingMaterial?.id || null);
+
     // Формы
     const [materialForm, setMaterialForm] = useState<MaterialFormData>({
         name: '',
@@ -83,6 +88,9 @@ const MaterialsManager: React.FC = () => {
         material_type: 'video',
         order_num: 1
     });
+
+    // Состояние для выбранных тарифов
+    const [selectedTariffIds, setSelectedTariffIds] = useState<string[]>([]);
 
     const [blockForm, setBlockForm] = useState<BlockFormData>({
         title: '',
@@ -172,6 +180,13 @@ const MaterialsManager: React.FC = () => {
         filterMaterials();
     }, [materials, materialTypeFilter]);
 
+    // Синхронизируем выбранные тарифы с данными из хука
+    useEffect(() => {
+        if (materialTariffAccess.accessibleTariffIds) {
+            setSelectedTariffIds(materialTariffAccess.accessibleTariffIds);
+        }
+    }, [materialTariffAccess.accessibleTariffIds]);
+
     // Фильтрация материалов
     const filterMaterials = () => {
         let filtered = [...materials];
@@ -181,6 +196,17 @@ const MaterialsManager: React.FC = () => {
         }
 
         setFilteredMaterials(filtered);
+    };
+
+    // Обработчик изменения чекбоксов тарифов
+    const handleTariffCheckboxChange = (tariffId: string, checked: boolean) => {
+        setSelectedTariffIds(prev => {
+            if (checked) {
+                return [...prev, tariffId];
+            } else {
+                return prev.filter(id => id !== tariffId);
+            }
+        });
     };
 
     // Форматирование даты создания
@@ -207,6 +233,7 @@ const MaterialsManager: React.FC = () => {
             });
         } else {
             setEditingMaterial(null);
+            setSelectedTariffIds([]); // Сбрасываем тарифы для нового материала
             setMaterialForm({
                 name: '',
                 description: '',
@@ -222,6 +249,7 @@ const MaterialsManager: React.FC = () => {
     const handleCloseMaterialModal = () => {
         setMaterialModalOpen(false);
         setEditingMaterial(null);
+        setSelectedTariffIds([]);
         setError('');
         setSuccess('');
     };
@@ -243,6 +271,8 @@ const MaterialsManager: React.FC = () => {
                 order_num: materialForm.order_num
             };
 
+            let materialId: string;
+
             if (editingMaterial) {
                 // Обновление (БЕЗ обложки - она обновляется отдельно)
                 const { error } = await supabase
@@ -251,21 +281,45 @@ const MaterialsManager: React.FC = () => {
                     .eq('id', editingMaterial.id);
 
                 if (error) throw error;
+                materialId = editingMaterial.id;
                 setSuccess('Материал успешно обновлен!');
             } else {
                 // Создание (БЕЗ обложки - она добавляется отдельно)
-                const { error } = await supabase
+                const { data, error } = await supabase
                     .from('materials')
-                    .insert(materialData);
+                    .insert(materialData)
+                    .select('id')
+                    .single();
 
                 if (error) throw error;
+                materialId = data.id;
                 setSuccess('Материал успешно создан!');
             }
 
-            await loadMaterials();
-            setTimeout(() => {
-                handleCloseMaterialModal();
-            }, 1000);
+            // Сохраняем доступы тарифов
+            if (materialTariffAccess.saveTariffAccess) {
+                await materialTariffAccess.saveTariffAccess(selectedTariffIds);
+            }
+
+            // Обновляем локальное состояние материалов
+            if (editingMaterial) {
+                // Для редактирования - обновляем существующий материал
+                setMaterials(prev => prev.map(material =>
+                    material.id === editingMaterial.id
+                        ? { ...material, ...materialData }
+                        : material
+                ).sort((a, b) => a.order_num - b.order_num));
+            } else {
+                // Для создания - добавляем новый материал
+                setMaterials(prev => [...prev, {
+                    id: materialId,
+                    ...materialData,
+                    created_at: new Date().toISOString()
+                }].sort((a, b) => a.order_num - b.order_num));
+            }
+
+            // Сразу закрываем модальное окно
+            handleCloseMaterialModal();
 
         } catch (err: any) {
             setError(`Ошибка сохранения: ${err.message}`);
@@ -290,7 +344,9 @@ const MaterialsManager: React.FC = () => {
 
             if (error) throw error;
             setSuccess('Материал успешно удален!');
-            await loadMaterials();
+
+            // Обновляем локальное состояние - удаляем материал
+            setMaterials(prev => prev.filter(mat => mat.id !== material.id));
 
         } catch (err: any) {
             setError(`Ошибка удаления: ${err.message}`);
@@ -339,7 +395,14 @@ const MaterialsManager: React.FC = () => {
             if (error) throw error;
 
             setSuccess('Обложка материала успешно сохранена!');
-            await loadMaterials();
+
+            // Обновляем локальное состояние - обновляем обложку материала
+            setMaterials(prev => prev.map(material =>
+                material.id === selectedMaterialForCover.id
+                    ? { ...material, cover_image_path: filePath }
+                    : material
+            ));
+
             closeCoverModal();
 
         } catch (error: any) {
@@ -376,7 +439,14 @@ const MaterialsManager: React.FC = () => {
             if (error) throw error;
 
             setSuccess('Обложка материала успешно удалена!');
-            await loadMaterials();
+
+            // Обновляем локальное состояние - убираем обложку материала
+            setMaterials(prev => prev.map(material =>
+                material.id === selectedMaterialForCover.id
+                    ? { ...material, cover_image_path: null }
+                    : material
+            ));
+
             closeCoverModal();
 
         } catch (error: any) {
@@ -501,20 +571,30 @@ const MaterialsManager: React.FC = () => {
 
                 if (error) throw error;
                 setSuccess('Блок успешно обновлен!');
-            } else {
-                // Создание
-                const { error } = await supabase
-                    .from('material_blocks')
-                    .insert(blockData);
 
-                if (error) throw error;
+                // Обновляем локальное состояние - существующий блок
+                setMaterialBlocks(prev => prev.map(block =>
+                    block.id === editingBlock.id
+                        ? { ...block, ...blockData }
+                        : block
+                ).sort((a, b) => a.order_num - b.order_num));
+            } else {
+                // Создание - получаем ID из ответа БД
+                const { data: newBlockData, error: insertError } = await supabase
+                    .from('material_blocks')
+                    .insert(blockData)
+                    .select()
+                    .single();
+
+                if (insertError) throw insertError;
                 setSuccess('Блок успешно создан!');
+
+                // Обновляем локальное состояние - добавляем новый блок
+                setMaterialBlocks(prev => [...prev, newBlockData].sort((a, b) => a.order_num - b.order_num));
             }
 
-            await loadMaterialBlocks(currentMaterialId);
-            setTimeout(() => {
-                handleCloseBlockModal();
-            }, 1000);
+            // Сразу закрываем модальное окно
+            handleCloseBlockModal();
 
         } catch (err: any) {
             setError(`Ошибка сохранения: ${err.message}`);
@@ -546,9 +626,8 @@ const MaterialsManager: React.FC = () => {
             if (error) throw error;
             setSuccess('Блок успешно удален!');
 
-            if (currentMaterialId) {
-                await loadMaterialBlocks(currentMaterialId);
-            }
+            // Обновляем локальное состояние - удаляем блок
+            setMaterialBlocks(prev => prev.filter(block => block.id !== blockId));
 
         } catch (err: any) {
             setError(`Ошибка удаления: ${err.message}`);
@@ -981,7 +1060,34 @@ const MaterialsManager: React.FC = () => {
             {materialModalOpen && (
                 <div className="admin-modal-backdrop" onClick={handleCloseMaterialModal}>
                     <div className="admin-modal" onClick={(e) => e.stopPropagation()}>
+                        {/* Секция управления доступом по тарифам */}
+                        <div className="form-group">
+                            <label>Доступно для тарифов</label>
+                            {tariffsAdmin.loading || materialTariffAccess.loading ? (
+                                <div className="admin-loading">Загрузка тарифов...</div>
+                            ) : (
+                                <div className="checkbox-group">
+                                    {tariffsAdmin.tariffs.map(tariff => (
+                                        <label key={tariff.id} className="checkbox-inline" style={{ marginRight: '12px' }}>
+                                            <input
+                                                type="checkbox"
+                                                className="admin-checkbox"
+                                                checked={selectedTariffIds.includes(tariff.id)}
+                                                onChange={(e) => handleTariffCheckboxChange(tariff.id, e.target.checked)}
+                                            />
+                                            {tariff.name} ({tariff.code})
+                                        </label>
+                                    ))}
+                                </div>
+                            )}
+                            {materialTariffAccess.error && (
+                                <div className="admin-error" style={{ marginTop: '8px', fontSize: '12px' }}>
+                                    Ошибка загрузки доступов: {materialTariffAccess.error.message}
+                                </div>
+                            )}
+                        </div>
                         <button className="admin-modal-close" onClick={handleCloseMaterialModal}>×</button>
+
                         <h3>{editingMaterial ? 'Редактирование материала' : 'Создание материала'}</h3>
 
                         <form onSubmit={handleSaveMaterial}>

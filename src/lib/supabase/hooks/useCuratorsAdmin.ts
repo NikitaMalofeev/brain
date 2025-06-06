@@ -18,6 +18,13 @@ export interface CuratorsFilter {
     perPage?: number;
 }
 
+export interface CreateCuratorData {
+    first_name?: string;
+    last_name?: string;
+    web_login: string;
+    web_password: string;
+}
+
 export interface CuratorsAdminResult {
     curators: Curator[];
     loading: boolean;
@@ -28,6 +35,7 @@ export interface CuratorsAdminResult {
         hasMore: boolean;
     };
     loadCurators: (filter?: CuratorsFilter) => Promise<void>;
+    createCurator: (data: CreateCuratorData) => Promise<{ success: boolean; error?: string }>;
 }
 
 /**
@@ -89,6 +97,60 @@ export function useCuratorsAdmin(): CuratorsAdminResult {
         }
     };
 
+    // Создание нового куратора
+    const createCurator = async (data: CreateCuratorData): Promise<{ success: boolean; error?: string }> => {
+        if (!supabase) {
+            return { success: false, error: 'Supabase клиент не инициализирован' };
+        }
+
+        try {
+            // Валидация обязательных полей
+            if (!data.web_login.trim()) {
+                return { success: false, error: 'Логин обязателен для заполнения' };
+            }
+
+            if (!data.web_password.trim()) {
+                return { success: false, error: 'Пароль обязателен для заполнения' };
+            }
+
+            // Проверка требований к паролю
+            if (data.web_password.length < 8) {
+                return { success: false, error: 'Пароль должен содержать минимум 8 символов' };
+            }
+
+            // Валидация web_login (только буквы, цифры, _, -)
+            if (!/^[a-zA-Z0-9_-]+$/.test(data.web_login)) {
+                return { success: false, error: 'Логин может содержать только буквы, цифры, _ и -' };
+            }
+
+            // Создаем куратора через SQL функцию
+            const { data: result, error: createError } = await supabase
+                .rpc('create_curator', {
+                    p_web_login: data.web_login.trim(),
+                    p_web_password: data.web_password,
+                    p_first_name: data.first_name?.trim() || null,
+                    p_last_name: data.last_name?.trim() || null
+                });
+
+            if (createError) {
+                // Обработка специфических ошибок
+                if (createError.message.includes('web_login')) {
+                    return { success: false, error: 'Такой логин уже существует' };
+                }
+                throw createError;
+            }
+
+            return { success: true };
+
+        } catch (err) {
+            console.error('Ошибка при создании куратора:', err);
+            return {
+                success: false,
+                error: err instanceof Error ? err.message : 'Неизвестная ошибка при создании куратора'
+            };
+        }
+    };
+
     useEffect(() => {
         loadCurators();
     }, []);
@@ -99,5 +161,6 @@ export function useCuratorsAdmin(): CuratorsAdminResult {
         error,
         pagination,
         loadCurators,
+        createCurator,
     };
 } 

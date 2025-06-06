@@ -7,7 +7,7 @@ interface ChatsAdminResult {
     loading: boolean;
     error: Error | null;
     loadChats: () => Promise<void>;
-    createChat: (data: CreateChatData) => Promise<void>;
+    createChat: (data: CreateChatData) => Promise<Chat>;
     updateChat: (data: UpdateChatData) => Promise<void>;
     deleteChat: (id: string) => Promise<void>;
 }
@@ -50,20 +50,25 @@ export function useChatsAdmin(): ChatsAdminResult {
     };
 
     // Создание нового чата
-    const createChat = async (data: CreateChatData) => {
+    const createChat = async (data: CreateChatData): Promise<Chat> => {
         if (!supabase) {
             throw new Error('Supabase клиент не инициализирован');
         }
 
         try {
-            const { error: insertError } = await supabase
+            const { data: insertedData, error: insertError } = await supabase
                 .from('chats')
-                .insert([data]);
+                .insert([data])
+                .select()
+                .single();
 
             if (insertError) throw insertError;
 
-            // Перезагружаем список чатов
-            await loadChats();
+            // Обновляем локальное состояние без перезагрузки
+            const newChat = insertedData as Chat;
+            setChats(prev => [...prev, newChat].sort((a, b) => a.order_num - b.order_num));
+
+            return newChat;
         } catch (err) {
             console.error('Ошибка при создании чата:', err);
             throw err instanceof Error ? err : new Error('Ошибка при создании чата');
@@ -86,8 +91,12 @@ export function useChatsAdmin(): ChatsAdminResult {
 
             if (updateError) throw updateError;
 
-            // Перезагружаем список чатов
-            await loadChats();
+            // Обновляем локальное состояние без перезагрузки
+            setChats(prev => prev.map(chat =>
+                chat.id === id
+                    ? { ...chat, ...updateData }
+                    : chat
+            ).sort((a, b) => a.order_num - b.order_num));
         } catch (err) {
             console.error('Ошибка при обновлении чата:', err);
             throw err instanceof Error ? err : new Error('Ошибка при обновлении чата');
@@ -108,8 +117,8 @@ export function useChatsAdmin(): ChatsAdminResult {
 
             if (deleteError) throw deleteError;
 
-            // Перезагружаем список чатов
-            await loadChats();
+            // Обновляем локальное состояние без перезагрузки
+            setChats(prev => prev.filter(chat => chat.id !== id));
         } catch (err) {
             console.error('Ошибка при удалении чата:', err);
             throw err instanceof Error ? err : new Error('Ошибка при удалении чата');

@@ -1,6 +1,7 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useStudentDetails, StudentLessonProgress, StudentMaterialView } from '@/lib/supabase/hooks/useStudentDetails';
 import { useStudentActions } from '@/lib/supabase/hooks/useStudentActions';
+import { useTariffsAdmin } from '@/lib/supabase/hooks/useTariffsAdmin';
 
 interface StudentCardProps {
     studentId: string;
@@ -8,12 +9,25 @@ interface StudentCardProps {
 }
 
 const StudentCard: React.FC<StudentCardProps> = ({ studentId, onBack }) => {
-    const { studentDetails, loading, error, loadStudentDetails } = useStudentDetails();
+    const { studentDetails, loading, error, loadStudentDetails, assignStudentTariff, assigningTariff } = useStudentDetails();
     const { resetLessonProgress, markMaterialViewed, resetMaterialView, updateStudentPoints } = useStudentActions();
+    const { tariffs, loading: tariffsLoading } = useTariffsAdmin();
+
+    // Состояние для выбранного тарифа
+    const [selectedTariffId, setSelectedTariffId] = useState<string>('');
 
     useEffect(() => {
         loadStudentDetails(studentId);
     }, [studentId]);
+
+    // Синхронизируем выбранный тариф с данными студента
+    useEffect(() => {
+        if (studentDetails?.basicInfo.current_tariff_id) {
+            setSelectedTariffId(studentDetails.basicInfo.current_tariff_id);
+        } else {
+            setSelectedTariffId('');
+        }
+    }, [studentDetails?.basicInfo.current_tariff_id]);
 
     const formatDate = (dateString?: string | null) => {
         if (!dateString) return '—';
@@ -38,6 +52,21 @@ const StudentCard: React.FC<StudentCardProps> = ({ studentId, onBack }) => {
         }
         await updateStudentPoints(studentId, value);
         await loadStudentDetails(studentId);
+    };
+
+    const handleAssignTariff = async () => {
+        if (!selectedTariffId) {
+            alert('Выберите тариф');
+            return;
+        }
+
+        try {
+            await assignStudentTariff(studentId, selectedTariffId);
+            alert('Тариф успешно назначен');
+        } catch (error) {
+            console.error('Ошибка при назначении тарифа:', error);
+            alert('Ошибка при назначении тарифа');
+        }
     };
 
     if (loading) return <div className="admin-loading">Загрузка...</div>;
@@ -70,6 +99,41 @@ const StudentCard: React.FC<StudentCardProps> = ({ studentId, onBack }) => {
                     <strong>Баллы:</strong> {basicInfo.total_points}{' '}
                     <button className="action-btn edit-btn" onClick={handleUpdatePoints}>Изменить</button>
                 </p>
+                {/* Выбор тарифа пользователя */}
+                <div className="form-group">
+                    <label>Текущий тариф:</label>
+                    <div className="form-row">
+                        <div className="form-group" style={{ marginBottom: 0 }}>
+                            <select
+                                className="admin-input"
+                                value={selectedTariffId}
+                                onChange={(e) => setSelectedTariffId(e.target.value)}
+                                disabled={tariffsLoading || assigningTariff}
+                            >
+                                <option value="">-- Выберите тариф --</option>
+                                {tariffs.map(tariff => (
+                                    <option key={tariff.id} value={tariff.id}>
+                                        {tariff.name} ({tariff.code})
+                                    </option>
+                                ))}
+                            </select>
+                            {basicInfo.current_tariff_name && (
+                                <small>
+                                    Активный: {basicInfo.current_tariff_name} ({basicInfo.current_tariff_code})
+                                </small>
+                            )}
+                        </div>
+                        <div className="form-group" style={{ flex: 'none', marginBottom: 0 }}>
+                            <button
+                                className="admin-button"
+                                onClick={handleAssignTariff}
+                                disabled={assigningTariff || !selectedTariffId}
+                            >
+                                {assigningTariff ? 'Назначение...' : 'Назначить'}
+                            </button>
+                        </div>
+                    </div>
+                </div>
             </div>
 
             <div className="admin-card">

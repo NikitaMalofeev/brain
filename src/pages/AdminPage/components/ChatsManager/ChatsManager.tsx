@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useChatsAdmin } from '@/lib/supabase/hooks/useChatsAdmin';
+import { useTariffsAdmin, useChatTariffAccess } from '@/lib/supabase/hooks';
 import type { Chat, CreateChatData, UpdateChatData } from '@/types';
 
 /**
@@ -8,11 +9,18 @@ import type { Chat, CreateChatData, UpdateChatData } from '@/types';
  */
 const ChatsManager: React.FC = () => {
     const { chats, loading, error, loadChats, createChat, updateChat, deleteChat } = useChatsAdmin();
+    const tariffsAdmin = useTariffsAdmin();
 
     // Состояние для модальных окон
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [editingChat, setEditingChat] = useState<Chat | null>(null);
     const [modalLoading, setModalLoading] = useState(false);
+
+    // Хук для работы с доступами тарифов к чату
+    const chatTariffAccess = useChatTariffAccess(editingChat?.id || null);
+
+    // Состояние для выбранных тарифов
+    const [selectedTariffIds, setSelectedTariffIds] = useState<string[]>([]);
 
     // Состояние для формы
     const [formData, setFormData] = useState({
@@ -25,9 +33,28 @@ const ChatsManager: React.FC = () => {
     // Состояние для drag & drop
     const [draggedChatId, setDraggedChatId] = useState<string | null>(null);
 
+    // Синхронизируем выбранные тарифы с данными из хука
+    useEffect(() => {
+        if (chatTariffAccess.accessibleTariffIds) {
+            setSelectedTariffIds(chatTariffAccess.accessibleTariffIds);
+        }
+    }, [chatTariffAccess.accessibleTariffIds]);
+
+    // Обработчик изменения чекбоксов тарифов
+    const handleTariffCheckboxChange = (tariffId: string, checked: boolean) => {
+        setSelectedTariffIds(prev => {
+            if (checked) {
+                return [...prev, tariffId];
+            } else {
+                return prev.filter(id => id !== tariffId);
+            }
+        });
+    };
+
     // Обработчики модального окна
     const openCreateModal = () => {
         setEditingChat(null);
+        setSelectedTariffIds([]); // Сбрасываем тарифы для нового чата
         setFormData({
             name: '',
             description: '',
@@ -51,6 +78,7 @@ const ChatsManager: React.FC = () => {
     const closeModal = () => {
         setIsModalOpen(false);
         setEditingChat(null);
+        setSelectedTariffIds([]);
         setModalLoading(false);
     };
 
@@ -82,6 +110,8 @@ const ChatsManager: React.FC = () => {
         try {
             setModalLoading(true);
 
+            let chatId: string;
+
             if (editingChat) {
                 // Обновление существующего чата
                 const updateData: UpdateChatData = {
@@ -92,6 +122,11 @@ const ChatsManager: React.FC = () => {
                     order_num: formData.order_num
                 };
                 await updateChat(updateData);
+
+                // Сохраняем доступы тарифов для существующего чата
+                if (chatTariffAccess.saveTariffAccess) {
+                    await chatTariffAccess.saveTariffAccess(selectedTariffIds);
+                }
             } else {
                 // Создание нового чата
                 const createData: CreateChatData = {
@@ -100,15 +135,22 @@ const ChatsManager: React.FC = () => {
                     link: formData.link.trim(),
                     order_num: formData.order_num
                 };
-                await createChat(createData);
+                const createdChat = await createChat(createData);
+
+                // Сохраняем доступы тарифов для нового чата
+                if (selectedTariffIds.length > 0) {
+                    // Импортируем функцию напрямую для сохранения доступов
+                    const { saveChatTariffAccess } = await import('@/lib/supabase/hooks/useTariffAccess');
+                    await saveChatTariffAccess(createdChat.id, selectedTariffIds);
+                }
             }
 
+            // Сразу закрываем модальное окно после успешного сохранения
             closeModal();
         } catch (error: any) {
             console.error('Ошибка при сохранении чата:', error);
             alert(error.message || 'Произошла ошибка при сохранении чата');
-        } finally {
-            setModalLoading(false);
+            setModalLoading(false); // Убираем loading только в случае ошибки
         }
     };
 
@@ -325,6 +367,33 @@ const ChatsManager: React.FC = () => {
             {isModalOpen && (
                 <div className="admin-modal-backdrop" onClick={closeModal}>
                     <div className="admin-modal" onClick={(e) => e.stopPropagation()}>
+                        {/* Секция управления доступом по тарифам */}
+                        <div className="form-group">
+                            <label>Доступно для тарифов</label>
+                            {tariffsAdmin.loading || chatTariffAccess.loading ? (
+                                <div className="admin-loading">Загрузка тарифов...</div>
+                            ) : (
+                                <div className="checkbox-group">
+                                    {tariffsAdmin.tariffs.map(tariff => (
+                                        <label key={tariff.id} className="checkbox-inline" style={{ marginRight: '12px' }}>
+                                            <input
+                                                type="checkbox"
+                                                className="admin-checkbox"
+                                                checked={selectedTariffIds.includes(tariff.id)}
+                                                onChange={(e) => handleTariffCheckboxChange(tariff.id, e.target.checked)}
+                                                disabled={modalLoading}
+                                            />
+                                            {tariff.name} ({tariff.code})
+                                        </label>
+                                    ))}
+                                </div>
+                            )}
+                            {chatTariffAccess.error && (
+                                <div className="admin-error" style={{ marginTop: '8px', fontSize: '12px' }}>
+                                    Ошибка загрузки доступов: {chatTariffAccess.error.message}
+                                </div>
+                            )}
+                        </div>
                         <button className="admin-modal-close" onClick={closeModal}>×</button>
 
                         <h3>{editingChat ? 'Редактирование чата' : 'Создание чата'}</h3>

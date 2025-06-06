@@ -1,6 +1,6 @@
 ---
-description: Если для реализации задачи тебе нужны хуки, то смотри сюда. 
-globs: 
+description: 
+globs: src\lib\supabase\*
 alwaysApply: false
 ---
 # Supabase: Паттерны и Хуки для Brain Programming

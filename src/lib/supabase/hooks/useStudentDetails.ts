@@ -12,6 +12,10 @@ export interface StudentBasicInfo {
     last_login?: string | null;
     web_last_login?: string | null;
     total_points: number;
+    // Информация о текущем тарифе
+    current_tariff_id?: string | null;
+    current_tariff_name?: string | null;
+    current_tariff_code?: string | null;
 }
 
 export interface StudentCourse {
@@ -59,6 +63,9 @@ export interface StudentDetailsResult {
     loading: boolean;
     error: Error | null;
     loadStudentDetails: (studentId: string) => Promise<void>;
+    // Добавляем функцию для назначения тарифа
+    assignStudentTariff: (studentId: string, tariffId: string) => Promise<void>;
+    assigningTariff: boolean;
 }
 
 /**
@@ -69,6 +76,7 @@ export function useStudentDetails(): StudentDetailsResult {
     const [studentDetails, setStudentDetails] = useState<StudentDetailsData | null>(null);
     const [loading, setLoading] = useState<boolean>(false);
     const [error, setError] = useState<Error | null>(null);
+    const [assigningTariff, setAssigningTariff] = useState<boolean>(false);
 
     const loadStudentDetails = async (studentId: string) => {
         if (!supabase || !studentId) {
@@ -102,6 +110,27 @@ export function useStudentDetails(): StudentDetailsResult {
 
             if (userError) throw userError;
             if (!userInfo) throw new Error('Ученик не найден');
+
+            // 1.1. Загружаем информацию о текущем тарифе пользователя
+            const { data: currentTariffData, error: tariffError } = await supabase
+                .from('user_tariffs')
+                .select(`
+                    tariff_id,
+                    tariffs (
+                        id,
+                        name,
+                        code
+                    )
+                `)
+                .eq('user_id', studentId)
+                .eq('is_active', true)
+                .single();
+
+            // Игнорируем ошибку если тариф не найден (пользователь может не иметь тарифа)
+            let tariffInfo = null;
+            if (!tariffError && currentTariffData && currentTariffData.tariffs) {
+                tariffInfo = currentTariffData.tariffs as any;
+            }
 
             // 2. Загружаем курсы ученика
             const { data: coursesData, error: coursesError } = await supabase
@@ -265,6 +294,9 @@ export function useStudentDetails(): StudentDetailsResult {
                 last_login: userInfo.last_login,
                 web_last_login: userInfo.web_last_login,
                 total_points: userInfo.total_points,
+                current_tariff_id: tariffInfo?.id || null,
+                current_tariff_name: tariffInfo?.name || null,
+                current_tariff_code: tariffInfo?.code || null,
             };
 
             const courses: StudentCourse[] = (coursesData || []).map(course => ({
@@ -290,10 +322,55 @@ export function useStudentDetails(): StudentDetailsResult {
         }
     };
 
+    /**
+     * Функция для назначения тарифа пользователю
+     */
+    const assignStudentTariff = async (studentId: string, tariffId: string) => {
+        if (!supabase || !studentId || !tariffId) {
+            throw new Error('Supabase клиент не инициализирован или отсутствуют параметры');
+        }
+
+        try {
+            setAssigningTariff(true);
+            setError(null);
+
+            // 1. Деактивируем все старые тарифы пользователя
+            const { error: deactivateError } = await supabase
+                .from('user_tariffs')
+                .update({ is_active: false, updated_at: new Date().toISOString() })
+                .eq('user_id', studentId)
+                .eq('is_active', true);
+
+            if (deactivateError) throw deactivateError;
+
+            // 2. Создаем новую запись с активным тарифом
+            const { error: insertError } = await supabase
+                .from('user_tariffs')
+                .insert([{
+                    user_id: studentId,
+                    tariff_id: tariffId,
+                    is_active: true,
+                }]);
+
+            if (insertError) throw insertError;
+
+            // 3. Перезагружаем детали ученика для обновления информации о тарифе
+            await loadStudentDetails(studentId);
+
+        } catch (err) {
+            console.error('Ошибка при назначении тарифа:', err);
+            setError(err instanceof Error ? err : new Error('Неизвестная ошибка при назначении тарифа'));
+        } finally {
+            setAssigningTariff(false);
+        }
+    };
+
     return {
         studentDetails,
         loading,
         error,
         loadStudentDetails,
+        assignStudentTariff,
+        assigningTariff,
     };
 } 

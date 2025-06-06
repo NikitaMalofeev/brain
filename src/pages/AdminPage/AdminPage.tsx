@@ -4,6 +4,8 @@ import { FileUploader, CloudFlareR2Diagnostics } from '@/components';
 import type { FileUploaderRef } from '@/components/FileUploader/FileUploader';
 import { supabase } from '@/lib/supabase/client';
 import { useCoursesAdmin, useStagesAdmin, useLessonsAdmin, useBlocksAdmin } from '@/lib/supabase/hooks';
+import { useTariffsAdmin } from '@/lib/supabase/hooks/useTariffsAdmin';
+import { useTariffLimits } from '@/lib/supabase/hooks/useTariffLimits';
 import { FILE_PREFIXES, buildImageUrl, deleteFileFromR2 } from '@/lib/cloudflareR2Service';
 import { PlayerProvider } from '@/contexts/PlayerContext';
 import './AdminPage.css';
@@ -28,6 +30,7 @@ import CuratorsManager from './components/CuratorsManager/CuratorsManager';
 import ChatsManager from './components/ChatsManager/ChatsManager';
 import FaqManager from './components/FaqManager/FaqManager';
 import BroadcastsManager from './components/BroadcastsManager/BroadcastsManager';
+import TariffsManager from './components/TariffsManager/TariffsManager';
 
 type SupabaseUser = Database['public']['Tables']['users']['Row'];
 
@@ -82,6 +85,150 @@ interface BlocksManagerProps {
   lessonId: number;
   onBack: () => void;
 }
+
+// Компонент для настройки лимитов тарифов для этапа
+interface TariffLimitsSectionProps {
+  stageId: number;
+}
+
+const TariffLimitsSection: React.FC<TariffLimitsSectionProps> = ({ stageId }) => {
+  const { tariffLimits, loading, error, saveTariffLimits, savingLimits, saveLimitsError } = useTariffLimits(stageId);
+
+  // Локальное состояние для редактирования лимитов
+  const [localLimits, setLocalLimits] = useState<{ [tariffId: string]: { maxDays?: number | null; requiresPrereq: boolean } }>({});
+
+  // Инициализируем локальное состояние при загрузке данных
+  useEffect(() => {
+    if (tariffLimits.length > 0) {
+      const initialLimits: typeof localLimits = {};
+      tariffLimits.forEach(tariff => {
+        initialLimits[tariff.id] = {
+          maxDays: tariff.max_days_access,
+          requiresPrereq: tariff.requires_full_prereq,
+        };
+      });
+      setLocalLimits(initialLimits);
+    }
+  }, [tariffLimits]);
+
+  // Обработчик изменения максимального количества дней
+  const handleMaxDaysChange = (tariffId: string, value: string) => {
+    const numValue = value === '' ? null : parseInt(value, 10);
+    setLocalLimits(prev => ({
+      ...prev,
+      [tariffId]: {
+        ...prev[tariffId],
+        maxDays: isNaN(numValue as any) ? null : numValue,
+      }
+    }));
+  };
+
+  // Обработчик изменения требования сдачи ДЗ
+  const handleRequiresPrereqChange = (tariffId: string, checked: boolean) => {
+    setLocalLimits(prev => ({
+      ...prev,
+      [tariffId]: {
+        ...prev[tariffId],
+        requiresPrereq: checked,
+      }
+    }));
+  };
+
+  // Обработчик сохранения настроек
+  const handleSaveLimits = async () => {
+    try {
+      const limitsArray = Object.entries(localLimits).map(([tariffId, limit]) => ({
+        tariffId,
+        maxDaysAccess: limit.maxDays,
+        requiresFullPrereq: limit.requiresPrereq,
+      }));
+
+      await saveTariffLimits(limitsArray);
+      alert('Настройки лимитов тарифов сохранены');
+    } catch (error) {
+      console.error('Ошибка при сохранении лимитов:', error);
+      alert('Ошибка при сохранении настроек');
+    }
+  };
+
+  if (loading) {
+    return (
+      <div className="admin-card">
+        <h3>Доступ по тарифам</h3>
+        <div className="admin-loading">Загрузка лимитов тарифов...</div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="admin-card">
+        <h3>Доступ по тарифам</h3>
+        <div className="admin-error">Ошибка: {error.message}</div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="admin-card">
+      <h3>Доступ по тарифам</h3>
+      {saveLimitsError && (
+        <div className="admin-error" style={{ marginBottom: '12px' }}>
+          Ошибка сохранения: {saveLimitsError.message}
+        </div>
+      )}
+      <div className="admin-table">
+        <table>
+          <thead>
+            <tr>
+              <th>Тариф</th>
+              <th>Макс. дней/уроков</th>
+              <th>Требует сдачи ДЗ</th>
+            </tr>
+          </thead>
+          <tbody>
+            {tariffLimits.map((tariff) => (
+              <tr key={tariff.id}>
+                <td>{tariff.name} ({tariff.code})</td>
+                <td>
+                  <input
+                    type="number"
+                    className="admin-input"
+                    placeholder="0 - полный доступ"
+                    value={localLimits[tariff.id]?.maxDays || ''}
+                    onChange={(e) => handleMaxDaysChange(tariff.id, e.target.value)}
+                    disabled={savingLimits}
+                    min="0"
+                  />
+                  <small style={{ display: 'block', color: '#666', marginTop: '4px' }}>
+                    0 или пусто = полный доступ
+                  </small>
+                </td>
+                <td>
+                  <input
+                    type="checkbox"
+                    checked={localLimits[tariff.id]?.requiresPrereq || false}
+                    onChange={(e) => handleRequiresPrereqChange(tariff.id, e.target.checked)}
+                    disabled={savingLimits}
+                  />
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+      <div className="form-actions">
+        <button
+          className="admin-button"
+          onClick={handleSaveLimits}
+          disabled={savingLimits}
+        >
+          {savingLimits ? 'Сохранение...' : 'Сохранить настройки'}
+        </button>
+      </div>
+    </div>
+  );
+};
 
 // Компонент для управления курсами
 const CoursesManager: React.FC<CoursesManagerProps> = ({ onCourseSelect }) => {
@@ -337,6 +484,7 @@ const CoursesManager: React.FC<CoursesManagerProps> = ({ onCourseSelect }) => {
 
 const StagesManager: React.FC<StagesManagerProps> = ({ courseId, onBack, onStageSelect }) => {
   const { stages, loading, error, refetch, createStage, updateStage, deleteStage } = useStagesAdmin(courseId);
+  const { tariffs } = useTariffsAdmin();
   const [updateLoading, setUpdateLoading] = useState<boolean>(false);
   const [updateError, setUpdateError] = useState<string | null>(null);
 
@@ -924,6 +1072,9 @@ const StagesManager: React.FC<StagesManagerProps> = ({ courseId, onBack, onStage
           </div>
         </div>
       )}
+
+      {/* Секция настройки лимитов для этапов курса */}
+      {editingStage && <TariffLimitsSection stageId={editingStage.id} />}
     </div>
   );
 };
@@ -1563,7 +1714,7 @@ const Breadcrumb: React.FC<BreadcrumbProps> = ({ navigation, onNavigate }) => {
 };
 
 // Основные вкладки админки (без "Ступени")
-type AdminTab = 'students' | 'curators' | 'courses' | 'submissions' | 'materials' | 'chats' | 'faq' | 'broadcasts';
+type AdminTab = 'students' | 'curators' | 'courses' | 'submissions' | 'materials' | 'tariffs' | 'chats' | 'faq' | 'broadcasts';
 
 const AdminPage: React.FC = () => {
   const navigate = useNavigate();
@@ -1908,6 +2059,12 @@ const AdminPage: React.FC = () => {
             Материалы
           </button>
           <button
+            className={`admin-tab ${currentTab === 'tariffs' ? 'active' : ''}`}
+            onClick={() => handleTabChange('tariffs')}
+          >
+            Тарифы
+          </button>
+          <button
             className={`admin-tab ${currentTab === 'chats' ? 'active' : ''}`}
             onClick={() => handleTabChange('chats')}
           >
@@ -1935,6 +2092,7 @@ const AdminPage: React.FC = () => {
         )}
 
         <div className="admin-content">
+          {currentTab === 'tariffs' && <TariffsManager />}
           {currentTab === 'students' && <StudentsManager />}
           {currentTab === 'curators' && <CuratorsManager />}
           {currentTab === 'courses' && (
