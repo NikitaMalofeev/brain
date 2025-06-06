@@ -184,7 +184,7 @@ const FaqManager: React.FC = () => {
                 <h2>FAQ</h2>
                 <div className="section-header-actions">
                     <button className="admin-refresh-btn" onClick={() => window.location.reload()}>
-                        🔄 Обновить
+                        Обновить
                     </button>
                     <button className="admin-button" onClick={openCreateModal}>
                         + Добавить вопрос
@@ -224,14 +224,14 @@ const FaqManager: React.FC = () => {
                                         onClick={() => openEditModal(faq)}
                                         title="Редактировать вопрос"
                                     >
-                                        ✎ Редактировать
+                                        Редактировать
                                     </button>
                                     <button
                                         className="action-btn delete-btn"
                                         onClick={() => handleDelete(faq)}
                                         title="Удалить вопрос"
                                     >
-                                        ✕ Удалить
+                                        Удалить
                                     </button>
                                 </td>
                             </tr>

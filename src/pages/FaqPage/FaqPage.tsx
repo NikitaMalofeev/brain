@@ -1,6 +1,36 @@
 import {Page} from "@/components";
+import {useQuery} from "@tanstack/react-query";
+import {supabase} from "@/lib/supabase/client.ts";
 
 export const FaqPage = () => {
+    const {data, isLoading} = useQuery({
+        queryFn: async () => {
+            // 1) Формируем запрос, вызываем .select(...).maybeSingle()/.then()/.throwOnError()
+            if (!supabase) return []
+
+            const { data, error } = await supabase.from('faq')
+                .select('*')
+                .order('order_num', { ascending: true })
+
+            if (error) {
+                // выбрасываем ошибку, чтобы React-Query перевёл загрузку в состояние “isError”
+                throw new Error(error.message)
+            }
+            // data здесь — это массив User[] (или null/[]), в зависимости от схемы
+            return data || []
+        },
+        queryKey: ['faq']
+    })
+    if(isLoading){
+        return (
+            <Page>
+                <div className="profile-loading">
+                    <div className="profile-loading-spinner" aria-hidden="true" />
+                    <p>Загрузка чатов...</p>
+                </div>
+            </Page>
+        )
+    }
     return (
         <Page>
             <div className={'flex flex-col gap-2 text-black min-h-screen'}>
@@ -12,39 +42,14 @@ export const FaqPage = () => {
                 <div className={'p-4 flex flex-col gap-3'}>
                     <h2 className={'font-bold text-xl'}>FAQ</h2>
                     <div className={'flex flex-col gap-2'}>
-                        <p>Как работают пригласительные ссылки?</p>
-                        <ul className={'pl-4 list-disc'}>
-                            <li>Доступ по вашей пригласительной ссылке открыт с 7-го по 11-е число каждого месяца. В
-                                этот период сообщество принимает новых участников, после чего доступ закрывается на
-                                месяц.
-                            </li>
-                        </ul>
-                        <p>Как работает оплата?</p>
-                        <ul className={'pl-4 list-disc'}>
-                            <li>Оплата происходит автоматически с той карты, с которой было произведено последнее
-                                платежное списание.
-                            </li>
-                            <li>Мы не храним данные о ваших картах. Вы можете посмотреть информацию о списаниях в
-                                истории платежей вашей карты.
-                            </li>
-                            <li>Смена карты — технически сложный процесс. Если возможно, лучше перевести деньги на
-                                текущую карту. Для смены карты необходимо выйти из сообщества и войти заново с новой
-                                картой. Вопросы по смене карты можно направить в техподдержку.
-                            </li>
-                            <li>Время списания индивидуально и зависит от даты вашей предыдущей оплаты. За 3 и 1 день до
-                                списания вы получите уведомление по электронной почте с точной датой.
-                            </li>
-                            <li>Если на момент списания средств на карте не оказалось, пополните её. Следующая попытка
-                                списания произойдет через 4-5 часов. Оформлять списание повторно вручную не нужно.
-                            </li>
-                            <li>Если вы находитесь в чате и канале, это значит, что оплата прошла или пройдет в
-                                ближайшее время. Удаление участников происходит автоматически, вручную никого не
-                                удаляем.
-                            </li>
-                            <li>Если оплата не прошла с первой попытки, система временно удаляет вас из чата и канала.
-                                Вернуться можно после успешной оплаты через меню бота.
-                            </li>
-                        </ul>
+                        {data?.map(el => (
+                            <ul className={'flex flex-col gap-2 pl-0 ml-0'}>
+                                <p>{el.question}</p>
+                                {el.answer.split('\n\n').map((line: string, i: number) => {
+                                    return (<li className={'ml-6 list-disc'} key={i}>{line}</li>)
+                                })}
+                            </ul>
+                        ))}
                     </div>
                 </div>
             </div>

@@ -6,6 +6,7 @@ interface ImageBlockProps {
 }
 
 const ImageBlock: React.FC<ImageBlockProps> = ({ block }) => {
+
     const [isFullScreenOpen, setIsFullScreenOpen] = useState(false);
 
     const handleImageClick = () => {
@@ -19,20 +20,8 @@ const ImageBlock: React.FC<ImageBlockProps> = ({ block }) => {
     };
 
     return (
-        <div key={block.id}> {/* Parent will apply marginBottom */}
-            {/* Заголовок, если есть */}
-            {block.title && (
-                <h3 style={{
-                    fontWeight: 700,
-                    fontSize: '20px',
-                    lineHeight: '1.2',
-                    color: '#000000',
-                    marginBottom: '16px',
-                    margin: '0 0 16px 0', // Сохраняем отступ от следующего элемента
-                }}>
-                    {block.title}
-                </h3>
-            )}
+        <div className={'flex flex-col gap-3'}> {/* Parent will apply marginBottom */}
+
 
             {/* Изображение или заглушка */}
             {block.content_url ? (

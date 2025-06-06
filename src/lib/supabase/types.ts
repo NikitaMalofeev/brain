@@ -393,12 +393,12 @@ export const getSubmissionDisplayStatus = (
       };
     case 'approved':
       return {
-        text: '✅ Принято',
+        text: 'Принято',
         isLate
       };
     case 'rejected':
       return {
-        text: '❌ Отклонено',
+        text: 'Отклонено',
         isLate
       };
     default:

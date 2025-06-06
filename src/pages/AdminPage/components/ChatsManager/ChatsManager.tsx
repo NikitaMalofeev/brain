@@ -229,7 +229,7 @@ const ChatsManager: React.FC = () => {
                 <h2>Управление чатами</h2>
                 <div className="section-header-actions">
                     <button className="admin-refresh-btn" onClick={loadChats}>
-                        🔄 Обновить
+                        Обновить
                     </button>
                     <button className="admin-button" onClick={openCreateModal}>
                         + Добавить чат
@@ -304,14 +304,14 @@ const ChatsManager: React.FC = () => {
                                                 onClick={() => openEditModal(chat)}
                                                 title="Редактировать чат"
                                             >
-                                                ✎ Редактировать
+                                                Редактировать
                                             </button>
                                             <button
                                                 className="action-btn delete-btn"
                                                 onClick={() => handleDeleteChat(chat)}
                                                 title="Удалить чат"
                                             >
-                                                ✕ Удалить
+                                                Удалить
                                             </button>
                                         </td>
                                     </tr>

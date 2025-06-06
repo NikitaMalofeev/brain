@@ -1,34 +1,49 @@
 import {Page} from "@/components";
 import {useState} from "react";
+import {useQuery} from "@tanstack/react-query";
+import {supabase} from "@/lib/supabase/client.ts";
+import {buildImageUrl} from "@/lib/cloudflareR2Service.ts";
+import {Link} from "react-router-dom";
 
 const tabs = [
     'Все',
     'Аудио',
     'Видео'
 ]
-const lessons = [
-    {
-        id: 1,
-        type: 'video',
-        title: 'Упражнение на борьбу со страхом',
-    },
-    {
-        id: 2,
-        type: 'audio',
-        title: 'Вечерняя прокачка',
-        subtitle: 'Принятие, ценность и любовь'
-    },
-    {
-        id: 3,
-        type: 'video',
-        title: 'Вечерняя прокачка'
-    }
-]
+
 export const CommonPage = () => {
     const [currentTab, setCurrentTab] = useState<number>(0);
+    const {data, isLoading} = useQuery({
+        queryFn: async () => {
+            // 1) Формируем запрос, вызываем .select(...).maybeSingle()/.then()/.throwOnError()
+            if (!supabase) return []
+
+            const { data, error } = await supabase.from('materials')
+                .select('*')
+                .order('order_num', { ascending: true })
+
+            if (error) {
+                // выбрасываем ошибку, чтобы React-Query перевёл загрузку в состояние “isError”
+                throw new Error(error.message)
+            }
+            // data здесь — это массив User[] (или null/[]), в зависимости от схемы
+            return data || []
+        },
+        queryKey: ['materials']
+    })
+    if(isLoading){
+        return (
+            <Page>
+                <div className="profile-loading">
+                    <div className="profile-loading-spinner" aria-hidden="true" />
+                    <p>Загрузка материалов...</p>
+                </div>
+            </Page>
+        )
+    }
     return (
         <Page>
-            <div className={'flex flex-col min-h-screen text-black '}>
+            <div className={'flex flex-col min-h-[calc(100vh-60px)] text-black '}>
                 <div className={'p-4 flex flex-col gap-2'}>
                     <h2 className={'font-bold text-xl'}>Библиотека</h2>
                     <div className={'flex items-center gap-1'}>
@@ -45,21 +60,21 @@ export const CommonPage = () => {
                     </div>
                 </div>
                 <div className={'bg-[url("/bg3.jpg")] bg-cover bg-top p-4 rounded-t-3xl flex-1 flex flex-col gap-3'}>
-                    {lessons.filter(el => currentTab === 0 ? true : currentTab === 1 ? el.type === "video" : el.type === "audio").map((lesson, index) => (
-                        lesson.type === 'video' ?
-                            <div key={index} className={'bg-white rounded-3xl p-6 flex flex-col gap-4'}>
-                                {(<div className={'h-[200px] bg-gray-200 rounded-xl'}></div>)}
-                                <p>{lesson.title}</p>
-                            </div> :
-                            <div className={'bg-white rounded-3xl py-3 px-6 flex items-center gap-4'} key={index}>
-                                <div className={'w-8 h-8 rounded-full bg-gray-200'}>
+                    {data?.filter(el => currentTab === 0 ? true : currentTab === 1 ? el.material_type === "audio" : el.material_type === "video").map((lesson, index) => (
+                        lesson.material_type === 'video' ?
+                            <Link to={`/material/${lesson.id}`} key={index} className={'bg-white rounded-3xl flex flex-col'}>
+                                <img src={buildImageUrl(lesson.cover_image_path)} alt={''} className={'h-[200px] md:h-[300px] rounded-3xl object-cover'}/>
+                                <p className={'p-4 font-semibold'}>{lesson.name}</p>
+                            </Link> :
+                            <Link to={`/material/${lesson.id}`} className={'bg-white rounded-3xl py-3 px-6 flex items-center gap-4 justify-between'} key={index}>
+
+                                <div className={'flex flex-col'}>
+                                    <p className={'font-semibold text-lg leading-5'}>{lesson.name}</p>
+                                    {lesson.description &&
+                                        <p className={'text-sm text-[#9F9F9F]'}>{lesson.description}</p>}
                                 </div>
-                                <div className={'flex flex-col gap-1'}>
-                                    <p className={'font-bold text-lg'}>{lesson.title}</p>
-                                    {lesson.subtitle &&
-                                        <p className={'text-sm text-black/70'}>{lesson.subtitle}</p>}
-                                </div>
-                            </div>
+                                <img src={'/play.svg'}/>
+                            </Link>
                     ))}
                 </div>
             </div>

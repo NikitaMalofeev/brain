@@ -5,8 +5,9 @@ interface DocumentBlockProps {
     block: LessonBlock;
 }
 
-const DocumentBlock: React.FC<DocumentBlockProps> = ({ block }) => {
+const DocumentBlock = ({ block }: DocumentBlockProps) => {
     // Определение типа файла по URL для отображения (перенесено из LessonPage)
+
     const getFileTypeInfo = (fileUrl: string) => {
         const fileName = decodeURIComponent(fileUrl.substring(fileUrl.lastIndexOf('/') + 1));
         const extension = fileName.split('.').pop()?.toLowerCase() || '';
@@ -30,20 +31,7 @@ const DocumentBlock: React.FC<DocumentBlockProps> = ({ block }) => {
     // Убираем стили белого контейнера
     // Оставляем только div для структуры, стили будут применены родителем (LessonPage)
     return (
-        <div key={block.id}> {/* Убираем commonBlockStyle, его применяет LessonPage */}
-            {/* Заголовок, если есть */}
-            {block.title && (
-                <h3 style={{
-                    fontWeight: 700,
-                    fontSize: '20px',
-                    lineHeight: '1.2',
-                    color: '#000000',
-                    marginBottom: '16px',
-                    margin: '0 0 16px 0', // Сохраняем отступ от следующего элемента
-                }}>
-                    {block.title}
-                </h3>
-            )}
+        <div className={'flex flex-col gap-3'}> {/* Убираем commonBlockStyle, его применяет LessonPage */}
 
             {/* Блок с ссылкой на PDF */}
             <div style={{
@@ -76,17 +64,7 @@ const DocumentBlock: React.FC<DocumentBlockProps> = ({ block }) => {
                         href={block.content_url}
                         target="_blank"
                         rel="noopener noreferrer"
-                        style={{
-                            display: 'inline-flex',
-                            alignItems: 'center',
-                            padding: '8px 16px',
-                            backgroundColor: '#000000',
-                            color: '#ffffff',
-                            textDecoration: 'none',
-                            borderRadius: '8px',
-                            fontSize: '14px',
-                            fontWeight: 500,
-                        }}
+                        className={"w-full font-bold leading-5 text-white py-2 px-4 rounded-3xl text-center bg-[linear-gradient(135deg,rgba(141,197,241,0.4)_-48.61%,#63ABE6_105.56%),linear-gradient(91.99deg,#F3F3F3_0%,#EAEAEA_100%)]"}
                     >
                         Открыть Документ
                     </a>

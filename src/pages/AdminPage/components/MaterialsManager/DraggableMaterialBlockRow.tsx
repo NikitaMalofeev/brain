@@ -108,14 +108,14 @@ const DraggableMaterialBlockRow: React.FC<DraggableMaterialBlockRowProps> = ({
                     onClick={() => onEdit(block)}
                     title="Редактировать блок"
                 >
-                    ✎
+
                 </button>
                 <button
                     className="action-btn delete-btn"
                     onClick={() => onDelete(block.id, block.title)}
                     title="Удалить блок"
                 >
-                    ✕
+
                 </button>
             </td>
         </tr>

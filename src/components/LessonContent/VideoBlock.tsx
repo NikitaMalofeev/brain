@@ -5,30 +5,31 @@ import { LessonBlock } from '@/lib/supabase/types';
 interface VideoBlockProps {
     block: LessonBlock;
 }
+export const getKinescopeId = (url: string): string | null => {
+    if (!url) return null;
 
+    // Различные форматы Kinescope URL:
+    // https://kinescope.io/embed/VIDEO_ID
+    // https://kinescope.io/VIDEO_ID
+    // просто VIDEO_ID
+
+    const patterns = [
+        /kinescope\.io\/embed\/([a-zA-Z0-9]+)/,
+        /kinescope\.io\/([a-zA-Z0-9]+)/,
+        /^([a-zA-Z0-9]+)$/
+    ];
+
+    for (const pattern of patterns) {
+        const match = url.match(pattern);
+        if (match) return match[1];
+    }
+
+    return null;
+};
 const VideoBlock: React.FC<VideoBlockProps> = ({ block }) => {
     // Извлекаем Kinescope ID из content_url
-    const getKinescopeId = (url: string): string | null => {
-        if (!url) return null;
 
-        // Различные форматы Kinescope URL:
-        // https://kinescope.io/embed/VIDEO_ID
-        // https://kinescope.io/VIDEO_ID
-        // просто VIDEO_ID
 
-        const patterns = [
-            /kinescope\.io\/embed\/([a-zA-Z0-9]+)/,
-            /kinescope\.io\/([a-zA-Z0-9]+)/,
-            /^([a-zA-Z0-9]+)$/
-        ];
-
-        for (const pattern of patterns) {
-            const match = url.match(pattern);
-            if (match) return match[1];
-        }
-
-        return null;
-    };
 
     const videoId = getKinescopeId(block.content_url || '');
 
