@@ -846,8 +846,7 @@ body.admin-mode {
 .actions-cell {
   display: flex;
   gap: 12px;
-  flex-wrap: wrap;
-  /* Переносим кнопки на новую строку при необходимости */
+  flex-wrap: nowrap;
 }
 
 .action-btn {
