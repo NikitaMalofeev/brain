@@ -845,7 +845,7 @@ const MaterialsManager: React.FC = () => {
                         className="breadcrumb-link"
                         onClick={navigateBackToMaterials}
                     >
-                        Дополнительные материалы
+                        Библиотека
                     </button>
                     <span> / </span>
                     <span>{currentMaterialName}</span>
@@ -856,7 +856,7 @@ const MaterialsManager: React.FC = () => {
             <div className="section-header">
                 <h2>
                     {viewMode === 'materials'
-                        ? 'Дополнительные материалы'
+                        ? 'Библиотека'
                         : `Блоки материала: ${currentMaterialName}`
                     }
                 </h2>

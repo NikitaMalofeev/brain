@@ -2090,7 +2090,7 @@ const AdminPage: React.FC = () => {
                 className={`admin-tab ${currentTab === 'materials' ? 'active' : ''}`}
                 onClick={() => handleTabChange('materials')}
               >
-                Материалы
+                Библиотека
               </button>
               <button
                 className={`admin-tab ${currentTab === 'tariffs' ? 'active' : ''}`}
