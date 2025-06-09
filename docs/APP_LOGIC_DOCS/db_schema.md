@@ -3,7 +3,7 @@
 
 ## Обзор
 
-База данных приложения "Brain Programming" построена на PostgreSQL через Supabase и содержит 16 основных таблиц для управления пользователями, курсами, этапами обучения, уроками, блоками контента, прогрессом пользователей, а также новые таблицы для чатов, FAQ и эфиров.
+База данных приложения "Brain Programming" построена на PostgreSQL через Supabase и содержит 21 основную таблицу для управления пользователями, курсами, этапами обучения, уроками, блоками контента, прогрессом пользователей, тарифами, токенами доступа, а также новые таблицы для чатов, FAQ и эфиров.
 
 **Проект Supabase:** `bzbpwmzhywaqwsjthwid` (EU Central 1)
 
@@ -312,6 +312,88 @@
 
 **RLS:** Включен (SELECT для всех, INSERT/UPDATE/DELETE только для админов)
 
+### 17. `tariffs` - Тарифы ✅ АКТУАЛИЗИРОВАНО
+**Назначение:** Справочник тарифов (T1, T2, T3, T4 и т.д.)
+
+**Поля:**
+- `id` (uuid, PK, default: gen_random_uuid()) - Уникальный идентификатор тарифа
+- `name` (text, NOT NULL) - Название тарифа
+- `code` (text, UNIQUE, NOT NULL) - Уникальный код тарифа для использования в логике (например, "T1")
+- `description` (text, nullable) - Описание тарифа
+- `created_at` (timestamptz, default: now(), NOT NULL) - Время создания
+
+**RLS:** ВЫКЛЮЧЕН
+
+### 18. `user_tariffs` - Привязка пользователей к тарифам ✅ АКТУАЛИЗИРОВАНО
+**Назначение:** Привязка пользователей к их активным тарифам.
+
+**Поля:**
+- `id` (bigint, PK, auto-increment) - Уникальный идентификатор записи
+- `user_id` (uuid, FK → users.id, NOT NULL) - Ссылка на пользователя
+- `tariff_id` (uuid, FK → tariffs.id, NOT NULL) - Ссылка на тариф
+- `is_active` (boolean, default: true, NOT NULL) - Флаг активности тарифа для ручного управления
+- `created_at` (timestamptz, default: now(), NOT NULL) - Время создания
+- `updated_at` (timestamptz, default: now(), NOT NULL) - Время последнего обновления
+
+**RLS:** ВЫКЛЮЧЕН
+
+### 19. `tariff_limits` - Правила доступа тарифов ✅ АКТУАЛИЗИРОВАНО
+**Назначение:** Правила доступа тарифов к этапам курсов.
+
+**Поля:**
+- `id` (bigint, PK, auto-increment) - Уникальный идентификатор записи
+- `tariff_id` (uuid, FK → tariffs.id, NOT NULL) - Ссылка на тариф
+- `stage_id` (bigint, FK → course_stages.id, NOT NULL) - Ссылка на этап
+- `max_days_access` (int4, nullable) - Лимит доступа в днях/уроках для этапа (NULL = безлимитно)
+- `requires_full_prereq` (boolean, default: false, NOT NULL) - Требуется ли сдача всех ДЗ на предыдущих этапах для доступа
+- `created_at` (timestamptz, default: now(), NOT NULL) - Время создания
+
+**RLS:** ВЫКЛЮЧЕН
+
+### 20. `tariff_material_access` - Доступ тарифов к материалам ✅ АКТУАЛИЗИРОВАНО
+**Назначение:** Связь тарифов с доступом к дополнительным материалам (библиотеке).
+
+**Поля:**
+- `id` (bigint, PK, auto-increment) - Уникальный идентификатор записи
+- `tariff_id` (uuid, FK → tariffs.id, NOT NULL) - Ссылка на тариф
+- `material_id` (uuid, FK → materials.id, NOT NULL) - Ссылка на материал
+- `created_at` (timestamptz, default: now(), NOT NULL) - Время создания
+
+**RLS:** ВЫКЛЮЧЕН
+
+### 21. `tariff_chat_access` - Доступ тарифов к чатам ✅ АКТУАЛИЗИРОВАНО
+**Назначение:** Связь тарифов с доступом к Telegram-чатам.
+
+**Поля:**
+- `id` (bigint, PK, auto-increment) - Уникальный идентификатор записи
+- `tariff_id` (uuid, FK → tariffs.id, NOT NULL) - Ссылка на тариф
+- `chat_id` (uuid, FK → chats.id, NOT NULL) - Ссылка на чат
+- `created_at` (timestamptz, default: now(), NOT NULL) - Время создания
+
+**RLS:** ВЫКЛЮЧЕН
+
+### 22. `access_tokens` - Токены доступа ✅ НОВАЯ ТАБЛИЦА
+**Назначение:** Система токенов доступа для автоматического зачисления пользователей на курсы с назначением тарифов.
+
+**Поля:**
+- `id` (uuid, PK, default: gen_random_uuid()) - Уникальный идентификатор токена
+- `token` (text, UNIQUE, NOT NULL) - Токен доступа (base62, 16 символов)
+- `course_id` (uuid, FK → courses.id, nullable) - Ссылка на курс
+- `tariff_id` (uuid, FK → tariffs.id, nullable) - Ссылка на тариф
+- `status` (text, default: 'created', NOT NULL) - Статус токена: 'created', 'used', 'revoked'
+- `used_by_user_id` (uuid, FK → users.id, nullable) - Кто использовал токен
+- `used_at` (timestamptz, nullable) - Время использования токена
+- `created_by_user_id` (uuid, FK → users.id, nullable) - Кто создал токен
+- `comment` (text, nullable) - Комментарий к токену
+- `created_at` (timestamptz, default: now(), NOT NULL) - Время создания
+
+**Особенности:**
+- Токен генерируется в формате base62, 16 символов
+- После использования статус меняется на 'used' и записывается пользователь
+- Используется для создания ссылок вида `https://t.me/bot?startapp=<token>`
+
+**RLS:** Включен (только админы и кураторы имеют доступ)
+
 ## Функции базы данных
 
 ### `get_lesson_blocks(lesson_id_param BIGINT)`
@@ -428,7 +510,7 @@
 ### 🚨 Критические проблемы
 1. **Функция `lesson_has_submission`** - использует устаревшую логику блоков `assignment_instruction`
 2. **CHECK constraint в `lesson_blocks`** - до сих пор разрешает тип `assignment_instruction`
-3. **FK в `user_stage_progress`** - ссылается на `auth.users` вместо `public.users`
+3. **FK в `user_stage_progress`** - ссылается на `auth.users` вместо `public.users` ⚠️ ПОДТВЕРЖДЕНО через MCP
 
 ### 🔧 Требуемые исправления
 
@@ -534,6 +616,17 @@ users → submissions → lessons
 Дополнительные материалы:
 materials → material_blocks
 users → user_material_views → materials
+
+Тарифная система:
+tariffs → user_tariffs ← users
+tariffs → tariff_limits → course_stages
+tariffs → tariff_material_access → materials
+tariffs → tariff_chat_access → chats
+
+Токены доступа:
+access_tokens → courses (nullable)
+access_tokens → tariffs (nullable)
+access_tokens → users (created_by, used_by)
 
 Админские сущности:
 users (admin) → chats, faq, broadcasts

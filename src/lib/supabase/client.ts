@@ -8,10 +8,10 @@ const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY || process.env.NE
 // Создаем клиент, если переменные окружения доступны
 export const supabase: SupabaseClient | null = supabaseUrl && supabaseAnonKey
   ? createClient(supabaseUrl, supabaseAnonKey, {
-      realtime: {
-        // Параметры для Realtime соединения (если нужны)
-      },
-    })
+    realtime: {
+      // Параметры для Realtime соединения (если нужны)
+    },
+  })
   : null;
 
 // Логгируем информацию о клиенте
@@ -28,12 +28,12 @@ export function subscribeToUserChanges(telegramId: number, callback: (payload: a
     logger.error('Cannot subscribe to user changes: Supabase client is not available');
     return null;
   }
-  
+
   logger.warn('⚠️ subscribeToUserChanges is deprecated and may cause excessive updates');
-  
+
   try {
     const channel = supabase.channel(`public:users:telegram_id=eq.${telegramId}`);
-    
+
     channel
       .on(
         'postgres_changes',
@@ -48,7 +48,7 @@ export function subscribeToUserChanges(telegramId: number, callback: (payload: a
       .subscribe((status) => {
         logger.info(`User changes subscription status for telegram_id=${telegramId}: ${status}`);
       });
-      
+
     return channel;
   } catch (error) {
     logger.error('Error subscribing to user changes:', error);

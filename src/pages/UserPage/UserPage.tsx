@@ -50,6 +50,37 @@ export const UserPage = () => {
         enabled: !!supabaseUser?.id
     });
 
+    // Получение тарифа текущего пользователя
+    const { data: userTariff } = useQuery({
+        queryFn: async () => {
+            if (!supabase || !supabaseUser?.id) return null
+
+            const { data: currentTariffData, error: tariffError } = await supabase
+                .from('user_tariffs')
+                .select(`
+                    tariff_id,
+                    tariffs (
+                        id,
+                        name,
+                        code,
+                        description
+                    )
+                `)
+                .eq('user_id', supabaseUser.id)
+                .eq('is_active', true)
+                .single();
+
+            // Игнорируем ошибку если тариф не найден (пользователь может не иметь тарифа)
+            if (tariffError || !currentTariffData || !currentTariffData.tariffs) {
+                return null;
+            }
+
+            return currentTariffData.tariffs as any;
+        },
+        queryKey: ['user-tariff', supabaseUser?.id],
+        enabled: !!supabaseUser?.id
+    });
+
     const currentLevel = useMemo(() => {
         if (!stages) return 1;
         const unlockedStages = stages.filter(s => s.is_unlocked);
@@ -171,6 +202,30 @@ export const UserPage = () => {
                             </Link>
                         </div>
                     </div>
+
+                    {/* Tariff Block */}
+                    <div className="px-4 mb-6">
+                        <div className="bg-white rounded-2xl p-4 flex flex-col gap-2">
+                            <div className="flex justify-between items-start">
+                                <div>
+                                    <div className="flex items-center gap-1.5">
+                                        <p className="text-sm font-medium text-[#9F9F9F]">Тариф</p>
+                                        <img src="/ask-icon.svg" alt="info" className="w-4 h-4" />
+                                    </div>
+                                    <p className="text-lg font-bold text-black">
+                                        {userTariff ? userTariff.name : 'Базовый'}
+                                    </p>
+                                </div>
+                                <button className="text-sm font-bold w-max leading-5 text-white py-2 px-4 rounded-3xl text-center bg-[linear-gradient(135deg,rgba(141,197,241,0.4)_-48.61%,#63ABE6_105.56%),linear-gradient(91.99deg,#F3F3F3_0%,#EAEAEA_100%)]">
+                                    Повысить тариф
+                                </button>
+                            </div>
+                            <p className="text-sm text-[#9F9F9F] leading-tight">
+                                {userTariff?.description || 'Базовый тарифный план с ограниченным доступом к материалам.'}
+                            </p>
+                        </div>
+                    </div>
+
                     <div className={'bg-white rounded-t-3xl pt-5'}>
                         <div className={'px-4 flex flex-col gap-3'}>
                             {links.map(el => (
@@ -184,38 +239,8 @@ export const UserPage = () => {
                             ))}
                         </div>
                     </div>
-                </div>
+                </div> {/* end of stats grid */}
             </div>
-
-
-            {/*<div className={'flex flex-col gap-12 text-black min-h-screen'}>
-                <div
-                    className={'items-center rounded-b-3xl bg-[url("/bg3.jpg")] bg-cover bg-bottom flex flex-col gap-8 pt-12 pb-4 px-4'}>
-                    <div className={'flex items-center gap-3 flex-col'}>
-                        {user?.photo_url ? <img className={'w-36 h-36 rounded-full'} src={user.photo_url} alt=""/> :
-                            <svg width="57" height="56" viewBox="0 0 57 56" fill="none" xmlns="http://www.w3.org/2000/svg">
-                                <path
-                                    d="M47.1673 49.0001C47.1673 42.5568 38.81 37.3334 28.5007 37.3334C18.1913 37.3334 9.83398 42.5568 9.83398 49.0001M28.5007 30.3334C22.0573 30.3334 16.834 25.1101 16.834 18.6668C16.834 12.2234 22.0573 7.0001 28.5007 7.0001C34.944 7.0001 40.1673 12.2234 40.1673 18.6668C40.1673 25.1101 34.944 30.3334 28.5007 30.3334Z"
-                                    stroke="#8C8C8C" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
-                            </svg>}
-                        <p className={'text-xl font-semibold'}>Привет, {user?.username}</p>
-                    </div>
-                    <Link to={'/points'} className={'w-full flex items-center gap-3 justify-between p-4 bg-white rounded-full'}>
-                        <div className={'flex items-center gap-1 font-semibold'}>
-                            У вас {supabaseUser?.total_points} эйденштельнов
-                        </div>
-                        <img className={'w-[28px] h-[28px]'} src={'/ask-icon.svg'} alt=""/>
-                    </Link>
-                </div>
-                <div className={'px-4 flex flex-col gap-3'}>
-                    {links.map(el => (
-                        <Link className={'bg-[linear-gradient(91.99deg,_#F7F7F7_0%,_#F3F3F3_100%)] p-4 rounded-full flex items-center justify-between'} to={el.link}>
-                            <p className={'font-semibold'}>{el.title}</p>
-                            <img src={'/arrow-icon.svg'} alt="" className={'w-[36px] h-[36px]'}/>
-                        </Link>
-                    ))}
-                </div>
-            </div>*/}
-        </Page>
+        </Page >
     )
 }

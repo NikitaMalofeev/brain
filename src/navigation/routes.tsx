@@ -14,8 +14,9 @@ import { HelpPage } from "@/pages/HelpPage/HelpPage.tsx";
 import { FaqPage } from "@/pages/FaqPage/FaqPage.tsx";
 import { CommonPage } from "@/pages/CommonPage/CommonPage.tsx";
 import { MainPage } from "@/pages/MainPage/MainPage.tsx";
-import {InfoPoints} from "@/pages/InfoPoints.tsx";
-import {MaterialPage} from "@/pages/MaterialPage.tsx";
+import { InfoPoints } from "@/pages/InfoPoints.tsx";
+import { MaterialPage } from "@/pages/MaterialPage.tsx";
+import TokenErrorPage from '@/pages/TokenErrorPage/TokenErrorPage';
 
 export const routers = [
   {
@@ -89,5 +90,9 @@ export const routers = [
   {
     path: '/diagnostics',
     Component: DiagnosticsPage
+  },
+  {
+    path: '/token-error',
+    Component: TokenErrorPage
   }
 ];

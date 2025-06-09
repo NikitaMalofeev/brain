@@ -9,140 +9,60 @@ alwaysApply: false
 
 ## Архитектура Хуков
 
-### Существующие Хуки (Всегда используй их)
+Вся работа с данными в проекте построена на кастомных хуках, которые инкапсулируют логику взаимодействия с Supabase и используют `react-query` для управления состоянием.
 
-**Студенты:**
-*   `[useStudentDetails](mdc:src/lib/supabase/hooks/useStudentDetails.ts)` - полная информация о студенте
-*   `[useStudentActions](mdc:src/lib/supabase/hooks/useStudentActions.ts)` - действия со студентами
-*   `[useStudentsAdmin](mdc:src/lib/supabase/hooks/useStudentsAdmin.ts)` - админские операции
+**Полные правила и паттерны работы с `react-query` (включая `useQuery` и `useMutation`) описаны в отдельном документе: [react_query_patterns.mdc](mdc:.cursor/rules/react_query_patterns.mdc)**
 
-**Кураторы:**
-*   `[useCuratorDetails](mdc:src/lib/supabase/hooks/useCuratorDetails.ts)` - информация о кураторе
-*   `[useCuratorActions](mdc:src/lib/supabase/hooks/useCuratorActions.ts)` - действия с кураторами  
-*   `[useCuratorsAdmin](mdc:src/lib/supabase/hooks/useCuratorsAdmin.ts)` - админские операции
+### Существующие Хуки
+Всегда используй существующие хуки из `[src/lib/supabase/hooks/](mdc:src/lib/supabase/hooks)` перед созданием новых.
 
-**Контент и Структура:**
-*   `[useLibraryStages](mdc:src/lib/supabase/hooks/useLibraryStages.ts)` - этапы для пользователей
-*   `[useStageDetails](mdc:src/lib/supabase/hooks/useStageDetails.ts)` - детали этапа
-*   `[useStagesAdmin](mdc:src/lib/supabase/hooks/useStagesAdmin.ts)` - админские операции с этапами
-*   `[useLessonsAdmin](mdc:src/lib/supabase/hooks/useLessonsAdmin.ts)` - управление уроками
-*   `[useBlocksAdmin](mdc:src/lib/supabase/hooks/useBlocksAdmin.ts)` - управление блоками
-*   `[useCoursesAdmin](mdc:src/lib/supabase/hooks/useCoursesAdmin.ts)` - управление курсами
+## RPC Функции и Безопасность
 
-**Система:**
-*   `[useSupabaseUser](mdc:src/lib/supabase/hooks/useSupabaseUser.ts)` - текущий пользователь
-*   `[useAccessCheck](mdc:src/lib/supabase/hooks/useAccessCheck.ts)` - проверка доступов
+### `auth.uid()` vs Явная передача `user_id`
+При создании RPC-функций, требующих идентификации пользователя, возникает выбор:
 
-### Паттерн Создания Нового Хука
+1.  **`auth.uid()` (внутри функции)**:
+    *   **Плюсы**: Безопасно, ID пользователя берется из JWT-токена сессии.
+    *   **Минусы**: Требует, чтобы у клиента была валидная Supabase-сессия. **Не подходит для сценариев, где сессия может быть не установлена**, например, при первом запуске Mini App.
 
-При создании нового хука следуй структуре из `[src/lib/supabase/hooks/index.ts](mdc:src/lib/supabase/hooks/index.ts)`:
+2.  **Явная передача `user_id` (как параметр)**:
+    *   **Плюсы**: Работает всегда, когда у клиента есть `user_id`.
+    *   **Минусы**: Требует особой осторожности.
 
-```typescript
-// Стандартный паттерн хука
-export function useNewFeature() {
-  const [data, setData] = useState(null);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState(null);
-
-  // Основная функция получения данных
-  const fetchData = useCallback(async () => {
-    setLoading(true);
-    setError(null);
-    try {
-      // Supabase запрос
-      const result = await supabase.from('table').select();
-      setData(result.data);
-    } catch (err) {
-      setError(err);
-    } finally {
-      setLoading(false);
-    }
-  }, []);
-
-  return {
-    data,
-    loading,
-    error,
-    fetchData,
-    // Дополнительные методы
-  };
-}
-```
-
-## База Данных и Миграции
-
-### Структура Таблиц
-*   `students` - студенты и их прогресс
-*   `curators` - кураторы и их роли  
-*   `courses`, `stages`, `lessons`, `blocks` - структура контента
-*   `user_progress`, `lesson_completions` - прогресс пользователей
-*   `admin_users` - админские права
-
-### Правила Миграций
-**ВАЖНО:** НЕ применяй миграции через Supabase MCP!
-
-**Процесс:**
-1. Генерируй SQL скрипт для миграции
-2. Передавай пользователю для ручного применения
-3. Документируй изменения в комментариях
+**Наш стандарт:**
+Для функций, которые могут вызываться в "неопределенном" контексте аутентификации (как `redeem_access_token`), используй **явную передачу `user_id`**.
 
 ```sql
--- Пример миграции: добавление новой колонки
-ALTER TABLE students 
-ADD COLUMN new_field VARCHAR(255) DEFAULT '';
-
--- Индексы для производительности
-CREATE INDEX IF NOT EXISTS idx_students_user_id 
-ON students(user_id);
-
--- Комментарии на русском
-COMMENT ON COLUMN students.new_field IS 'Новое поле для хранения ...';
+-- Функция принимает user_id как параметр
+CREATE OR REPLACE FUNCTION redeem_access_token(token_to_redeem TEXT, user_id_param UUID)
+RETURNS JSON
+LANGUAGE plpgsql
+-- SECURITY DEFINER ОБЯЗАТЕЛЕН для доступа к таблицам
+SECURITY DEFINER
+AS $$
+BEGIN
+  -- Внутри функции мы доверяем переданному user_id_param.
+  -- ...
+END;
+$$;
 ```
+> **Важно**: Функция `redeem_access_token` не требует дополнительной RLS, так как сам токен является одноразовым секретом, а `SECURITY DEFINER` нужен для изменения таблиц от имени администратора.
 
-## Edge Functions (Ограниченное Использование)
+## Интеграция с Telegram Mini Apps
 
-### Существующие Functions
-*   `[admin-get-student-details](mdc:supabase/functions/admin-get-student-details)` - админская детализация студента
-*   `[admin-get-students](mdc:supabase/functions/admin-get-students)` - список студентов для админки
+### Извлечение Start-параметра
+Для получения параметра `startapp` из URL (`https://t.me/bot?startapp=TOKEN`) используй следующий код.
 
-### Когда НЕ нужна Edge Function
-*   Простые CRUD операции → используй хуки
-*   Фильтрация и сортировка → используй Supabase запросы в хуках
-*   Проверка доступов → используй RLS (Row Level Security) + хуки
+```typescript
+// src/components/App.tsx
+import { retrieveLaunchParams, initDataState } from '@telegram-apps/sdk-react';
 
-### Когда НУЖНА Edge Function
-*   Комплексная бизнес-логика с секретными данными
-*   Интеграция с внешними API (TON, OpenAI)
-*   Обработка файлов/изображений
-*   Webhook обработка
+const lp = useMemo(() => retrieveLaunchParams(), []);
+const initData = useSignal(initDataState);
 
-## Аутентификация и Доступы
-
-### TON Connect Integration
-*   Основная аутентификация через Supabase Auth
-*   TON Connect как дополнительный провайдер
-*   Используй `[useSupabaseUser](mdc:src/lib/supabase/hooks/useSupabaseUser.ts)` для проверки статуса
-
-### Row Level Security (RLS)
-*   Админские операции через специальные политики
-*   Используй `[useAccessCheck](mdc:src/lib/supabase/hooks/useAccessCheck.ts)` для проверки на фронтенде
-
-## Производительность и Оптимизация
-
-### Кэширование в Хуках
-*   Используй `useMemo` для тяжелых вычислений
-*   Используй `useCallback` для функций, передаваемых как props
-*   Реализуй локальное кэширование для частых запросов
-
-### Пагинация и Лимиты
-*   Всегда устанавливай лимиты на запросы (обычно 50-100 записей)
-*   Используй cursor-based пагинацию для больших списков
-*   Ленивая загрузка для списков с прокруткой
-
-### Real-time Subscriptions
-*   Используй только для критичных данных (чаты, уведомления)
-*   Отписывайся от подписок в useEffect cleanup
-*   Группируй подписки по логическим блокам
+// Надежное извлечение токена
+const accessToken = lp.tgWebAppStartParam || initData?.start_param;
+```
 
 ---
 

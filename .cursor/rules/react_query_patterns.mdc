@@ -17,91 +17,67 @@ alwaysApply: false
     *   `['student', studentId]` — для конкретного студента.
     *   `['stages', libraryId]` — для этапов конкретной библиотеки.
 
-## Создание нового хука с `useQuery`
+## Получение данных: `useQuery`
 
-Когда вам нужно получить данные, создайте новый хук в `[src/lib/supabase/hooks/](mdc:src/lib/supabase/hooks)`.
+Когда вам нужно получить данные (SELECT), создайте новый хук в `[src/lib/supabase/hooks/](mdc:src/lib/supabase/hooks)`, оборачивающий `useQuery`.
 
-**Пример: Хук для получения списка студентов**
+## Изменение данных: `useMutation`
+
+Для **любых** операций, изменяющих данные (INSERT, UPDATE, DELETE, вызов RPC), **обязательно используйте `useMutation`**.
+
+### Почему `useMutation` — это стандарт?
+
+-   **Предотвращает "гонку состояний"**: Ручное управление состоянием загрузки через `useState` и `useEffect` (как мы пытались сделать с активацией токена) часто приводит к повторным вызовам и ошибкам. `useMutation` предоставляет надежные флаги (`isPending`, `isIdle`), которые решают эту проблему.
+-   **Инкапсулирует логику**: Весь процесс — вызов асинхронной функции, обработка успеха/ошибки, инвалидация кэша — находится в одном месте.
+-   **Улучшает UX**: Позволяет легко показывать индикаторы загрузки и обрабатывать ошибки.
+
+### Паттерн создания хука с `useMutation`
+
+**Пример из реальной задачи: активация токена доступа.**
 
 ```typescript
-// src/lib/supabase/hooks/useStudents.ts
-import { useQuery } from '@tanstack/react-query';
-import { supabase } from '@/lib/supabase/client'; // Пример пути к клиенту Supabase
+// src/lib/supabase/hooks/useRedeemToken.ts
+import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { useNavigate } from 'react-router-dom';
+import { supabase } from '@/lib/supabase/client';
 
-// Функция для получения данных
-const fetchStudents = async () => {
-  const { data, error } = await supabase.from('students').select('*');
+// 1. Определяем асинхронную функцию, которая будет вызвана
+const redeemTokenFn = async ({ accessToken, userId }: { accessToken: string; userId: string }) => {
+  const { data, error } = await supabase.rpc('redeem_access_token', {
+    token_to_redeem: accessToken,
+    user_id_param: userId,
+  });
 
-  if (error) {
-    throw new Error(error.message);
+  if (error || (data && data.error)) {
+    throw new Error(data?.error || error?.message || 'Unknown error');
   }
-
   return data;
 };
 
-// Кастомный хук
-export const useStudents = () => {
-  return useQuery({
-    queryKey: ['students'], // Ключ для квери
-    queryFn: fetchStudents, // Функция, которая выполняет запрос
-  });
-};
-```
-
-## Использование хука в компоненте
-
-```tsx
-// src/pages/AdminPage/StudentsManager.tsx
-import { useStudents } from '@/lib/supabase/hooks/useStudents';
-
-const StudentsManager = () => {
-  const { data: students, isLoading, isError, error } = useStudents();
-
-  if (isLoading) {
-    return <div>Загрузка...</div>;
-  }
-
-  if (isError) {
-    return <div>Ошибка: {error.message}</div>;
-  }
-
-  return (
-    <ul>
-      {students.map(student => (
-        <li key={student.id}>{student.name}</li>
-      ))}
-    </ul>
-  );
-};
-```
-
-## Операции изменения данных с `useMutation`
-
-Для создания, обновления или удаления данных используйте `useMutation`. Это также должно быть обернуто в кастомный хук.
-
-**Ключевая особенность:** После успешной мутации не забудьте инвалидировать соответствующие квери, чтобы данные на странице обновились.
-
-```typescript
-// src/lib/supabase/hooks/useUpdateStudent.ts
-import { useMutation, useQueryClient } from '@tanstack/react-query';
-import { supabase } from '@/lib/supabase/client';
-
-const updateStudentName = async ({ id, name }) => {
-  // ... логика обновления ...
-};
-
-export const useUpdateStudent = () => {
+// 2. Создаем кастомный хук, оборачивающий useMutation
+export const useRedeemToken = () => {
   const queryClient = useQueryClient();
+  const navigate = useNavigate();
 
   return useMutation({
-    mutationFn: updateStudentName,
-    onSuccess: (data) => {
-      // Инвалидация кэша студентов после успешного обновления
-      queryClient.invalidateQueries({ queryKey: ['students'] });
-      // Можно инвалидировать и конкретного студента
-      queryClient.invalidateQueries({ queryKey: ['student', data.id] });
+    mutationFn: redeemTokenFn,
+    // 3. Обрабатываем успешный результат
+    onSuccess: (data, variables) => {
+      console.log('✅ Token redeemed successfully!', data);
+      
+      // 4. ✅ Ключевой шаг: инвалидация кэша для обновления UI
+      // Мы инвалидируем все запросы, которые зависят от измененных данных.
+      queryClient.invalidateQueries({ queryKey: ['active-tariff', variables.userId] });
+      queryClient.invalidateQueries({ queryKey: ['user'] }); // Также обновляем данные пользователя
+    },
+    // 5. Обрабатываем ошибки
+    onError: (error) => {
+      console.error('❌ Error redeeming token:', error.message);
+      // Перенаправляем пользователя на страницу с ошибкой
+      navigate('/token-error', { state: { error: error.message } });
     },
   });
 };
 ```
 
+## Создание нового хука с `useQuery`

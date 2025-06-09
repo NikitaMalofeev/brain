@@ -1,12 +1,23 @@
 // Экспорт всех хуков из директории hooks
-export { useSupabaseUser } from './useSupabaseUser';
-export { default as useLibraryStages } from './useLibraryStages';
-export { default as useStageDetails } from './useStageDetails';
-export { useCoursesAdmin } from './useCoursesAdmin';
-export { useStagesAdmin } from './useStagesAdmin';
-export { useLessonsAdmin } from './useLessonsAdmin';
-export { useBlocksAdmin } from './useBlocksAdmin';
-export { useAccessCheck } from './useAccessCheck';
+export * from './useAccessCheck';
+export * from './useActiveTariff';
+export * from './useBlocksAdmin';
+export * from './useCoursesAdmin';
+export * from './useCuratorActions';
+export * from './useCuratorDetails';
+export * from './useCuratorsAdmin';
+export * from './useLessonsAdmin';
+export * from './useLibraryStages';
+export * from './useRedeemToken';
+export * from './useStageDetails';
+export * from './useStagesAdmin';
+export * from './useStudentActions';
+export * from './useStudentDetails';
+export * from './useStudentsAdmin';
+export * from './useSupabaseUser';
+
+// Хуки для проверки тарифов и доступа
+export { useActiveTariff, useHasActiveTariff } from './useActiveTariff';
 
 // Новые хуки для управления учениками и кураторами
 export { useStudentsAdmin } from './useStudentsAdmin';

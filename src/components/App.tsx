@@ -1,31 +1,47 @@
-import { useMemo } from 'react';
-import { HashRouter, Navigate, Route, Routes, } from 'react-router-dom';
+import { useMemo, useEffect } from 'react';
+import { HashRouter, Navigate, Route, Routes } from 'react-router-dom';
 import { retrieveLaunchParams, useSignal, isMiniAppDark, initDataState } from '@telegram-apps/sdk-react';
 import { AppRoot } from '@telegram-apps/telegram-ui';
 
 import { routers } from '@/navigation/routes.tsx';
 import Onboarding from "@/pages/Onboarding.tsx";
 import { ScrollToTop } from "@/ScrollToTop.tsx";
-import { useSupabaseUser } from '@/lib/supabase/hooks';
+import { useSupabaseUser, useActiveTariff, useRedeemToken } from '@/lib/supabase/hooks';
+import TokenErrorPage from '@/pages/TokenErrorPage/TokenErrorPage';
 
-export function App() {
+function AppContent() {
     const lp = useMemo(() => retrieveLaunchParams(), []);
     const isDark = useSignal(isMiniAppDark);
     const initData = useSignal(initDataState);
 
-    // Получаем пользователя и статус онбординга из базы данных
-    const { supabaseUser, loading } = useSupabaseUser(initData);
+    const { supabaseUser, loading: userLoading } = useSupabaseUser(initData);
+    const { data: activeTariff, isLoading: tariffLoading } = useActiveTariff(supabaseUser?.id);
+    const { mutate: redeemToken, isPending: isRedeeming, isIdle } = useRedeemToken();
 
-    // Определяем нужно ли показывать онбординг
-    const shouldShowOnboarding = supabaseUser && !supabaseUser.onboarding_completed;
+    // Извлекаем start parameter согласно документации Telegram Mini Apps
+    // https://docs.telegram-mini-apps.com/platform/start-parameter
+    const accessToken = lp.tgWebAppStartParam || initData?.start_param;
 
-    const handleCloseOnboarding = () => {
-        // Онбординг закрывается автоматически после отметки в базе
-        // Эта функция нужна для совместимости с компонентом Onboarding
-    };
+    // Debug Logs
+    console.log('%c--- Render AppContent ---', 'color: yellow; font-weight: bold;');
+    console.log(`User Loading: ${userLoading}, Tariff Loading: ${tariffLoading}, Token Redeeming: ${isRedeeming}`);
+    console.log('Supabase User:', supabaseUser ? `ID: ${supabaseUser.id}` : 'null');
+    console.log('Active Tariff:', activeTariff ? `Code: ${activeTariff.tariff_code}` : 'null');
+    console.log(`Access Token: ${accessToken || 'null'}`);
 
-    // Показываем загрузку пока проверяем пользователя
-    if (loading) {
+    useEffect(() => {
+        // Условие для активации токена
+        const canRedeem = accessToken && supabaseUser && !userLoading && isIdle && !isRedeeming;
+
+        if (canRedeem) {
+            console.log('🚀 Triggering token redemption...');
+            redeemToken({ accessToken, userId: supabaseUser.id });
+        }
+    }, [accessToken, supabaseUser, userLoading, isIdle, isRedeeming, redeemToken]);
+
+    // Показываем загрузку пока не завершатся все критичные процессы
+    const isAppLoading = userLoading || tariffLoading || (accessToken && isRedeeming);
+    if (isAppLoading) {
         return (
             <AppRoot
                 appearance={isDark ? 'dark' : 'light'}
@@ -44,18 +60,51 @@ export function App() {
         );
     }
 
+    // Если нет активного тарифа И нет токена для активации - блокируем доступ
+    if (supabaseUser && !activeTariff && !accessToken) {
+        return (
+            <AppRoot
+                appearance={isDark ? 'dark' : 'light'}
+                platform={['macos', 'ios'].includes(lp.tgWebAppPlatform) ? 'ios' : 'base'}
+            >
+                <TokenErrorPage />
+            </AppRoot>
+        );
+    }
+
+    // Если есть доступ, но не завершен онбординг
+    const shouldShowOnboarding = supabaseUser && !supabaseUser.onboarding_completed;
+
     return (
         <AppRoot
             appearance={isDark ? 'dark' : 'light'}
             platform={['macos', 'ios'].includes(lp.tgWebAppPlatform) ? 'ios' : 'base'}
         >
-            {shouldShowOnboarding ? (<Onboarding onClose={handleCloseOnboarding} />) : <HashRouter>
-                <ScrollToTop />
-                <Routes>
-                    {routers.map((router) => <Route key={router.path} {...router} />)}
-                    <Route path="*" element={<Navigate to="/" />} />
-                </Routes>
-            </HashRouter>}
+            {shouldShowOnboarding ? (<Onboarding onClose={() => { }} />) : (
+                <>
+                    <ScrollToTop />
+                    <Routes>
+                        {routers.map((router) => <Route key={router.path} {...router} />)}
+                        <Route path="*" element={<Navigate to="/" />} />
+                    </Routes>
+                </>
+            )}
+        </AppRoot>
+    );
+}
+
+export function App() {
+    const lp = useMemo(() => retrieveLaunchParams(), []);
+    const isDark = useSignal(isMiniAppDark);
+
+    return (
+        <AppRoot
+            appearance={isDark ? 'dark' : 'light'}
+            platform={['macos', 'ios'].includes(lp.tgWebAppPlatform) ? 'ios' : 'base'}
+        >
+            <HashRouter>
+                <AppContent />
+            </HashRouter>
         </AppRoot>
     );
 }

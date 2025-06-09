@@ -31,6 +31,7 @@ import ChatsManager from './components/ChatsManager/ChatsManager';
 import FaqManager from './components/FaqManager/FaqManager';
 import BroadcastsManager from './components/BroadcastsManager/BroadcastsManager';
 import TariffsManager from './components/TariffsManager/TariffsManager';
+import TokensManager from './components/TokensManager/TokensManager';
 
 type SupabaseUser = Database['public']['Tables']['users']['Row'];
 
@@ -1713,8 +1714,7 @@ const Breadcrumb: React.FC<BreadcrumbProps> = ({ navigation, onNavigate }) => {
   );
 };
 
-// Основные вкладки админки (без "Ступени")
-type AdminTab = 'students' | 'curators' | 'courses' | 'submissions' | 'materials' | 'tariffs' | 'chats' | 'faq' | 'broadcasts';
+type AdminTab = 'students' | 'curators' | 'courses' | 'submissions' | 'materials' | 'tariffs' | 'chats' | 'faq' | 'broadcasts' | 'tokens';
 
 const AdminPage: React.FC = () => {
   const navigate = useNavigate();
@@ -2045,47 +2045,45 @@ const AdminPage: React.FC = () => {
         </div>
 
         <div className="admin-tabs">
-          {adminUser?.role === 'curator' ? (
+          {/* Курсы - доступно только админам */}
+          {adminUser?.role === 'admin' && (
+            <button
+              className={`admin-tab ${currentTab === 'courses' ? 'active' : ''}`}
+              onClick={() => handleTabChange('courses')}
+            >
+              Курсы
+            </button>
+          )}
+
+          {/* Ученики - доступно всем */}
+          <button
+            className={`admin-tab ${currentTab === 'students' ? 'active' : ''}`}
+            onClick={() => handleTabChange('students')}
+          >
+            Ученики
+          </button>
+
+          {/* Кураторы - доступно только админам */}
+          {adminUser?.role === 'admin' && (
+            <button
+              className={`admin-tab ${currentTab === 'curators' ? 'active' : ''}`}
+              onClick={() => handleTabChange('curators')}
+            >
+              Кураторы
+            </button>
+          )}
+
+          {/* Проверка ДЗ - доступно всем */}
+          <button
+            className={`admin-tab ${currentTab === 'submissions' ? 'active' : ''}`}
+            onClick={() => handleTabChange('submissions')}
+          >
+            Проверка ДЗ
+          </button>
+
+          {/* Вкладки только для админов */}
+          {adminUser?.role === 'admin' && (
             <>
-              <button
-                className={`admin-tab ${currentTab === 'submissions' ? 'active' : ''}`}
-                onClick={() => handleTabChange('submissions')}
-              >
-                Проверка ДЗ
-              </button>
-              <button
-                className={`admin-tab ${currentTab === 'students' ? 'active' : ''}`}
-                onClick={() => handleTabChange('students')}
-              >
-                Ученики
-              </button>
-            </>
-          ) : (
-            <>
-              <button
-                className={`admin-tab ${currentTab === 'courses' ? 'active' : ''}`}
-                onClick={() => handleTabChange('courses')}
-              >
-                Курсы
-              </button>
-              <button
-                className={`admin-tab ${currentTab === 'students' ? 'active' : ''}`}
-                onClick={() => handleTabChange('students')}
-              >
-                Ученики
-              </button>
-              <button
-                className={`admin-tab ${currentTab === 'curators' ? 'active' : ''}`}
-                onClick={() => handleTabChange('curators')}
-              >
-                Кураторы
-              </button>
-              <button
-                className={`admin-tab ${currentTab === 'submissions' ? 'active' : ''}`}
-                onClick={() => handleTabChange('submissions')}
-              >
-                Проверка ДЗ
-              </button>
               <button
                 className={`admin-tab ${currentTab === 'materials' ? 'active' : ''}`}
                 onClick={() => handleTabChange('materials')}
@@ -2116,18 +2114,17 @@ const AdminPage: React.FC = () => {
               >
                 Эфиры
               </button>
+              <button
+                className={`admin-tab ${currentTab === 'tokens' ? 'active' : ''}`}
+                onClick={() => handleTabChange('tokens')}
+              >
+                Токены
+              </button>
             </>
           )}
         </div>
 
-        {currentTab === 'courses' && navigation.view !== 'courses' && (
-          <Breadcrumb
-            navigation={navigation}
-            onNavigate={setNavigation}
-          />
-        )}
-
-        <div className="admin-content">
+        <div className="admin-main-content">
           {currentTab === 'tariffs' && <TariffsManager />}
           {currentTab === 'students' && <StudentsManager currentUser={adminUser} />}
           {currentTab === 'curators' && <CuratorsManager />}
@@ -2187,6 +2184,7 @@ const AdminPage: React.FC = () => {
           {currentTab === 'chats' && <ChatsManager />}
           {currentTab === 'faq' && <FaqManager />}
           {currentTab === 'broadcasts' && <BroadcastsManager />}
+          {currentTab === 'tokens' && <TokensManager />}
         </div>
       </div>
     </PlayerProvider>
