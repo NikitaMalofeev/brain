@@ -206,13 +206,13 @@ export const UserPage = () => {
                     {/* Tariff Block */}
                     <div className="px-4 mb-6">
                         <div className="bg-white rounded-2xl p-4 flex flex-col gap-2">
-                            <div className="flex justify-between items-start">
+                            <div className="flex justify-between items-center">
                                 <div>
                                     <div className="flex items-center gap-1.5">
                                         <p className="text-sm font-medium text-[#9F9F9F]">Тариф</p>
                                         <img src="/ask-icon.svg" alt="info" className="w-4 h-4" />
                                     </div>
-                                    <p className="text-lg font-bold text-black">
+                                    <p className="text-sm font-bold text-black">
                                         {userTariff ? userTariff.name : 'Базовый'}
                                     </p>
                                 </div>
