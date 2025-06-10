@@ -1,6 +1,6 @@
 ---
-description: Используй react query, когда надо работать с запросами к Supabase
-globs: 
+description: 
+globs: *.tsx
 alwaysApply: false
 ---
 # Правила работы с React Query (TanStack Query)
