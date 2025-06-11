@@ -10,6 +10,7 @@ import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/lib/supabase/client';
 import { COURSE_CONFIG } from '@/lib/config/constants';
 import { StageProgressData } from '@/components/UserProgress/UserProgress';
+import { Ripple } from '@/components/ui/Ripple/Ripple';
 
 const links = [{
     link: '/chats',
@@ -163,7 +164,7 @@ export const UserPage = () => {
                             </svg>}
                         <p className={'text-xl font-semibold'}>Привет, {user?.username}</p>
                     </div>
-                    <div className={'pt-[108px] grid grid-cols-2 gap-3 mb-[25px] px-4'}>
+                    <div className={'pt-[130px] grid grid-cols-2 gap-3 mb-[25px] px-4'}>
                         <div className={'row-span-2 flex flex-col items-center justify-center gap-3 p-[22px] rounded-2xl bg-white'}>
                             <div className={'flex items-center flex-col'}>
                                 <p className={'text-sm font-medium text-[#9F9F9F]'}>Ваш уровень</p>
@@ -196,10 +197,12 @@ export const UserPage = () => {
                                     <p className={'text-sm font-bold'}>{supabaseUser?.total_points} эдельштейнов</p>
                                 </div>
                             </div>
-                            <Link to={'/points'}
-                                className={"text-sm font-bold w-max leading-5 text-white py-2 px-4 rounded-3xl text-center bg-[linear-gradient(135deg,rgba(141,197,241,0.4)_-48.61%,#63ABE6_105.56%),linear-gradient(91.99deg,#F3F3F3_0%,#EAEAEA_100%)]"}>
-                                Подробнее
-                            </Link>
+                            <Ripple className="rounded-3xl overflow-hidden inline-block">
+                                <Link to={'/points'}
+                                    className={"text-sm font-bold w-max leading-5 text-white py-2 px-4 rounded-3xl text-center bg-[linear-gradient(135deg,rgba(141,197,241,0.4)_-48.61%,#63ABE6_105.56%),linear-gradient(91.99deg,#F3F3F3_0%,#EAEAEA_100%)] block"}>
+                                    Подробнее
+                                </Link>
+                            </Ripple>
                         </div>
                     </div>
 
@@ -210,15 +213,19 @@ export const UserPage = () => {
                                 <div>
                                     <div className="flex items-center gap-1.5">
                                         <p className="text-sm font-medium text-[#9F9F9F]">Тариф</p>
-                                        <img src="/ask-icon.svg" alt="info" className="w-4 h-4" />
+                                        <Ripple className="rounded-full overflow-hidden inline-block">
+                                            <img src="/ask-icon.svg" alt="info" className="w-4 h-4" />
+                                        </Ripple>
                                     </div>
                                     <p className="text-sm font-bold text-black">
                                         {userTariff ? userTariff.name : 'Базовый'}
                                     </p>
                                 </div>
-                                <button className="text-sm font-bold w-max leading-5 text-white py-2 px-4 rounded-3xl text-center bg-[linear-gradient(135deg,rgba(141,197,241,0.4)_-48.61%,#63ABE6_105.56%),linear-gradient(91.99deg,#F3F3F3_0%,#EAEAEA_100%)]">
-                                    Повысить тариф
-                                </button>
+                                <Ripple className="rounded-3xl overflow-hidden inline-block">
+                                    <button className="text-sm font-bold w-max leading-5 text-white py-2 px-4 rounded-3xl text-center bg-[linear-gradient(135deg,rgba(141,197,241,0.4)_-48.61%,#63ABE6_105.56%),linear-gradient(91.99deg,#F3F3F3_0%,#EAEAEA_100%)]">
+                                        Повысить тариф
+                                    </button>
+                                </Ripple>
                             </div>
                             <p className="text-sm text-[#9F9F9F] leading-tight">
                                 {userTariff?.description || 'Базовый тарифный план с ограниченным доступом к материалам.'}
@@ -229,13 +236,15 @@ export const UserPage = () => {
                     <div className={'bg-white rounded-t-3xl pt-5'}>
                         <div className={'px-4 flex flex-col gap-3'}>
                             {links.map(el => (
-                                <Link
-                                    className={'relative overflow-hidden bg-[linear-gradient(271.99deg,_#F1F8FE_0%,_#F1EFFF_100%)] py-4 px-6 rounded-2xl flex flex-col gap-2 items-start justify-between'}
-                                    to={el.link}>
-                                    <p className={'font-semibold'}>{el.title}</p>
-                                    <img src={'/arrow-icon.svg'} alt="" className={'w-[36px] h-[36px]'} />
-                                    <img src={el.image} className={'absolute scale-70 top-1/2 -right-[70px] -translate-y-1/2'} />
-                                </Link>
+                                <Ripple key={el.link} className="rounded-2xl overflow-hidden">
+                                    <Link
+                                        className={'relative bg-[linear-gradient(271.99deg,_#F1F8FE_0%,_#F1EFFF_100%)] py-4 px-6 rounded-2xl flex flex-col gap-2 items-start justify-between block'}
+                                        to={el.link}>
+                                        <p className={'font-semibold'}>{el.title}</p>
+                                        <img src={'/arrow-icon.svg'} alt="" className={'w-[36px] h-[36px]'} />
+                                        <img src={el.image} className={'absolute scale-70 top-1/2 -right-[70px] -translate-y-1/2'} />
+                                    </Link>
+                                </Ripple>
                             ))}
                         </div>
                     </div>

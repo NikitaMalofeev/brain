@@ -1,17 +1,18 @@
 import { useEffect, useRef, useState } from 'react';
 import WaveSurfer from 'wavesurfer.js';
+import { Ripple } from '@/components/ui/Ripple/Ripple';
 
 // SVG иконки для Play и Pause
 const PlayIcon = () => (
     <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
         <path
             d="M6 17.3336V6.66698C6 5.78742 6 5.34715 6.18509 5.08691C6.34664 4.85977 6.59564 4.71064 6.87207 4.67499C7.18868 4.63415 7.57701 4.84126 8.35254 5.25487L18.3525 10.5882L18.3562 10.5898C19.2132 11.0469 19.642 11.2756 19.7826 11.5803C19.9053 11.8462 19.9053 12.1531 19.7826 12.4189C19.6418 12.7241 19.212 12.9537 18.3525 13.4121L8.35254 18.7454C7.57645 19.1593 7.1888 19.3657 6.87207 19.3248C6.59564 19.2891 6.34664 19.1401 6.18509 18.9129C6 18.6527 6 18.2132 6 17.3336Z"
-            fill="url(#paint0_linear_1056_751)"/>
+            fill="url(#paint0_linear_1056_751)" />
         <defs>
             <linearGradient id="paint0_linear_1056_751" x1="11.0982" y1="10.3593" x2="12.1454" y2="-3.89361"
-                            gradientUnits="userSpaceOnUse">
-                <stop stop-color="white"/>
-                <stop offset="1" stop-color="white" stop-opacity="0.45"/>
+                gradientUnits="userSpaceOnUse">
+                <stop stop-color="white" />
+                <stop offset="1" stop-color="white" stop-opacity="0.45" />
             </linearGradient>
         </defs>
     </svg>
@@ -19,11 +20,11 @@ const PlayIcon = () => (
 
 const PauseIcon = () => (
     <svg height="24" viewBox="0 0 24 24" width="24" xmlns="http://www.w3.org/2000/svg">
-        <path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z" fill="white"/>
+        <path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z" fill="white" />
     </svg>
 );
 
-const NewPlayer = ({audioUrl}: {audioUrl: string}) => {
+const NewPlayer = ({ audioUrl }: { audioUrl: string }) => {
     const waveformRef = useRef<HTMLDivElement | null>(null);
     const wavesurferRef = useRef<WaveSurfer | null>(null);
     const [isPlaying, setIsPlaying] = useState(false);
@@ -39,7 +40,7 @@ const NewPlayer = ({audioUrl}: {audioUrl: string}) => {
 
     useEffect(() => {
         // Инициализация WaveSurfer
-        if(waveformRef.current){
+        if (waveformRef.current) {
             wavesurferRef.current = WaveSurfer.create({
                 container: waveformRef.current,
                 waveColor: '#B8B8B8',      // Цвет волны
@@ -76,10 +77,12 @@ const NewPlayer = ({audioUrl}: {audioUrl: string}) => {
 
     return (
         <div className={'border border-[#595959]/14 p-4 rounded-full flex items-center gap-3'}>
-            <button onClick={handlePlayPause} className="outline-none cursor-pointer p-2 rounded-full bg-[linear-gradient(109.65deg,_#E1C1F4_13.64%,_#B862EA_124.92%)]">
-                {isPlaying ? <PauseIcon /> : <PlayIcon />}
-            </button>
-            <div ref={waveformRef} className={'h-8 flex-1'}/>
+            <Ripple className="rounded-full overflow-hidden inline-block">
+                <button onClick={handlePlayPause} className="outline-none cursor-pointer p-2 rounded-full bg-[linear-gradient(109.65deg,_#E1C1F4_13.64%,_#B862EA_124.92%)]">
+                    {isPlaying ? <PauseIcon /> : <PlayIcon />}
+                </button>
+            </Ripple>
+            <div ref={waveformRef} className={'h-8 flex-1'} />
             <span className={'text-xs text-[#9F9F9F]'}>{duration}</span>
         </div>
     );
