@@ -6,6 +6,7 @@ import { getKinescopeId } from "@/components/LessonContent/VideoBlock.tsx";
 import VideoPlayer from "@/components/Player/VideoPlayer.tsx";
 import { useSupabaseUser } from '@/lib/supabase/hooks';
 import { useSignal, initDataState } from '@telegram-apps/sdk-react';
+import { Ripple } from '@/components/ui/Ripple/Ripple';
 
 const slides = [
     { title: 'Добро пожаловать', description: 'Это вводное видео поможет тебе быстро разобраться в устройстве курса и возможностях приложения. Посмотри его до конца, чтобы начать обучение на полной скорости.', img: '' },
@@ -81,12 +82,14 @@ export const Onboarding = ({ onClose }: { onClose: () => void }) => {
 
             {/* Кнопка Далее */}
             <div className="p-4">
-                <button
-                    onClick={handleNext}
-                    className="font-bold w-full leading-5 text-white py-4 rounded-3xl text-center bg-[linear-gradient(135deg,rgba(141,197,241,0.4)_-48.61%,#63ABE6_105.56%),linear-gradient(91.99deg,#F3F3F3_0%,#EAEAEA_100%)]"
-                >
-                    {activeIndex === 3 ? "Все понятно" : "Далее"}
-                </button>
+                <Ripple className="rounded-3xl overflow-hidden">
+                    <button
+                        onClick={handleNext}
+                        className="font-bold w-full leading-5 text-white py-4 rounded-3xl text-center bg-[linear-gradient(135deg,rgba(141,197,241,0.4)_-48.61%,#63ABE6_105.56%),linear-gradient(91.99deg,#F3F3F3_0%,#EAEAEA_100%)]"
+                    >
+                        {activeIndex === 3 ? "Все понятно" : "Далее"}
+                    </button>
+                </Ripple>
             </div>
         </div>
     );
