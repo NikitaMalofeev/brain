@@ -3,7 +3,7 @@ import '@telegram-apps/telegram-ui/dist/styles.css';
 
 import ReactDOM from 'react-dom/client';
 import { StrictMode } from 'react';
-import { initStagewise } from './dev/StagewiseToolbar.tsx';
+//import { initStagewise } from './dev/StagewiseToolbar.tsx';
 
 import './index.css';
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
