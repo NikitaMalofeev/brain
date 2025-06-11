@@ -1,5 +1,6 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
+import { Ripple } from '@/components/ui/Ripple/Ripple';
 
 // The RPC function 'get_library_stages' returns this type.
 // We define it here to make this component self-contained with its data requirements.
@@ -61,9 +62,11 @@ export const UserProgress: React.FC<UserProgressProps> = ({ stages, className })
                     <p className={'font-bold text-black'}>Выполнено {totalCompletedLessons} заданий</p>
                     <p className={'text-sm text-[#8C8C8C]'}>{progressText}</p>
                 </div>
-                <Link to={`/library/stage/${currentStage.stage_id}`}>
-                    <img src={'/arrow-icon.svg'} alt={'Перейти к текущей ступени'} className={'w-[36px] h-[36px]'} />
-                </Link>
+                <Ripple className="rounded-full overflow-hidden">
+                    <Link to={`/library/stage/${currentStage.stage_id}`}>
+                        <img src={'/arrow-icon.svg'} alt={'Перейти к текущей ступени'} className={'w-[36px] h-[36px]'} />
+                    </Link>
+                </Ripple>
             </div>
             <div className="w-full bg-gray-200 rounded-full h-3">
                 <div

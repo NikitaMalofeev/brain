@@ -1,6 +1,7 @@
 import { FC } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import './TabBar.css';
+import { Ripple } from '../ui/Ripple/Ripple';
 
 interface TabBarProps {
     className?: string;
@@ -38,16 +39,17 @@ const TabBar: FC<TabBarProps> = ({ className }) => {
     ]
     return (
         <nav className={`tab-bar ${className || ''}`} aria-label="Основная навигация">
-            {buttons.map((button,) => {
+            {buttons.map((button) => {
                 const isActiveBtn = isActive(button.slug)
                 return (
-                    <button
-                        key={button.id}
-                        className={`bg-white p-[6px] mx-auto duration-200 ease-in transition rounded-full ${isActiveBtn && 'bg-[linear-gradient(109.65deg,#E1C1F4_13.64%,#B862EA_124.92%)]'}`}
-                        onClick={() => handleTabClick(button.slug)}
-                    >
-                        <img className={'w-6 h-6'} src={`/${button.icon}${isActiveBtn ? '-active' : ''}.svg`} alt="" />
-                    </button>
+                    <Ripple key={button.id} className="rounded-full overflow-hidden flex-1 flex justify-center">
+                        <button
+                            className={`bg-white p-[6px] duration-200 ease-in transition rounded-full ${isActiveBtn && 'bg-[linear-gradient(109.65deg,#E1C1F4_13.64%,#B862EA_124.92%)]'}`}
+                            onClick={() => handleTabClick(button.slug)}
+                        >
+                            <img className={'w-6 h-6'} src={`/${button.icon}${isActiveBtn ? '-active' : ''}.svg`} alt="" />
+                        </button>
+                    </Ripple>
                 )
             })}
         </nav>
