@@ -1,0 +1,75 @@
+---
+description: 
+globs: src/**/*.tsx,src/**/*.css
+alwaysApply: false
+---
+#### Основной принцип
+
+> **Один глобальный CSS, остальное — Tailwind.**
+
+---
+
+##### 1. Файловая структура
+
+- **Единственный** глобальный файл — `src/index.css`.  
+  Его импортируем в entry-point (`main.tsx`/`index.tsx`).
+
+##### 2. Что в `src/index.css`
+
+- **Tailwind CSS v4 директива**  
+  ```css
+  @import "tailwindcss";
+  ```
+  ⚠️ **Важно**: Мы используем Tailwind CSS v4 с Vite-плагином, поэтому синтаксис `@tailwind base/components/utilities` НЕ работает!
+
+- Единственный кастом-блок Ripple (`.ripple-surface`, `.ripple-effect`, `@keyframes ripple`).
+- Все root-CSS variables приложения (`:root { --safe-area-top: ...; }`).
+- Базовые стили для `html`, `body`, `#root` с правильными фонами и шрифтами.
+- Никаких других утилит или компонентов.
+
+##### 3. Техническая конфигурация
+
+- **Tailwind CSS v4** с `@tailwindcss/vite` плагином в `vite.config.ts`
+- **Конфигурация**: `tailwind.config.js` для кастомизации темы
+- **PostCSS**: Минимальный (`autoprefixer` только)
+
+##### 4. Чего **нельзя**
+
+- `@tailwind base; @tailwind components; @tailwind utilities;` — **НЕ работает в v4!**
+- `@layer …` и `@apply` для собственных утилит.
+- `@import` путём вроде `"src/…"`; только стандартные imports внутри [index.css](mdc:src/index.css)
+- Создавать второй `index.css` либо глобальные CSS-файлы в подпапках.
+- Скруглять контент внутри Ripple-контейнера (`rounded-*` и `overflow-hidden` — только на `<Ripple>`).
+
+##### 5. Как расширять дизайн-систему
+
+- Добавляем новые цвета, радиусы, шрифт-family → [tailwind.config.js](mdc:tailwind.config.js) > `theme.extend`.
+- Затем используем стандартные utility-классы (`bg-brand`, `rounded-5xl`, и т.д.) в JSX.
+- Если utility-класс нестандартный, **обязательно** прописать в `safelist`.
+
+##### 6. Ripple-паттерн (коротко)
+
+```tsx
+<Ripple className="rounded-4xl overflow-hidden">
+  <Link className="block w-full h-full relative">
+    <img className="w-full h-full object-cover" … />
+  </Link>
+</Ripple>
+```
+
+##### 7. Inline-style
+
+Используем только для динамических значений, которые Tailwind не покрывает
+(`style={{ height: dynamicHeight }}` и т.п.). В остальных случаях — utility-классы.
+
+---
+
+**Ссылки:**
+- [index.css](mdc:src/index.css)
+- [Ripple.tsx](mdc:src/components/ui/Ripple/Ripple.tsx)
+- [vite.config.ts](mdc:vite.config.ts) — конфигурация Tailwind CSS v4
+
+
+
+
+

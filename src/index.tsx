@@ -5,7 +5,7 @@ import ReactDOM from 'react-dom/client';
 import { StrictMode } from 'react';
 import { initStagewise } from './dev/StagewiseToolbar.tsx';
 
-import './css/index.css';
+import './index.css';
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 
 // Инициализация Stagewise Toolbar только в DEV режиме

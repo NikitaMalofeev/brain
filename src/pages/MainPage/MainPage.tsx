@@ -8,6 +8,7 @@ import { buildImageUrl } from "@/lib/cloudflareR2Service.ts";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/lib/supabase/client.ts";
 import { StageProgressData, UserProgress } from "@/components/UserProgress/UserProgress.tsx";
+import { Ripple } from "@/components/ui/Ripple/Ripple.tsx";
 
 const COURSE_ID = COURSE_CONFIG.DEFAULT_COURSE_ID;
 
@@ -62,29 +63,40 @@ export const MainPage = () => {
                 <div className={'flex items-center justify-between w-full'}>
                     <img src={supabaseUser?.photo_url || ''} className={'w-8 h-8 rounded-full border border-white'}
                         alt={''} />
-                    <Link to={'/points'} className={'flex items-center gap-1 py-[6px] px-2 bg-white rounded-full'}>
-                        <p className={'text-black font-semibold leading-4'}>{supabaseUser?.total_points}</p>
-                        <img src={'/eid.svg'} className={'w-5 h-5'} />
-                    </Link>
+                    <Ripple className="rounded-full overflow-hidden">
+                        <Link to={'/points'} className={'block flex items-center gap-1 py-[6px] px-2 bg-white'}>
+                            <p className={'text-black font-semibold leading-4'}>{supabaseUser?.total_points}</p>
+                            <img src={'/eid.svg'} className={'w-5 h-5'} />
+                        </Link>
+                    </Ripple>
                 </div>
                 {stages?.map((stage, i) => (
-                    <Link key={stage.stage_id} to={`/library/stage/${stage.stage_id}`}
-                        className={clsx('relative bg-white/70 rounded-4xl overflow-hidden', stage.is_unlocked ? "cursor-pointer" : "pointer-events-none")}>
-                        <img src={stage.cover_image_path ? buildImageUrl(stage.cover_image_path) : `/step${i + 1}${i + 1}.png`}
-                            className={`h-[140px] md:h-[200px] w-full object-cover`}
-                            onError={(e) => {
-                                // Fallback при ошибке загрузки: переключаемся на статичное изображение
-                                console.log(`🔄 MainPage: Fallback для ступени ${stage.stage_id}, используем статическое изображение`);
-                                e.currentTarget.src = `/step${i + 1}${i + 1}.png`;
-                            }} />
-                        <div className={'absolute top-5 left-5 z-[2] flex flex-col gap-1'}>
-                            <p className={'font-bold uppercase text-black'}>{stage.stage_name}</p>
-                            <div className={'text-xs text-white w-max font-medium bg-[linear-gradient(135deg,_rgba(141,197,241)_-48.61%,_#63ABE6_105.56%)] px-2 py-1 rounded-full flex items-center gap-1'}>
-                                LEVEL 0{i + 1}
-                                {!stage.is_unlocked && <img src={'/lock.svg'} alt={''} />}
+                    <Ripple key={stage.stage_id} className="rounded-4xl overflow-hidden">
+                        <Link
+                            to={`/library/stage/${stage.stage_id}`}
+                            className={clsx(
+                                'block w-full h-full relative bg-white/70',
+                                stage.is_unlocked ? "cursor-pointer" : "pointer-events-none"
+                            )}
+                        >
+                            <img
+                                src={stage.cover_image_path ? buildImageUrl(stage.cover_image_path) : `/step${i + 1}${i + 1}.png`}
+                                className="w-full h-[140px] md:h-[200px] object-cover" // без своих скруглений!
+                                onError={(e) => {
+                                    e.currentTarget.src = `/step${i + 1}${i + 1}.png`;
+                                }}
+                                alt=""
+                            />
+                            <div className='absolute top-5 left-5 z-[2] flex flex-col gap-1'>
+                                <p className='font-bold uppercase text-black'>{stage.stage_name}</p>
+                                <div className='text-xs text-white w-max font-medium bg-[linear-gradient(135deg,_rgba(141,197,241)_-48.61%,_#63ABE6_105.56%)] px-2 py-1 rounded-full flex items-center gap-1'>
+                                    LEVEL 0{i + 1}
+                                    {!stage.is_unlocked && <img src={'/lock.svg'} alt={''} />}
+                                </div>
                             </div>
-                        </div>
-                    </Link>
+                        </Link>
+                    </Ripple>
+
                 ))}
 
             </div>
