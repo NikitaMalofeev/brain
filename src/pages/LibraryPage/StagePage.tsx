@@ -9,6 +9,7 @@ import { useSupabaseUser } from '@/lib/supabase/hooks/useSupabaseUser';
 import { useAppContext } from '@/contexts/AppContext';
 import { logger } from '@/lib/logger';
 import NativeModal from "@/components/NativeModal.tsx";
+import { Ripple } from '@/components/ui/Ripple/Ripple';
 
 const StagePage: React.FC = () => {
 
@@ -127,7 +128,9 @@ const StagePage: React.FC = () => {
                             <p className={'font-bold text-xl'}>{stageDetails.stage_name}</p>
                             <p className={'text-sm text-[#8C8C8C]'}>{progressText}</p>
                         </div>
-                        <img onClick={() => setIsOpen(true)} src={'/ask-icon.svg'} alt={''} />
+                        <Ripple className="rounded-full overflow-hidden">
+                            <img onClick={() => setIsOpen(true)} src={'/ask-icon.svg'} alt={''} className="cursor-pointer" />
+                        </Ripple>
                     </div>
                     <div className="w-full bg-gray-200 rounded-full h-3">
                         <div

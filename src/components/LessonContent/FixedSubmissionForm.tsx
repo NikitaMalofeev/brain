@@ -7,6 +7,7 @@ import { Button } from '@/components/ui/button';
 // import { Textarea } from '@/components/ui/textarea'; // Заменено на обычный textarea
 // import { cn } from '@/lib/utils'; // Больше не нужен
 import { useNavigate } from 'react-router-dom';
+import { Ripple } from '../ui/Ripple/Ripple';
 
 interface FixedSubmissionFormProps {
     lessonId: number;
@@ -281,50 +282,54 @@ const FixedSubmissionForm: React.FC<FixedSubmissionFormProps> = ({
                     />
 
                     {/* Кнопка прикрепления файла */}
-                    <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => fileInputRef.current?.click()}
-                        disabled={isUploading}
-                        className="h-4 w-4 p-0 text-gray-500 hover:text-black"
-                    >
-                        {isUploading ? (
-                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" className="animate-spin">
-                                <circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeDasharray="15.708" />
-                            </svg>
-                        ) : (
-                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                                <path d="m21.44 11.05-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66L9.64 16.2a2 2 0 0 1-2.83-2.83l8.49-8.49" />
-                            </svg>
-                        )}
-                    </Button>
+                    <Ripple className="rounded-full overflow-hidden flex items-center justify-center">
+                        <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => fileInputRef.current?.click()}
+                            disabled={isUploading}
+                            className="h-4 w-4 p-0 text-gray-500 hover:text-black"
+                        >
+                            {isUploading ? (
+                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" className="animate-spin">
+                                    <circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeDasharray="15.708" />
+                                </svg>
+                            ) : (
+                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                    <path d="m21.44 11.05-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66L9.64 16.2a2 2 0 0 1-2.83-2.83l8.49-8.49" />
+                                </svg>
+                            )}
+                        </Button>
+                    </Ripple>
                 </div>
 
                 {/* Кнопка отправки */}
-                <Button
-                    onClick={handleSubmit}
-                    disabled={!submissionText.trim() || isSubmitting || !user}
-                    className={`rounded-full flex items-center justify-center ${submissionText.trim() && !isSubmitting && user
-                        ? "bg-[linear-gradient(109.65deg,_#E1C1F4_13.64%,_#B862EA_124.92%)] hover:bg-gray-800 text-white"
-                        : "bg-gray-300 cursor-not-allowed hover:bg-gray-300 text-gray-500"
-                        }`}
-                    style={{ padding: '0px', width: '40px', height: '40px' }}
-                >
-                    <svg
-                        width="24"
-                        height="24"
-                        viewBox="0 0 24 24"
-                        fill="none"
-                        stroke="currentColor"
-                        strokeWidth="2"
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        className="text-current"
+                <Ripple className="rounded-full overflow-hidden flex items-center justify-center">
+                    <Button
+                        onClick={handleSubmit}
+                        disabled={!submissionText.trim() || isSubmitting || !user}
+                        className={`rounded-full flex items-center justify-center ${submissionText.trim() && !isSubmitting && user
+                            ? "bg-[linear-gradient(109.65deg,_#E1C1F4_13.64%,_#B862EA_124.92%)] hover:bg-gray-800 text-white"
+                            : "bg-gray-300 cursor-not-allowed hover:bg-gray-300 text-gray-500"
+                            }`}
+                        style={{ padding: '0px', width: '40px', height: '40px' }}
                     >
-                        <path d="m5 12 7-7 7 7" />
-                        <path d="m12 19 0-14" />
-                    </svg>
-                </Button>
+                        <svg
+                            width="24"
+                            height="24"
+                            viewBox="0 0 24 24"
+                            fill="none"
+                            stroke="currentColor"
+                            strokeWidth="2"
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            className="text-current"
+                        >
+                            <path d="m5 12 7-7 7 7" />
+                            <path d="m12 19 0-14" />
+                        </svg>
+                    </Button>
+                </Ripple>
             </div>
 
             {/* Скрытый input для файлов */}

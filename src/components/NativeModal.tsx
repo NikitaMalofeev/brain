@@ -1,6 +1,14 @@
-import {clsx} from "clsx";
+import { clsx } from "clsx";
+import { Ripple } from '@/components/ui/Ripple/Ripple';
 
-export default function NativeModal({isOpen, setIsOpen, title, description}) {
+interface NativeModalProps {
+    isOpen: boolean;
+    setIsOpen: (isOpen: boolean) => void;
+    title: string;
+    description: string;
+}
+
+export default function NativeModal({ isOpen, setIsOpen, title, description }: NativeModalProps) {
 
     const closeModal = () => {
         setIsOpen(false);
@@ -30,16 +38,19 @@ export default function NativeModal({isOpen, setIsOpen, title, description}) {
                     className={'p-[6px] rounded-full bg-[linear-gradient(109.65deg,_#E1C1F4_13.64%,_#B862EA_124.92%)] absolute top-1/2 left-1/2 -translate-y-1/2 -translate-x-1/2 z-[2]'}>
                     <img src={'/lock.svg'} alt={''} className={clsx('min-w-6 h-6')}/>
                 </div>*/}
-                    <button
-                        onClick={closeModal}
-                        className="
-            bg-[linear-gradient(109.65deg,_#E1C1F4_13.64%,_#B862EA_124.92%)]
-            rounded-full
-            p-[6px]
-          "
-                    >
-                        <img src={'/close.svg'} alt={''} className={clsx('min-w-6 h-6')}/>
-                    </button>
+                    <Ripple className="rounded-full overflow-hidden">
+                        <button
+                            onClick={closeModal}
+                            className="
+                bg-[linear-gradient(109.65deg,_#E1C1F4_13.64%,_#B862EA_124.92%)]
+                rounded-full
+                p-[6px]
+                cursor-pointer
+              "
+                        >
+                            <img src={'/close.svg'} alt={''} className={clsx('min-w-6 h-6')} />
+                        </button>
+                    </Ripple>
                 </div>
             </div>
         </div>
