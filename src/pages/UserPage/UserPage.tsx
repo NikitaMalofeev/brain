@@ -116,7 +116,7 @@ export const UserPage = () => {
 
     if (loading) {
         return (
-            <Page>
+            <Page back={false}>
                 <div className="profile-loading">
                     <div className="profile-loading-spinner" aria-hidden="true" />
                     <p>Загрузка профиля...</p>
@@ -128,7 +128,7 @@ export const UserPage = () => {
     // Если есть ошибка при получении данных
     if (error) {
         return (
-            <Page>
+            <Page back={false}>
                 <div className="profile-error">
                     <div className="profile-error-icon" aria-hidden="true">⚠️</div>
                     <h2>Ошибка</h2>
@@ -141,7 +141,7 @@ export const UserPage = () => {
     // Если нет данных пользователя
     if (!user) {
         return (
-            <Page>
+            <Page back={false}>
                 <div className="profile-error">
                     <div className="profile-error-icon" aria-hidden="true">⚠️</div>
                     <h2>Нет данных</h2>
@@ -151,7 +151,7 @@ export const UserPage = () => {
         );
     }
     return (
-        <Page>
+        <Page back={false}>
             <div className={'text-black min-h-screen bg-white pt-[180px]'}>
                 <img src={'/but.png'} alt={''} className={'absolute top-0 left-0 object-cover'} />
                 <div className={'rounded-t-3xl bg-[url("/bg3.jpg")] bg-cover bg-bottom relative'}>

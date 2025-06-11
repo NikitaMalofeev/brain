@@ -34,7 +34,7 @@ export const CommonPage = () => {
     })
     if (isLoading) {
         return (
-            <Page>
+            <Page back={false}>
                 <div className="profile-loading">
                     <div className="profile-loading-spinner" aria-hidden="true" />
                     <p>Загрузка материалов...</p>
@@ -43,7 +43,7 @@ export const CommonPage = () => {
         )
     }
     return (
-        <Page>
+        <Page back={false}>
             <div className={'flex flex-col min-h-[calc(100vh-60px)] text-black pt-12'}>
                 <div className={'p-4 flex flex-col gap-2'}>
                     <h2 className={'font-bold text-xl'}>Библиотека</h2>
