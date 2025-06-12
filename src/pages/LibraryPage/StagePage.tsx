@@ -10,6 +10,7 @@ import { useAppContext } from '@/contexts/AppContext';
 import { logger } from '@/lib/logger';
 import NativeModal from "@/components/NativeModal.tsx";
 import { Ripple } from '@/components/ui/Ripple/Ripple';
+import {clsx} from "clsx";
 
 const StagePage: React.FC = () => {
 
@@ -126,17 +127,18 @@ const StagePage: React.FC = () => {
                     <div className={'flex items-center justify-between'}>
                         <div className={'flex flex-col'}>
                             <p className={'font-bold text-xl'}>{stageDetails.stage_name}</p>
-                            <p className={'text-sm text-[#8C8C8C]'}>{progressText}</p>
+                            <p className={'text-sm text-[#8C8C8C]'}>Еще 24 дня до второй ступени</p>
                         </div>
                         <Ripple className="rounded-full overflow-hidden">
                             <img onClick={() => setIsOpen(true)} src={'/ask-icon.svg'} alt={''} className="cursor-pointer" />
                         </Ripple>
                     </div>
-                    <div className="w-full bg-gray-200 rounded-full h-3">
-                        <div
-                            className="h-3 rounded-full bg-gradient-to-r from-[#ACD3F3] to-[#91C3EC]"
-                            style={{ width: `${progressPercentage}%` }}
-                        ></div>
+                    <div className={'flex items-center gap-1 w-full'}>
+                        {Array.from({ length: totalLessons }).map((_, i) => (
+                            <div key={i} className={clsx("flex-1 h-4 bg-[#68B1EB] rounded-xs", {
+                                "bg-[#C8DCF7]": i > totalLessons - lessonsRemaining
+                            })} />
+                        ))}
                     </div>
                 </div>
                 <div className={'bg-[url("/bg3.jpg")] bg-cover bg-top p-4 rounded-t-3xl flex-1 flex flex-col gap-3'}>

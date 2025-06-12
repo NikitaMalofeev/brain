@@ -1,5 +1,5 @@
-import { useLocation } from 'react-router-dom';
-import './TokenErrorPage.css';
+import {Link, useLocation} from 'react-router-dom';
+import {Ripple} from "@/components/ui/Ripple/Ripple.tsx";
 
 const TokenErrorPage = () => {
     const location = useLocation();
@@ -8,33 +8,35 @@ const TokenErrorPage = () => {
     // Определяем тип ошибки
     const isNoAccessError = !error;
 
-    const errorMessage = error || 'Для доступа к приложению требуется активация кода доступа.';
-    const title = isNoAccessError ? 'Требуется код доступа' : 'Ошибка активации кода';
+    const title = isNoAccessError ?
+        <span>Приложение<br/> доступно только<br/> для учеников программы Brain Programming</span> : 'Ошибка активации доступа';
 
-    const handleSupportClick = () => {
-        // TODO: Replace with actual support chat link from config
-        window.open('https://t.me/your_support_chat', '_blank');
-    };
 
 
     return (
-        <div className="token-error-page-container">
-            <div className="error-card">
+        <div className="flex flex-col py-6 justify-between gap-6 items-center min-h-screen bg-[linear-gradient(180deg,_#D5D9F4_0%,_#E3E0F7_33.65%,_#EDF7FE_68.27%,_#E8F1FD_100%)]">
+            <div className={'flex flex-col items-center gap-5'}>
+                <img src={'/hand.png'} alt={''} className={'w-[250px]'}/>
+                <h1 className={'font-bold text-2xl px-4 leading-6 text-center text-black'}>{title}</h1>
+            </div>
+            <Ripple className="rounded-3xl overflow-hidden inline-block">
+                <a className={'w-full px-4 max-w-[350px]'} href={'https://t.me/katyaasta'} target={'_blank'}>
+                    <button
+                        className={'w-full font-bold p-4 rounded-full bg-[linear-gradient(135deg,rgba(141,197,241,0.4)_-48.61%,#63ABE6_105.56%),linear-gradient(91.99deg,#F3F3F3_0%,#EAEAEA_100%)]'}>
+                        Обратиться в отдел заботы
+                    </button>
+                </a>
+            </Ripple>
+
+            {/*<div className="error-card">
                 <h1>{title}</h1>
-                <p className="error-message">
-                    {errorMessage}
-                </p>
-                {isNoAccessError ? (
-                    <p>Получите код доступа от администратора или обратитесь в поддержку.</p>
-                ) : (
-                    <p>Пожалуйста, проверьте правильность ссылки или обратитесь в поддержку.</p>
-                )}
+
                 <div className="button-group">
                     <button onClick={handleSupportClick} className="support-button">
-                        Написать в поддержку
+                        Обратиться в отдел заботы
                     </button>
                 </div>
-            </div>
+            </div>*/}
         </div>
     );
 };
