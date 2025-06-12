@@ -10,11 +10,15 @@ interface StudentCardProps {
 
 const StudentCard: React.FC<StudentCardProps> = ({ studentId, onBack }) => {
     const { studentDetails, loading, error, loadStudentDetails, assignStudentTariff, assigningTariff } = useStudentDetails();
-    const { resetLessonProgress, markMaterialViewed, resetMaterialView, updateStudentPoints } = useStudentActions();
+    const { resetLessonProgress, markMaterialViewed, resetMaterialView, updateStudentPoints, markLessonAsCompleted, markLessonAsIncomplete } = useStudentActions();
     const { tariffs, loading: tariffsLoading } = useTariffsAdmin();
 
     // Состояние для выбранного тарифа
     const [selectedTariffId, setSelectedTariffId] = useState<string>('');
+
+    // Локальный стейт для загрузки строк и bulk-операций
+    const [rowLoading, setRowLoading] = useState<Record<number, boolean>>({});
+    const [bulkLoading, setBulkLoading] = useState<boolean>(false);
 
     useEffect(() => {
         loadStudentDetails(studentId);
@@ -66,6 +70,85 @@ const StudentCard: React.FC<StudentCardProps> = ({ studentId, onBack }) => {
         } catch (error) {
             console.error('Ошибка при назначении тарифа:', error);
             alert('Ошибка при назначении тарифа');
+        }
+    };
+
+    // Bulk: отметить все уроки как пройденные
+    const handleBulkComplete = async () => {
+        if (!window.confirm('Отметить все уроки как пройденные?')) return;
+        setBulkLoading(true);
+        try {
+            for (const lesson of studentDetails?.lessonProgress || []) {
+                if (!lesson.is_completed) {
+                    await markLessonAsCompleted(studentId, lesson.lesson_id);
+                }
+            }
+            await loadStudentDetails(studentId);
+            alert('Все уроки отмечены как пройденные');
+        } catch (error) {
+            console.error('Ошибка при массовом завершении уроков:', error);
+            alert('Ошибка при массовом завершении уроков');
+        } finally {
+            setBulkLoading(false);
+        }
+    };
+
+    // Bulk: снять все отметки пройденных уроков
+    const handleBulkReset = async () => {
+        if (!window.confirm('Снять все отметки пройденных уроков?')) return;
+        setBulkLoading(true);
+        try {
+            for (const lesson of studentDetails?.lessonProgress || []) {
+                if (lesson.is_completed) {
+                    await markLessonAsIncomplete(studentId, lesson.lesson_id);
+                }
+            }
+            await loadStudentDetails(studentId);
+            alert('Все отметки сняты');
+        } catch (error) {
+            console.error('Ошибка при массовом снятии отметок уроков:', error);
+            alert('Ошибка при массовом снятии отметок уроков');
+        } finally {
+            setBulkLoading(false);
+        }
+    };
+
+    // Bulk операции для конкретной ступени
+    const handleStageComplete = async (stageName: string, lessons: StudentLessonProgress[]) => {
+        if (!window.confirm(`Отметить все уроки ступени "${stageName}" как пройденные?`)) return;
+        setBulkLoading(true);
+        try {
+            for (const lesson of lessons) {
+                if (!lesson.is_completed) {
+                    await markLessonAsCompleted(studentId, lesson.lesson_id);
+                }
+            }
+            await loadStudentDetails(studentId);
+            alert(`Все уроки ступени "${stageName}" отмечены как пройденные`);
+        } catch (error) {
+            console.error('Ошибка при завершении уроков ступени:', error);
+            alert('Ошибка при завершении уроков ступени');
+        } finally {
+            setBulkLoading(false);
+        }
+    };
+
+    const handleStageReset = async (stageName: string, lessons: StudentLessonProgress[]) => {
+        if (!window.confirm(`Снять все отметки с уроков ступени "${stageName}"?`)) return;
+        setBulkLoading(true);
+        try {
+            for (const lesson of lessons) {
+                if (lesson.is_completed) {
+                    await markLessonAsIncomplete(studentId, lesson.lesson_id);
+                }
+            }
+            await loadStudentDetails(studentId);
+            alert(`Все отметки с уроков ступени "${stageName}" сняты`);
+        } catch (error) {
+            console.error('Ошибка при сбросе уроков ступени:', error);
+            alert('Ошибка при сбросе уроков ступени');
+        } finally {
+            setBulkLoading(false);
         }
     };
 
@@ -142,9 +225,45 @@ const StudentCard: React.FC<StudentCardProps> = ({ studentId, onBack }) => {
                 <progress value={progressStats.completedLessons} max={progressStats.totalLessonsInCourse || 1} />
             </div>
 
+            <div className="admin-card">
+                <h3>Массовые операции</h3>
+                <button
+                    className="admin-button mr-2"
+                    onClick={handleBulkComplete}
+                    disabled={bulkLoading || loading}
+                >
+                    {bulkLoading ? 'Выполняется...' : 'Отметить все как пройденные'}
+                </button>
+                <button
+                    className="admin-button"
+                    onClick={handleBulkReset}
+                    disabled={bulkLoading || loading}
+                >
+                    {bulkLoading ? 'Выполняется...' : 'Снять все отметки'}
+                </button>
+            </div>
+
             {Object.entries(lessonsByStage).map(([stageName, lessons]) => (
                 <div key={stageName} className="admin-card">
-                    <h4>{stageName}</h4>
+                    <div className="flex justify-between items-center mb-4">
+                        <h4 className="mb-0">{stageName}</h4>
+                        <div className="flex gap-2">
+                            <button
+                                className="admin-button admin-button-sm"
+                                onClick={() => handleStageComplete(stageName, lessons)}
+                                disabled={bulkLoading || loading}
+                            >
+                                Завершить все
+                            </button>
+                            <button
+                                className="admin-button admin-button-sm"
+                                onClick={() => handleStageReset(stageName, lessons)}
+                                disabled={bulkLoading || loading}
+                            >
+                                Сбросить все
+                            </button>
+                        </div>
+                    </div>
                     <div className="admin-table">
                         <table>
                             <thead>
@@ -168,19 +287,42 @@ const StudentCard: React.FC<StudentCardProps> = ({ studentId, onBack }) => {
                                         </td>
                                         <td>{formatDateTime(l.completed_at)}</td>
                                         <td>
-                                            <button
-                                                className="action-btn delete-btn"
-                                                onClick={async () => {
-                                                    try {
-                                                        await resetLessonProgress(studentId, l.lesson_id);
-                                                        await loadStudentDetails(studentId);
-                                                        alert('Прогресс урока сброшен');
-                                                    } catch (error) {
-                                                        console.error('Ошибка при сбросе прогресса:', error);
-                                                        alert('Ошибка при сбросе прогресса урока');
-                                                    }
-                                                }}
-                                            >Сбросить</button>
+                                            {!l.is_completed ? (
+                                                <button
+                                                    className="action-btn edit-btn"
+                                                    disabled={loading || bulkLoading || !!rowLoading[l.lesson_id]}
+                                                    onClick={async () => {
+                                                        setRowLoading(prev => ({ ...prev, [l.lesson_id]: true }));
+                                                        try {
+                                                            await markLessonAsCompleted(studentId, l.lesson_id);
+                                                            await loadStudentDetails(studentId);
+                                                        } catch (error) {
+                                                            console.error('Ошибка при завершении урока:', error);
+                                                            alert('Ошибка при завершении урока');
+                                                        } finally {
+                                                            setRowLoading(prev => ({ ...prev, [l.lesson_id]: false }));
+                                                        }
+                                                    }}
+                                                >Завершить</button>
+                                            ) : (
+                                                <button
+                                                    className="action-btn delete-btn"
+                                                    disabled={loading || bulkLoading || !!rowLoading[l.lesson_id]}
+                                                    onClick={async () => {
+                                                        setRowLoading(prev => ({ ...prev, [l.lesson_id]: true }));
+                                                        try {
+                                                            await resetLessonProgress(studentId, l.lesson_id);
+                                                            await loadStudentDetails(studentId);
+                                                            alert('Прогресс урока сброшен');
+                                                        } catch (error) {
+                                                            console.error('Ошибка при сбросе прогресса:', error);
+                                                            alert('Ошибка при сбросе прогресса урока');
+                                                        } finally {
+                                                            setRowLoading(prev => ({ ...prev, [l.lesson_id]: false }));
+                                                        }
+                                                    }}
+                                                >Сбросить</button>
+                                            )}
                                         </td>
                                     </tr>
                                 ))}

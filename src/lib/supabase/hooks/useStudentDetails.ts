@@ -191,48 +191,32 @@ export function useStudentDetails(): StudentDetailsResult {
                 }
                 console.log('Total lessons in active course:', totalLessonsInCourse);
 
-                if (progressData && progressData.length > 0) {
-                    const lessonIdsWithProgress = progressData.map(p => p.lesson_id);
+                // 2. Загружаем ВСЕ уроки активного курса (не только с прогрессом)
+                const { data: allCourseLessons, error: allLessonsError } = await supabase
+                    .from('lessons')
+                    .select('id, name, open_at, deadline_at, has_assignment, stage_id')
+                    .in('stage_id', activeCourseStageIds);
 
-                    // 2. Загружаем детали уроков, по которым есть прогресс (включая их stage_id)
-                    const { data: lessonsDetails, error: lessonsDetailsError } = await supabase
-                        .from('lessons')
-                        .select('id, name, open_at, deadline_at, has_assignment, stage_id')
-                        .in('id', lessonIdsWithProgress);
+                if (allLessonsError) throw allLessonsError;
+                console.log('ALL lessons in active course:', allCourseLessons);
 
-                    if (lessonsDetailsError) throw lessonsDetailsError;
-                    console.log('Details for lessons with progress:', lessonsDetails);
+                // 3. Формируем lessonProgressData, мержа все уроки с существующим прогрессом
+                lessonProgressData = (allCourseLessons || []).map(lesson => {
+                    const progress = progressData?.find(p => p.lesson_id === lesson.id);
+                    const stageInfo = stagesOfActiveCourse?.find(s => s.id === lesson.stage_id);
 
-                    // 4. Фильтруем уроки: оставляем только те, что принадлежат стадиям активного курса
-                    const relevantLessons = (lessonsDetails || []).filter(lesson =>
-                        lesson.stage_id && activeCourseStageIds.includes(lesson.stage_id)
-                    );
-                    console.log('Relevant lessons for active course:', relevantLessons);
-
-                    // 5. Формируем lessonProgressData
-                    const mappedLessonProgressItems = relevantLessons.map(lesson => {
-                        const progress = progressData.find(p => p.lesson_id === lesson.id);
-                        const stageInfo = stagesOfActiveCourse?.find(s => s.id === lesson.stage_id);
-
-                        if (!progress) return null; // На всякий случай, хотя не должно произойти
-
-                        return {
-                            stage_id: lesson.stage_id!,
-                            stage_name: stageInfo?.name || 'Стадия не найдена в активном курсе',
-                            lesson_id: lesson.id,
-                            lesson_name: lesson.name,
-                            open_at: lesson.open_at,
-                            deadline_at: lesson.deadline_at,
-                            is_completed: progress.is_completed || false,
-                            completed_at: progress.completed_at,
-                            has_assignment: lesson.has_assignment || false,
-                        };
-                    });
-                    lessonProgressData = mappedLessonProgressItems.filter(lp => lp !== null) as StudentLessonProgress[];
-                } else {
-                    console.log('No lesson progress found for user');
-                    lessonProgressData = [];
-                }
+                    return {
+                        stage_id: lesson.stage_id!,
+                        stage_name: stageInfo?.name || 'Неизвестная стадия',
+                        lesson_id: lesson.id,
+                        lesson_name: lesson.name,
+                        open_at: lesson.open_at,
+                        deadline_at: lesson.deadline_at,
+                        is_completed: progress?.is_completed || false, // ← false если нет прогресса
+                        completed_at: progress?.completed_at || null,
+                        has_assignment: lesson.has_assignment || false,
+                    };
+                });
 
                 console.log('Final lesson progress data for student:', lessonProgressData);
 

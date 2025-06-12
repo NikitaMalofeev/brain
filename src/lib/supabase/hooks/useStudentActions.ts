@@ -8,6 +8,10 @@ export interface StudentActionsResult {
     markMaterialViewed: (studentId: string, materialId: string) => Promise<void>;
     resetMaterialView: (studentId: string, materialId: string) => Promise<void>;
     updateStudentPoints: (studentId: string, newPoints: number) => Promise<void>;
+    // Новые функции для ручного управления прогрессом уроков
+    setLessonProgress: (studentId: string, lessonId: number, isCompleted: boolean) => Promise<void>;
+    markLessonAsCompleted: (studentId: string, lessonId: number) => Promise<void>;
+    markLessonAsIncomplete: (studentId: string, lessonId: number) => Promise<void>;
 }
 
 /**
@@ -210,6 +214,58 @@ export function useStudentActions(): StudentActionsResult {
         }
     };
 
+    // Универсальная функция для установки прогресса урока
+    const setLessonProgress = async (studentId: string, lessonId: number, isCompleted: boolean): Promise<void> => {
+        if (!supabase) {
+            throw new Error('Supabase клиент не инициализирован');
+        }
+
+        try {
+            setLoading(true);
+            setError(null);
+
+            const now = new Date().toISOString();
+
+            console.log('Устанавливаем прогресс урока:', { studentId, lessonId, isCompleted });
+
+            // Вставляем или обновляем запись прогресса урока
+            const { error: progressError } = await supabase
+                .from('lesson_progress')
+                .upsert({
+                    user_id: studentId,
+                    lesson_id: lessonId,
+                    is_completed: isCompleted,
+                    completed_at: isCompleted ? now : null,
+                    started_at: now, // Устанавливаем started_at если записи не было
+                    submission_id: null // Ручное управление не связано с submissions
+                }, {
+                    onConflict: 'user_id,lesson_id',
+                    ignoreDuplicates: false // Обновляем существующие записи
+                });
+
+            if (progressError) throw progressError;
+
+            console.log('Прогресс урока успешно установлен');
+
+        } catch (err) {
+            console.error('Ошибка при установке прогресса урока:', err);
+            setError(err instanceof Error ? err : new Error('Ошибка при установке прогресса урока'));
+            throw err;
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    // Обертка для отметки урока как завершенного
+    const markLessonAsCompleted = async (studentId: string, lessonId: number): Promise<void> => {
+        return setLessonProgress(studentId, lessonId, true);
+    };
+
+    // Обертка для отметки урока как незавершенного
+    const markLessonAsIncomplete = async (studentId: string, lessonId: number): Promise<void> => {
+        return setLessonProgress(studentId, lessonId, false);
+    };
+
     return {
         loading,
         error,
@@ -217,5 +273,8 @@ export function useStudentActions(): StudentActionsResult {
         markMaterialViewed,
         resetMaterialView,
         updateStudentPoints,
+        setLessonProgress,
+        markLessonAsCompleted,
+        markLessonAsIncomplete,
     };
 } 
