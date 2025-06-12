@@ -20,6 +20,10 @@ const StudentCard: React.FC<StudentCardProps> = ({ studentId, onBack }) => {
     const [rowLoading, setRowLoading] = useState<Record<number, boolean>>({});
     const [bulkLoading, setBulkLoading] = useState<boolean>(false);
 
+    // Состояние для формы добавления/удаления баллов
+    const [deltaPoints, setDeltaPoints] = useState<string>('');
+    const [pointsLoading, setPointsLoading] = useState<boolean>(false);
+
     useEffect(() => {
         loadStudentDetails(studentId);
     }, [studentId]);
@@ -70,6 +74,52 @@ const StudentCard: React.FC<StudentCardProps> = ({ studentId, onBack }) => {
         } catch (error) {
             console.error('Ошибка при назначении тарифа:', error);
             alert('Ошибка при назначении тарифа');
+        }
+    };
+
+    // Функция для добавления баллов
+    const handleAddPoints = async () => {
+        const points = parseInt(deltaPoints, 10);
+        if (isNaN(points) || points <= 0) {
+            alert('Введите корректное положительное число');
+            return;
+        }
+
+        setPointsLoading(true);
+        try {
+            const newPoints = basicInfo.total_points + points;
+            await updateStudentPoints(studentId, newPoints);
+            await loadStudentDetails(studentId);
+            setDeltaPoints('');
+            alert(`Добавлено ${points} баллов. Новый баланс: ${newPoints}`);
+        } catch (error) {
+            console.error('Ошибка при добавлении баллов:', error);
+            alert('Ошибка при добавлении баллов');
+        } finally {
+            setPointsLoading(false);
+        }
+    };
+
+    // Функция для удаления баллов
+    const handleSubtractPoints = async () => {
+        const points = parseInt(deltaPoints, 10);
+        if (isNaN(points) || points <= 0) {
+            alert('Введите корректное положительное число');
+            return;
+        }
+
+        setPointsLoading(true);
+        try {
+            const newPoints = Math.max(0, basicInfo.total_points - points);
+            await updateStudentPoints(studentId, newPoints);
+            await loadStudentDetails(studentId);
+            setDeltaPoints('');
+            alert(`Удалено ${points} баллов. Новый баланс: ${newPoints}`);
+        } catch (error) {
+            console.error('Ошибка при удалении баллов:', error);
+            alert('Ошибка при удалении баллов');
+        } finally {
+            setPointsLoading(false);
         }
     };
 
@@ -178,10 +228,61 @@ const StudentCard: React.FC<StudentCardProps> = ({ studentId, onBack }) => {
                 <p><strong>Telegram-ID / Web-login:</strong> {basicInfo.web_login || basicInfo.telegram_id}</p>
                 <p><strong>Дата регистрации:</strong> {formatDate(basicInfo.created_at)}</p>
                 <p><strong>Последний вход:</strong> {formatDateTime(basicInfo.web_last_login || basicInfo.last_login)}</p>
-                <p>
+                <p style={{ paddingTop: '12px' }}>
                     <strong>Баллы:</strong> {basicInfo.total_points}{' '}
                     <button className="action-btn edit-btn" onClick={handleUpdatePoints}>Изменить</button>
                 </p>
+
+                {/* Форма для добавления/удаления баллов */}
+                <div className="form-group" style={{ paddingTop: '12px' }}>
+                    <label style={{ fontSize: '16px', fontWeight: '600' }}>Корректировка баллов:</label>
+                    <input
+                        type="number"
+                        className="admin-input"
+                        style={{ width: '33%' }}
+                        placeholder="Количество баллов"
+                        value={deltaPoints}
+                        onChange={(e) => setDeltaPoints(e.target.value)}
+                        disabled={pointsLoading}
+                        min="1"
+                    />
+                    <div style={{ marginTop: '8px', display: 'flex', gap: '8px', justifyContent: 'left' }}>
+                        <button
+                            className="action-btn edit-btn"
+                            style={{
+                                position: 'relative'
+                            }}
+                            onClick={handleAddPoints}
+                            disabled={pointsLoading || !deltaPoints}
+                            title="Добавить баллы"
+                        >
+                            <style>{`
+                                .action-btn.edit-btn[title="Добавить баллы"]::before {
+                                    content: '+' !important;
+                                    font-size: 16px !important;
+                                }
+                            `}</style>
+                            {pointsLoading ? '...' : 'Добавить'}
+                        </button>
+                        <button
+                            className="action-btn delete-btn"
+                            style={{
+                                position: 'relative'
+                            }}
+                            onClick={handleSubtractPoints}
+                            disabled={pointsLoading || !deltaPoints}
+                            title="Удалить баллы"
+                        >
+                            <style>{`
+                                .action-btn.delete-btn[title="Удалить баллы"]::before {
+                                    content: '−' !important;
+                                    font-size: 16px !important;
+                                }
+                            `}</style>
+                            {pointsLoading ? '...' : 'Убрать'}
+                        </button>
+                    </div>
+                </div>
                 {/* Выбор тарифа пользователя */}
                 <div className="form-group">
                     <label>Текущий тариф:</label>
@@ -243,94 +344,96 @@ const StudentCard: React.FC<StudentCardProps> = ({ studentId, onBack }) => {
                 </button>
             </div>
 
-            {Object.entries(lessonsByStage).map(([stageName, lessons]) => (
-                <div key={stageName} className="admin-card">
-                    <div className="flex justify-between items-center mb-4">
-                        <h4 className="mb-0">{stageName}</h4>
-                        <div className="flex gap-2">
-                            <button
-                                className="admin-button admin-button-sm"
-                                onClick={() => handleStageComplete(stageName, lessons)}
-                                disabled={bulkLoading || loading}
-                            >
-                                Завершить все
-                            </button>
-                            <button
-                                className="admin-button admin-button-sm"
-                                onClick={() => handleStageReset(stageName, lessons)}
-                                disabled={bulkLoading || loading}
-                            >
-                                Сбросить все
-                            </button>
+            {
+                Object.entries(lessonsByStage).map(([stageName, lessons]) => (
+                    <div key={stageName} className="admin-card">
+                        <div className="flex justify-between items-center mb-4">
+                            <h4 className="mb-0">{stageName}</h4>
+                            <div className="flex gap-2">
+                                <button
+                                    className="admin-button admin-button-sm"
+                                    onClick={() => handleStageComplete(stageName, lessons)}
+                                    disabled={bulkLoading || loading}
+                                >
+                                    Завершить все
+                                </button>
+                                <button
+                                    className="admin-button admin-button-sm"
+                                    onClick={() => handleStageReset(stageName, lessons)}
+                                    disabled={bulkLoading || loading}
+                                >
+                                    Сбросить все
+                                </button>
+                            </div>
+                        </div>
+                        <div className="admin-table">
+                            <table>
+                                <thead>
+                                    <tr>
+                                        <th>Урок</th>
+                                        <th>Открыт</th>
+                                        <th>Срок сдачи</th>
+                                        <th>Завершен</th>
+                                        <th>Дата сдачи</th>
+                                        <th>Действие</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {lessons.map(l => (
+                                        <tr key={l.lesson_id}>
+                                            <td>{l.lesson_name}</td>
+                                            <td>{formatDate(l.open_at)}</td>
+                                            <td>{formatDate(l.deadline_at)}</td>
+                                            <td>
+                                                <span className={`admin-status ${l.is_completed ? 'admin-yes' : 'admin-no'}`}>{l.is_completed ? 'Да' : 'Нет'}</span>
+                                            </td>
+                                            <td>{formatDateTime(l.completed_at)}</td>
+                                            <td>
+                                                {!l.is_completed ? (
+                                                    <button
+                                                        className="action-btn edit-btn"
+                                                        disabled={loading || bulkLoading || !!rowLoading[l.lesson_id]}
+                                                        onClick={async () => {
+                                                            setRowLoading(prev => ({ ...prev, [l.lesson_id]: true }));
+                                                            try {
+                                                                await markLessonAsCompleted(studentId, l.lesson_id);
+                                                                await loadStudentDetails(studentId);
+                                                            } catch (error) {
+                                                                console.error('Ошибка при завершении урока:', error);
+                                                                alert('Ошибка при завершении урока');
+                                                            } finally {
+                                                                setRowLoading(prev => ({ ...prev, [l.lesson_id]: false }));
+                                                            }
+                                                        }}
+                                                    >Завершить</button>
+                                                ) : (
+                                                    <button
+                                                        className="action-btn delete-btn"
+                                                        disabled={loading || bulkLoading || !!rowLoading[l.lesson_id]}
+                                                        onClick={async () => {
+                                                            setRowLoading(prev => ({ ...prev, [l.lesson_id]: true }));
+                                                            try {
+                                                                await resetLessonProgress(studentId, l.lesson_id);
+                                                                await loadStudentDetails(studentId);
+                                                                alert('Прогресс урока сброшен');
+                                                            } catch (error) {
+                                                                console.error('Ошибка при сбросе прогресса:', error);
+                                                                alert('Ошибка при сбросе прогресса урока');
+                                                            } finally {
+                                                                setRowLoading(prev => ({ ...prev, [l.lesson_id]: false }));
+                                                            }
+                                                        }}
+                                                    >Сбросить</button>
+                                                )}
+                                            </td>
+                                        </tr>
+                                    ))}
+                                </tbody>
+                            </table>
                         </div>
                     </div>
-                    <div className="admin-table">
-                        <table>
-                            <thead>
-                                <tr>
-                                    <th>Урок</th>
-                                    <th>Открыт</th>
-                                    <th>Срок сдачи</th>
-                                    <th>Завершен</th>
-                                    <th>Дата сдачи</th>
-                                    <th>Действие</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                {lessons.map(l => (
-                                    <tr key={l.lesson_id}>
-                                        <td>{l.lesson_name}</td>
-                                        <td>{formatDate(l.open_at)}</td>
-                                        <td>{formatDate(l.deadline_at)}</td>
-                                        <td>
-                                            <span className={`admin-status ${l.is_completed ? 'admin-yes' : 'admin-no'}`}>{l.is_completed ? 'Да' : 'Нет'}</span>
-                                        </td>
-                                        <td>{formatDateTime(l.completed_at)}</td>
-                                        <td>
-                                            {!l.is_completed ? (
-                                                <button
-                                                    className="action-btn edit-btn"
-                                                    disabled={loading || bulkLoading || !!rowLoading[l.lesson_id]}
-                                                    onClick={async () => {
-                                                        setRowLoading(prev => ({ ...prev, [l.lesson_id]: true }));
-                                                        try {
-                                                            await markLessonAsCompleted(studentId, l.lesson_id);
-                                                            await loadStudentDetails(studentId);
-                                                        } catch (error) {
-                                                            console.error('Ошибка при завершении урока:', error);
-                                                            alert('Ошибка при завершении урока');
-                                                        } finally {
-                                                            setRowLoading(prev => ({ ...prev, [l.lesson_id]: false }));
-                                                        }
-                                                    }}
-                                                >Завершить</button>
-                                            ) : (
-                                                <button
-                                                    className="action-btn delete-btn"
-                                                    disabled={loading || bulkLoading || !!rowLoading[l.lesson_id]}
-                                                    onClick={async () => {
-                                                        setRowLoading(prev => ({ ...prev, [l.lesson_id]: true }));
-                                                        try {
-                                                            await resetLessonProgress(studentId, l.lesson_id);
-                                                            await loadStudentDetails(studentId);
-                                                            alert('Прогресс урока сброшен');
-                                                        } catch (error) {
-                                                            console.error('Ошибка при сбросе прогресса:', error);
-                                                            alert('Ошибка при сбросе прогресса урока');
-                                                        } finally {
-                                                            setRowLoading(prev => ({ ...prev, [l.lesson_id]: false }));
-                                                        }
-                                                    }}
-                                                >Сбросить</button>
-                                            )}
-                                        </td>
-                                    </tr>
-                                ))}
-                            </tbody>
-                        </table>
-                    </div>
-                </div>
-            ))}
+                ))
+            }
 
             <div className="admin-card">
                 <h3>Библиотечные материалы</h3>
@@ -381,7 +484,7 @@ const StudentCard: React.FC<StudentCardProps> = ({ studentId, onBack }) => {
                     </table>
                 </div>
             </div>
-        </div>
+        </div >
     );
 };
 
