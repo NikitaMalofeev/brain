@@ -13,50 +13,27 @@ const tabs = [
     'Видео'
 ]
 
-const pageVariants = {
-    initial: { opacity: 0, y: 10 },
-    enter: {
-        opacity: 1,
-        y: 0,
-        transition: {
-            type: 'spring',
-            damping: 20,
-            stiffness: 250,
-            staggerChildren: 0.06,
-            delayChildren: 0.1
-        }
-    },
-    exit: {
-        opacity: 0,
-        y: -10,
-        transition: {
-            type: 'tween',
-            ease: 'easeIn',
-            duration: 0.15
-        }
-    },
-};
-
 const listVariants = {
-    enter: {
+    hidden: { opacity: 0 },
+    show: {
+        opacity: 1,
         transition: {
-            staggerChildren: 0.08,
+            staggerChildren: 0.06,
         },
     },
 };
 
 const itemVariants = {
-    initial: { opacity: 0, y: 20 },
-    enter: {
+    hidden: { opacity: 0, y: 15 },
+    show: {
         opacity: 1,
         y: 0,
         transition: {
-            type: 'spring',
-            damping: 20,
-            stiffness: 250
+            type: 'tween',
+            ease: 'easeOut',
+            duration: 0.3
         }
     },
-    exit: { opacity: 0, y: -10 },
 };
 
 export const CommonPage = () => {
@@ -93,14 +70,12 @@ export const CommonPage = () => {
         <Page back={false}>
             <motion.div
                 className={'flex flex-col min-h-[calc(100vh-60px)] text-black pt-12'}
-                variants={pageVariants}
-                initial="initial"
-                animate="enter"
-                exit="exit"
             >
                 <motion.div
                     className={'p-4 flex flex-col gap-2'}
                     variants={itemVariants}
+                    initial="hidden"
+                    animate="show"
                 >
                     <h2 className={'font-bold text-xl'}>Библиотека</h2>
                     <div className={'flex items-center gap-1'}>
@@ -124,6 +99,8 @@ export const CommonPage = () => {
                 <motion.div
                     className={'bg-[url("/bg3.jpg")] bg-cover bg-top p-4 rounded-t-3xl flex-1 flex flex-col gap-3'}
                     variants={listVariants}
+                    initial="hidden"
+                    animate="show"
                 >
                     <motion.div
                         className="flex flex-col gap-3"
@@ -133,7 +110,6 @@ export const CommonPage = () => {
                             <motion.div
                                 key={lesson.id}
                                 variants={itemVariants}
-                                layout
                             >
                                 {lesson.material_type === 'video' ?
                                     <Ripple className="rounded-3xl overflow-hidden">

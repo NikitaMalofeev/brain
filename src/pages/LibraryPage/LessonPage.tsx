@@ -15,13 +15,6 @@ import { buildImageUrl } from '@/lib/cloudflareR2Service';
 import NewPlayer from "@/components/NewPlayer/NewPlayer.tsx";
 import { clsx } from "clsx";
 import { Ripple } from '@/components/ui/Ripple/Ripple';
-import { motion } from 'framer-motion';
-
-const pageVariants = {
-    initial: { opacity: 0 },
-    enter: { opacity: 1, transition: { type: 'tween', ease: 'easeOut', duration: 0.2 } },
-    exit: { opacity: 0, transition: { type: 'tween', ease: 'easeIn', duration: 0.2 } },
-};
 
 interface LessonPageState {
     lesson: LessonWithBlocks | null;
@@ -729,6 +722,9 @@ const LessonPage: React.FC = () => {
         );
     };
 
+    // Рендер блока контента
+
+
     // Состояния загрузки и ошибок
     const loading = state.loading || (isTelegramApp && supabaseUserLoading);
     const error = state.error || (isTelegramApp && supabaseUserError);
@@ -736,17 +732,10 @@ const LessonPage: React.FC = () => {
     if (loading) {
         return (
             <Page>
-                <motion.div
-                    variants={pageVariants}
-                    initial="initial"
-                    animate="enter"
-                    exit="exit"
-                >
-                    <div className="profile-loading">
-                        <div className="profile-loading-spinner" aria-hidden="true" />
-                        <p>Загрузка урока...</p>
-                    </div>
-                </motion.div>
+                <div className="profile-loading">
+                    <div className="profile-loading-spinner" aria-hidden="true" />
+                    <p>Загрузка урока...</p>
+                </div>
             </Page>
         );
     }
@@ -795,125 +784,120 @@ const LessonPage: React.FC = () => {
 
     return (
         <Page back={true} showTabBar={false}>
-            <motion.div
-                variants={pageVariants}
-                initial="initial"
-                animate="enter"
-                exit="exit"
-            >
-                <div className={'text-black'}>
-                    <img
-                        src={state.lesson.cover_image_path ? buildImageUrl(state.lesson.cover_image_path) : '/test.png'}
-                        className={'w-full h-[193px] object-cover'}
-                        style={{
-                            borderRadius: '0 0 24px 24px', // Скругление только снизу как в Figma
-                        }}
-                        alt={state.lesson.name}
-                    />
-                    <div className={'p-4 flex flex-col gap-2'}>
-                        <p className={'font-bold text-xl'}>{state.lesson.name}</p>
-                        <div className={'flex flex-wrap gap-1'}>
-                            <p className={'rounded-full px-2 py-1 text-white text-xs font-medium bg-[linear-gradient(135deg,_rgba(141,197,241)_-48.61%,_#63ABE6_105.56%)]'}>День {state.lesson.order_num}</p>
+            <div className={'text-black'}>
+                <img
+                    src={state.lesson.cover_image_path ? buildImageUrl(state.lesson.cover_image_path) : '/test.png'}
+                    className={'w-full h-[193px] object-cover'}
+                    style={{
+                        borderRadius: '0 0 24px 24px', // Скругление только снизу как в Figma
+                    }}
+                    alt={state.lesson.name}
+                />
+                <div className={'p-4 flex flex-col gap-2'}>
+                    <p className={'font-bold text-xl'}>{state.lesson.name}</p>
+                    <div className={'flex flex-wrap gap-1'}>
+                        <p className={'rounded-full px-2 py-1 text-white text-xs font-medium bg-[linear-gradient(135deg,_rgba(141,197,241)_-48.61%,_#63ABE6_105.56%)]'}>День {state.lesson.order_num}</p>
 
-                            {/* Отображаем статус урока с учетом submissions */}
-                            {(() => {
-                                const status = getLessonPageStatus();
-                                return (
-                                    <p className={`rounded-full px-2 py-1 text-white text-xs font-medium ${status.bgClass}`}>
-                                        {status.text}
-                                    </p>
-                                );
-                            })()}
-
-                            {/* Отображаем дедлайн если есть */}
-                            {state.lesson.deadline_at && (
-                                <p className={'rounded-full px-2 py-1 text-white text-xs font-medium bg-gray-600'}>
-                                    До {formatDeadline(state.lesson.deadline_at)}
+                        {/* Отображаем статус урока с учетом submissions */}
+                        {(() => {
+                            const status = getLessonPageStatus();
+                            return (
+                                <p className={`rounded-full px-2 py-1 text-white text-xs font-medium ${status.bgClass}`}>
+                                    {status.text}
                                 </p>
-                            )}
-                        </div>
-                    </div>
-                    <div className={'p-4 mb-16'}>
-                        {state.lesson.blocks.map((block, i) => (
-                            <BlockItem block={block} initialState={i === 0} />
-                        ))}
-                    </div>
-                    {state.submission && (
-                        <div className={'p-4 pb-8'}>
-                            {renderSubmissionResult(state.submission)}
-                        </div>
-                    )}
+                            );
+                        })()}
 
-                    {/* Блок завершенного урока без задания */}
-                    {!hasAssignment && isLessonCompleted && state.progress && (
-                        <div className={'p-4 pb-8'}>
-                            <div
-
-                                style={{
-                                    fontWeight: 700,
-                                    fontSize: '20px',
-                                    lineHeight: '1.2',
-                                    color: '#000000',
-                                    marginBottom: '16px',
-                                }}>
-                                ✅ Урок пройден
-                            </div>
-
-                            <p style={{
-                                fontSize: '16px',
-                                lineHeight: '1.5',
-                                color: '#666666',
-                                marginBottom: '20px',
-                            }}>
-                                Урок
-                                завершен {state.progress.completed_at ? new Date(state.progress.completed_at).toLocaleDateString('ru-RU') : ''}
+                        {/* Отображаем дедлайн если есть */}
+                        {state.lesson.deadline_at && (
+                            <p className={'rounded-full px-2 py-1 text-white text-xs font-medium bg-gray-600'}>
+                                До {formatDeadline(state.lesson.deadline_at)}
                             </p>
-
-                            {state.lesson && typeof state.lesson.stage_id === 'number' && (
-                                <Ripple className="rounded-3xl overflow-hidden">
-                                    <Button
-                                        variant="black"
-                                        onClick={() => state.lesson && navigate(`/library/stage/${state.lesson.stage_id}`)}
-                                        size="lg"
-                                        className={"w-full font-bold leading-5 text-white py-2 px-4 rounded-3xl text-center bg-[linear-gradient(135deg,rgba(141,197,241,0.4)_-48.61%,#63ABE6_105.56%),linear-gradient(91.99deg,#F3F3F3_0%,#EAEAEA_100%)]"}
-                                    >
-                                        Вернуться ко всем урокам ступени
-                                    </Button>
-                                </Ripple>
-                            )}
-                        </div>
-                    )}
-
-
-                    {/* Fixed форма сдачи (если есть задание и оно не сдано ИЛИ идет пересдача) */}
-                    {showSubmissionForm && state.lesson && (
-                        <FixedSubmissionForm
-                            lessonId={parseInt(lessonId || '0')}
-                            stageId={state.lesson.stage_id as number | undefined}
-                            user={supabaseCompatUser}
-                            existingSubmission={state.submission}
-                            onSubmissionUpdate={handleSubmissionUpdate}
-                            isRetryMode={isRetryingSubmission}
-                            lessonDeadline={state.lesson.deadline_at}
-                        />
-                    )}
-
-                    {/* Кнопка завершения урока (если нет задания и урок не завершен) */}
-                    {!hasAssignment && !isLessonCompleted && state.lesson && (
-                        <div className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 p-4 pb-8 z-50">
-                            <Button
-                                variant="black"
-                                onClick={handleCompleteLesson}
-                                disabled={!supabaseCompatUser || isCompletingLesson}
-                                className={"w-full font-bold leading-5 text-white py-2 px-4 rounded-3xl text-center bg-[linear-gradient(135deg,rgba(141,197,241,0.4)_-48.61%,#63ABE6_105.56%),linear-gradient(91.99deg,#F3F3F3_0%,#EAEAEA_100%)]"}
-                                size="lg"
-                            >
-                                {isCompletingLesson ? 'Завершаем...' : '✓ Урок пройден'}
-                            </Button>
-                        </div>
-                    )}
+                        )}
+                    </div>
                 </div>
-            </motion.div>
+                <div className={'p-4 mb-16'}>
+                    {state.lesson.blocks.map((block, i) => (
+                        <BlockItem block={block} initialState={i === 0} />
+                    ))}
+                </div>
+                {state.submission && (
+                    <div className={'p-4 pb-8'}>
+                        {renderSubmissionResult(state.submission)}
+                    </div>
+                )}
+
+                {/* Блок завершенного урока без задания */}
+                {!hasAssignment && isLessonCompleted && state.progress && (
+                    <div className={'p-4 pb-8'}>
+                        <div
+
+                            style={{
+                                fontWeight: 700,
+                                fontSize: '20px',
+                                lineHeight: '1.2',
+                                color: '#000000',
+                                marginBottom: '16px',
+                            }}>
+                            ✅ Урок пройден
+                        </div>
+
+                        <p style={{
+                            fontSize: '16px',
+                            lineHeight: '1.5',
+                            color: '#666666',
+                            marginBottom: '20px',
+                        }}>
+                            Урок
+                            завершен {state.progress.completed_at ? new Date(state.progress.completed_at).toLocaleDateString('ru-RU') : ''}
+                        </p>
+
+                        {state.lesson && typeof state.lesson.stage_id === 'number' && (
+                            <Ripple className="rounded-3xl overflow-hidden">
+                                <Button
+                                    variant="black"
+                                    onClick={() => state.lesson && navigate(`/library/stage/${state.lesson.stage_id}`)}
+                                    size="lg"
+                                    className={"w-full font-bold leading-5 text-white py-2 px-4 rounded-3xl text-center bg-[linear-gradient(135deg,rgba(141,197,241,0.4)_-48.61%,#63ABE6_105.56%),linear-gradient(91.99deg,#F3F3F3_0%,#EAEAEA_100%)]"}
+                                >
+                                    Вернуться ко всем урокам ступени
+                                </Button>
+                            </Ripple>
+                        )}
+                    </div>
+                )}
+
+
+                {/* Fixed форма сдачи (если есть задание и оно не сдано ИЛИ идет пересдача) */}
+                {showSubmissionForm && state.lesson && (
+                    <FixedSubmissionForm
+                        lessonId={parseInt(lessonId || '0')}
+                        stageId={state.lesson.stage_id as number | undefined}
+                        user={supabaseCompatUser}
+                        existingSubmission={state.submission}
+                        onSubmissionUpdate={handleSubmissionUpdate}
+                        isRetryMode={isRetryingSubmission}
+                        lessonDeadline={state.lesson.deadline_at}
+                    />
+                )}
+
+                {/* Кнопка завершения урока (если нет задания и урок не завершен) */}
+                {!hasAssignment && !isLessonCompleted && state.lesson && (
+                    <div className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 p-4 pb-8 z-50">
+                        <Button
+                            variant="black"
+                            onClick={handleCompleteLesson}
+                            disabled={!supabaseCompatUser || isCompletingLesson}
+                            className={"w-full font-bold leading-5 text-white py-2 px-4 rounded-3xl text-center bg-[linear-gradient(135deg,rgba(141,197,241,0.4)_-48.61%,#63ABE6_105.56%),linear-gradient(91.99deg,#F3F3F3_0%,#EAEAEA_100%)]"}
+                            size="lg"
+                        >
+                            {isCompletingLesson ? 'Завершаем...' : '✓ Урок пройден'}
+                        </Button>
+                    </div>
+                )}
+            </div>
+
+
         </Page>
     );
 };

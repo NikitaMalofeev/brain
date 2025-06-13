@@ -54,9 +54,9 @@ const itemVariants = {
         opacity: 1,
         y: 0,
         transition: {
-            type: 'spring',
-            damping: 20,
-            stiffness: 250
+            type: 'tween',
+            ease: 'easeOut',
+            duration: 0.3
         }
     },
 };
@@ -67,9 +67,9 @@ const pageVariants = {
         opacity: 1,
         y: 0,
         transition: {
-            type: 'spring',
-            damping: 20,
-            stiffness: 250,
+            type: 'tween',
+            ease: 'easeOut',
+            duration: 0.2,
             staggerChildren: 0.06,
             delayChildren: 0.1
         }
@@ -183,13 +183,7 @@ export const UserPage = () => {
     }
     return (
         <Page back={false}>
-            <motion.div
-                className={'text-black min-h-screen bg-white pt-[180px]'}
-                variants={pageVariants}
-                initial="initial"
-                animate="enter"
-                exit="exit"
-            >
+            <div className={'text-black min-h-screen bg-white pt-[180px]'}>
                 <img src={'/brain.png'} alt={''} className={'absolute top-[150px] left-1/2 -translate-y-1/2 -translate-x-1/2 rotate-[16deg] object-cover scale-125'} />
                 <motion.div
                     className={'rounded-t-3xl bg-[url("/bg3.jpg")] bg-cover bg-bottom relative'}
@@ -296,7 +290,7 @@ export const UserPage = () => {
                         </div>
                     </motion.div>
                 </motion.div> {/* end of stats grid */}
-            </motion.div>
+            </div>
         </Page >
     )
 }

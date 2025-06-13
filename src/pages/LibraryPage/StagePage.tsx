@@ -13,30 +13,6 @@ import { Ripple } from '@/components/ui/Ripple/Ripple';
 import { motion } from 'framer-motion';
 import { clsx } from 'clsx';
 
-const pageVariants = {
-    initial: { opacity: 0, y: 10 },
-    enter: {
-        opacity: 1,
-        y: 0,
-        transition: {
-            type: 'spring',
-            damping: 20,
-            stiffness: 250,
-            staggerChildren: 0.06,
-            delayChildren: 0.1
-        }
-    },
-    exit: {
-        opacity: 0,
-        y: -10,
-        transition: {
-            type: 'tween',
-            ease: 'easeIn',
-            duration: 0.15
-        }
-    },
-};
-
 const listVariants = {
     hidden: { opacity: 0 },
     show: {
@@ -53,9 +29,9 @@ const itemVariants = {
         opacity: 1,
         y: 0,
         transition: {
-            type: 'spring',
-            damping: 20,
-            stiffness: 250
+            type: 'tween',
+            ease: 'easeOut',
+            duration: 0.3
         }
     },
 };
@@ -171,12 +147,8 @@ const StagePage: React.FC = () => {
 
     return (
         <Page showTabBar={false}>
-            <motion.div
+            <div
                 className={'text-black'}
-                variants={pageVariants}
-                initial="initial"
-                animate="enter"
-                exit="exit"
             >
                 <div className={'bg-white p-4 flex flex-col gap-3 p-4 pt-12'}>
                     <div className={'flex items-center justify-between'}>
@@ -211,7 +183,7 @@ const StagePage: React.FC = () => {
                         </motion.div>
                     ))}
                 </motion.div>
-            </motion.div>
+            </div>
             <NativeModal title={stageDetails.stage_name} description={stageDetails.stage_description} isOpen={isOpen} setIsOpen={setIsOpen} />
         </Page>
     );

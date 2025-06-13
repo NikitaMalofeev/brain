@@ -2,6 +2,7 @@ import { useNavigate } from 'react-router-dom';
 import { hideBackButton, onBackButtonClick, showBackButton, postEvent } from '@telegram-apps/sdk-react';
 import { type PropsWithChildren, useEffect, useRef } from 'react';
 import { SafeAreaFade } from '@/components/SafeAreaFade/SafeAreaFade';
+import { motion } from 'framer-motion';
 import './Page.css';
 
 // Стили для учета отступов safe area с дополнительным отступом для fullscreen режима
@@ -71,10 +72,18 @@ export function Page({
   };
 
   return (
-    <main
+    <motion.main
       className={`max-w-[600px] mx-auto page-container  ${showTabBar ? 'with-tab-bar' : ''}`}
-      style={{ ...containerStyle, backgroundColor: '#ffffff' }}
+      style={{ ...containerStyle, backgroundColor: '#ffffff', pointerEvents: 'auto' }}
       ref={containerRef}
+      initial={{ opacity: 0, y: 10 }}
+      animate={{ opacity: 1, y: 0 }}
+      exit={{ opacity: 0, y: -10, pointerEvents: 'none' }}
+      transition={{
+        type: 'tween',
+        ease: 'easeOut',
+        duration: 0.2
+      }}
     >
       <div
         className="content-wrapper"
@@ -90,6 +99,6 @@ export function Page({
         {children}
       </div>
       {showSafeAreaFade && <SafeAreaFade />}
-    </main>
+    </motion.main>
   );
 }
