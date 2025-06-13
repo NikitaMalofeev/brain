@@ -75,7 +75,7 @@ export const UserProgress: React.FC<UserProgressProps> = ({ stages, className })
     const word = getNounPluralForm(unlockedLessonsUntilNextStage, 'задание', 'задания', 'заданий');
 
     if (nextStageIndex !== -1 && unlockedLessonsUntilNextStage > 0) {
-        progressText = `Еще ${unlockedLessonsUntilNextStage} ${word} до открытия до ${getWordByIndex(nextStageIndex + 1)} ступени`;
+        progressText = `Еще ${unlockedLessonsUntilNextStage} ${word} до открытия ${getWordByIndex(nextStageIndex + 1)} ступени`;
     } else if (nextStageIndex !== -1 && unlockedLessonsUntilNextStage === 0) {
         progressText = `Все задания открыты до следующей ступени!`;
     } else if (unlockedLessonsUntilNextStage > 0) {

@@ -162,7 +162,7 @@ const StagePage: React.FC = () => {
 
     if (unlockedLessonsInCurrentStage > 0) {
         const word = getNounPluralForm(unlockedLessonsInCurrentStage, 'задание', 'задания', 'заданий');
-        nextStageText = `Еще ${unlockedLessonsInCurrentStage} ${word} до открытия в этой ступени`;
+        nextStageText = `Еще ${unlockedLessonsInCurrentStage} ${word} до открытия второй ступени`;
     } else {
         // Если все уроки в текущей ступени открыты, проверяем следующую ступень
         const currentStageIndex = stages.findIndex(s => s.stage_id === parseInt(stageId || '0'));
