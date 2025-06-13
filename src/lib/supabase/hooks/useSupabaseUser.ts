@@ -5,7 +5,6 @@ import { supabase } from '../client';
 import { type SupabaseUser, type TelegramUserData } from '../types';
 import { logger } from '../../logger';
 import { autoEnrollUserToCourse, checkAndEnrollExistingUser } from '../utils/autoEnrollUser';
-import { useWithSupabaseFallback } from '@/hooks/useWithSupabaseFallback';
 
 // Определяем тип для возвращаемого значения хука
 interface UseSupabaseUserReturn {
@@ -120,22 +119,7 @@ const markOnboardingCompletedMutation = async (userId: string): Promise<Supabase
   return updatedUser;
 };
 
-// Мок-юзер для offline/dev-режима
-const mockUser: SupabaseUser = {
-  id: 'mock-user',
-  telegram_id: 123456789,
-  first_name: 'Mock',
-  last_name: 'User',
-  username: 'mockuser',
-  photo_url: '',
-  auth_date: 0,
-  hash: '',
-  onboarding_completed: true,
-  created_at: '',
-  updated_at: '',
-  last_login: '',
-  total_points: 100,
-};
+
 
 /**
  * Хук для "аутентификации" пользователя Telegram в Supabase с использованием React Query.
@@ -199,21 +183,11 @@ export function useSupabaseUser(initDataRaw: TelegramInitDataType | undefined): 
     onboardingMutation.mutate(supabaseUser.id);
   }, [supabaseUser?.id, onboardingMutation]);
 
-  // Возвращаем через useWithSupabaseFallback
-  return useWithSupabaseFallback(
-    {
-      supabaseUser: supabaseUser || null,
-      loading,
-      error: error as Error | null,
-      refetch,
-      markOnboardingCompleted
-    },
-    {
-      supabaseUser: mockUser,
-      loading: false,
-      error: null,
-      refetch: () => { },
-      markOnboardingCompleted: () => { },
-    }
-  );
+  return {
+    supabaseUser: supabaseUser || null,
+    loading,
+    error: error as Error | null,
+    refetch,
+    markOnboardingCompleted
+  };
 } 

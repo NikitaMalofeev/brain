@@ -47,33 +47,21 @@ function AppContent() {
     const isAppLoading = userLoading || tariffLoading || (accessToken && isRedeeming);
     if (isAppLoading) {
         return (
-            <AppRoot
-                appearance={isDark ? 'dark' : 'light'}
-                platform={['macos', 'ios'].includes(lp.tgWebAppPlatform) ? 'ios' : 'base'}
-            >
-                <div style={{
-                    display: 'flex',
-                    justifyContent: 'center',
-                    alignItems: 'center',
-                    height: '100vh',
-                    fontSize: '18px'
-                }}>
-                    Загрузка...
-                </div>
-            </AppRoot>
+            <div style={{
+                display: 'flex',
+                justifyContent: 'center',
+                alignItems: 'center',
+                height: '100vh',
+                fontSize: '18px'
+            }}>
+                Загрузка...
+            </div>
         );
     }
 
     // Если нет активного тарифа И нет токена для активации - блокируем доступ
     if (supabaseUser && !activeTariff && !accessToken) {
-        return (
-            <AppRoot
-                appearance={isDark ? 'dark' : 'light'}
-                platform={['macos', 'ios'].includes(lp.tgWebAppPlatform) ? 'ios' : 'base'}
-            >
-                <TokenErrorPage />
-            </AppRoot>
-        );
+        return <TokenErrorPage />;
     }
 
     // Если есть доступ, но не завершен онбординг
@@ -81,26 +69,23 @@ function AppContent() {
     const tabBatRoutes = ['/', '/library', '/profile', '/profile2', '/faq', '/help'];
     const showTabBar = tabBatRoutes.includes(location.pathname);
 
+    if (shouldShowOnboarding) {
+        return <Onboarding onClose={() => { }} />;
+    }
+
     return (
-        <AppRoot
-            appearance={isDark ? 'dark' : 'light'}
-            platform={['macos', 'ios'].includes(lp.tgWebAppPlatform) ? 'ios' : 'base'}
-        >
-            {shouldShowOnboarding ? (<Onboarding onClose={() => { }} />) : (
-                <>
-                    <ScrollToTop />
-                    <div style={{ position: 'relative', flex: 1 }}>
-                        <AnimatePresence mode="wait">
-                            <Routes location={location} key={location.pathname}>
-                                {routers.map((router) => <Route key={router.path} {...router} />)}
-                                <Route path="*" element={<Navigate to="/" />} />
-                            </Routes>
-                        </AnimatePresence>
-                    </div>
-                    {showTabBar && <TabBar />}
-                </>
-            )}
-        </AppRoot>
+        <>
+            <ScrollToTop />
+            <div style={{ position: 'relative', flex: 1 }}>
+                <AnimatePresence mode="wait">
+                    <Routes location={location} key={location.pathname}>
+                        {routers.map((router) => <Route key={router.path} {...router} />)}
+                        <Route path="*" element={<Navigate to="/" />} />
+                    </Routes>
+                </AnimatePresence>
+            </div>
+            {showTabBar && <TabBar />}
+        </>
     );
 }
 

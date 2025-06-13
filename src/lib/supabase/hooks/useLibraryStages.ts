@@ -2,7 +2,6 @@
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '../client';
 import { logger } from '../../logger';
-import { useQueryWithSupabaseFallback } from '@/hooks/useWithSupabaseFallback';
 
 // Интерфейс для данных ступени, которые мы ожидаем от RPC функции get_library_stages
 // Важно, чтобы поля соответствовали тем, что возвращает функция
@@ -20,48 +19,7 @@ export interface LibraryStageData {
     cover_image_path: string | null; // Добавлено для поддержки обложек ступеней
 }
 
-// Мок-данные для offline/dev-режима
-const mockLibraryStages: LibraryStageData[] = [
-    {
-        stage_id: 1,
-        stage_name: 'Основы программирования мозга',
-        stage_order_num: 1,
-        stage_description: 'Изучение базовых принципов работы с сознанием',
-        is_unlocked: true,
-        total_lessons: 10,
-        completed_lessons: 3,
-        overdue_lessons: 1,
-        unlock_condition_type_val: null,
-        unlock_condition_value_val: null,
-        cover_image_path: '/images/stage1.jpg',
-    },
-    {
-        stage_id: 2,
-        stage_name: 'Продвинутые техники',
-        stage_order_num: 2,
-        stage_description: 'Глубокое погружение в методики',
-        is_unlocked: false,
-        total_lessons: 15,
-        completed_lessons: 0,
-        overdue_lessons: 0,
-        unlock_condition_type_val: 'lessons_completed',
-        unlock_condition_value_val: '8',
-        cover_image_path: '/images/stage2.jpg',
-    },
-    {
-        stage_id: 3,
-        stage_name: 'Мастерство',
-        stage_order_num: 3,
-        stage_description: 'Экспертный уровень владения техниками',
-        is_unlocked: false,
-        total_lessons: 20,
-        completed_lessons: 0,
-        overdue_lessons: 0,
-        unlock_condition_type_val: 'stage_completed',
-        unlock_condition_value_val: '2',
-        cover_image_path: '/images/stage3.jpg',
-    },
-];
+
 
 interface UseLibraryStagesResult {
     stages: LibraryStageData[];
@@ -71,8 +29,7 @@ interface UseLibraryStagesResult {
 }
 
 /**
- * Хук для получения ступеней библиотеки с поддержкой fallback на мок-данные
- * Автоматически переключается на мок-данные когда Supabase недоступен
+ * Хук для получения ступеней библиотеки
  */
 const useLibraryStages = (userId: string | null, courseId: string | null): UseLibraryStagesResult => {
     const query = useQuery({
@@ -110,13 +67,11 @@ const useLibraryStages = (userId: string | null, courseId: string | null): UseLi
         gcTime: 5 * 60 * 1000, // 5 минут в кэше
     });
 
-    const result = useQueryWithSupabaseFallback(query, mockLibraryStages);
-
     return {
-        stages: result.data || [],
-        loading: result.isLoading,
-        error: result.error,
-        refresh: result.refetch,
+        stages: query.data || [],
+        loading: query.isLoading,
+        error: query.error,
+        refresh: query.refetch,
     };
 };
 

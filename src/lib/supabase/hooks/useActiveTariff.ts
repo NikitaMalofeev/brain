@@ -1,7 +1,6 @@
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '../client';
 import { logger } from '../../logger';
-import { useQueryWithSupabaseFallback } from '@/hooks/useWithSupabaseFallback';
 
 export interface ActiveTariff {
     id: string;
@@ -13,16 +12,7 @@ export interface ActiveTariff {
     created_at: string;
 }
 
-// Мок-данные для offline/dev-режима
-const mockActiveTariff: ActiveTariff = {
-    id: 'mock-tariff-id',
-    tariff_id: 'mock-tariff-id',
-    tariff_name: 'Тестовый тариф',
-    tariff_code: 'mock-tariff',
-    tariff_description: 'Моковый тариф для offline/dev-режима',
-    is_active: true,
-    created_at: '2099-12-31',
-};
+
 
 /**
  * Хук для получения активного тарифа текущего пользователя
@@ -93,7 +83,7 @@ export function useActiveTariff(userId: string | null | undefined) {
         gcTime: 10 * 60 * 1000, // 10 минут в кэше
     });
 
-    return useQueryWithSupabaseFallback(query, mockActiveTariff);
+    return query;
 }
 
 /**

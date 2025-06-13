@@ -18,6 +18,7 @@ const TabBar: FC<TabBarProps> = ({ className }) => {
 
     // Обработчик перехода на вкладку
     const handleTabClick = (path: string) => {
+        console.log('TabBar click:', path); // Добавляем логирование для отладки
         navigate(path);
     };
     const buttons = [
@@ -48,7 +49,11 @@ const TabBar: FC<TabBarProps> = ({ className }) => {
                             className={'bg-white p-[6px] rounded-full relative'}
                             onClick={() => handleTabClick(button.slug)}
                             whileTap={{ scale: 0.9 }}
-                            style={{ touchAction: 'manipulation' }}
+                            style={{
+                                touchAction: 'manipulation',
+                                pointerEvents: 'auto',
+                                zIndex: 'auto'
+                            }}
                         >
                             <AnimatePresence>
                                 {isActiveBtn && (
@@ -56,7 +61,7 @@ const TabBar: FC<TabBarProps> = ({ className }) => {
                                         className="absolute inset-0 rounded-full"
                                         style={{
                                             background: 'linear-gradient(109.65deg,#E1C1F4 13.64%,#B862EA 124.92%)',
-                                            zIndex: 1,
+                                            pointerEvents: 'none', // Важно! Не блокируем клики
                                         }}
                                         initial={{ scale: 0, opacity: 0 }}
                                         animate={{ scale: 1, opacity: 1 }}
@@ -66,7 +71,7 @@ const TabBar: FC<TabBarProps> = ({ className }) => {
                                 )}
                             </AnimatePresence>
                             {/* Обертка для иконок для плавного cross-fade */}
-                            <div className="relative w-6 h-6 z-10">
+                            <div className="relative w-6 h-6" style={{ pointerEvents: 'none' }}>
                                 {/* Неактивная иконка */}
                                 <motion.img
                                     className="w-full h-full absolute top-0 left-0"
@@ -74,6 +79,7 @@ const TabBar: FC<TabBarProps> = ({ className }) => {
                                     alt="иконка навигации"
                                     animate={{ opacity: isActiveBtn ? 0 : 1 }}
                                     transition={{ duration: 0.25 }}
+                                    style={{ pointerEvents: 'none' }}
                                 />
                                 {/* Активная иконка */}
                                 <motion.img
@@ -82,6 +88,7 @@ const TabBar: FC<TabBarProps> = ({ className }) => {
                                     alt="активная иконка навигации"
                                     animate={{ opacity: isActiveBtn ? 1 : 0 }}
                                     transition={{ duration: 0.25 }}
+                                    style={{ pointerEvents: 'none' }}
                                 />
                             </div>
                         </motion.button>
