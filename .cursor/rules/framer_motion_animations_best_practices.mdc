@@ -1,0 +1,413 @@
+---
+description: 
+globs: *.tsx
+alwaysApply: false
+---
+# Framer Motion: Анимации без боли и страданий
+
+Исчерпывающий гайд по правильной работе с Framer Motion v11+ в React приложениях, основанный на реальных проблемах и их решениях.
+
+## 🚨 КРИТИЧЕСКИЕ ПРАВИЛА (нарушение = фриз приложения)
+
+### 1. Layout Animations: Одно правило - одно место
+
+**❌ НИКОГДА не применяйте `layout` на несколько вложенных элементов:**
+
+```tsx
+// 💀 СМЕРТЬ АНИМАЦИЙ - так делать НЕЛЬЗЯ
+<motion.div layout>  {/* Родитель с layout */}
+  <motion.div layout> {/* Дочерний элемент с layout - КОНФЛИКТ! */}
+    <StageCard />  {/* В StageCard тоже есть layout */}
+  </motion.div>
+</motion.div>
+```
+
+**✅ Правильно - layout только в одном месте:**
+
+```tsx
+// ✨ Родитель без layout, анимации работают
+<motion.div variants={itemVariants}>
+  <StageCard />  {/* layout только здесь */}
+</motion.div>
+```
+
+### 2. AnimatePresence: Изоляция и ключи
+
+**❌ Неправильная структура AnimatePresence:**
+
+```tsx
+// 💀 Routes без key, TabBar внутри AnimatePresence
+<AnimatePresence mode="wait">
+  <Routes location={location}> {/* Нет key! */}
+    {routers.map((router) => <Route {...router} />)}
+  </Routes>
+  <TabBar /> {/* TabBar внутри AnimatePresence - конфликт! */}
+</AnimatePresence>
+```
+
+**✅ Правильная изоляция:**
+
+```tsx
+// ✨ Правильная структура
+<AnimatePresence mode="wait" initial={false}>
+  <Routes location={location} key={location.pathname}>
+    {routers.map((router) => <Route key={router.path} {...router} />)}
+  </Routes>
+</AnimatePresence>
+{showTabBar && (
+  <div style={{ position: 'relative', zIndex: 100 }}>
+    <TabBar /> {/* Изолирован от page transitions */}
+  </div>
+)}
+```
+
+## 🎯 Архитектурные Паттерны
+
+### Page Transitions - единая система
+
+**Базовая структура для всех страниц:**
+
+```tsx
+const pageVariants = {
+  initial: { opacity: 0, y: 10 },
+  enter: { 
+    opacity: 1, 
+    y: 0,
+    transition: { 
+      type: 'spring', 
+      damping: 20, 
+      stiffness: 250,
+      staggerChildren: 0.06,
+      delayChildren: 0.1
+    } 
+  },
+  exit: { 
+    opacity: 0, 
+    y: -10,
+    transition: { 
+      type: 'tween', 
+      ease: 'easeIn', 
+      duration: 0.15 
+    } 
+  },
+};
+
+const listVariants = {
+  enter: {
+    transition: {
+      staggerChildren: 0.08,
+    },
+  },
+};
+
+const itemVariants = {
+  initial: { opacity: 0, y: 20 },
+  enter: { 
+    opacity: 1, 
+    y: 0,
+    transition: { 
+      type: 'spring', 
+      damping: 20, 
+      stiffness: 250 
+    }
+  },
+  exit: { opacity: 0, y: -10 },
+};
+```
+
+### Структура страницы
+
+```tsx
+return (
+  <Page back={false}>
+    <motion.div
+      className="page-container"
+      variants={pageVariants}
+      initial="initial"
+      animate="enter"
+      exit="exit"
+    >
+      {/* Header */}
+      <motion.div variants={itemVariants}>
+        <h1>Page Title</h1>
+      </motion.div>
+      
+      {/* List with stagger */}
+      <motion.div variants={listVariants}>
+        {items.map((item) => (
+          <motion.div key={item.id} variants={itemVariants}>
+            <ItemCard item={item} />
+          </motion.div>
+        ))}
+      </motion.div>
+    </motion.div>
+  </Page>
+);
+```
+
+## 🔧 Компонентные Паттерны
+
+### TabBar анимации (безопасные)
+
+Смотри правильную реализацию в [TabBar.tsx](mdc:src/components/TabBar/TabBar.tsx):
+
+```tsx
+// ✅ AnimatePresence для индикатора
+<AnimatePresence>
+  {isActiveBtn && (
+    <motion.div
+      className="absolute inset-0 rounded-full"
+      style={{ pointerEvents: 'none' }}
+      initial={{ scale: 0, opacity: 0 }}
+      animate={{ scale: 1, opacity: 1 }}
+      exit={{ scale: 0, opacity: 0 }}
+      transition={{ type: 'spring', damping: 20, stiffness: 250 }}
+    />
+  )}
+</AnimatePresence>
+
+// ✅ Кнопки с tap анимацией
+<motion.button
+  whileTap={{ scale: 0.9 }}
+  style={{ touchAction: 'manipulation' }}
+>
+```
+
+### Карточки и интерактивные элементы
+
+Пример из [StageCard.tsx](mdc:src/components/StageCard/StageCard.tsx):
+
+```tsx
+// ✅ Layout только в самом компоненте карточки
+<motion.div
+  layout
+  whileTap={isUnlocked ? { scale: 0.97 } : {}}
+  style={{ touchAction: 'manipulation' }}
+  className="w-full"
+>
+  <Ripple className="rounded-4xl overflow-hidden">
+    <Link to={`/library/stage/${id}`}>
+      {/* Контент карточки */}
+    </Link>
+  </Ripple>
+</motion.div>
+```
+
+## 🚫 Типичные Ошибки и Исправления
+
+### Ошибка 1: Layout Distortions
+
+**❌ Проблема:**
+```css
+/* CSS файл - borderRadius искажается */
+.card {
+  border-radius: 20px;
+}
+```
+
+**✅ Исправление:**
+```tsx
+// Inline styles для свойств, которые искажаются
+<motion.div
+  layout
+  style={{
+    borderRadius: '20px', // Inline style предотвращает искажения
+    boxShadow: '0 4px 8px rgba(0,0,0,0.1)' // Тоже inline
+  }}
+/>
+```
+
+### Ошибка 2: Overlap в Reorder списках
+
+**❌ Проблема:**
+```tsx
+<Reorder.Item value={item}>
+  {/* Элементы перекрываются при drag */}
+</Reorder.Item>
+```
+
+**✅ Исправление:**
+```tsx
+<Reorder.Item 
+  value={item}
+  style={{ position: 'relative' }} // Фиксит overlap
+>
+```
+
+### Ошибка 3: Nested AnimatePresence
+
+**❌ Проблема:**
+```tsx
+<AnimatePresence>
+  <motion.div exit={{ opacity: 0 }}>
+    <AnimatePresence> {/* Вложенный AnimatePresence */}
+      <motion.div exit={{ opacity: 0 }}>
+```
+
+**✅ Исправление:**
+```tsx
+// Один AnimatePresence на уровень вложенности
+<AnimatePresence>
+  <motion.div exit={{ opacity: 0 }}>
+    {showModal && (
+      <motion.div 
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        exit={{ opacity: 0 }}
+      />
+    )}
+  </motion.div>
+</AnimatePresence>
+```
+
+## 🎨 Layout Animations: Продвинутые техники
+
+### Layout Groups для синхронизации
+
+```tsx
+import { LayoutGroup } from 'framer-motion';
+
+// ✅ Синхронизация layout анимаций между элементами
+<LayoutGroup>
+  <motion.div layout>Header</motion.div>
+  <motion.div layout>Content</motion.div>
+  <motion.div layout>Footer</motion.div>
+</LayoutGroup>
+```
+
+### Специфичные Layout типы
+
+```tsx
+// ✅ Анимировать только позицию
+<motion.div layout="position" />
+
+// ✅ Анимировать только размер
+<motion.div layout="size" />
+
+// ✅ Анимировать всё
+<motion.div layout />
+```
+
+### Shared Layout ID для переходов между элементами
+
+```tsx
+// ✅ Элемент "перетекает" между страницами
+<motion.div layoutId="hero-image">
+  <img src="hero.jpg" />
+</motion.div>
+
+// На другой странице:
+<motion.div layoutId="hero-image">
+  <img src="hero.jpg" />
+</motion.div>
+```
+
+## 🛠️ Debugging и Диагностика
+
+### Проверочный чек-лист для проблем с анимациями:
+
+1. **Фриз приложения:**
+   - [ ] Проверить двойные `layout` props
+   - [ ] Проверить структуру AnimatePresence
+   - [ ] Проверить ключи в Routes
+
+2. **Искажения элементов:**
+   - [ ] Переместить borderRadius/boxShadow в inline styles
+   - [ ] Проверить CSS переменные (они не работают для фикса искажений)
+
+3. **Рывки/прерывания анимаций:**
+   - [ ] Проверить TouchAction: 'manipulation'
+   - [ ] Проверить конфликты с CSS transitions
+   - [ ] Проверить pointerEvents: 'none' для overlay элементов
+
+4. **Overlap в drag/reorder:**
+   - [ ] Добавить position: 'relative' в Reorder.Item
+
+### Debug режим
+
+```tsx
+// ✅ Включить debug mode для layout анимаций
+<motion.div 
+  layout
+  // @ts-ignore - debug prop
+  debug 
+/>
+```
+
+## 📚 Конфигурация Motion
+
+Наша глобальная конфигурация в [motionConfig.tsx](mdc:src/animations/motionConfig.tsx):
+
+```tsx
+export const AppMotionProvider = ({ children }: { children: React.ReactNode }) => (
+  <MotionConfig
+    transition={{ type: 'spring', damping: 20, stiffness: 250 }}
+    reducedMotion="user" // Автоматическое отключение для пользователей с preference
+  >
+    {children}
+  </MotionConfig>
+);
+```
+
+## 🚀 Performance Best Practices
+
+### Оптимизация тяжелых анимаций
+
+```tsx
+// ✅ will-change для производительности
+<motion.div
+  style={{ willChange: 'transform' }}
+  animate={{ x: 100 }}
+  onAnimationComplete={() => {
+    // Убираем will-change после анимации
+    element.style.willChange = 'auto';
+  }}
+/>
+```
+
+### Избегание layout thrashing
+
+```tsx
+// ❌ Анимация width/height (вызывает reflow)
+<motion.div animate={{ width: 200, height: 200 }} />
+
+// ✅ Анимация transform (только композит)
+<motion.div animate={{ scale: 2 }} />
+```
+
+## 📁 Файловая Структура
+
+Наша организация анимаций:
+- [src/animations/motionConfig.tsx](mdc:src/animations/motionConfig.tsx) - глобальная конфигурация
+- [src/components/TabBar/TabBar.tsx](mdc:src/components/TabBar/TabBar.tsx) - изолированные TabBar анимации
+- [src/components/StageCard/StageCard.tsx](mdc:src/components/StageCard/StageCard.tsx) - layout анимации карточек
+- [src/pages/*/](mdc:src/pages) - page transition patterns
+
+## 🔄 Миграция с CSS на Motion
+
+При замене CSS анимаций:
+
+```css
+/* ❌ Старый CSS */
+.element {
+  transition: all 0.3s ease;
+}
+.element:hover {
+  transform: scale(1.1);
+}
+```
+
+```tsx
+// ✅ Новый Motion
+<motion.div
+  whileHover={{ scale: 1.1 }}
+  transition={{ type: 'spring', damping: 20, stiffness: 250 }}
+/>
+```
+
+---
+
+**Запомни:** Framer Motion мощная, но капризная библиотека. Следуй этим правилам, и твои анимации будут работать как часы, а не как грязная тряпка.
+
+**Главное правило:** Если что-то ломается - сначала проверь layout conflicts, потом AnimatePresence structure, потом всё остальное.
+

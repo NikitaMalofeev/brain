@@ -11,7 +11,6 @@ import { logger } from '@/lib/logger';
 import { useAppContext } from '@/contexts/AppContext';
 import { Page } from '@/components/Page';
 import { COURSE_CONFIG } from '@/lib/config/constants';
-import { buildImageUrl } from '@/lib/cloudflareR2Service';
 import { StageProgressData, UserProgress } from "@/components/UserProgress/UserProgress.tsx";
 
 // Расширяем глобальный объект Window, добавляя Telegram
@@ -36,63 +35,26 @@ const LibraryPage: React.FC = () => {
     // Всегда используем хук useSupabaseUser, независимо от режима приложения
     const { supabaseUser, loading: supabaseUserLoading, error: supabaseUserError } = useSupabaseUser(initDataSignal);
 
-    // Для отладки логгируем что получили
+    // Логируем для отладки
     useEffect(() => {
-        if (isTelegramApp) {
-            logger.debug('Telegram Mode: initDataSignal', { received: !!initDataSignal });
-            logger.debug('Telegram Mode: supabaseUser', {
-                userLoaded: !!supabaseUser,
-                loading: supabaseUserLoading,
-                error: supabaseUserError ? supabaseUserError.message : null,
-                userData: supabaseUser // Логируем самого пользователя в ТГ режиме
-            });
-        } else {
-            // В режиме разработки (не Telegram) также логируем supabaseUser,
-            // который должен быть получен из мокнутого initDataSignal
-            logger.debug('Development Mode (Browser): supabaseUser from mocked initData', {
-                userLoaded: !!supabaseUser,
-                loading: supabaseUserLoading,
-                error: supabaseUserError ? supabaseUserError.message : null,
-                userData: supabaseUser // Логируем пользователя, полученного из моков
-            });
-        }
-    }, [isTelegramApp, initDataSignal, supabaseUser, supabaseUserLoading, supabaseUserError]);
+        logger.debug('LibraryPage User State:', {
+            userLoaded: !!supabaseUser,
+            loading: supabaseUserLoading,
+            error: supabaseUserError ? supabaseUserError.message : null,
+        });
+    }, [supabaseUser, supabaseUserLoading, supabaseUserError]);
 
-    // Создаем Supabase-совместимого User из supabaseUser (если есть supabaseUser, независимо от режима)
-    const [supabaseCompatUser, setSupabaseCompatUser] = useState<User | null>(null);
+    // ID пользователя берем НАПРЯМУЮ из хука useSupabaseUser
+    const activeUserId = supabaseUser?.id || null;
 
-    useEffect(() => {
-        if (supabaseUser) { // Условие изменено: теперь зависит только от наличия supabaseUser
-            // Создаем Supabase User-совместимый объект из supabaseUser
-            const compatUser: User = {
-                id: supabaseUser.id, // UUID из Supabase
-                app_metadata: {}, // Можно добавить нужные метаданные, если они есть в supabaseUser
-                user_metadata: { // Можно добавить нужные метаданные
-                    full_name: supabaseUser.first_name, // Пример, если first_name есть в SupabaseUser
-                    // ... другие поля из supabaseUser.user_metadata при необходимости
-                },
-                aud: '', // Обычно 'authenticated' для реальных сессий, для мока можно оставить пустым или настроить
-                created_at: supabaseUser.created_at || new Date().toISOString(), // Обеспечиваем наличие created_at
-            } as User; // Используем as User для гибкости, но следим за полями
-
-            setSupabaseCompatUser(compatUser);
-            logger.debug('Created Supabase-compatible user', { userId: compatUser.id, source: isTelegramApp ? 'Telegram' : 'Mocked InitData' });
-        } else {
-            setSupabaseCompatUser(null); // Если supabaseUser нет, сбрасываем compatUser
-        }
-    }, [supabaseUser, isTelegramApp]); // isTelegramApp добавлен в зависимости для корректного лога источника
-
-    // Определяем активного пользователя: всегда supabaseCompatUser, если он есть
-    const activeUser = supabaseCompatUser;
-
-    // Используем хук для получения ступеней
-    const { stages, loading: stagesLoading, error: stagesError } = useLibraryStages(activeUser?.id || null, COURSE_ID);
+    // Используем хук для получения ступеней, передавая ID напрямую
+    const { stages, loading: stagesLoading, error: stagesError } = useLibraryStages(activeUserId, COURSE_ID);
 
     // Объединяем состояния загрузки
-    const loading = stagesLoading || (isTelegramApp && supabaseUserLoading);
+    const loading = supabaseUserLoading || stagesLoading;
 
     // Объединяем ошибки
-    const error = stagesError || (isTelegramApp && supabaseUserError);
+    const error = supabaseUserError || stagesError;
 
     const handleStageClick = (stageId: number) => {
         logger.debug('Navigating to stage', { stageId });

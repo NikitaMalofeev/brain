@@ -77,14 +77,18 @@ function AppContent() {
         <>
             <ScrollToTop />
             <div style={{ position: 'relative', flex: 1 }}>
-                <AnimatePresence mode="wait">
+                <AnimatePresence mode="wait" initial={false}>
                     <Routes location={location} key={location.pathname}>
                         {routers.map((router) => <Route key={router.path} {...router} />)}
                         <Route path="*" element={<Navigate to="/" />} />
                     </Routes>
                 </AnimatePresence>
             </div>
-            {showTabBar && <TabBar />}
+            {showTabBar && (
+                <div style={{ position: 'relative', zIndex: 100 }}>
+                    <TabBar />
+                </div>
+            )}
         </>
     );
 }

@@ -15,6 +15,7 @@ import HealingChart from "@/components/Chart.tsx";
 import HealingChartRecharts from "@/components/Chart.tsx";
 import { clsx } from "clsx";
 import useLibraryStages from '@/lib/supabase/hooks/useLibraryStages';
+import { motion } from "framer-motion";
 
 const links = [{
     link: '/chats',
@@ -35,6 +36,54 @@ const links = [{
     image: '/micro.png', className: 'scale-[0.5] -right-[50px] top-[60px]'
 }
 ]
+
+// Варианты анимации для гармонии с другими страницами
+const listVariants = {
+    hidden: { opacity: 0 },
+    show: {
+        opacity: 1,
+        transition: {
+            staggerChildren: 0.06,
+        },
+    },
+};
+
+const itemVariants = {
+    hidden: { opacity: 0, y: 15 },
+    show: {
+        opacity: 1,
+        y: 0,
+        transition: {
+            type: 'spring',
+            damping: 20,
+            stiffness: 250
+        }
+    },
+};
+
+const pageVariants = {
+    initial: { opacity: 0, y: 10 },
+    enter: {
+        opacity: 1,
+        y: 0,
+        transition: {
+            type: 'spring',
+            damping: 20,
+            stiffness: 250,
+            staggerChildren: 0.06,
+            delayChildren: 0.1
+        }
+    },
+    exit: {
+        opacity: 0,
+        y: -10,
+        transition: {
+            type: 'tween',
+            ease: 'easeIn',
+            duration: 0.15
+        }
+    },
+};
 
 export const UserPage = () => {
     const initDataState = useSignal(_initDataState);
@@ -134,9 +183,20 @@ export const UserPage = () => {
     }
     return (
         <Page back={false}>
-            <div className={'text-black min-h-screen bg-white pt-[180px]'}>
+            <motion.div
+                className={'text-black min-h-screen bg-white pt-[180px]'}
+                variants={pageVariants}
+                initial="initial"
+                animate="enter"
+                exit="exit"
+            >
                 <img src={'/brain.png'} alt={''} className={'absolute top-[150px] left-1/2 -translate-y-1/2 -translate-x-1/2 rotate-[16deg] object-cover scale-125'} />
-                <div className={'rounded-t-3xl bg-[url("/bg3.jpg")] bg-cover bg-bottom relative'}>
+                <motion.div
+                    className={'rounded-t-3xl bg-[url("/bg3.jpg")] bg-cover bg-bottom relative'}
+                    variants={listVariants}
+                    initial="hidden"
+                    animate="show"
+                >
                     <div className={'flex flex-col gap-2 items-center absolute -top-[94px] left-1/2 -translate-x-1/2'}>
                         {user?.photo_url ? <img className={'w-36 h-36 rounded-full border border-white'} src={user.photo_url} alt="" /> :
                             <svg className={'w-36 h-36 rounded-full bg-white'} width="57" height="56" viewBox="0 0 57 56" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -146,7 +206,7 @@ export const UserPage = () => {
                             </svg>}
                         <p className={'text-xl font-semibold'}>Привет, {user?.username}</p>
                     </div>
-                    <div className={'pt-[90px] grid grid-cols-2 gap-3 mb-3 px-4'}>
+                    <motion.div variants={itemVariants} className={'pt-[90px] grid grid-cols-2 gap-3 mb-3 px-4'}>
                         <div className={'row-span-2 flex flex-col items-center justify-center gap-3 px-2 rounded-2xl bg-white'}>
                             <div className={'flex items-center flex-col gap-2'}>
                                 <p className={'text-sm text-center font-medium text-[#9F9F9F]'}>Ваш уровень секретности</p>
@@ -191,10 +251,10 @@ export const UserPage = () => {
                                 </Link>
                             </Ripple>
                         </div>
-                    </div>
+                    </motion.div>
 
                     {/* Tariff Block */}
-                    <div className="px-4 mb-3">
+                    <motion.div variants={itemVariants} className="px-4 mb-3">
                         <div className="bg-white rounded-2xl p-4 flex flex-col gap-2">
                             <div className="flex justify-between items-center">
                                 <div>
@@ -218,9 +278,9 @@ export const UserPage = () => {
                                 {userTariff?.description || 'Базовый тарифный план с ограниченным доступом к материалам.'}
                             </p>
                         </div>
-                    </div>
+                    </motion.div>
 
-                    <div className={'bg-white rounded-t-3xl pt-5'}>
+                    <motion.div variants={itemVariants} className={'bg-white rounded-t-3xl pt-5'}>
                         <div className={'px-4 flex flex-col gap-3'}>
                             {links.map(el => (
                                 <Ripple key={el.link} className="rounded-2xl overflow-hidden">
@@ -234,9 +294,9 @@ export const UserPage = () => {
                                 </Ripple>
                             ))}
                         </div>
-                    </div>
-                </div> {/* end of stats grid */}
-            </div>
+                    </motion.div>
+                </motion.div> {/* end of stats grid */}
+            </motion.div>
         </Page >
     )
 }

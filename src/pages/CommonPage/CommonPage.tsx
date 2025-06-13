@@ -13,19 +13,50 @@ const tabs = [
     'Видео'
 ]
 
-const listVariants = {
-    hidden: { opacity: 0 },
-    show: {
+const pageVariants = {
+    initial: { opacity: 0, y: 10 },
+    enter: {
         opacity: 1,
+        y: 0,
         transition: {
+            type: 'spring',
+            damping: 20,
+            stiffness: 250,
             staggerChildren: 0.06,
+            delayChildren: 0.1
+        }
+    },
+    exit: {
+        opacity: 0,
+        y: -10,
+        transition: {
+            type: 'tween',
+            ease: 'easeIn',
+            duration: 0.15
+        }
+    },
+};
+
+const listVariants = {
+    enter: {
+        transition: {
+            staggerChildren: 0.08,
         },
     },
 };
 
 const itemVariants = {
-    hidden: { opacity: 0, y: 15 },
-    show: { opacity: 1, y: 0 },
+    initial: { opacity: 0, y: 20 },
+    enter: {
+        opacity: 1,
+        y: 0,
+        transition: {
+            type: 'spring',
+            damping: 20,
+            stiffness: 250
+        }
+    },
+    exit: { opacity: 0, y: -10 },
 };
 
 export const CommonPage = () => {
@@ -60,71 +91,85 @@ export const CommonPage = () => {
     }
     return (
         <Page back={false}>
-            <div className={'flex flex-col min-h-[calc(100vh-60px)] text-black pt-12'}>
-                <div className={'p-4 flex flex-col gap-2'}>
+            <motion.div
+                className={'flex flex-col min-h-[calc(100vh-60px)] text-black pt-12'}
+                variants={pageVariants}
+                initial="initial"
+                animate="enter"
+                exit="exit"
+            >
+                <motion.div
+                    className={'p-4 flex flex-col gap-2'}
+                    variants={itemVariants}
+                >
                     <h2 className={'font-bold text-xl'}>Библиотека</h2>
                     <div className={'flex items-center gap-1'}>
                         {
                             tabs.map((tab, index) => (
                                 <Ripple key={index} className="rounded-full overflow-hidden inline-block">
-                                    <div onClick={() => {
-                                        setCurrentTab(index)
-                                    }}
-                                        className={`transition duration-200 ease-in cursor-pointer text-sm font-semibold rounded-full bg-[linear-gradient(180deg,_#E9E9E9_0%,_#E8E8E8_100%)] py-2 px-4 ${currentTab === index && '!bg-[linear-gradient(109.65deg,_#71B4EA_13.64%,_#3996E2_124.92%)] text-white'}`}>
+                                    <motion.div
+                                        onClick={() => {
+                                            setCurrentTab(index)
+                                        }}
+                                        className={`transition duration-200 ease-in cursor-pointer text-sm font-semibold rounded-full bg-[linear-gradient(180deg,_#E9E9E9_0%,_#E8E8E8_100%)] py-2 px-4 ${currentTab === index && '!bg-[linear-gradient(109.65deg,_#71B4EA_13.64%,_#3996E2_124.92%)] text-white'}`}
+                                        whileTap={{ scale: 0.95 }}
+                                    >
                                         {tab}
-                                    </div>
+                                    </motion.div>
                                 </Ripple>
                             ))
                         }
                     </div>
-                </div>
+                </motion.div>
                 <motion.div
-                    key={currentTab}
                     className={'bg-[url("/bg3.jpg")] bg-cover bg-top p-4 rounded-t-3xl flex-1 flex flex-col gap-3'}
                     variants={listVariants}
-                    initial="hidden"
-                    animate="show"
                 >
-                    {data?.filter(el => currentTab === 0 ? true : currentTab === 1 ? el.material_type === "audio" : el.material_type === "video").map((lesson) => (
-                        <motion.div key={lesson.id} variants={itemVariants}>
-                            {lesson.material_type === 'video' ?
-                                <Ripple className="rounded-3xl overflow-hidden">
-                                    <motion.div
-                                        layout
-                                        whileTap={{ scale: 0.97 }}
-                                        style={{ touchAction: 'manipulation' }}
-                                        className="w-full"
-                                    >
-                                        <Link to={`/material/${lesson.id}`} className={'bg-white rounded-3xl flex flex-col block'}>
-                                            <img src={buildImageUrl(lesson.cover_image_path)} alt={''} className={'h-[200px] md:h-[300px] rounded-3xl object-cover'} />
-                                            <p className={'p-4 font-semibold'}>{lesson.name}</p>
-                                        </Link>
-                                    </motion.div>
-                                </Ripple> :
-                                <Ripple className="rounded-3xl overflow-hidden">
-                                    <motion.div
-                                        layout
-                                        whileTap={{ scale: 0.97 }}
-                                        style={{ touchAction: 'manipulation' }}
-                                        className="w-full"
-                                    >
-                                        <Link to={`/material/${lesson.id}`} className={'bg-white rounded-3xl py-3 px-6 flex items-center gap-4 justify-between block'}>
-                                            <div className={'flex flex-col'}>
-                                                <p className={'font-semibold text-lg leading-5'}>{lesson.name}</p>
-                                                {lesson.description &&
-                                                    <p className={'text-sm text-[#9F9F9F]'}>{lesson.description}</p>}
-                                            </div>
-                                            <img src={'/play.svg'} />
-                                        </Link>
-                                    </motion.div>
-                                </Ripple>
-                            }
-                        </motion.div>
-                    ))}
+                    <motion.div
+                        className="flex flex-col gap-3"
+                        variants={listVariants}
+                    >
+                        {data?.filter(el => currentTab === 0 ? true : currentTab === 1 ? el.material_type === "audio" : el.material_type === "video").map((lesson) => (
+                            <motion.div
+                                key={lesson.id}
+                                variants={itemVariants}
+                                layout
+                            >
+                                {lesson.material_type === 'video' ?
+                                    <Ripple className="rounded-3xl overflow-hidden">
+                                        <motion.div
+                                            whileTap={{ scale: 0.97 }}
+                                            style={{ touchAction: 'manipulation' }}
+                                            className="w-full"
+                                        >
+                                            <Link to={`/material/${lesson.id}`} className={'bg-white rounded-3xl flex flex-col block'}>
+                                                <img src={buildImageUrl(lesson.cover_image_path)} alt={''} className={'h-[200px] md:h-[300px] rounded-3xl object-cover'} />
+                                                <p className={'p-4 font-semibold'}>{lesson.name}</p>
+                                            </Link>
+                                        </motion.div>
+                                    </Ripple> :
+                                    <Ripple className="rounded-3xl overflow-hidden">
+                                        <motion.div
+                                            whileTap={{ scale: 0.97 }}
+                                            style={{ touchAction: 'manipulation' }}
+                                            className="w-full"
+                                        >
+                                            <Link to={`/material/${lesson.id}`} className={'bg-white rounded-3xl py-3 px-6 flex items-center gap-4 justify-between block'}>
+                                                <div className={'flex flex-col'}>
+                                                    <p className={'font-semibold text-lg leading-5'}>{lesson.name}</p>
+                                                    {lesson.description &&
+                                                        <p className={'text-sm text-[#9F9F9F]'}>{lesson.description}</p>}
+                                                </div>
+                                                <img src={'/play.svg'} />
+                                            </Link>
+                                        </motion.div>
+                                    </Ripple>
+                                }
+                            </motion.div>
+                        ))}
+                    </motion.div>
                 </motion.div>
-            </div>
-
-
+            </motion.div>
         </Page>
     )
 }

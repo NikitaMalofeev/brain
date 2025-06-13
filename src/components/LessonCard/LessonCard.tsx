@@ -179,7 +179,11 @@ const LessonCard: React.FC<LessonCardProps> = ({ lesson, onClick }) => {
     const status = getLessonStatus(lesson);
 
     return (
-        <motion.div layout whileTap={lesson.is_unlocked ? { scale: 0.97 } : {}}>
+        <motion.div
+            whileTap={lesson.is_unlocked ? { scale: 0.97 } : {}}
+            style={{ touchAction: 'manipulation' }}
+            className="w-full"
+        >
             <Ripple className="rounded-3xl overflow-hidden w-full shadow-sm">
                 <div onClick={lesson.is_unlocked ? handleClick : undefined} className={'flex flex-col w-full bg-white'}>
                     <div className={'relative w-full'}>

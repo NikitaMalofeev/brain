@@ -15,19 +15,50 @@ import { motion } from "framer-motion";
 
 const COURSE_ID = COURSE_CONFIG.DEFAULT_COURSE_ID;
 
-const listVariants = {
-    hidden: { opacity: 0 },
-    show: {
+const pageVariants = {
+    initial: { opacity: 0, y: 10 },
+    enter: {
         opacity: 1,
+        y: 0,
         transition: {
+            type: 'spring',
+            damping: 20,
+            stiffness: 250,
             staggerChildren: 0.06,
+            delayChildren: 0.1
+        }
+    },
+    exit: {
+        opacity: 0,
+        y: -10,
+        transition: {
+            type: 'tween',
+            ease: 'easeIn',
+            duration: 0.15
+        }
+    },
+};
+
+const listVariants = {
+    enter: {
+        transition: {
+            staggerChildren: 0.08,
         },
     },
 };
 
 const itemVariants = {
-    hidden: { opacity: 0, y: 15 },
-    show: { opacity: 1, y: 0 },
+    initial: { opacity: 0, y: 20 },
+    enter: {
+        opacity: 1,
+        y: 0,
+        transition: {
+            type: 'spring',
+            damping: 20,
+            stiffness: 250
+        }
+    },
+    exit: { opacity: 0, y: -10 },
 };
 
 export const MainPage = () => {
@@ -63,25 +94,40 @@ export const MainPage = () => {
 
     return (
         <Page back={false}>
-            <div className={'bg-[url("/bg3.jpg")] bg-cover bg-bottom p-4 pt-12 rounded-b-3xl flex-1 flex flex-col gap-3'}>
-                <div className={'flex items-center justify-between w-full'}>
+            <motion.div
+                className={'bg-[url("/bg3.jpg")] bg-cover bg-bottom p-4 pt-12 rounded-b-3xl flex-1 flex flex-col gap-3'}
+                variants={pageVariants}
+                initial="initial"
+                animate="enter"
+                exit="exit"
+            >
+                <motion.div
+                    className={'flex items-center justify-between w-full'}
+                    variants={itemVariants}
+                >
                     <img src={supabaseUser?.photo_url || ''} className={'w-8 h-8 rounded-full border border-white'}
                         alt={''} />
                     <Ripple className="rounded-full overflow-hidden">
-                        <Link to={'/points'} className={'block flex items-center gap-1 py-[6px] px-2 bg-white'}>
-                            <p className={'text-black font-semibold leading-4'}>{supabaseUser?.total_points}</p>
-                            <img src={'/eid.svg'} className={'w-5 h-5'} />
-                        </Link>
+                        <motion.div
+                            whileTap={{ scale: 0.95 }}
+                            style={{ touchAction: 'manipulation' }}
+                        >
+                            <Link to={'/points'} className={'block flex items-center gap-1 py-[6px] px-2 bg-white'}>
+                                <p className={'text-black font-semibold leading-4'}>{supabaseUser?.total_points}</p>
+                                <img src={'/eid.svg'} className={'w-5 h-5'} />
+                            </Link>
+                        </motion.div>
                     </Ripple>
-                </div>
+                </motion.div>
                 <motion.div
                     className="flex flex-col gap-4"
                     variants={listVariants}
-                    initial="hidden"
-                    animate="show"
                 >
                     {stages?.map((stage, i) => (
-                        <motion.div key={stage.stage_id} variants={itemVariants}>
+                        <motion.div
+                            key={stage.stage_id}
+                            variants={itemVariants}
+                        >
                             <StageCard
                                 id={stage.stage_id}
                                 name={stage.stage_name}
@@ -93,7 +139,7 @@ export const MainPage = () => {
                     ))}
                 </motion.div>
 
-            </div>
+            </motion.div>
             <UserProgress stages={stages || []} />
         </Page>
     )

@@ -1,7 +1,6 @@
 import { useNavigate } from 'react-router-dom';
 import { hideBackButton, onBackButtonClick, showBackButton, postEvent } from '@telegram-apps/sdk-react';
 import { type PropsWithChildren, useEffect, useRef } from 'react';
-import { motion } from 'framer-motion';
 import { SafeAreaFade } from '@/components/SafeAreaFade/SafeAreaFade';
 import './Page.css';
 
@@ -33,19 +32,6 @@ interface PageProps {
    */
   showSafeAreaFade?: boolean;
 }
-
-// Варианты анимации для переходов между страницами
-const pageVariants = {
-  initial: { opacity: 0.7 },
-  enter: { opacity: 1 },
-  exit: { opacity: 0.7 },
-};
-
-const pageTransition = {
-  type: 'tween',
-  duration: 0.35,
-  ease: 'easeOut',
-};
 
 export function Page({
   children,
@@ -85,15 +71,10 @@ export function Page({
   };
 
   return (
-    <motion.main
+    <main
       className={`max-w-[600px] mx-auto page-container  ${showTabBar ? 'with-tab-bar' : ''}`}
       style={{ ...containerStyle, backgroundColor: '#ffffff' }}
       ref={containerRef}
-      variants={pageVariants}
-      initial="initial"
-      animate="enter"
-      exit="exit"
-      transition={pageTransition}
     >
       <div
         className="content-wrapper"
@@ -109,6 +90,6 @@ export function Page({
         {children}
       </div>
       {showSafeAreaFade && <SafeAreaFade />}
-    </motion.main>
+    </main>
   );
 }
