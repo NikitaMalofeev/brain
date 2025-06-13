@@ -4,6 +4,7 @@ import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/lib/supabase/client.ts";
 import { buildImageUrl } from "@/lib/cloudflareR2Service.ts";
 import { Link } from "react-router-dom";
+import { motion } from "framer-motion";
 import { Ripple } from "@/components/ui/Ripple/Ripple";
 
 const tabs = [
@@ -11,6 +12,21 @@ const tabs = [
     'Аудио',
     'Видео'
 ]
+
+const listVariants = {
+    hidden: { opacity: 0 },
+    show: {
+        opacity: 1,
+        transition: {
+            staggerChildren: 0.06,
+        },
+    },
+};
+
+const itemVariants = {
+    hidden: { opacity: 0, y: 15 },
+    show: { opacity: 1, y: 0 },
+};
 
 export const CommonPage = () => {
     const [currentTab, setCurrentTab] = useState<number>(0);
@@ -24,7 +40,7 @@ export const CommonPage = () => {
                 .order('order_num', { ascending: true })
 
             if (error) {
-                // выбрасываем ошибку, чтобы React-Query перевёл загрузку в состояние “isError”
+                // выбрасываем ошибку, чтобы React-Query перевёл загрузку в состояние "isError"
                 throw new Error(error.message)
             }
             // data здесь — это массив User[] (или null/[]), в зависимости от схемы
@@ -62,27 +78,50 @@ export const CommonPage = () => {
                         }
                     </div>
                 </div>
-                <div className={'bg-[url("/bg3.jpg")] bg-cover bg-top p-4 rounded-t-3xl flex-1 flex flex-col gap-3'}>
-                    {data?.filter(el => currentTab === 0 ? true : currentTab === 1 ? el.material_type === "audio" : el.material_type === "video").map((lesson, index) => (
-                        lesson.material_type === 'video' ?
-                            <Ripple key={index} className="rounded-3xl overflow-hidden">
-                                <Link to={`/material/${lesson.id}`} className={'bg-white rounded-3xl flex flex-col block'}>
-                                    <img src={buildImageUrl(lesson.cover_image_path)} alt={''} className={'h-[200px] md:h-[300px] rounded-3xl object-cover'} />
-                                    <p className={'p-4 font-semibold'}>{lesson.name}</p>
-                                </Link>
-                            </Ripple> :
-                            <Ripple key={index} className="rounded-3xl overflow-hidden">
-                                <Link to={`/material/${lesson.id}`} className={'bg-white rounded-3xl py-3 px-6 flex items-center gap-4 justify-between block'}>
-                                    <div className={'flex flex-col'}>
-                                        <p className={'font-semibold text-lg leading-5'}>{lesson.name}</p>
-                                        {lesson.description &&
-                                            <p className={'text-sm text-[#9F9F9F]'}>{lesson.description}</p>}
-                                    </div>
-                                    <img src={'/play.svg'} />
-                                </Link>
-                            </Ripple>
+                <motion.div
+                    key={currentTab}
+                    className={'bg-[url("/bg3.jpg")] bg-cover bg-top p-4 rounded-t-3xl flex-1 flex flex-col gap-3'}
+                    variants={listVariants}
+                    initial="hidden"
+                    animate="show"
+                >
+                    {data?.filter(el => currentTab === 0 ? true : currentTab === 1 ? el.material_type === "audio" : el.material_type === "video").map((lesson) => (
+                        <motion.div key={lesson.id} variants={itemVariants}>
+                            {lesson.material_type === 'video' ?
+                                <Ripple className="rounded-3xl overflow-hidden">
+                                    <motion.div
+                                        layout
+                                        whileTap={{ scale: 0.97 }}
+                                        style={{ touchAction: 'manipulation' }}
+                                        className="w-full"
+                                    >
+                                        <Link to={`/material/${lesson.id}`} className={'bg-white rounded-3xl flex flex-col block'}>
+                                            <img src={buildImageUrl(lesson.cover_image_path)} alt={''} className={'h-[200px] md:h-[300px] rounded-3xl object-cover'} />
+                                            <p className={'p-4 font-semibold'}>{lesson.name}</p>
+                                        </Link>
+                                    </motion.div>
+                                </Ripple> :
+                                <Ripple className="rounded-3xl overflow-hidden">
+                                    <motion.div
+                                        layout
+                                        whileTap={{ scale: 0.97 }}
+                                        style={{ touchAction: 'manipulation' }}
+                                        className="w-full"
+                                    >
+                                        <Link to={`/material/${lesson.id}`} className={'bg-white rounded-3xl py-3 px-6 flex items-center gap-4 justify-between block'}>
+                                            <div className={'flex flex-col'}>
+                                                <p className={'font-semibold text-lg leading-5'}>{lesson.name}</p>
+                                                {lesson.description &&
+                                                    <p className={'text-sm text-[#9F9F9F]'}>{lesson.description}</p>}
+                                            </div>
+                                            <img src={'/play.svg'} />
+                                        </Link>
+                                    </motion.div>
+                                </Ripple>
+                            }
+                        </motion.div>
                     ))}
-                </div>
+                </motion.div>
             </div>
 
 
