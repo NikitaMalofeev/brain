@@ -87,7 +87,7 @@ export const UserProgress: React.FC<UserProgressProps> = ({ stages, className })
     const completedLessonsWord = getNounPluralForm(totalCompletedLessons, 'задание', 'задания', 'заданий');
 
     return (
-        <div className={`bg-white p-4 flex flex-col gap-3 sticky bottom-0 ${className}`}>
+        <div className={`bg-white p-4 pb-[30px] flex flex-col gap-3 ${className}`}>
             <div className={'flex items-center justify-between'}>
                 <div className={'flex flex-col'}>
                     <p className={'font-bold text-black'}>Выполнено {totalCompletedLessons} {completedLessonsWord}</p>
