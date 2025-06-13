@@ -80,8 +80,17 @@ export const MainPage = () => {
                     initial="hidden"
                     animate="show"
                 >
-                    <img src={supabaseUser?.photo_url || ''} className={'w-8 h-8 rounded-full border border-white'}
-                        alt={''} />
+                    <Ripple className="rounded-full overflow-hidden">
+                        <motion.div
+                            whileTap={{ scale: 0.95 }}
+                            style={{ touchAction: 'manipulation' }}
+                        >
+                            <Link to={'/profile2'} className={'block'}>
+                                <img src={supabaseUser?.photo_url || ''} className={'w-8 h-8 rounded-full border border-white'}
+                                    alt={'Профиль'} />
+                            </Link>
+                        </motion.div>
+                    </Ripple>
                     <Ripple className="rounded-full overflow-hidden">
                         <motion.div
                             whileTap={{ scale: 0.95 }}
