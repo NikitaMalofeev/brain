@@ -1,4 +1,4 @@
-import { useMemo, useEffect } from 'react';
+import { useMemo, useEffect, useState } from 'react';
 import { HashRouter, Navigate, Route, Routes, useLocation } from 'react-router-dom';
 import { retrieveLaunchParams, useSignal, isMiniAppDark, initDataState } from '@telegram-apps/sdk-react';
 import { AppRoot } from '@telegram-apps/telegram-ui';
@@ -11,8 +11,9 @@ import { useSupabaseUser, useActiveTariff, useRedeemToken } from '@/lib/supabase
 import TokenErrorPage from '@/pages/TokenErrorPage/TokenErrorPage';
 import { AppMotionProvider } from '@/animations/motionConfig';
 import TabBar from '@/components/TabBar/TabBar';
+import IFrameSplash from '@/components/IFrameSplash';
 
-function AppContent() {
+function AppContent({ showSplash }: { showSplash: boolean }) {
     const lp = useMemo(() => retrieveLaunchParams(), []);
     const isDark = useSignal(isMiniAppDark);
     const initData = useSignal(initDataState);
@@ -45,7 +46,11 @@ function AppContent() {
 
     // Показываем загрузку пока не завершатся все критичные процессы
     const isAppLoading = userLoading || tariffLoading || (accessToken && isRedeeming);
-    if (isAppLoading) {
+    if (isAppLoading && showSplash) {
+        // Показываем сплэш-скрин вместо обычной загрузки
+        return null; // Сплэш будет показан в App() компоненте
+    } else if (isAppLoading && !showSplash) {
+        // Если сплэш уже показали, но данные еще грузятся - показываем обычную загрузку
         return (
             <div style={{
                 display: 'flex',
@@ -84,7 +89,7 @@ function AppContent() {
                     </Routes>
                 </AnimatePresence>
             </div>
-            {showTabBar && (
+            {showTabBar && !showSplash && (
                 <div style={{ position: 'relative', zIndex: 100 }}>
                     <TabBar />
                 </div>
@@ -94,8 +99,27 @@ function AppContent() {
 }
 
 export function App() {
+    // Показываем сплэш только при первом запуске приложения в сессии
+    const [showSplash, setShowSplash] = useState(() => {
+        const hasShownSplash = sessionStorage.getItem('brain-splash-shown');
+        return !hasShownSplash; // Показываем, если еще не показывали в этой сессии
+    });
     const lp = useMemo(() => retrieveLaunchParams(), []);
     const isDark = useSignal(isMiniAppDark);
+
+    // Блокировка свайпов в Telegram Web App во время показа сплэша
+    useEffect(() => {
+        if (showSplash && window.Telegram?.WebApp?.postEvent) {
+            window.Telegram.WebApp.postEvent('web_app_setup_swipe_behavior', {
+                allow_vertical_swipe: false
+            });
+        } else if (!showSplash && window.Telegram?.WebApp?.postEvent) {
+            // Разблокируем свайпы после закрытия сплэша
+            window.Telegram.WebApp.postEvent('web_app_setup_swipe_behavior', {
+                allow_vertical_swipe: true
+            });
+        }
+    }, [showSplash]);
 
     return (
         <AppRoot
@@ -103,9 +127,19 @@ export function App() {
             platform={['macos', 'ios'].includes(lp.tgWebAppPlatform) ? 'ios' : 'base'}
         >
             <AppMotionProvider>
+                {/* Контент грузится параллельно */}
                 <HashRouter>
-                    <AppContent />
+                    <AppContent showSplash={showSplash} />
                 </HashRouter>
+
+                {/* Сплэш показывается во время загрузки приложения */}
+                {showSplash && (
+                    <IFrameSplash onDone={() => {
+                        setShowSplash(false);
+                        // Сохраняем флаг, что сплэш уже показали в этой сессии
+                        sessionStorage.setItem('brain-splash-shown', 'true');
+                    }} />
+                )}
             </AppMotionProvider>
         </AppRoot>
     );
