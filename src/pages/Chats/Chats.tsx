@@ -38,15 +38,15 @@ export const Chats = () => {
             <div className={'flex flex-col gap-2 text-black min-h-[calc(100vh-60px)]'}>
                 <h2 className={'font-bold text-xl p-4 pt-8'}>Важные чаты</h2>
                 <div className={'relative overflow-hidden bg-[url("/bg3.jpg")] bg-cover bg-top p-4 rounded-t-3xl flex-1 flex flex-col gap-3'}>
-                    <img src={'/cube.png'} alt={''}
-                        className={'absolute min-w-[670px] -top-[40px] -z-[0] -right-[350px]'} />
+                    <img src={'/bg-chat.png'} alt={''}
+                        className={'absolute left-0 top-0'} />
                     <div className={'flex flex-col gap-3 relative z-[2]'}>
                         {data?.map(el => (
                             <Ripple key={el.id} className="rounded-3xl overflow-hidden">
-                                <Link className={'p-4 rounded-3xl bg-white flex items-center justify-between gap-3 block'}
+                                <Link className={'p-4 rounded-3xl bg-white/60 border border-white/15 backdrop-blur-md flex items-center justify-between gap-3 block'}
                                     to={el.link}>
                                     <div className={'flex items-center gap-3'}>
-                                        <div className={'min-w-[48px] h-[48px] bg-gray-200 rounded-full'}>
+                                        <div className={'min-w-[48px] h-[48px] bg-[url("/sphere-faq.png")] bg-[length:200%] bg-center rounded-full'}>
 
                                         </div>
                                         <div className={'flex flex-col gap-1'}>
