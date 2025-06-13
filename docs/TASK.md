@@ -2,6 +2,35 @@
 
 ## 🎯 Приоритетные задачи
 
+### 🟢 **[ИСПРАВЛЕНО]** Отключена проблемная логика fullscreen-extra-padding
+- **ПРОБЛЕМА**: Старший разработчик указал что проблема в fullscreen-extra-padding
+- **ПРИЧИНА**: Дублирующая логика в AppWrapper.tsx с установкой --fullscreen-extra-padding
+- **РЕШЕНИЕ**: Полностью отключить всю логику с fullscreen-extra-padding
+- 🟢 Убрана вся логика viewport_changed из AppWrapper.tsx
+- 🟢 Удалена CSS переменная --fullscreen-extra-padding из index.css
+- 🟢 Очищены комментарии и ссылки на fullscreen-extra-padding в Page.tsx
+- 🟢 Убран запрос web_app_request_viewport
+
+**ВЫПОЛНЕННЫЕ ИСПРАВЛЕНИЯ:**
+1. ✅ **AppWrapper.tsx**: Удален обработчик viewport_changed полностью
+2. ✅ **AppWrapper.tsx**: Убран postEvent('web_app_request_viewport') из интервала
+3. ✅ **index.css**: Удалена CSS переменная --fullscreen-extra-padding
+4. ✅ **Page.tsx**: Очищены комментарии с fullscreen-extra-padding
+5. ✅ **Page.tsx**: Убран postEvent('web_app_request_viewport') из useEffect
+6. ✅ Система теперь использует только --safe-area-top без дополнительных отступов
+7. 🧪 **ТЕСТ**: Отключена установка --safe-area-top в AppWrapper.tsx для тестирования фиксированных отступов
+8. 🧪 **ТЕСТ**: Убран pt-12 из MainPage.tsx - контент теперь БЕЗ отступов сверху (экстремальное тестирование)
+9. 🔍 **НАЙДЕН ИСТОЧНИК БЕЛОЙ ПОЛОСКИ**: SafeAreaFade создает белый градиент 100px сверху
+10. 🧪 **ТЕСТ**: Отключен SafeAreaFade для MainPage через showSafeAreaFade={false}
+11. 🔍 **НАЙДЕН ИСТИННЫЙ ИСТОЧНИК**: CSS класс .page-container имел padding-top: calc(...) = 110px!
+12. ✅ **ОТКЛЮЧЕН**: Закомментирован padding-top в .page-container (index.css)
+13. ✅ **ЗАЧИЩЕНЫ ВСЕ БЕЛЫЕ ФОНЫ**: Page.tsx, Page.css, убраны все backgroundColor: '#ffffff'
+14. ✅ **ДОБАВЛЕН КОНТРОЛЬ ФОНА**: В Page компонент добавлен prop backgroundColor с умолчанием '#ffffff'
+15. ✅ **MAINPAGE ПРОЗРАЧНАЯ**: MainPage использует backgroundColor="transparent"
+16. 🎉 **РЕЗУЛЬТАТ**: Белая полоска исчезла, обычные страницы имеют белый фон, MainPage - прозрачная
+
+### 🟡 **[КРИТИЧЕСКОЕ ИСПРАВЛЕНИЕ]** Отступы в fullscreen режиме Telegram (Уверенность: 10/10)
+
 ### 🟡 **[UX/UI]** Сплэш-скрин с 3D мозгом (IFrame интеграция)
 - 🟢 Создать компонент `IFrameSplash.tsx` для отображения 3D мозга
 - 🟢 Интегрировать сплэш-скрин в корневой компонент приложения

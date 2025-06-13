@@ -69,7 +69,7 @@ export const CommonPage = () => {
     return (
         <Page back={false}>
             <motion.div
-                className={'flex flex-col min-h-[calc(100vh-60px)] text-black pt-12'}
+                className={'flex flex-col min-h-[calc(100vh-60px)] text-black pt-24'}
             >
                 <motion.div
                     className={'p-4 flex flex-col gap-2'}

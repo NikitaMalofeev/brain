@@ -53,12 +53,12 @@
 
 :root {
   --safe-area-top: 0px;
+  /* Отключено - используем фиксированные pt-12 */
   --safe-area-right: 0px;
   --safe-area-bottom: 0px;
   --safe-area-left: 0px;
 
-  /* Дополнительный отступ для fullscreen режима */
-  --fullscreen-extra-padding: 0px;
+
 
   /* RGB значения для использования с градиентами и прозрачностью */
   --tgui-background-rgb: 30, 39, 46;
@@ -161,7 +161,7 @@ body {
 
 /* Page с учетом safe area */
 .page-container {
-  padding-top: calc(var(--tg-viewport-content-safe-area-inset-top, 90px) + 20px);
+  /* ОТКЛЮЧЕНО: padding-top: calc(var(--tg-viewport-content-safe-area-inset-top, 90px) + 20px); */
   /* Удаляем фиксированный padding-bottom, так как теперь он добавляется условно в Page.css */
 }
 

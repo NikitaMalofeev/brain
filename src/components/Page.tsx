@@ -55,8 +55,7 @@ export function Page({
 
   // Повторно запрашиваем safe area при монтировании страницы
   useEffect(() => {
-    postEvent('web_app_request_safe_area');
-    postEvent('web_app_request_viewport');
+    //postEvent('web_app_request_safe_area');
 
     // Убедимся, что все родительские элементы имеют белый фон
     document.body.style.backgroundColor = '#ffffff';

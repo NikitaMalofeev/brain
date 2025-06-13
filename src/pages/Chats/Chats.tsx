@@ -36,7 +36,7 @@ export const Chats = () => {
     return (
         <Page>
             <div className={'flex flex-col gap-2 text-black min-h-[calc(100vh-60px)]'}>
-                <h2 className={'font-bold text-xl p-4 pt-8'}>Важные чаты</h2>
+                <h2 className={'font-bold text-xl p-4 pt-24'}>Важные чаты</h2>
                 <div className={'relative overflow-hidden bg-[url("/bg3.jpg")] bg-cover bg-top p-4 rounded-t-3xl flex-1 flex flex-col gap-3'}>
                     <img src={'/bg-chat.png'} alt={''}
                         className={'absolute left-0 top-0'} />

@@ -46,13 +46,6 @@ export const AppWrapper: FC<AppWrapperProps> = ({ children }) => {
         if (data.eventType === 'safe_area_changed' && data.eventData) {
           // Убираем логи safe area, они очень часто повторяются
           applySafeAreaToCSS(data.eventData);
-        } else if (data.eventType === 'viewport_changed') {
-          // Обновляем состояние fullscreen, но убираем логи
-          if (data.eventData && data.eventData.is_expanded) {
-            //document.documentElement.style.setProperty('--fullscreen-extra-padding', '40px');
-          } else {
-            document.documentElement.style.setProperty('--fullscreen-extra-padding', '0px');
-          }
         }
       } catch (e) {
         console.error('Error parsing event data:', e);
@@ -64,11 +57,7 @@ export const AppWrapper: FC<AppWrapperProps> = ({ children }) => {
     // Снижаем частоту запросов для уменьшения логов
     const intervalId = setInterval(() => {
       postEvent('web_app_request_safe_area');
-      postEvent('web_app_request_viewport');
-    }, 15000); // Увеличиваем до 15 секунд
-
-    // Устанавливаем дополнительный отступ для fullscreen
-    //document.documentElement.style.setProperty('--fullscreen-extra-padding', '40px');
+    }, 15000); // Убираем request_viewport - не нужен
 
     // Очистка подписок при размонтировании
     return () => {
@@ -90,7 +79,8 @@ export const AppWrapper: FC<AppWrapperProps> = ({ children }) => {
     const bottomValue = typeof bottom === 'number' ? `${bottom}px` : '0px';
     const leftValue = typeof left === 'number' ? `${left}px` : '0px';
 
-    document.documentElement.style.setProperty('--safe-area-top', topValue);
+    // ТЕСТ: Отключаем safe-area-top - используем фиксированные отступы
+    // document.documentElement.style.setProperty('--safe-area-top', topValue);
     document.documentElement.style.setProperty('--safe-area-right', rightValue);
     document.documentElement.style.setProperty('--safe-area-bottom', bottomValue);
     document.documentElement.style.setProperty('--safe-area-left', leftValue);
