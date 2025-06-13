@@ -11,8 +11,9 @@ export default function IFrameSplash({ onDone }: IFrameSplashProps) {
     }, [onDone]);
 
     return (
-        <div className="fixed inset-0 z-50 overflow-hidden bg-white flex items-center justify-center">
+        <div onClick={onDone} className="fixed inset-0 z-50 overflow-hidden bg-white flex items-center justify-center">
             <iframe
+
                 src="https://3dbrain-three.vercel.app/"
                 className="w-full h-full border-0 max-w-screen max-h-screen"
                 // блокируем user-инпут, чтобы никто не кликал внутрь

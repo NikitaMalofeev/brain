@@ -7,7 +7,7 @@ import './Page.css';
 
 // Стили для учета отступов safe area с дополнительным отступом для fullscreen режима
 const safeAreaStyle = {
-  paddingTop: 'calc(var(--safe-area-top, 0px) + var(--fullscreen-extra-padding, 0px))',
+  //paddingTop: 'calc(var(--safe-area-top, 0px) + var(--fullscreen-extra-padding, 0px))',
   paddingRight: 'var(--safe-area-right, 0px)',
   paddingBottom: 'var(--safe-area-bottom, 0px)',
   paddingLeft: 'var(--safe-area-left, 0px)',

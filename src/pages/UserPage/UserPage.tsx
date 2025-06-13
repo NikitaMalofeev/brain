@@ -198,7 +198,7 @@ export const UserPage = () => {
                                     d="M47.1673 49.0001C47.1673 42.5568 38.81 37.3334 28.5007 37.3334C18.1913 37.3334 9.83398 42.5568 9.83398 49.0001M28.5007 30.3334C22.0573 30.3334 16.834 25.1101 16.834 18.6668C16.834 12.2234 22.0573 7.0001 28.5007 7.0001C34.944 7.0001 40.1673 12.2234 40.1673 18.6668C40.1673 25.1101 34.944 30.3334 28.5007 30.3334Z"
                                     stroke="#8C8C8C" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" />
                             </svg>}
-                        <p className={'text-xl font-semibold'}>Привет, {user?.username}</p>
+                        <p className={'text-xl font-semibold text-center w-max'}>Привет, {user?.first_name}</p>
                     </div>
                     <motion.div variants={itemVariants} className={'pt-[90px] grid grid-cols-2 gap-3 mb-3 px-4'}>
                         <div className={'row-span-2 flex flex-col items-center justify-center gap-3 px-2 rounded-2xl bg-white'}>
@@ -264,11 +264,15 @@ export const UserPage = () => {
                                         {userTariff ? userTariff.name : 'Базовый'}
                                     </p>
                                 </div>
-                                <Ripple className="rounded-3xl overflow-hidden inline-block">
-                                    <button className="text-sm font-bold w-max leading-5 text-white py-2 px-4 rounded-3xl text-center bg-[linear-gradient(135deg,rgba(141,197,241,0.4)_-48.61%,#63ABE6_105.56%),linear-gradient(91.99deg,#F3F3F3_0%,#EAEAEA_100%)]">
-                                        Повысить тариф
-                                    </button>
-                                </Ripple>
+                                <a href={'https://t.me/katyaasta'} target={'_blank'}>
+                                    <Ripple className="rounded-3xl overflow-hidden inline-block">
+
+                                        <button
+                                            className="text-sm font-bold w-max leading-5 text-white py-2 px-4 rounded-3xl text-center bg-[linear-gradient(135deg,rgba(141,197,241,0.4)_-48.61%,#63ABE6_105.56%),linear-gradient(91.99deg,#F3F3F3_0%,#EAEAEA_100%)]">
+                                            Повысить тариф
+                                        </button>
+                                    </Ripple>
+                                </a>
                             </div>
                             <p className="text-sm text-[#9F9F9F] leading-tight">
                                 {userTariff?.description || 'Базовый тарифный план с ограниченным доступом к материалам.'}
