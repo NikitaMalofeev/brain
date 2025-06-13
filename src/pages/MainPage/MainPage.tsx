@@ -8,6 +8,7 @@ import { buildImageUrl } from "@/lib/cloudflareR2Service.ts";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/lib/supabase/client.ts";
 import { StageProgressData, UserProgress } from "@/components/UserProgress/UserProgress.tsx";
+import useLibraryStages from '@/lib/supabase/hooks/useLibraryStages';
 import { Ripple } from "@/components/ui/Ripple/Ripple.tsx";
 import StageCard from "@/components/StageCard/StageCard.tsx";
 import { motion } from "framer-motion";
@@ -33,26 +34,11 @@ export const MainPage = () => {
     const initDataSignal = useSignal(initDataState);
     const { supabaseUser } = useSupabaseUser(initDataSignal);
 
-    const { data: stages, isLoading } = useQuery({
-        queryFn: async (): Promise<StageProgressData[]> => {
-            // 1) Формируем запрос, вызываем .select(...).maybeSingle()/.then()/.throwOnError()
-            if (!supabase || !supabaseUser?.id) return []
-
-            const { data, error } = await supabase.rpc('get_library_stages', {
-                p_user_id: supabaseUser?.id,
-                p_course_id: COURSE_ID,
-            });
-
-            if (error) {
-                // выбрасываем ошибку, чтобы React-Query перевёл загрузку в состояние "isError"
-                throw new Error(error.message)
-            }
-            // data здесь — это массив User[] (или null/[]), в зависимости от схемы
-            return data || []
-        },
-        queryKey: ['stages', supabaseUser?.id],
-        enabled: !!supabaseUser?.id
-    })
+    // Используем хук для получения ступеней с поддержкой fallback
+    const { stages, loading: isLoading, error: stagesError } = useLibraryStages(
+        supabaseUser?.id || null,
+        COURSE_ID
+    );
 
 
     if (!supabaseUser?.id || isLoading) {

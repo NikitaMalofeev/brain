@@ -86,7 +86,7 @@ const LibraryPage: React.FC = () => {
     const activeUser = supabaseCompatUser;
 
     // Используем хук для получения ступеней
-    const { stages, loading: stagesLoading, error: stagesError } = useLibraryStages(activeUser, COURSE_ID);
+    const { stages, loading: stagesLoading, error: stagesError } = useLibraryStages(activeUser?.id || null, COURSE_ID);
 
     // Объединяем состояния загрузки
     const loading = stagesLoading || (isTelegramApp && supabaseUserLoading);
@@ -167,7 +167,7 @@ const LibraryPage: React.FC = () => {
                                 name={stage.stage_name}
                                 isLocked={!stage.is_unlocked}
                                 coverImagePath={stage.cover_image_path || undefined}
-                                onClick={handleStageClick}
+                                orderNum={i + 1}
                             />
                         </div>
                     ))}
