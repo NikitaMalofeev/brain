@@ -1,6 +1,7 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
 import { Ripple } from '@/components/ui/Ripple/Ripple';
+import { getNounPluralForm } from '@/helpers/pluralize';
 
 // The RPC function 'get_library_stages' returns this type.
 // We define it here to make this component self-contained with its data requirements.
@@ -71,21 +72,25 @@ export const UserProgress: React.FC<UserProgressProps> = ({ stages, className })
 
     // Генерируем текст в зависимости от количества неоткрытых уроков
     let progressText = '';
+    const word = getNounPluralForm(unlockedLessonsUntilNextStage, 'задание', 'задания', 'заданий');
+
     if (nextStageIndex !== -1 && unlockedLessonsUntilNextStage > 0) {
-        progressText = `Еще ${unlockedLessonsUntilNextStage} заданий до открытия до ${getWordByIndex(nextStageIndex + 1)} ступени`;
+        progressText = `Еще ${unlockedLessonsUntilNextStage} ${word} до открытия до ${getWordByIndex(nextStageIndex + 1)} ступени`;
     } else if (nextStageIndex !== -1 && unlockedLessonsUntilNextStage === 0) {
         progressText = `Все задания открыты до следующей ступени!`;
     } else if (unlockedLessonsUntilNextStage > 0) {
-        progressText = `Еще ${unlockedLessonsUntilNextStage} заданий до полного открытия`;
+        progressText = `Еще ${unlockedLessonsUntilNextStage} ${word} до полного открытия`;
     } else {
         progressText = 'Все задания открыты!';
     }
+
+    const completedLessonsWord = getNounPluralForm(totalCompletedLessons, 'задание', 'задания', 'заданий');
 
     return (
         <div className={`bg-white p-4 flex flex-col gap-3 sticky bottom-0 ${className}`}>
             <div className={'flex items-center justify-between'}>
                 <div className={'flex flex-col'}>
-                    <p className={'font-bold text-black'}>Выполнено {totalCompletedLessons} заданий</p>
+                    <p className={'font-bold text-black'}>Выполнено {totalCompletedLessons} {completedLessonsWord}</p>
                     <p className={'text-sm text-[#8C8C8C]'}>{progressText}</p>
                 </div>
                 <Ripple className="rounded-full overflow-hidden">

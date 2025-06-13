@@ -14,6 +14,7 @@ import { Ripple } from '@/components/ui/Ripple/Ripple';
 import { motion } from 'framer-motion';
 import { clsx } from 'clsx';
 import { COURSE_CONFIG } from '@/lib/config/constants';
+import { getNounPluralForm } from '@/helpers/pluralize';
 
 const listVariants = {
     hidden: { opacity: 0 },
@@ -37,7 +38,6 @@ const itemVariants = {
         }
     },
 };
-
 
 const StagePage: React.FC = () => {
 
@@ -159,7 +159,8 @@ const StagePage: React.FC = () => {
     let nextStageText = '';
 
     if (unlockedLessonsInCurrentStage > 0) {
-        nextStageText = `Еще ${unlockedLessonsInCurrentStage} заданий до открытия в этой ступени`;
+        const word = getNounPluralForm(unlockedLessonsInCurrentStage, 'задание', 'задания', 'заданий');
+        nextStageText = `Еще ${unlockedLessonsInCurrentStage} ${word} до открытия в этой ступени`;
     } else {
         // Если все уроки в текущей ступени открыты, проверяем следующую ступень
         const currentStageIndex = stages.findIndex(s => s.stage_id === parseInt(stageId || '0'));
