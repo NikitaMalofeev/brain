@@ -3,7 +3,7 @@ import { logger } from '../logger';
 
 // Проверяем, есть ли переменные окружения для Supabase
 const supabaseUrl = import.meta.env.VITE_SUPABASE_URL || process.env.NEXT_PUBLIC_SUPABASE_URL;
-const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+export const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
 
 // Создаем клиент, если переменные окружения доступны
 export const supabase: SupabaseClient | null = supabaseUrl && supabaseAnonKey

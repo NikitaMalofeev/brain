@@ -1,18 +1,22 @@
 import { useMemo, useEffect } from 'react';
-import { HashRouter, Navigate, Route, Routes } from 'react-router-dom';
+import { HashRouter, Navigate, Route, Routes, useLocation } from 'react-router-dom';
 import { retrieveLaunchParams, useSignal, isMiniAppDark, initDataState } from '@telegram-apps/sdk-react';
 import { AppRoot } from '@telegram-apps/telegram-ui';
+import { AnimatePresence } from 'framer-motion';
 
 import { routers } from '@/navigation/routes.tsx';
 import Onboarding from "@/pages/Onboarding.tsx";
 import { ScrollToTop } from "@/ScrollToTop.tsx";
 import { useSupabaseUser, useActiveTariff, useRedeemToken } from '@/lib/supabase/hooks';
 import TokenErrorPage from '@/pages/TokenErrorPage/TokenErrorPage';
+import { AppMotionProvider } from '@/animations/motionConfig';
+import TabBar from '@/components/TabBar/TabBar';
 
 function AppContent() {
     const lp = useMemo(() => retrieveLaunchParams(), []);
     const isDark = useSignal(isMiniAppDark);
     const initData = useSignal(initDataState);
+    const location = useLocation();
 
     const { supabaseUser, loading: userLoading } = useSupabaseUser(initData);
     const { data: activeTariff, isLoading: tariffLoading } = useActiveTariff(supabaseUser?.id);
@@ -74,6 +78,8 @@ function AppContent() {
 
     // Если есть доступ, но не завершен онбординг
     const shouldShowOnboarding = supabaseUser && !supabaseUser.onboarding_completed;
+    const tabBatRoutes = ['/', '/library', '/profile', '/profile2', '/faq', '/help'];
+    const showTabBar = tabBatRoutes.includes(location.pathname);
 
     return (
         <AppRoot
@@ -83,10 +89,15 @@ function AppContent() {
             {shouldShowOnboarding ? (<Onboarding onClose={() => { }} />) : (
                 <>
                     <ScrollToTop />
-                    <Routes>
-                        {routers.map((router) => <Route key={router.path} {...router} />)}
-                        <Route path="*" element={<Navigate to="/" />} />
-                    </Routes>
+                    <div style={{ position: 'relative', flex: 1 }}>
+                        <AnimatePresence mode="wait">
+                            <Routes location={location} key={location.pathname}>
+                                {routers.map((router) => <Route key={router.path} {...router} />)}
+                                <Route path="*" element={<Navigate to="/" />} />
+                            </Routes>
+                        </AnimatePresence>
+                    </div>
+                    {showTabBar && <TabBar />}
                 </>
             )}
         </AppRoot>
@@ -102,9 +113,11 @@ export function App() {
             appearance={isDark ? 'dark' : 'light'}
             platform={['macos', 'ios'].includes(lp.tgWebAppPlatform) ? 'ios' : 'base'}
         >
-            <HashRouter>
-                <AppContent />
-            </HashRouter>
+            <AppMotionProvider>
+                <HashRouter>
+                    <AppContent />
+                </HashRouter>
+            </AppMotionProvider>
         </AppRoot>
     );
 }

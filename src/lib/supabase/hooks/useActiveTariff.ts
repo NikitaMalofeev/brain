@@ -1,6 +1,7 @@
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '../client';
 import { logger } from '../../logger';
+import { useQueryWithSupabaseFallback } from '@/hooks/useWithSupabaseFallback';
 
 export interface ActiveTariff {
     id: string;
@@ -12,12 +13,23 @@ export interface ActiveTariff {
     created_at: string;
 }
 
+// Мок-данные для offline/dev-режима
+const mockActiveTariff: ActiveTariff = {
+    id: 'mock-tariff-id',
+    tariff_id: 'mock-tariff-id',
+    tariff_name: 'Тестовый тариф',
+    tariff_code: 'mock-tariff',
+    tariff_description: 'Моковый тариф для offline/dev-режима',
+    is_active: true,
+    created_at: '2099-12-31',
+};
+
 /**
  * Хук для получения активного тарифа текущего пользователя
  * Используется для проверки доступа к приложению
  */
 export function useActiveTariff(userId: string | null | undefined) {
-    return useQuery({
+    const query = useQuery({
         queryKey: ['active-tariff', userId],
         queryFn: async (): Promise<ActiveTariff | null> => {
             if (!userId || !supabase) {
@@ -59,12 +71,15 @@ export function useActiveTariff(userId: string | null | undefined) {
                 return null;
             }
 
+            // Исправление: tariffs — это массив, берем первый элемент
+            const tariffInfo = Array.isArray(data.tariffs) ? data.tariffs[0] : data.tariffs;
+
             const activeTariff: ActiveTariff = {
                 id: data.id,
                 tariff_id: data.tariff_id,
-                tariff_name: data.tariffs.name,
-                tariff_code: data.tariffs.code,
-                tariff_description: data.tariffs.description,
+                tariff_name: tariffInfo?.name || '',
+                tariff_code: tariffInfo?.code || '',
+                tariff_description: tariffInfo?.description || null,
                 is_active: data.is_active,
                 created_at: data.created_at,
             };
@@ -77,6 +92,8 @@ export function useActiveTariff(userId: string | null | undefined) {
         staleTime: 5 * 60 * 1000, // 5 минут - тарифы меняются редко
         gcTime: 10 * 60 * 1000, // 10 минут в кэше
     });
+
+    return useQueryWithSupabaseFallback(query, mockActiveTariff);
 }
 
 /**

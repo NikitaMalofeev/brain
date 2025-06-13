@@ -5,6 +5,7 @@ import { clsx } from "clsx";
 import NativeModal from "@/components/NativeModal.tsx";
 import { getDeadlineStatus } from '@/helpers/deadlineUtils';
 import { Ripple } from '@/components/ui/Ripple/Ripple';
+import { motion } from 'framer-motion';
 
 interface LessonCardProps {
     lesson: LessonData;
@@ -178,34 +179,36 @@ const LessonCard: React.FC<LessonCardProps> = ({ lesson, onClick }) => {
     const status = getLessonStatus(lesson);
 
     return (
-        <Ripple className="rounded-3xl overflow-hidden w-full shadow-sm">
-            <div onClick={lesson.is_unlocked ? handleClick : undefined} className={'flex flex-col w-full bg-white'}>
-                <div className={'relative w-full'}>
-                    <img
-                        src={coverImageUrl}
-                        alt={lesson.lesson_name}
-                        className={clsx('h-[193px] w-full object-cover', !lesson.is_unlocked && 'mix-blend-luminosity')}
-                        style={{
-                            objectPosition: 'center center' // Центрирование изображения
-                        }}
-                    />
-                    {!lesson.is_unlocked && <div className={'p-[6px] rounded-full bg-[linear-gradient(109.65deg,_#E1C1F4_13.64%,_#B862EA_124.92%)] absolute top-1/2 left-1/2 -translate-y-1/2 -translate-x-1/2 z-[2]'}>
-                        <img src={'/lock.svg'} alt={''} className={clsx('min-w-6 h-6')} />
-                    </div>}
-                </div>
-                <div className={'p-4 flex flex-col gap-2 bg-white'}>
-                    <p className={'font-semibold'}>{lesson.lesson_name}</p>
-                    <div className={'flex flex-wrap gap-1'}>
-                        <p className={'rounded-full px-2 py-1 text-white text-xs font-medium bg-[linear-gradient(135deg,_rgba(141,197,241)_-48.61%,_#63ABE6_105.56%)]'}>День {lesson.order_num}</p>
+        <motion.div layout whileTap={lesson.is_unlocked ? { scale: 0.97 } : {}}>
+            <Ripple className="rounded-3xl overflow-hidden w-full shadow-sm">
+                <div onClick={lesson.is_unlocked ? handleClick : undefined} className={'flex flex-col w-full bg-white'}>
+                    <div className={'relative w-full'}>
+                        <img
+                            src={coverImageUrl}
+                            alt={lesson.lesson_name}
+                            className={clsx('h-[193px] w-full object-cover', !lesson.is_unlocked && 'mix-blend-luminosity')}
+                            style={{
+                                objectPosition: 'center center' // Центрирование изображения
+                            }}
+                        />
+                        {!lesson.is_unlocked && <div className={'p-[6px] rounded-full bg-[linear-gradient(109.65deg,_#E1C1F4_13.64%,_#B862EA_124.92%)] absolute top-1/2 left-1/2 -translate-y-1/2 -translate-x-1/2 z-[2]'}>
+                            <img src={'/lock.svg'} alt={''} className={clsx('min-w-6 h-6')} />
+                        </div>}
+                    </div>
+                    <div className={'p-4 flex flex-col gap-2 bg-white'}>
+                        <p className={'font-semibold'}>{lesson.lesson_name}</p>
+                        <div className={'flex flex-wrap gap-1'}>
+                            <p className={'rounded-full px-2 py-1 text-white text-xs font-medium bg-[linear-gradient(135deg,_rgba(141,197,241)_-48.61%,_#63ABE6_105.56%)]'}>День {lesson.order_num}</p>
 
-                        {/* Отображаем статус урока */}
-                        <p className={`rounded-full px-2 py-1 text-white text-xs font-medium ${status.bgClass}`}>
-                            {status.text}
-                        </p>
+                            {/* Отображаем статус урока */}
+                            <p className={`rounded-full px-2 py-1 text-white text-xs font-medium ${status.bgClass}`}>
+                                {status.text}
+                            </p>
+                        </div>
                     </div>
                 </div>
-            </div>
-        </Ripple>
+            </Ripple>
+        </motion.div>
 
         /*<div onClick={handleClick} style={{
             display: 'flex',

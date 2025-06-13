@@ -9,8 +9,25 @@ import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/lib/supabase/client.ts";
 import { StageProgressData, UserProgress } from "@/components/UserProgress/UserProgress.tsx";
 import { Ripple } from "@/components/ui/Ripple/Ripple.tsx";
+import StageCard from "@/components/StageCard/StageCard.tsx";
+import { motion } from "framer-motion";
 
 const COURSE_ID = COURSE_CONFIG.DEFAULT_COURSE_ID;
+
+const listVariants = {
+    hidden: { opacity: 0 },
+    show: {
+        opacity: 1,
+        transition: {
+            staggerChildren: 0.06,
+        },
+    },
+};
+
+const itemVariants = {
+    hidden: { opacity: 0, y: 15 },
+    show: { opacity: 1, y: 0 },
+};
 
 export const MainPage = () => {
     const initDataSignal = useSignal(initDataState);
@@ -70,34 +87,24 @@ export const MainPage = () => {
                         </Link>
                     </Ripple>
                 </div>
-                {stages?.map((stage, i) => (
-                    <Ripple key={stage.stage_id} className="rounded-4xl overflow-hidden">
-                        <Link
-                            to={`/library/stage/${stage.stage_id}`}
-                            className={clsx(
-                                'block w-full h-full relative bg-white/70',
-                                stage.is_unlocked ? "cursor-pointer" : "pointer-events-none"
-                            )}
-                        >
-                            <img
-                                src={stage.cover_image_path ? buildImageUrl(stage.cover_image_path) : `/step${i + 1}${i + 1}.png`}
-                                className="w-full h-[140px] md:h-[200px] object-cover" // без своих скруглений!
-                                onError={(e) => {
-                                    e.currentTarget.src = `/step${i + 1}${i + 1}.png`;
-                                }}
-                                alt=""
+                <motion.div
+                    className="flex flex-col gap-4"
+                    variants={listVariants}
+                    initial="hidden"
+                    animate="show"
+                >
+                    {stages?.map((stage, i) => (
+                        <motion.div key={stage.stage_id} variants={itemVariants}>
+                            <StageCard
+                                id={stage.stage_id}
+                                name={stage.stage_name}
+                                isLocked={!stage.is_unlocked}
+                                coverImagePath={stage.cover_image_path || undefined}
+                                orderNum={i + 1}
                             />
-                            <div className='absolute top-5 left-5 z-[2] flex flex-col gap-1'>
-                                <p className='font-bold uppercase text-black'>{stage.stage_name}</p>
-                                <div className='text-xs text-white w-max font-medium bg-[linear-gradient(135deg,_rgba(141,197,241)_-48.61%,_#63ABE6_105.56%)] px-2 py-1 rounded-full flex items-center gap-1'>
-                                    LEVEL 0{i + 1}
-                                    {!stage.is_unlocked && <img src={'/lock.svg'} alt={''} />}
-                                </div>
-                            </div>
-                        </Link>
-                    </Ripple>
-
-                ))}
+                        </motion.div>
+                    ))}
+                </motion.div>
 
             </div>
             <UserProgress stages={stages || []} />

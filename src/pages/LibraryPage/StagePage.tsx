@@ -10,6 +10,22 @@ import { useAppContext } from '@/contexts/AppContext';
 import { logger } from '@/lib/logger';
 import NativeModal from "@/components/NativeModal.tsx";
 import { Ripple } from '@/components/ui/Ripple/Ripple';
+import { motion } from 'framer-motion';
+
+const listVariants = {
+    hidden: { opacity: 0 },
+    show: {
+        opacity: 1,
+        transition: {
+            staggerChildren: 0.06,
+        },
+    },
+};
+
+const itemVariants = {
+    hidden: { opacity: 0, y: 15 },
+    show: { opacity: 1, y: 0 },
+};
 
 const StagePage: React.FC = () => {
 
@@ -139,15 +155,21 @@ const StagePage: React.FC = () => {
                         ></div>
                     </div>
                 </div>
-                <div className={'bg-[url("/bg3.jpg")] bg-cover bg-top p-4 rounded-t-3xl flex-1 flex flex-col gap-3'}>
+                <motion.div
+                    className={'bg-[url("/bg3.jpg")] bg-cover bg-top p-4 rounded-t-3xl flex-1 flex flex-col gap-3'}
+                    variants={listVariants}
+                    initial="hidden"
+                    animate="show"
+                >
                     {stageDetails.lessons.map((lesson) => (
-                        <LessonCard
-                            key={lesson.lesson_id}
-                            lesson={lesson}
-                            onClick={handleLessonClick}
-                        />
+                        <motion.div key={lesson.lesson_id} variants={itemVariants}>
+                            <LessonCard
+                                lesson={lesson}
+                                onClick={handleLessonClick}
+                            />
+                        </motion.div>
                     ))}
-                </div>
+                </motion.div>
             </div>
             <NativeModal title={stageDetails.stage_name} description={stageDetails.stage_description} isOpen={isOpen} setIsOpen={setIsOpen} />
         </Page>

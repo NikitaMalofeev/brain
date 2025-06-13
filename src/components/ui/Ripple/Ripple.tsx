@@ -1,4 +1,4 @@
-import React, { useState, useRef, MouseEvent, TouchEvent } from 'react';
+import React, { useState, useRef } from 'react';
 import { clsx } from 'clsx';
 
 interface RippleEffect {
@@ -17,24 +17,14 @@ export const Ripple: React.FC<RippleProps> = ({ children, className }) => {
     const [ripples, setRipples] = useState<RippleEffect[]>([]);
     const containerRef = useRef<HTMLDivElement>(null);
 
-    const createRipple = (event: MouseEvent<HTMLDivElement> | TouchEvent<HTMLDivElement>) => {
+    const createRipple = (event: React.PointerEvent<HTMLDivElement>) => {
         const container = containerRef.current;
         if (!container) return;
 
         const rect = container.getBoundingClientRect();
         const size = Math.max(rect.width, rect.height);
-
-        let x: number, y: number;
-
-        if ('touches' in event) {
-            // Touch event
-            x = event.touches[0].clientX - rect.left;
-            y = event.touches[0].clientY - rect.top;
-        } else {
-            // Mouse event
-            x = event.clientX - rect.left;
-            y = event.clientY - rect.top;
-        }
+        const x = event.clientX - rect.left;
+        const y = event.clientY - rect.top;
 
         const newRipple: RippleEffect = {
             id: Date.now(),
@@ -54,8 +44,7 @@ export const Ripple: React.FC<RippleProps> = ({ children, className }) => {
         <div
             ref={containerRef}
             className={clsx('ripple-surface', className)}
-            onMouseDown={createRipple as (e: MouseEvent<HTMLDivElement>) => void}
-            onTouchStart={createRipple as (e: TouchEvent<HTMLDivElement>) => void}
+            onPointerDown={createRipple}
         >
             {children}
             {ripples.map(ripple => (
