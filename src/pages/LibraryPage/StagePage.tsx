@@ -146,9 +146,11 @@ const StagePage: React.FC = () => {
     }
 
     const completedLessons = stageDetails.lessons.filter(lesson => lesson.is_completed).length;
+    const unlockedLessons = stageDetails.lessons.filter(lesson => lesson.is_unlocked).length;
     const totalLessons = stageDetails.lessons.length;
     const progressPercentage = totalLessons > 0 ? (completedLessons / totalLessons) * 100 : 0;
     const lessonsRemaining = totalLessons - completedLessons;
+    const lessonsLocked = totalLessons - unlockedLessons;
     const progressText = lessonsRemaining > 0
         ? `Еще ${lessonsRemaining} заданий до завершения ступени`
         : 'Ступень пройдена!';
@@ -193,7 +195,7 @@ const StagePage: React.FC = () => {
                     <div className={'flex items-center gap-1 w-full'}>
                         {Array.from({ length: totalLessons }).map((_, i) => (
                             <div key={i} className={clsx("flex-1 h-4 bg-[#68B1EB] rounded-xs", {
-                                "bg-[#C8DCF7]": i > totalLessons - lessonsRemaining
+                                "bg-[#C8DCF7]": i >= unlockedLessons
                             })} />
                         ))}
                     </div>
