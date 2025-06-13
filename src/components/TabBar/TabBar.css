@@ -3,7 +3,7 @@
   bottom: 0;
   left: 0;
   right: 0;
-  height: 60px;
+  height: 94px;
   display: flex;
   justify-content: space-between;
   align-items: center;
@@ -13,62 +13,7 @@
   width: 100%;
   max-width: 600px;
   margin: 0 auto;
+  padding: 0 12px 12px 12px;
 }
 
-.tab-item {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  flex: 1;
-  min-width: 0;
-  height: 100%;
-  padding: 4px 2px;
-  user-select: none;
-  background: transparent;
-  border: none;
-  outline: none;
-  cursor: pointer;
-  color: var(--tgui-text-secondary, #8E8E93);
-  font-size: 10px;
-  box-sizing: border-box;
-  overflow: hidden;
-}
-
-.tab-item svg {
-  width: 22px;
-  height: 22px;
-  margin-bottom: 2px;
-  flex-shrink: 0;
-}
-
-.tab-item span {
-  font-size: 11px;
-  margin-top: 2px;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  text-align: center;
-  max-width: 100%;
-}
-
-.tab-item.active {
-  color: var(--tgui-accent, #007AFF);
-}
-
-/* Индикатор для iOS устройств */
-.home-indicator {
-  position: absolute;
-  bottom: 8px;
-  left: 50%;
-  transform: translateX(-50%);
-  width: 134px;
-  height: 5px;
-  background-color: var(--tgui-text-secondary);
-  border-radius: 2.5px;
-  opacity: 0.2;
-  z-index: 1001;
-}
-
-/* Удаляем глобальное padding-bottom для body, 
-   так как теперь мы добавляем отступы условно через Page.css */
+/* Старые .tab-item классы удалены, так как теперь используем Tailwind */
