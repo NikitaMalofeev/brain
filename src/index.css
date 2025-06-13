@@ -25,6 +25,32 @@
   }
 }
 
+/* ---- Загрузчики (Loaders) ---- */
+.profile-loading {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 70vh;
+  color: #8c8c8c;
+}
+
+.profile-loading-spinner {
+  width: 48px;
+  height: 48px;
+  border: 3px solid rgba(0, 0, 0, 0.05);
+  border-radius: 50%;
+  border-top-color: #4E9BFF;
+  animation: spin 1s ease-in-out infinite;
+  margin-bottom: 1.25rem;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
 :root {
   --safe-area-top: 0px;
   --safe-area-right: 0px;
