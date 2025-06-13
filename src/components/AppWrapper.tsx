@@ -23,8 +23,10 @@ export const AppWrapper: FC<AppWrapperProps> = ({ children }) => {
       return;
     }
 
-    // Автоматически включаем полноэкранный режим на всех страницах
-    //postEvent('web_app_request_fullscreen');
+    // Автоматически включаем полноэкранный режим на всех страницах (если включен в настройках)
+    if (import.meta.env.VITE_ENABLE_FULLSCREEN === 'true') {
+      postEvent('web_app_request_fullscreen');
+    }
 
     // Отключаем вертикальные свайпы для закрытия приложения 
     postEvent('web_app_setup_swipe_behavior', { allow_vertical_swipe: false });
