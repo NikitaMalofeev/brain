@@ -11,6 +11,7 @@ export type StageProgressData = {
     completed_lessons: number;
     total_lessons: number;
     overdue_lessons: number;
+    unlocked_lessons: number; // НОВОЕ ПОЛЕ: количество неоткрытых уроков
     cover_image_path?: string | null;
 };
 
@@ -44,28 +45,48 @@ export const UserProgress: React.FC<UserProgressProps> = ({ stages, className })
         );
     }
 
-    const nextStage = stages.findIndex(s => !s.is_unlocked);
+    const nextStageIndex = stages.findIndex(s => !s.is_unlocked);
 
-
-    // let progressText: string;
-    // const lessonsRemaining = currentStage.total_lessons - currentStage.completed_lessons;
-    //
-    // if (lessonsRemaining > 0) {
-    //     progressText = `Еще ${lessonsRemaining} заданий до следующей ступени`;
-    // } else if (nextStage) {
-    //     progressText = `Отлично! Следующая ступень "${nextStage.stage_name}" ждет вас.`;
-    // } else {
-    //     progressText = 'Поздравляем, вы завершили все ступени!';
-    // }
+    // Подсчитываем количество НЕоткрытых уроков в открытых ступенях до следующей неоткрытой ступени
+    let unlockedLessonsUntilNextStage = 0;
+    if (nextStageIndex !== -1) {
+        // Если есть неоткрытая ступень, считаем неоткрытые уроки в открытых ступенях до неё
+        for (let i = 0; i < nextStageIndex; i++) {
+            const stage = stages[i];
+            if (stage.is_unlocked) {
+                unlockedLessonsUntilNextStage += stage.unlocked_lessons;
+            }
+        }
+    } else {
+        // Если все ступени открыты, считаем неоткрытые уроки во всех открытых ступенях
+        unlockedLessonsUntilNextStage = stages.reduce((acc, stage) => {
+            if (stage.is_unlocked) {
+                return acc + stage.unlocked_lessons;
+            }
+            return acc;
+        }, 0);
+    }
 
     const progressPercentage = totalCompletedLessons / totalLessons * 100;
+
+    // Генерируем текст в зависимости от количества неоткрытых уроков
+    let progressText = '';
+    if (nextStageIndex !== -1 && unlockedLessonsUntilNextStage > 0) {
+        progressText = `Еще ${unlockedLessonsUntilNextStage} заданий до открытия до ${getWordByIndex(nextStageIndex + 1)} ступени`;
+    } else if (nextStageIndex !== -1 && unlockedLessonsUntilNextStage === 0) {
+        progressText = `Все задания открыты до следующей ступени!`;
+    } else if (unlockedLessonsUntilNextStage > 0) {
+        progressText = `Еще ${unlockedLessonsUntilNextStage} заданий до полного открытия`;
+    } else {
+        progressText = 'Все задания открыты!';
+    }
 
     return (
         <div className={`bg-white p-4 flex flex-col gap-3 sticky bottom-0 ${className}`}>
             <div className={'flex items-center justify-between'}>
                 <div className={'flex flex-col'}>
                     <p className={'font-bold text-black'}>Выполнено {totalCompletedLessons} заданий</p>
-                    <p className={'text-sm text-[#8C8C8C]'}>Еще 24 дня до {getWordByIndex(nextStage+1)} ступени</p>
+                    <p className={'text-sm text-[#8C8C8C]'}>{progressText}</p>
                 </div>
                 <Ripple className="rounded-full overflow-hidden">
                     <Link to={`/library/stage/${currentStage.stage_id}`}>

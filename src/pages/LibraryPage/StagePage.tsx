@@ -5,6 +5,7 @@ import { User } from '@supabase/supabase-js';
 import { Page } from '@/components/Page';
 import LessonCard from '@/components/LessonCard/LessonCard';
 import useStageDetails, { StageDetailsData } from '@/lib/supabase/hooks/useStageDetails';
+import useLibraryStages from '@/lib/supabase/hooks/useLibraryStages';
 import { useSupabaseUser } from '@/lib/supabase/hooks/useSupabaseUser';
 import { useAppContext } from '@/contexts/AppContext';
 import { logger } from '@/lib/logger';
@@ -12,6 +13,7 @@ import NativeModal from "@/components/NativeModal.tsx";
 import { Ripple } from '@/components/ui/Ripple/Ripple';
 import { motion } from 'framer-motion';
 import { clsx } from 'clsx';
+import { COURSE_CONFIG } from '@/lib/config/constants';
 
 const listVariants = {
     hidden: { opacity: 0 },
@@ -85,8 +87,14 @@ const StagePage: React.FC = () => {
     // Используем хук для получения деталей ступени
     const { stageDetails, loading: stageLoading, error: stageError } = useStageDetails(activeUser, stageId || '');
 
+    // Получаем данные обо всех ступенях для подсчета прогресса до следующей ступени
+    const { stages, loading: stagesLoading } = useLibraryStages(
+        supabaseUser?.id || null,
+        COURSE_CONFIG.DEFAULT_COURSE_ID
+    );
+
     // Объединяем состояния загрузки
-    const loading = stageLoading || (isTelegramApp && supabaseUserLoading);
+    const loading = stageLoading || stagesLoading || (isTelegramApp && supabaseUserLoading);
 
     // Объединяем ошибки
     const error = stageError || (isTelegramApp && supabaseUserError);
@@ -145,6 +153,27 @@ const StagePage: React.FC = () => {
         ? `Еще ${lessonsRemaining} заданий до завершения ступени`
         : 'Ступень пройдена!';
 
+    // Подсчитываем количество НЕоткрытых уроков в текущей ступени
+    const unlockedLessonsInCurrentStage = stageDetails.lessons.filter(lesson => !lesson.is_unlocked).length;
+
+    let nextStageText = '';
+
+    if (unlockedLessonsInCurrentStage > 0) {
+        nextStageText = `Еще ${unlockedLessonsInCurrentStage} заданий до открытия в этой ступени`;
+    } else {
+        // Если все уроки в текущей ступени открыты, проверяем следующую ступень
+        const currentStageIndex = stages.findIndex(s => s.stage_id === parseInt(stageId || '0'));
+        const nextStageIndex = stages.findIndex(s => !s.is_unlocked);
+
+        if (nextStageIndex !== -1 && nextStageIndex > currentStageIndex) {
+            const stageWords = ["первой", "второй", "третьей", "четвёртой", "пятой"];
+            const nextStageName = stageWords[nextStageIndex] || `${nextStageIndex + 1}-й`;
+            nextStageText = `Все уроки открыты! Переходите к ${nextStageName} ступени`;
+        } else {
+            nextStageText = 'Все уроки открыты!';
+        }
+    }
+
     return (
         <Page showTabBar={false}>
             <div
@@ -154,7 +183,7 @@ const StagePage: React.FC = () => {
                     <div className={'flex items-center justify-between'}>
                         <div className={'flex flex-col'}>
                             <p className={'font-bold text-xl'}>{stageDetails.stage_name}</p>
-                            <p className={'text-sm text-[#8C8C8C]'}>Еще 24 дня до второй ступени</p>
+                            <p className={'text-sm text-[#8C8C8C]'}>{nextStageText}</p>
                         </div>
                         <Ripple className="rounded-full overflow-hidden">
                             <img onClick={() => setIsOpen(true)} src={'/ask-icon.svg'} alt={''} className="cursor-pointer" />

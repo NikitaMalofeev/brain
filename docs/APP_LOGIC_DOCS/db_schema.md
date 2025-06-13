@@ -100,6 +100,8 @@
 - `open_at` (timestamptz, nullable) - Дата и время открытия урока (до этого времени урок недоступен)
 - `deadline_at` (timestamptz, nullable) - Дедлайн сдачи задания (после этого времени поздняя сдача)
 
+**❌ ВАЖНО:** В таблице `lessons` НЕТ поля `is_unlocked`. Статус открытости урока определяется динамически по полю `open_at` в логике приложения.
+
 **✅ Система временного управления:**
 - `open_at` - позволяет настроить точное время открытия урока для пользователей
 - `deadline_at` - автоматически устанавливается как open_at + 2 дня в админке
@@ -433,7 +435,14 @@
 ### `lesson_has_submission(lesson_id_param BIGINT)` ⚠️ УСТАРЕВШАЯ
 **Назначение:** Проверяет есть ли в уроке форма сдачи.
 
-**⚠️ ПРОБЛЕМА:** Функция проверяет блоки типа `assignment_instruction`, а должна проверять поле `has_assignment` в таблице `lessons`.
+**⚠️ КРИТИЧЕСКАЯ ПРОБЛЕМА:** Функция проверяет блоки типа `assignment_instruction`, которые устарели. Должна проверять поле `has_assignment` в таблице `lessons`.
+
+**Правильный код (ТРЕБУЕТСЯ ИСПРАВЛЕНИЕ):**
+```sql
+BEGIN
+  RETURN (SELECT has_assignment FROM lessons WHERE id = lesson_id_param);
+END;
+```
 
 **Возвращает:** `BOOLEAN`
 
@@ -508,9 +517,10 @@
 ## Выявленные проблемы и несоответствия
 
 ### 🚨 Критические проблемы
-1. **Функция `lesson_has_submission`** - использует устаревшую логику блоков `assignment_instruction`
-2. **CHECK constraint в `lesson_blocks`** - до сих пор разрешает тип `assignment_instruction`
+1. **Функция `lesson_has_submission`** - использует устаревшую логику блоков `assignment_instruction` ⚠️ ПОДТВЕРЖДЕНО через MCP
+2. **CHECK constraint в `lesson_blocks`** - до сих пор разрешает тип `assignment_instruction` ⚠️ ПОДТВЕРЖДЕНО через MCP
 3. **FK в `user_stage_progress`** - ссылается на `auth.users` вместо `public.users` ⚠️ ПОДТВЕРЖДЕНО через MCP
+4. **Отсутствие поля `is_unlocked` в таблице `lessons`** - уроки не имеют собственного поля разблокировки, только `open_at`
 
 ### 🔧 Требуемые исправления
 

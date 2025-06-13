@@ -14,6 +14,7 @@ export interface LibraryStageData {
     total_lessons: number;
     completed_lessons: number;
     overdue_lessons: number; // Добавлено для поддержки просроченных уроков
+    unlocked_lessons: number; // НОВОЕ ПОЛЕ: количество неоткрытых уроков
     unlock_condition_type_val: string | null;
     unlock_condition_value_val: string | null;
     cover_image_path: string | null; // Добавлено для поддержки обложек ступеней
