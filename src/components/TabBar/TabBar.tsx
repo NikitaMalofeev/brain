@@ -1,8 +1,7 @@
 import { FC } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
-import { motion } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
 import './TabBar.css';
-import { Ripple } from '../ui/Ripple/Ripple';
 
 interface TabBarProps {
     className?: string;
@@ -38,29 +37,34 @@ const TabBar: FC<TabBarProps> = ({ className }) => {
             slug: '/profile2'
         }
     ]
+
     return (
         <nav className={`tab-bar ${className || ''}`} aria-label="Основная навигация">
             {buttons.map((button) => {
                 const isActiveBtn = isActive(button.slug)
                 return (
-                    <Ripple key={button.id} className="rounded-full overflow-hidden flex-1 flex justify-center relative">
+                    <div key={button.id} className="flex-1 flex justify-center relative">
                         <motion.button
                             className={'bg-white p-[6px] rounded-full relative'}
                             onClick={() => handleTabClick(button.slug)}
+                            whileTap={{ scale: 0.9 }}
+                            style={{ touchAction: 'manipulation' }}
                         >
-                            {/* Скользящий индикатор - теперь без условного рендеринга */}
-                            <motion.div
-                                layoutId="tabCursor"
-                                className="absolute inset-0 rounded-full"
-                                style={{
-                                    background: 'linear-gradient(109.65deg,#E1C1F4 13.64%,#B862EA 124.92%)',
-                                    opacity: isActiveBtn ? 1 : 0,
-                                    zIndex: 1,
-                                }}
-                                initial={false}
-                                animate={{ opacity: isActiveBtn ? 1 : 0 }}
-                                transition={{ type: 'spring', damping: 20, stiffness: 250 }}
-                            />
+                            <AnimatePresence>
+                                {isActiveBtn && (
+                                    <motion.div
+                                        className="absolute inset-0 rounded-full"
+                                        style={{
+                                            background: 'linear-gradient(109.65deg,#E1C1F4 13.64%,#B862EA 124.92%)',
+                                            zIndex: 1,
+                                        }}
+                                        initial={{ scale: 0, opacity: 0 }}
+                                        animate={{ scale: 1, opacity: 1 }}
+                                        exit={{ scale: 0, opacity: 0 }}
+                                        transition={{ type: 'spring', damping: 20, stiffness: 250 }}
+                                    />
+                                )}
+                            </AnimatePresence>
                             {/* Обертка для иконок для плавного cross-fade */}
                             <div className="relative w-6 h-6 z-10">
                                 {/* Неактивная иконка */}
@@ -81,7 +85,7 @@ const TabBar: FC<TabBarProps> = ({ className }) => {
                                 />
                             </div>
                         </motion.button>
-                    </Ripple>
+                    </div>
                 )
             })}
         </nav>
