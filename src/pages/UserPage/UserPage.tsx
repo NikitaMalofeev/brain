@@ -204,7 +204,9 @@ export const UserPage = () => {
                         <div className={'row-span-2 flex flex-col items-center justify-center gap-3 px-2 rounded-2xl bg-white'}>
                             <div className={'flex items-center flex-col gap-2'}>
                                 <p className={'text-sm text-center font-medium text-[#9F9F9F]'}>Ваш уровень секретности</p>
-                                <p className={'font-bold text-sm uppercase'}>исцеление</p>
+                                <p className={'font-bold text-sm uppercase'}>
+                                    {stages?.[currentLevel - 1]?.stage_name || 'Неизвестная ступень'}
+                                </p>
                                 <HealingChartRecharts current={Math.round(3 * ((stages?.[currentLevel - 1].completed_lessons ?? 0) / (stages?.[currentLevel - 1].total_lessons ?? 1)))} />
                             </div>
                         </div>
