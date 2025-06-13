@@ -6,7 +6,7 @@ import { LessonBlock } from "@/lib/supabase/types.ts";
 import { BlockItem } from "@/pages/LibraryPage/LessonPage.tsx";
 import VideoPlayer from "@/components/Player/VideoPlayer.tsx";
 import { getKinescopeId } from "@/components/LessonContent/VideoBlock.tsx";
-import { buildImageUrl } from "@/lib/cloudflareR2Service.ts";
+import { buildImageUrl, buildFileUrl } from "@/lib/cloudflareR2Service.ts";
 import NewPlayer from "@/components/NewPlayer/NewPlayer.tsx";
 
 export const MaterialPage = () => {
@@ -59,33 +59,73 @@ export const MaterialPage = () => {
             </Page>
         )
     }
+    // Проверки на данные и ошибки
+    if (!data) {
+        return (
+            <Page>
+                <div className="profile-loading">
+                    <p className={'text-black text-center'}>Материал не найден</p>
+                </div>
+            </Page>
+        )
+    }
+
+    if (!blocks || blocks.length === 0) {
+        return (
+            <Page>
+                <div className="profile-loading">
+                    <p className={'text-black text-center'}>Контент материала не найден</p>
+                </div>
+            </Page>
+        )
+    }
+
+    const firstBlock = blocks[0];
+
+    const fullAudioUrl = firstBlock.content_url ? buildFileUrl(firstBlock.content_url) : '';
+
     return (
         <Page>
-            {blocks && blocks[0] ? <>
-                {data.material_type === "video" && <div className={'flex flex-col gap-2 text-black'}>
+            {data.material_type === "video" && (
+                <div className={'flex flex-col gap-2 text-black'}>
                     <div className={'h-[300px]'}>
                         <VideoPlayer
-                            videoId={getKinescopeId(blocks[0].content_url) || ''}
+                            videoId={getKinescopeId(firstBlock.content_url) || ''}
                         />
                     </div>
                     <div className={'p-4 flex flex-col gap-3'}>
-                        <p className={'text-2xl font-bold leading-7'}>{blocks[0].title}</p>
-                        <p>{blocks[0].content_text}</p>
+                        <p className={'text-2xl font-bold leading-7'}>{firstBlock.title}</p>
+                        <p>{firstBlock.content_text}</p>
                     </div>
-                </div>}
-                {data.material_type === 'audio' && <div className={'flex flex-col gap-2 text-black'}>
-                    <img src={buildImageUrl(data.cover_image_path)} alt={''} className={'h-[300px] rounded-b-3xl object-cover'} />
+                </div>
+            )}
+
+            {data.material_type === 'audio' && (
+                <div className={'flex flex-col gap-2 text-black'}>
+                    <img
+                        src={buildImageUrl(data.cover_image_path)}
+                        alt={data.name || 'Обложка материала'}
+                        className={'h-[300px] rounded-b-3xl object-cover'}
+                    />
                     <div className={'p-4 flex flex-col gap-3'}>
                         <NewPlayer
-                            audioUrl={'https://pub-77b01fa701e84f019ef02376a7fb67f1.r2.dev/audio/melody_maker_1749065134618_6053.m4a'} />
-                        <p className={'text-2xl font-bold leading-7'}>{blocks[0].title}</p>
-                        <p>{blocks[0].content_text}</p>
+                            audioUrl={fullAudioUrl}
+                        />
+                        <p className={'text-2xl font-bold leading-7'}>{firstBlock.title}</p>
+                        <p>{firstBlock.content_text}</p>
                     </div>
-                </div>}
-                <div className={'p-4 pb-8'}>
-                    {blocks?.slice(1)?.map((block: LessonBlock, i) => <BlockItem block={block} initialState={i === 0} />)}
                 </div>
-            </> : <p className={'text-black text-center'}>Не удалось загрузить контент материала</p>}
+            )}
+
+            <div className={'p-4 pb-8'}>
+                {blocks.slice(1).map((block: LessonBlock, i) => (
+                    <BlockItem
+                        key={block.id || i}
+                        block={block}
+                        initialState={i === 0}
+                    />
+                ))}
+            </div>
         </Page>
     )
 }

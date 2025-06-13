@@ -11,8 +11,8 @@ const PlayIcon = () => (
         <defs>
             <linearGradient id="paint0_linear_1056_751" x1="11.0982" y1="10.3593" x2="12.1454" y2="-3.89361"
                 gradientUnits="userSpaceOnUse">
-                <stop stop-color="white" />
-                <stop offset="1" stop-color="white" stop-opacity="0.45" />
+                <stop stopColor="white" />
+                <stop offset="1" stopColor="white" stopOpacity="0.45" />
             </linearGradient>
         </defs>
     </svg>
