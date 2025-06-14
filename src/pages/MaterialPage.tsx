@@ -3,11 +3,49 @@ import { Page } from "@/components";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/lib/supabase/client.ts";
 import { LessonBlock } from "@/lib/supabase/types.ts";
-import { BlockItem } from "@/pages/LibraryPage/LessonPage.tsx";
 import VideoPlayer from "@/components/Player/VideoPlayer.tsx";
 import { getKinescopeId } from "@/components/LessonContent/VideoBlock.tsx";
 import { buildImageUrl, buildFileUrl } from "@/lib/cloudflareR2Service.ts";
 import NewPlayer from "@/components/NewPlayer/NewPlayer.tsx";
+
+const BlockRenderer = ({ block }: { block: LessonBlock }) => {
+    switch (block.block_type) {
+        case 'text':
+            return (
+                <div className="text-black flex flex-col gap-2">
+                    <h3 className="text-xl font-bold">{block.title}</h3>
+                    <div className="flex flex-col gap-2 leading-relaxed">
+                        {block.content_text?.split('\n').map((line, i) => (
+                            <p key={i}>{line}</p>
+                        ))}
+                    </div>
+                </div>
+            );
+        case 'image':
+            return (
+                <div className="text-black flex flex-col gap-2">
+                    <h3 className="text-xl font-bold">{block.title}</h3>
+                    {block.content_url && (
+                        <img
+                            src={buildFileUrl(block.content_url)}
+                            alt={block.title || 'Изображение к материалу'}
+                            className="w-full rounded-2xl object-cover"
+                        />
+                    )}
+                    {block.content_text && (
+                        <p className="mt-2 leading-relaxed">{block.content_text}</p>
+                    )}
+                </div>
+            );
+        default:
+            return (
+                <div className="text-black flex flex-col gap-2">
+                    <h3 className="text-xl font-bold">{block.title}</h3>
+                    {block.content_text && <p className="leading-relaxed">{block.content_text}</p>}
+                </div>
+            );
+    }
+};
 
 export const MaterialPage = () => {
     const { id: materialId } = useParams<{ id: string }>();
@@ -21,7 +59,7 @@ export const MaterialPage = () => {
                 .eq('id', materialId).single()
 
             if (error) {
-                // выбрасываем ошибку, чтобы React-Query перевёл загрузку в состояние “isError”
+                // выбрасываем ошибку, чтобы React-Query перевёл загрузку в состояние "isError"
                 throw new Error(error.message)
             }
             // data здесь — это массив User[] (или null/[]), в зависимости от схемы
@@ -41,7 +79,7 @@ export const MaterialPage = () => {
                 .order('order_num', { ascending: true });
 
             if (error) {
-                // выбрасываем ошибку, чтобы React-Query перевёл загрузку в состояние “isError”
+                // выбрасываем ошибку, чтобы React-Query перевёл загрузку в состояние "isError"
                 throw new Error(error.message)
             }
             // data здесь — это массив User[] (или null/[]), в зависимости от схемы
@@ -80,27 +118,28 @@ export const MaterialPage = () => {
         )
     }
 
-    const firstBlock = blocks[0];
+    const mainBlock = blocks.find(b => b.block_type === data.material_type);
+    const otherBlocks = blocks.filter(b => b.id !== mainBlock?.id);
 
-    const fullAudioUrl = firstBlock.content_url ? buildFileUrl(firstBlock.content_url) : '';
+    const mainContentUrl = mainBlock?.content_url ? buildFileUrl(mainBlock.content_url) : '';
 
     return (
         <Page>
-            {data.material_type === "video" && (
+            {data.material_type === "video" && mainBlock && (
                 <div className={'flex flex-col gap-2 text-black'}>
                     <div className={'h-[300px]'}>
                         <VideoPlayer
-                            videoId={getKinescopeId(firstBlock.content_url) || ''}
+                            videoId={getKinescopeId(mainBlock.content_url) || ''}
                         />
                     </div>
                     <div className={'p-4 flex flex-col gap-3'}>
-                        <p className={'text-2xl font-bold leading-7'}>{firstBlock.title}</p>
-                        <p>{firstBlock.content_text}</p>
+                        <p className={'text-2xl font-bold leading-7'}>{mainBlock.title}</p>
+                        <p>{mainBlock.content_text}</p>
                     </div>
                 </div>
             )}
 
-            {data.material_type === 'audio' && (
+            {data.material_type === 'audio' && mainBlock && (
                 <div className={'flex flex-col gap-2 text-black'}>
                     <img
                         src={buildImageUrl(data.cover_image_path)}
@@ -109,21 +148,17 @@ export const MaterialPage = () => {
                     />
                     <div className={'p-4 flex flex-col gap-3'}>
                         <NewPlayer
-                            audioUrl={fullAudioUrl}
+                            audioUrl={mainContentUrl}
                         />
-                        <p className={'text-2xl font-bold leading-7'}>{firstBlock.title}</p>
-                        <p>{firstBlock.content_text}</p>
+                        <p className={'text-2xl font-bold leading-7'}>{mainBlock.title}</p>
+                        <p>{mainBlock.content_text}</p>
                     </div>
                 </div>
             )}
 
-            <div className={'p-4 pb-8'}>
-                {blocks.slice(1).map((block: LessonBlock, i) => (
-                    <BlockItem
-                        key={block.id || i}
-                        block={block}
-                        initialState={i === 0}
-                    />
+            <div className={'p-4 pb-8 flex flex-col gap-8'}>
+                {otherBlocks.map((block: LessonBlock) => (
+                    <BlockRenderer key={block.id} block={block} />
                 ))}
             </div>
         </Page>
