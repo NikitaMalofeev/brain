@@ -91,7 +91,7 @@ const useStageDetails = (user: User | null, stageId: string | number) => {
                 // Получаем прогресс пользователя по урокам
                 const { data: progressData, error: progressError } = await supabase
                     .from('lesson_progress')
-                    .select('lesson_id, completed_at, started_at')
+                    .select('lesson_id, completed_at, started_at, is_completed')
                     .eq('user_id', user.id)
                     .in('lesson_id', allLessonsData?.map(l => l.id) || []);
 
@@ -116,7 +116,8 @@ const useStageDetails = (user: User | null, stageId: string | number) => {
                 progressData?.forEach(progress => {
                     progressMap.set(progress.lesson_id, {
                         completed_at: progress.completed_at,
-                        started_at: progress.started_at
+                        started_at: progress.started_at,
+                        is_completed: progress.is_completed
                     });
                 });
 
@@ -134,12 +135,16 @@ const useStageDetails = (user: User | null, stageId: string | number) => {
                     const submission = submissionsMap.get(lesson.id);
 
                     // Определяем статус завершения
-                    let isCompleted = false;
-                    if (lesson.has_assignment) {
-                        // Для урока с заданием - завершен только если задание одобрено
+                    // ПРИОРИТЕТ 1: Флаг is_completed из lesson_progress (покрывает админское управление)
+                    let isCompleted = !!progress?.is_completed;
+
+                    // ПРИОРИТЕТ 2: Для уроков с заданием - также засчитываем approved submission
+                    if (!isCompleted && lesson.has_assignment) {
                         isCompleted = submission?.status === 'approved';
-                    } else {
-                        // Для урока без задания - завершен если есть completed_at
+                    }
+
+                    // ПРИОРИТЕТ 3: Для уроков без задания - также засчитываем completed_at
+                    if (!isCompleted && !lesson.has_assignment) {
                         isCompleted = !!progress?.completed_at;
                     }
 

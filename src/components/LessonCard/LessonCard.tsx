@@ -69,7 +69,8 @@ const getLessonStatus = (lesson: LessonData) => {
         };
     }
 
-    // Приоритет 3: Завершенный урок (только если действительно завершен)
+    // ПРИОРИТЕТ 3: Завершенный урок через lesson_progress (независимо от заданий и дедлайнов)
+    // Это покрывает случаи ручного управления прогрессом через админку
     if (lesson.is_completed) {
         return {
             type: 'completed',
@@ -79,7 +80,7 @@ const getLessonStatus = (lesson: LessonData) => {
     }
 
     // Приоритет 4: Пропущенный дедлайн (только если урок не завершен)
-    if (deadlineStatus === 'missed' && !lesson.is_completed) {
+    if (deadlineStatus === 'missed') {
         return {
             type: 'deadline_missed',
             text: 'Просрочено',

@@ -22,6 +22,7 @@ interface LessonPageState {
     error: string | null;
     submission: Submission | null;
     progress: LessonProgress | null;
+    userDataLoading: boolean; // Добавляем флаг загрузки пользовательских данных
 }
 
 function BlockContent({ block }: { block: LessonBlock }) {
@@ -114,6 +115,7 @@ const LessonPage: React.FC = () => {
         error: null,
         submission: null,
         progress: null,
+        userDataLoading: true, // Изначально пользовательские данные загружаются
     });
 
     // Создаем Supabase-совместимого User
@@ -198,7 +200,13 @@ const LessonPage: React.FC = () => {
     // Отдельно загружаем пользовательские данные
     useEffect(() => {
         const fetchUserData = async () => {
-            if (!lessonId || !supabaseCompatUser || !supabase) return;
+            if (!lessonId || !supabaseCompatUser || !supabase) {
+                // Если нет пользователя, помечаем что загрузка завершена
+                setState(prev => ({ ...prev, userDataLoading: false }));
+                return;
+            }
+
+            setState(prev => ({ ...prev, userDataLoading: true }));
 
             try {
                 // Получаем сдачи с данными куратора
@@ -227,13 +235,15 @@ const LessonPage: React.FC = () => {
                     ...prev,
                     submission,
                     progress,
+                    userDataLoading: false, // Загрузка пользовательских данных завершена
                 }));
 
                 logger.debug('User data loaded', { lessonId, hasSubmission: !!submission, hasProgress: !!progress });
 
             } catch (error) {
                 logger.error('Failed to fetch user data', { lessonId, error });
-                // Не показываем ошибку пользовательских данных как критичную
+                // Даже при ошибке помечаем загрузку как завершенную
+                setState(prev => ({ ...prev, userDataLoading: false }));
             }
         };
 
@@ -344,98 +354,20 @@ const LessonPage: React.FC = () => {
         const hasStarted = !!state.progress?.started_at || !!submission;
         const deadlineStatus = getDeadlineStatus(state.lesson?.deadline_at);
 
+        // ПРИОРИТЕТ 0: Урок завершен через lesson_progress (независимо от наличия задания)
+        // Это покрывает случаи ручного управления прогрессом через админку
+        if (isLessonCompleted) {
+            return {
+                type: 'completed',
+                text: 'Завершено',
+                bgClass: 'bg-green-500',
+                icon: '✅'
+            };
+        }
+
         // Для урока с заданием
         if (hasAssignment) {
-            // Приоритет 1: Завершенный урок
-            if (submission?.status === 'approved') {
-                return {
-                    type: 'completed',
-                    text: 'Завершено',
-                    bgClass: 'bg-green-500',
-                    icon: '✅'
-                };
-            }
-
-            // Приоритет 2: Пропущенный дедлайн (только если не завершен)
-            if (deadlineStatus === 'missed' && (!submission || (submission.status as string) !== 'approved')) {
-                return {
-                    type: 'deadline_missed',
-                    text: 'Просрочено',
-                    bgClass: 'bg-red-500',
-                    icon: '⏰'
-                };
-            }
-
-            // Приоритет 3: Дедлайн сегодня
-            if (deadlineStatus === 'today') {
-                return {
-                    type: 'deadline_today',
-                    text: 'Дедлайн сегодня',
-                    bgClass: 'bg-[linear-gradient(135deg,_rgba(255,152,0)_0%,_rgba(255,107,107)_100%)]',
-                    icon: '⏰'
-                };
-            }
-
-            // Приоритет 4: Дедлайн завтра
-            if (deadlineStatus === 'tomorrow') {
-                return {
-                    type: 'deadline_tomorrow',
-                    text: 'Дедлайн завтра',
-                    bgClass: 'bg-[linear-gradient(135deg,_rgba(255,193,7)_0%,_rgba(255,152,0)_100%)]',
-                    icon: '⏰'
-                };
-            }
-
-            // Приоритет 5: На проверке
-            if (submission?.status === 'submitted' || submission?.status === 'pending_review') {
-                return {
-                    type: 'in_review',
-                    text: 'На проверке',
-                    bgClass: 'bg-[linear-gradient(135deg,_rgba(255,193,7)_0%,_rgba(255,152,0)_100%)]',
-                    icon: '⏳'
-                };
-            }
-
-            // Приоритет 6: Нужна доработка
-            if (submission?.status === 'rejected') {
-                return {
-                    type: 'needs_retry',
-                    text: 'Нужна доработка',
-                    bgClass: 'bg-[linear-gradient(135deg,_rgba(255,107,107)_0%,_rgba(255,82,82)_100%)]',
-                    icon: '🔄'
-                };
-            }
-
-            // Приоритет 7: В процессе
-            if (hasStarted) {
-                return {
-                    type: 'in_progress',
-                    text: 'В процессе',
-                    bgClass: 'bg-[linear-gradient(135deg,_rgba(141,197,241)_-48.61%,_#63ABE6_105.56%)]',
-                    icon: '📝'
-                };
-            }
-
-            // Приоритет 8: Не начато
-            return {
-                type: 'not_started',
-                text: 'Не начато',
-                bgClass: 'bg-[linear-gradient(135deg,_rgba(141,197,241)_-48.61%,_#63ABE6_105.56%)]',
-                icon: '⚪'
-            };
-        } else {
-            // Для урока без задания
-            // Приоритет 1: Завершенный урок
-            if (isLessonCompleted) {
-                return {
-                    type: 'completed',
-                    text: 'Завершено',
-                    bgClass: 'bg-green-500',
-                    icon: '✅'
-                };
-            }
-
-            // Приоритет 2: Пропущенный дедлайн (только если не завершен)
+            // Приоритет 1: Пропущенный дедлайн (только если не завершен)
             if (deadlineStatus === 'missed') {
                 return {
                     type: 'deadline_missed',
@@ -445,7 +377,7 @@ const LessonPage: React.FC = () => {
                 };
             }
 
-            // Приоритет 3: Дедлайн сегодня
+            // Приоритет 2: Дедлайн сегодня
             if (deadlineStatus === 'today') {
                 return {
                     type: 'deadline_today',
@@ -455,7 +387,7 @@ const LessonPage: React.FC = () => {
                 };
             }
 
-            // Приоритет 4: Дедлайн завтра
+            // Приоритет 3: Дедлайн завтра
             if (deadlineStatus === 'tomorrow') {
                 return {
                     type: 'deadline_tomorrow',
@@ -465,7 +397,76 @@ const LessonPage: React.FC = () => {
                 };
             }
 
-            // Приоритет 5: Не начато (дефолтный статус для незавершенных уроков без задания)
+            // Приоритет 4: На проверке
+            if (submission?.status === 'submitted' || submission?.status === 'pending_review') {
+                return {
+                    type: 'in_review',
+                    text: 'На проверке',
+                    bgClass: 'bg-[linear-gradient(135deg,_rgba(255,193,7)_0%,_rgba(255,152,0)_100%)]',
+                    icon: '⏳'
+                };
+            }
+
+            // Приоритет 5: Нужна доработка
+            if (submission?.status === 'rejected') {
+                return {
+                    type: 'needs_retry',
+                    text: 'Нужна доработка',
+                    bgClass: 'bg-[linear-gradient(135deg,_rgba(255,107,107)_0%,_rgba(255,82,82)_100%)]',
+                    icon: '🔄'
+                };
+            }
+
+            // Приоритет 6: В процессе
+            if (hasStarted) {
+                return {
+                    type: 'in_progress',
+                    text: 'В процессе',
+                    bgClass: 'bg-[linear-gradient(135deg,_rgba(141,197,241)_-48.61%,_#63ABE6_105.56%)]',
+                    icon: '📝'
+                };
+            }
+
+            // Приоритет 7: Не начато
+            return {
+                type: 'not_started',
+                text: 'Не начато',
+                bgClass: 'bg-[linear-gradient(135deg,_rgba(141,197,241)_-48.61%,_#63ABE6_105.56%)]',
+                icon: '⚪'
+            };
+        } else {
+            // Для урока без задания
+            // Приоритет 1: Пропущенный дедлайн (только если не завершен)
+            if (deadlineStatus === 'missed') {
+                return {
+                    type: 'deadline_missed',
+                    text: 'Просрочено',
+                    bgClass: 'bg-red-500',
+                    icon: '⏰'
+                };
+            }
+
+            // Приоритет 2: Дедлайн сегодня
+            if (deadlineStatus === 'today') {
+                return {
+                    type: 'deadline_today',
+                    text: 'Дедлайн сегодня',
+                    bgClass: 'bg-[linear-gradient(135deg,_rgba(255,152,0)_0%,_rgba(255,107,107)_100%)]',
+                    icon: '⏰'
+                };
+            }
+
+            // Приоритет 3: Дедлайн завтра
+            if (deadlineStatus === 'tomorrow') {
+                return {
+                    type: 'deadline_tomorrow',
+                    text: 'Дедлайн завтра',
+                    bgClass: 'bg-[linear-gradient(135deg,_rgba(255,193,7)_0%,_rgba(255,152,0)_100%)]',
+                    icon: '⏰'
+                };
+            }
+
+            // Приоритет 4: Не начато (дефолтный статус для незавершенных уроков без задания)
             return {
                 type: 'not_started',
                 text: 'Не начато',
@@ -726,7 +727,7 @@ const LessonPage: React.FC = () => {
 
 
     // Состояния загрузки и ошибок
-    const loading = state.loading || (isTelegramApp && supabaseUserLoading);
+    const loading = state.loading || state.userDataLoading || (isTelegramApp && supabaseUserLoading);
     const error = state.error || (isTelegramApp && supabaseUserError);
 
     if (loading) {
@@ -798,8 +799,8 @@ const LessonPage: React.FC = () => {
                     <div className={'flex flex-wrap gap-1'}>
                         <p className={'rounded-full px-2 py-1 text-white text-xs font-medium bg-[linear-gradient(135deg,_rgba(141,197,241)_-48.61%,_#63ABE6_105.56%)]'}>День {state.lesson.order_num}</p>
 
-                        {/* Отображаем статус урока с учетом submissions */}
-                        {(() => {
+                        {/* Отображаем статус урока только после загрузки пользовательских данных */}
+                        {!state.userDataLoading && (() => {
                             const status = getLessonPageStatus();
                             return (
                                 <p className={`rounded-full px-2 py-1 text-white text-xs font-medium ${status.bgClass}`}>
