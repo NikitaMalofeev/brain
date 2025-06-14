@@ -279,3 +279,55 @@ body {
 .coin5 { animation-duration: 5.2s; animation-delay: 0.3s; }
 .coin6 { animation-duration: 4.3s; animation-delay: 0.8s; }
 .coin7 { animation-duration: 4.7s; animation-delay: 1.2s; }
+
+
+@keyframes breathe-1 {
+  0%, 100% {
+    transform: scale(1) rotate(0deg);
+  }
+  50% {
+    transform: scale(1.05) rotate(0.5deg);
+  }
+}
+.bg-breathe-1 {
+  animation: breathe-1 8s ease-in-out infinite;
+}
+
+/* 2. Класс 2: влево-вниз */
+@keyframes breathe-2 {
+  0%, 100% {
+    transform: scale(1) rotate(0deg);
+  }
+  50% {
+    transform: scale(1.04) rotate(2deg);
+  }
+}
+.bg-breathe-2 {
+  animation: breathe-2 10s ease-in-out infinite;
+}
+
+/* 3. Класс 3: вправо-вниз */
+@keyframes breathe-3 {
+  0%, 100% {
+    transform: scale(1) rotate(0deg);
+  }
+  50% {
+    transform: scale(1.08) rotate(0deg);
+  }
+}
+.bg-breathe-3 {
+  animation: breathe-3 9s ease-in-out infinite;
+}
+
+/* 4. Класс 4: влево-вверх */
+@keyframes breathe-4 {
+  0%, 100% {
+    transform: scale(1) rotate(0deg);
+  }
+  50% {
+    transform: scale(1.04) rotate(-2deg);
+  }
+}
+.bg-breathe-4 {
+  animation: breathe-4 7s ease-in-out infinite;
+}

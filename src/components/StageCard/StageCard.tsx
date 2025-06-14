@@ -40,12 +40,12 @@ const StageCard: React.FC<StageCardProps> = ({
                     to={`/library/stage/${id}`}
                     className={clsx(
                         'block w-full h-full relative bg-white/70',
-                        isUnlocked ? 'cursor-pointer' : 'pointer-events-none'
+                        isUnlocked ? 'cursor-pointer' : 'pointer-events-none',
                     )}
                 >
                     <img
                         src={coverImagePath ? buildImageUrl(coverImagePath) : `/step${orderNum}${orderNum}.png`}
-                        className="w-full h-[140px] md:h-[200px] object-cover"
+                        className={clsx("w-full h-[140px] md:h-[200px] object-cover", `bg-breathe-${orderNum}`)}
                         onError={(e) => {
                             e.currentTarget.src = `/step${orderNum}${orderNum}.png`;
                         }}
