@@ -8,6 +8,7 @@ import {
 import { useSupabaseUser } from "@/lib/supabase/hooks";
 import { useQuery } from "@tanstack/react-query";
 import { Ripple } from "@/components/ui/Ripple/Ripple";
+import { buildImageUrl } from "@/lib/cloudflareR2Service";
 
 export const HelpPage = () => {
     const initDataState = useSignal(_initDataState);
@@ -62,8 +63,29 @@ export const HelpPage = () => {
                     <Ripple className="rounded-2xl overflow-hidden inline-block w-full">
                         <Link to={`https://t.me/${data?.filter(el => el.id === userCurator?.curator_id)?.[0].username}`} className={'flex items-center gap-4 justify-between block w-full'}>
                             <div className={'flex items-center gap-3'}>
-                                <img src={data?.filter(el => el.id === userCurator?.curator_id)?.[0].photo_url} alt={''}
-                                    className={'w-[60px] h-[60px] rounded-full'} />
+                                {(() => {
+                                    const curator = data?.filter(el => el.id === userCurator?.curator_id)?.[0];
+                                    const photoUrl = curator?.photo_url;
+
+                                    if (photoUrl) {
+                                        return (
+                                            <img
+                                                src={buildImageUrl(photoUrl)}
+                                                alt={curator?.first_name || 'Куратор'}
+                                                className={'w-[60px] h-[60px] rounded-full object-cover'}
+                                                onError={(e) => {
+                                                    console.warn('Ошибка загрузки аватара куратора:', photoUrl);
+                                                    e.currentTarget.style.display = 'none';
+                                                }}
+                                            />
+                                        );
+                                    }
+
+                                    // Оригинальный плейсхолдер
+                                    return (
+                                        <div className={'w-[60px] h-[60px] rounded-full bg-[#EEEEEE]'}></div>
+                                    );
+                                })()}
                                 <p className={'font-semibold text-xl'}>{data?.filter(el => el.id === userCurator?.curator_id)?.[0].first_name}</p>
                             </div>
                             <img src={'/arrow-icon.svg'} alt={''} />
@@ -81,8 +103,8 @@ export const HelpPage = () => {
                                     to={`https://t.me/${el.username}`}>
                                     <div className={'flex items-center gap-2'}>
                                         {el.photo_url ?
-                                            <img src={el.photo_url} className={'w-12 h-12 rounded-full object-cover'}
-                                                alt={''} /> : <div className={'w-12 h-12 rounded-full bg-[#EEEEEE]'}></div>}
+                                            <img src={buildImageUrl(el.photo_url)} className={'w-12 h-12 rounded-full object-cover'}
+                                                alt={el.first_name || 'Куратор'} /> : <div className={'w-12 h-12 rounded-full bg-[#EEEEEE]'}></div>}
                                         <p className={'font-semibold'}>{el.first_name}</p>
                                     </div>
                                     <img src={'/arrow-icon.svg'} alt={''} />
