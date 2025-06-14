@@ -21,6 +21,7 @@ export interface PlayerState {
   contentId: string | null;
   contentData: any | null; // Данные контента (видео URL, аудио URL, информация и т.д.)
   backgroundImage: string | null; // Фоновое изображение для аудио плеера и таймера
+  programmaticChange: boolean; // Флаг для предотвращения циклических зависимостей
 }
 
 // Интерфейс контекста
@@ -58,6 +59,7 @@ const initialState: PlayerState = {
   contentId: null,
   contentData: null,
   backgroundImage: null,
+  programmaticChange: false,
 };
 
 // Создание контекста
@@ -91,11 +93,15 @@ export const PlayerProvider: React.FC<{ children: ReactNode }> = ({ children }) 
 
   // Методы управления плеером
   const play = () => {
-    setState(prev => ({ ...prev, playing: true }));
+    setState(prev => ({ ...prev, playing: true, programmaticChange: true }));
+    // Сбрасываем флаг через небольшую задержку
+    setTimeout(() => setState(prev => ({ ...prev, programmaticChange: false })), 100);
   };
 
   const pause = () => {
-    setState(prev => ({ ...prev, playing: false }));
+    setState(prev => ({ ...prev, playing: false, programmaticChange: true }));
+    // Сбрасываем флаг через небольшую задержку
+    setTimeout(() => setState(prev => ({ ...prev, programmaticChange: false })), 100);
   };
 
   const togglePlay = () => {
@@ -145,7 +151,18 @@ export const PlayerProvider: React.FC<{ children: ReactNode }> = ({ children }) 
   };
 
   const setContentId = (id: string | null) => {
-    setState(prev => ({ ...prev, contentId: id }));
+    setState(prev => {
+      // Если ID контента изменился, сбрасываем прогресс воспроизведения
+      const shouldResetProgress = prev.contentId !== id;
+
+      return {
+        ...prev,
+        contentId: id,
+        // Сбрасываем прогресс только при смене контента
+        currentTime: shouldResetProgress ? 0 : prev.currentTime,
+        playing: shouldResetProgress ? false : prev.playing, // Останавливаем воспроизведение при смене
+      };
+    });
   };
 
   const setContentData = (data: any) => {

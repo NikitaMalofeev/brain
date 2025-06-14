@@ -34,6 +34,11 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({ videoId, title: _title, descr
   };
 
   const handlePlay = () => {
+    // Игнорируем события, вызванные программно через useEffect
+    if (state.programmaticChange) {
+      return;
+    }
+
     if (!isThisPlayerActive) {
       // Если другой плеер активен, делаем этот активным
       setActiveType(PlayerType.VIDEO);
@@ -43,6 +48,11 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({ videoId, title: _title, descr
   };
 
   const handlePause = () => {
+    // Игнорируем события, вызванные программно через useEffect
+    if (state.programmaticChange) {
+      return;
+    }
+
     pause();
   };
 

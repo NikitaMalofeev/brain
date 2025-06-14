@@ -2,6 +2,27 @@
 
 ## 🎯 Приоритетные задачи
 
+### 🟢 **[ИСПРАВЛЕНО]** Циклическая зависимость в VideoPlayer (бесконечный play/pause)
+- 🟢 Исправлена циклическая зависимость между событиями KinescopePlayer и состоянием PlayerContext
+- 🟢 Устранено бесконечное переключение между play/pause при включении видео
+- 🟢 Разорван цикл: handlePlay/handlePause ↔ useEffect ↔ playerRef.current.play/pause()
+
+**ДИАГНОСТИКА ПРОБЛЕМЫ:**
+1. **События KinescopePlayer (onPlay/onPause)** → вызывали handlePlay/handlePause
+2. **handlePlay/handlePause** → обновляли state.playing через play()/pause()
+3. **useEffect на state.playing** → вызывал playerRef.current.play/pause()
+4. **playerRef.current.play/pause()** → генерировал новые события onPlay/onPause
+5. **ЦИКЛ ЗАМЫКАЛСЯ** → бесконечное переключение
+
+**РЕАЛИЗОВАННОЕ РЕШЕНИЕ:**
+- ✅ **Флаг programmaticChange**: Добавлен в PlayerState для различения программных изменений
+- ✅ **Обновлены методы play/pause**: Устанавливают флаг programmaticChange с таймаутом сброса
+- ✅ **Модифицированы обработчики**: handlePlay/handlePause игнорируют события при programmaticChange
+- ✅ **Предотвращена циклическая зависимость**: События от useEffect не вызывают обработчики
+- ✅ **Исправлен сброс прогресса**: setContentId теперь сбрасывает currentTime при смене контента
+- ✅ **Улучшен UX**: Новое видео всегда начинается с 0:00, а не с прогресса предыдущего
+- ✅ **Сохранена функциональность**: Пользовательские действия работают как прежде
+
 ### 🟢 **[ИСПРАВЛЕНО]** Отключена проблемная логика fullscreen-extra-padding
 - **ПРОБЛЕМА**: Старший разработчик указал что проблема в fullscreen-extra-padding
 - **ПРИЧИНА**: Дублирующая логика в AppWrapper.tsx с установкой --fullscreen-extra-padding
@@ -297,44 +318,4 @@
   - 🔴 Перенести `useEffect` для валидации localStorage.
   - 🔴 Перенести функции `authenticateUser` и `handleLogout`.
   - 🔴 Хук должен возвращать объект со всеми состояниями и функциями.
-  - 🔴 В `AdminPage.tsx` удалить перенесенную логику и вызвать хук `useAdminAuth`.
-- 🔴 **`useCourseNavigation` Hook:**
-  - 🔴 Создать файл `useCourseNavigation.ts`.
-  - 🔴 Перенести `useState` для `navigation`.
-  - 🔴 Перенести функции-обработчики: `handleCourseSelect`, `handleStageSelect`, `handleLessonSelect`, `handleNavigationBack`.
-  - 🔴 Хук должен возвращать `navigation` и функции-обработчики.
-  - 🔴 В `AdminPage.tsx` удалить перенесенную логику и вызвать хук `useCourseNavigation`.
-- 🔴 **`useSubmissionsNavigation` Hook:**
-  - 🔴 Создать файл `useSubmissionsNavigation.ts`.
-  - 🔴 Перенести `useState` для `submissionsNavigation`.
-  - 🔴 Перенести функции-обработчики: `handleSubmissionSelect`, `handleSubmissionsBack`.
-  - 🔴 В `AdminPage.tsx` удалить перенесенную логику и вызвать хук `useSubmissionsNavigation`.
-- 🔴 **Итоговая проверка Этапа 3:**
-  - 🔴 Убедиться, что `AdminPage.tsx` стал значительно меньше и в основном содержит JSX-разметку и вызовы хуков.
-  - 🔴 Проверить работоспособность навигации и аутентификации.
-
----
-
-## 🎯 Новые функции для пользователей
-
-### 🟡 **[Пользовательский интерфейс]** Дополнительные материалы
-- 🔴 Разработать UI для отображения списка материалов (пользовательская часть)
-- 🔴 Разработать UI для просмотра отдельного материала (пользовательская часть)
-- 🔴 Интегрировать материалы в основную навигацию приложения
-
----
-
-## 📊 Статус до MVP
-
-**🎯 Готовность к запуску:** ~99%
-
-**🔄 Можно доделать после запуска:**
-- Финальное тестирование UI/UX (0.5 дня)
-- Улучшения UX (информативные алерты)
-- Очистка неиспользуемого кода
-- Исправление остальных TypeScript lint ошибок
-
-📝 **Полная история изменений и выполненных задач в [CHANGELOG.md](./CHANGELOG.md)**
-
----
-*Последнее обновление: 11.06.2025* 
+  - 🔴 В `AdminPage.tsx`
