@@ -31,9 +31,17 @@ export const InfoPoints = () => {
         <Page>
             <div className={'text-black flex flex-col gap-6'}>
                 <div
-                    className={'relative flex p-5 items-end rounded-b-3xl bg-[url("/eid.png")] bg-cover bg-bottom h-[328px] overflow-hidden'}>
+                    className={'relative flex p-5 items-end rounded-b-3xl bg-[url("/bg3.jpg")] bg-cover bg-right-top h-[328px] overflow-hidden'}>
 
-                    <div className={'p-3 rounded-full overflow-hidden bg-white'}>
+                    <img src={'/coin1.png'} alt={''} className={'absolute -bottom-[110px] right-[8px] coin coin1'}/>
+                    <img src={'/coin2.png'} alt={''} className={'absolute top-0 left-1/2 -translate-x-1/2 coin coin2'}/>
+                    <img src={'/coin3.png'} alt={''} className={'absolute top-[90px] -left-[50px] coin coin3'}/>
+                    <img src={'/coin4.png'} alt={''}
+                         className={'absolute -bottom-[70px] top-[86px] -right-[30px] coin coin4'}/>
+                    <img src={'/coin5.png'} alt={''} className={'absolute bottom-[70px] -right-[30px] coin coin5'}/>
+                    <img src={'/coin6.png'} alt={''} className={'absolute top-0 right-[30px] coin coin6'}/>
+                    <img src={'/coin7.png'} alt={''} className={'absolute -top-[30px] left-[10px] coin coin7'}/>
+                    <div className={'p-3 rounded-full overflow-hidden bg-white relative z-50'}>
                         <img src={'/eid.svg'} alt={''} className={'w-[38px] h-[38px]'}/>
                     </div>
                 </div>

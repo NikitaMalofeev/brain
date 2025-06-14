@@ -246,3 +246,36 @@ body {
   margin: 0 !important;
   padding: 0 !important;
 } */
+
+/* 1. Общие стили для всех монет */
+.coin {
+  will-change: transform, opacity !important;
+  animation-name: float-rotate !important;
+  animation-timing-function: ease-in-out !important;
+  animation-iteration-count: infinite !important;
+}
+
+/* 2. Ключевые кадры: подъем/опускание + плавное вращение */
+@keyframes float-rotate {
+  0% {
+    transform: translateY(0);
+    opacity: 1;
+  }
+  50% {
+    transform: translateY(-10px);
+    opacity: .8;
+  }
+  100% {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+/* 3. Персональные задержки и скорости для «рассинхрона» */
+.coin1 { animation-duration: 4s; animation-delay:   0s; }
+.coin2 { animation-duration: 5s; animation-delay: 0.5s; }
+.coin3 { animation-duration: 4.5s; animation-delay: 1s; }
+.coin4 { animation-duration: 3.8s; animation-delay: 1.5s; }
+.coin5 { animation-duration: 5.2s; animation-delay: 0.3s; }
+.coin6 { animation-duration: 4.3s; animation-delay: 0.8s; }
+.coin7 { animation-duration: 4.7s; animation-delay: 1.2s; }
