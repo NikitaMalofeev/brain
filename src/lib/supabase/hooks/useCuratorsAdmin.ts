@@ -9,6 +9,7 @@ export interface Curator {
     telegram_id: string | null;
     username?: string;
     web_login?: string;
+    photo_url?: string | null;
     created_at: string;
     last_login?: string;
     web_last_login?: string;
@@ -48,6 +49,8 @@ export interface CuratorsAdminResult {
     createCurator: (data: CreateCuratorData) => Promise<{ success: boolean; error?: string }>;
     updateCurator: (userId: string, data: UpdateCuratorData) => Promise<{ success: boolean; error?: string }>;
     deleteCurator: (userId: string) => Promise<{ success: boolean; error?: string }>;
+    updateCuratorAvatar: (userId: string, photoUrl: string) => Promise<void>;
+    deleteCuratorAvatar: (userId: string) => Promise<void>;
 }
 
 /**
@@ -62,7 +65,7 @@ const fetchCurators = async (): Promise<Curator[]> => {
     // 1. Загружаем пользователей с ролью "куратор"
     const { data: curatorsData, error: curatorsError } = await supabase
         .from('users')
-        .select('id, first_name, last_name, telegram_id, username, web_login, created_at, web_last_login')
+        .select('id, first_name, last_name, telegram_id, username, web_login, photo_url, created_at, web_last_login')
         .eq('role', 'curator')
         .order('created_at', { ascending: false });
 
@@ -96,6 +99,7 @@ const fetchCurators = async (): Promise<Curator[]> => {
         telegram_id: user.telegram_id,
         username: user.username,
         web_login: user.web_login,
+        photo_url: user.photo_url,
         created_at: user.created_at,
         web_last_login: user.web_last_login,
         assigned_students_count: studentCounts[user.id] || 0,
@@ -221,6 +225,46 @@ export function useCuratorsAdmin() {
         },
     });
 
+    // Мутация для обновления аватара куратора
+    const { mutateAsync: updateCuratorAvatar, isPending: isUpdatingAvatar } = useMutation({
+        mutationFn: async ({ userId, photoUrl }: { userId: string; photoUrl: string }) => {
+            if (!supabase) throw new Error('Supabase клиент не инициализирован');
+
+            const { error: updateError } = await supabase
+                .from('users')
+                .update({ photo_url: photoUrl })
+                .eq('id', userId);
+
+            if (updateError) {
+                throw updateError;
+            }
+        },
+        onSuccess: () => {
+            // Инвалидация кеша для обновления списка кураторов
+            return queryClient.invalidateQueries({ queryKey: ['curators'] });
+        },
+    });
+
+    // Мутация для удаления аватара куратора
+    const { mutateAsync: deleteCuratorAvatar, isPending: isDeletingAvatar } = useMutation({
+        mutationFn: async (userId: string) => {
+            if (!supabase) throw new Error('Supabase клиент не инициализирован');
+
+            const { error: deleteError } = await supabase
+                .from('users')
+                .update({ photo_url: null })
+                .eq('id', userId);
+
+            if (deleteError) {
+                throw deleteError;
+            }
+        },
+        onSuccess: () => {
+            // Инвалидация кеша для обновления списка кураторов
+            return queryClient.invalidateQueries({ queryKey: ['curators'] });
+        },
+    });
+
     return {
         curators,
         loading: isLoading,
@@ -232,5 +276,9 @@ export function useCuratorsAdmin() {
         isUpdating,
         deleteCurator,
         isDeleting,
+        updateCuratorAvatar,
+        isUpdatingAvatar,
+        deleteCuratorAvatar,
+        isDeletingAvatar,
     };
 } 

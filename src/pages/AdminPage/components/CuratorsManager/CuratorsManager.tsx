@@ -1,14 +1,20 @@
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import { useCuratorsAdmin, type CreateCuratorData, type UpdateCuratorData, type Curator } from '@/lib/supabase/hooks/useCuratorsAdmin';
+import { buildImageUrl } from '@/lib/cloudflareR2Service';
 import CuratorCard from './CuratorCard';
 import StudentCard from '../StudentsManager/StudentCard';
 import AssignStudentModal from './AssignStudentModal';
+import CuratorAvatarModal from './CuratorAvatarModal';
 
 const CuratorsManager: React.FC = () => {
     const [isAddModalVisible, setIsAddModalVisible] = useState(false);
     const [selectedCuratorId, setSelectedCuratorId] = useState<string | null>(null);
     const [selectedStudentId, setSelectedStudentId] = useState<string | null>(null);
     const [assignModalCuratorId, setAssignModalCuratorId] = useState<string | null>(null);
+
+    // Состояние для модального окна аватара
+    const [avatarModalOpen, setAvatarModalOpen] = useState(false);
+    const [selectedCuratorForAvatar, setSelectedCuratorForAvatar] = useState<Curator | null>(null);
 
     // Используем новый хук с React Query
     const {
@@ -21,7 +27,11 @@ const CuratorsManager: React.FC = () => {
         updateCurator,
         isUpdating,
         deleteCurator,
-        isDeleting
+        isDeleting,
+        updateCuratorAvatar,
+        isUpdatingAvatar,
+        deleteCuratorAvatar,
+        isDeletingAvatar
     } = useCuratorsAdmin();
 
     // Состояние формы создания куратора
@@ -181,6 +191,96 @@ const CuratorsManager: React.FC = () => {
         }
     };
 
+    // === АВАТАР КУРАТОРА ===
+    const openAvatarModal = (curator: Curator) => {
+        // Теперь photo_url уже есть в типе Curator
+        setSelectedCuratorForAvatar(curator);
+        setAvatarModalOpen(true);
+    };
+
+    const closeAvatarModal = () => {
+        setAvatarModalOpen(false);
+        setSelectedCuratorForAvatar(null);
+    };
+
+    const handleSaveAvatar = async (filePath: string) => {
+        if (!selectedCuratorForAvatar) return;
+
+        try {
+            // Обновляем photo_url в базе данных через хук
+            await updateCuratorAvatar({ userId: selectedCuratorForAvatar.user_id, photoUrl: filePath });
+            console.log('Аватар успешно сохранен:', filePath);
+        } catch (error: any) {
+            console.error('Ошибка сохранения аватара:', error);
+            throw error; // Пробрасываем ошибку в модальное окно
+        }
+    };
+
+    const handleDeleteAvatar = async () => {
+        if (!selectedCuratorForAvatar) return;
+
+        try {
+            // Удаляем photo_url из базы данных (устанавливаем NULL)
+            await deleteCuratorAvatar(selectedCuratorForAvatar.user_id);
+            console.log('Аватар успешно удален');
+        } catch (error: any) {
+            console.error('Ошибка удаления аватара:', error);
+            throw error; // Пробрасываем ошибку в модальное окно
+        }
+    };
+
+    // Функция для отображения аватара или плейсхолдера
+    const renderCuratorAvatar = (curator: Curator) => {
+        const photo_url = curator.photo_url;
+
+        if (photo_url) {
+            return (
+                <img
+                    src={buildImageUrl(photo_url)}
+                    alt={`${curator.first_name || ''} ${curator.last_name || ''}`.trim()}
+                    style={{
+                        width: '40px',
+                        height: '40px',
+                        borderRadius: '50%',
+                        objectFit: 'cover',
+                        border: '1px solid #e0e0e0',
+                        cursor: 'pointer'
+                    }}
+                    onClick={() => openAvatarModal(curator)}
+                    onError={(e) => {
+                        console.warn('Ошибка загрузки аватара куратора:', photo_url);
+                        e.currentTarget.style.display = 'none';
+                    }}
+                />
+            );
+        }
+
+        // Плейсхолдер с инициалами
+        const initials = `${curator.first_name?.[0] || ''}${curator.last_name?.[0] || ''}`.toUpperCase() || curator.web_login?.[0]?.toUpperCase() || '?';
+        return (
+            <div
+                style={{
+                    width: '40px',
+                    height: '40px',
+                    borderRadius: '50%',
+                    background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    color: 'white',
+                    fontSize: '14px',
+                    fontWeight: 'bold',
+                    cursor: 'pointer',
+                    border: '1px solid #e0e0e0'
+                }}
+                onClick={() => openAvatarModal(curator)}
+                title="Нажмите для загрузки аватара"
+            >
+                {initials}
+            </div>
+        );
+    };
+
     if (selectedStudentId) {
         return <StudentCard studentId={selectedStudentId} onBack={() => setSelectedStudentId(null)} />;
     }
@@ -231,6 +331,7 @@ const CuratorsManager: React.FC = () => {
                                 <th>Web Login</th>
                                 <th>Telegram Username</th>
                                 <th>Кол-во учеников</th>
+                                <th>Аватар</th>
                                 <th>Действия</th>
                             </tr>
                         </thead>
@@ -254,6 +355,7 @@ const CuratorsManager: React.FC = () => {
                                         )}
                                     </td>
                                     <td>{curator.assigned_students_count}</td>
+                                    <td>{renderCuratorAvatar(curator)}</td>
                                     <td className="actions-cell">
                                         <button
                                             className="action-btn edit-btn"
@@ -448,6 +550,14 @@ const CuratorsManager: React.FC = () => {
                     }}
                 />
             )}
+
+            <CuratorAvatarModal
+                isOpen={avatarModalOpen}
+                curator={selectedCuratorForAvatar}
+                onClose={closeAvatarModal}
+                onSave={handleSaveAvatar}
+                onDelete={handleDeleteAvatar}
+            />
         </div>
     );
 };
