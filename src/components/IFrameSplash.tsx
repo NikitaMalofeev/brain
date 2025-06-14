@@ -11,7 +11,16 @@ export default function IFrameSplash({ onDone }: IFrameSplashProps) {
     }, [onDone]);
 
     return (
-        <div onClick={onDone} className="fixed inset-0 z-50 overflow-hidden bg-white flex items-center justify-center">
+        <div className="fixed inset-0 z-50 overflow-hidden bg-white flex items-center justify-center">
+            <div
+                onClick={onDone}
+                style={{
+                    position: 'absolute',
+                    top: 0, left: 0, right: 0, bottom: 0,
+                    cursor: 'pointer',
+                    background: 'transparent'
+                }}
+            />
             <iframe
 
                 src="https://3dbrain-three.vercel.app/"
@@ -19,7 +28,7 @@ export default function IFrameSplash({ onDone }: IFrameSplashProps) {
                 // блокируем user-инпут, чтобы никто не кликал внутрь
                 sandbox="allow-scripts"   // без allow-pointer-lock / same-origin
                 aria-hidden="true"
-                style={{ aspectRatio: '16/9' }}
+                style={{aspectRatio: '16/9'}}
             />
         </div>
     );
