@@ -3,6 +3,7 @@ import { FileUploader, FileUploaderRef } from '@/components/FileUploader/FileUpl
 import { buildFileUrl, buildImageUrl, FILE_PREFIXES, deleteFileFromR2 } from '@/lib/cloudflareR2Service';
 import { supabase } from '../../../../lib/supabase/client';
 import DraggableMaterialBlockRow from './DraggableMaterialBlockRow';
+import DraggableMaterialRow from './DraggableMaterialRow';
 import { useTariffsAdmin, useMaterialTariffAccess } from '@/lib/supabase/hooks';
 
 // TODO: Определить типы для Material и MaterialBlock на основе db_schema.md
@@ -836,6 +837,67 @@ const MaterialsManager: React.FC = () => {
         }
     };
 
+    // === ОБРАБОТКА МАТЕРИАЛОВ - DRAG&DROP ===
+    const handleMaterialReorder = async (draggedMaterialId: string, targetMaterialId: string) => {
+        if (!supabase) {
+            setError('Supabase не инициализирован');
+            return;
+        }
+
+        try {
+            setLoading(true);
+            setError('');
+
+            // Находим материалы в текущем массиве
+            const draggedMaterial = materials.find(m => m.id === draggedMaterialId);
+            const targetMaterial = materials.find(m => m.id === targetMaterialId);
+
+            if (!draggedMaterial || !targetMaterial) {
+                throw new Error('Материалы не найдены');
+            }
+
+            // Создаем копию массива материалов для расчета новых позиций
+            const sortedMaterials = [...materials].sort((a, b) => a.order_num - b.order_num);
+            const draggedIndex = sortedMaterials.findIndex(m => m.id === draggedMaterialId);
+            const targetIndex = sortedMaterials.findIndex(m => m.id === targetMaterialId);
+
+            if (draggedIndex === -1 || targetIndex === -1) {
+                throw new Error('Индексы материалов не найдены');
+            }
+
+            // Перемещаем элемент в новую позицию
+            const reorderedMaterials = [...sortedMaterials];
+            const [movedMaterial] = reorderedMaterials.splice(draggedIndex, 1);
+            reorderedMaterials.splice(targetIndex, 0, movedMaterial);
+
+            // Обновляем order_num для всех затронутых материалов
+            const updates = [];
+            for (let i = 0; i < reorderedMaterials.length; i++) {
+                const newOrderNum = i + 1;
+                if (reorderedMaterials[i].order_num !== newOrderNum) {
+                    updates.push(
+                        supabase
+                            .from('materials')
+                            .update({ order_num: newOrderNum })
+                            .eq('id', reorderedMaterials[i].id)
+                    );
+                }
+            }
+
+            // Выполняем все обновления
+            await Promise.all(updates);
+
+            // Перезагружаем данные для отображения обновленного порядка
+            await loadMaterials();
+
+        } catch (error: any) {
+            console.error('Ошибка при перестановке материалов:', error);
+            setError(error.message || 'Произошла ошибка при перестановке материалов');
+        } finally {
+            setLoading(false);
+        }
+    };
+
     return (
         <div className="admin-section">
             {/* Хлебные крошки */}
@@ -958,57 +1020,17 @@ const MaterialsManager: React.FC = () => {
                             </thead>
                             <tbody>
                                 {filteredMaterials.map((material) => (
-                                    <tr key={material.id}>
-                                        <td>
-                                            {material.cover_image_path ? (
-                                                <img
-                                                    src={buildImageUrl(material.cover_image_path)}
-                                                    alt={material.name}
-                                                    className="admin-image-preview"
-                                                />
-                                            ) : (
-                                                <div className="admin-status">Нет обложки</div>
-                                            )}
-                                        </td>
-                                        <td>{material.name}</td>
-                                        <td>{material.description || <span className="empty-value">Нет описания</span>}</td>
-                                        <td>{getMaterialTypeLabel(material.material_type)}</td>
-                                        <td>{material.order_num}</td>
-                                        <td style={{ fontSize: '13px', color: 'var(--admin-text-secondary)' }}>
-                                            {formatDate(material.created_at)}
-                                        </td>
-                                        <td className="actions-cell">
-                                            <button
-                                                className="action-btn edit-btn"
-                                                onClick={() => openCoverModal(material)}
-                                                title="Редактировать обложку"
-                                            >
-                                                🖼️
-                                            </button>
-                                            <button
-                                                className="action-btn edit-btn"
-                                                onClick={() => handleOpenMaterialModal(material)}
-                                                title="Редактировать материал"
-                                            >
-
-                                            </button>
-                                            <button
-                                                className="action-btn"
-                                                onClick={() => navigateToMaterialBlocks(material)}
-                                                title="Управление блоками"
-                                                style={{ background: 'rgba(75, 181, 67, 0.1)', color: '#4BB543' }}
-                                            >
-                                                📋
-                                            </button>
-                                            <button
-                                                className="action-btn delete-btn"
-                                                onClick={() => handleDeleteMaterial(material)}
-                                                title="Удалить материал"
-                                            >
-
-                                            </button>
-                                        </td>
-                                    </tr>
+                                    <DraggableMaterialRow
+                                        key={material.id}
+                                        material={material}
+                                        getMaterialTypeLabel={getMaterialTypeLabel}
+                                        formatDate={formatDate}
+                                        onEdit={handleOpenMaterialModal}
+                                        onEditCover={openCoverModal}
+                                        onManageBlocks={navigateToMaterialBlocks}
+                                        onDelete={handleDeleteMaterial}
+                                        onReorder={handleMaterialReorder}
+                                    />
                                 ))}
                             </tbody>
                         </table>
