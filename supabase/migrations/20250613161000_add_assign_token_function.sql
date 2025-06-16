@@ -43,12 +43,28 @@ BEGIN
         RETURN json_build_object('error', 'Курс не найден');
     END IF;
 
-    -- 3. Проверяем существует ли уже активный токен для этого tg_id
-    IF EXISTS (
-        SELECT 1 FROM public.access_tokens 
-        WHERE tg_id = p_tg_id AND status = 'created'
-    ) THEN
-        RETURN json_build_object('error', 'У пользователя уже есть активный персональный токен');
+    -- 3. Проверяем есть ли у пользователя уже активный тариф
+    -- Сначала находим пользователя по telegram_id (если он существует)
+    SELECT * INTO user_record 
+    FROM public.users 
+    WHERE telegram_id = p_tg_id::text;
+    
+    -- Если пользователь найден - проверяем активные тарифы
+    IF FOUND THEN
+        IF EXISTS (
+            SELECT 1 FROM public.user_tariffs 
+            WHERE user_id = user_record.id AND is_active = true
+        ) THEN
+            RETURN json_build_object('error', 'У пользователя уже есть активный тариф');
+        END IF;
+    ELSE
+        -- Если пользователь не найден, проверяем активные персональные токены для этого tg_id
+        IF EXISTS (
+            SELECT 1 FROM public.access_tokens 
+            WHERE tg_id = p_tg_id AND status = 'created'
+        ) THEN
+            RETURN json_build_object('error', 'Для данного Telegram ID уже создан персональный токен');
+        END IF;
     END IF;
 
     -- 4. Генерируем уникальный токен (base62, 16 символов)
@@ -81,10 +97,12 @@ BEGIN
         'created'
     ) RETURNING * INTO token_record;
 
-    -- 6. Ищем пользователя по telegram_id
-    SELECT * INTO user_record 
-    FROM public.users 
-    WHERE telegram_id = p_tg_id::text;
+    -- 6. Если пользователь НЕ был найден ранее - ищем еще раз (для случая когда он мог быть создан между проверками)
+    IF NOT FOUND THEN
+        SELECT * INTO user_record 
+        FROM public.users 
+        WHERE telegram_id = p_tg_id::text;
+    END IF;
 
     -- 7. Если пользователь найден - сразу активируем токен
     IF FOUND THEN

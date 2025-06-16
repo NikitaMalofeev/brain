@@ -1,34 +1,107 @@
 import React, { useState } from 'react';
-import { useTokensAdmin, TokenCreationData } from '@/lib/supabase/hooks/useTokensAdmin';
+import { useTokensAdmin, TokenCreationData, PersonalTokenData } from '@/lib/supabase/hooks/useTokensAdmin';
 import { useCoursesAdmin } from '@/lib/supabase/hooks/useCoursesAdmin';
 import { useTariffsAdmin } from '@/lib/supabase/hooks/useTariffsAdmin';
 import { BOT_CONFIG } from '@/lib/config/constants';
 import './TokensManager.css';
 
+// Типы токенов для переключателя
+type TokenType = 'regular' | 'personal';
+
 const TokensManager = () => {
-    const { tokens, isLoading, error, createTokens, isCreating, revokeToken, isRevoking } = useTokensAdmin();
+    const {
+        tokens,
+        isLoading,
+        error,
+        createTokens,
+        isCreating,
+        revokeToken,
+        isRevoking,
+        assignPersonalToken,
+        isAssigning
+    } = useTokensAdmin();
     const { courses } = useCoursesAdmin();
     const { tariffs } = useTariffsAdmin();
 
+    // Состояние для типа токена
+    const [tokenType, setTokenType] = useState<TokenType>('regular');
+
+    // Состояние для обычных токенов
     const [creationData, setCreationData] = useState<Omit<TokenCreationData, 'comment'>>({
         count: 1,
         course_id: '',
         tariff_id: '',
     });
 
+    // Состояние для персональных токенов
+    const [personalData, setPersonalData] = useState<Omit<PersonalTokenData, 'comment'>>({
+        tg_id: 0,
+        course_id: '',
+        tariff_id: '',
+    });
+
+    // Функция получения типа токена для отображения
+    const getTokenTypeDisplay = (token: typeof tokens[0]) => {
+        if (token.tg_id) {
+            return `Персональный (TG: ${token.tg_id})`;
+        }
+        return 'Обычный';
+    };
+
     const handleCreateTokens = async (e: React.FormEvent) => {
         e.preventDefault();
-        if (!creationData.course_id || !creationData.tariff_id || creationData.count < 1) {
-            alert('Пожалуйста, выберите курс, тариф и укажите количество токенов (минимум 1).');
-            return;
-        }
-        try {
-            await createTokens(creationData);
-            alert(`${creationData.count} токен(ов) успешно создано!`);
-            // Reset form
-            setCreationData({ count: 1, course_id: '', tariff_id: '' });
-        } catch (e: any) {
-            alert(`Ошибка при создании токенов: ${e.message}`);
+
+        if (tokenType === 'regular') {
+            // Логика для обычных токенов
+            if (!creationData.course_id || !creationData.tariff_id || creationData.count < 1) {
+                alert('Пожалуйста, выберите курс, тариф и укажите количество токенов (минимум 1).');
+                return;
+            }
+            try {
+                await createTokens(creationData);
+                alert(`${creationData.count} токен(ов) успешно создано!`);
+                // Reset form
+                setCreationData({ count: 1, course_id: '', tariff_id: '' });
+            } catch (e: any) {
+                alert(`Ошибка при создании токенов: ${e.message}`);
+            }
+        } else {
+            // Логика для персональных токенов
+            if (!personalData.course_id || !personalData.tariff_id || !personalData.tg_id) {
+                alert('Пожалуйста, выберите курс, тариф и укажите Telegram ID.');
+                return;
+            }
+            try {
+                console.log('🎯 [UI] Отправляем запрос на создание персонального токена:', personalData);
+                const result = await assignPersonalToken(personalData);
+                console.log('🎉 [UI] Персональный токен успешно создан! Результат:', result);
+
+                // Показываем успешное сообщение с деталями
+                if (result?.auto_activated) {
+                    alert('✅ Тариф успешно назначен пользователю!\n\nПользователь найден в системе - тариф активирован автоматически.');
+                } else {
+                    alert('✅ Персональный токен создан!\n\nТариф будет активирован при первом входе пользователя в приложение.');
+                }
+
+                // Reset form
+                setPersonalData({ tg_id: 0, course_id: '', tariff_id: '' });
+            } catch (e: any) {
+                console.error('💥 [UI] Ошибка при создании персонального токена:', e);
+
+                // Специфичные сообщения для разных типов ошибок
+                let errorMessage = '';
+                if (e.message.includes('уже есть активный тариф')) {
+                    errorMessage = '⚠️ Невозможно создать токен\n\nУ данного пользователя уже есть активный тариф. Один пользователь может иметь только один активный тариф.';
+                } else if (e.message.includes('уже создан персональный токен')) {
+                    errorMessage = '⚠️ Невозможно создать токен\n\nДля данного Telegram ID уже создан персональный токен. Дождитесь его активации или отзовите существующий токен.';
+                } else if (e.message.includes('не найден')) {
+                    errorMessage = '❌ Ошибка данных\n\n' + e.message + '\n\nПроверьте правильность выбранного курса и тарифа.';
+                } else {
+                    errorMessage = `❌ Ошибка при назначении тарифа\n\n${e.message}`;
+                }
+
+                alert(errorMessage);
+            }
         }
     };
 
@@ -55,13 +128,55 @@ const TokensManager = () => {
 
             <form onSubmit={handleCreateTokens} className="token-creation-form">
                 <h3>Создать новые токены</h3>
+                {tokenType === 'personal' && (
+                    <div className="personal-token-info">
+                        <p style={{ margin: '0 0 15px 0', fontSize: '14px', color: '#666' }}>
+                            <strong>Персональные токены</strong> создаются для конкретного пользователя и активируются автоматически.
+                            Система проверит, что у пользователя нет других активных тарифов.
+                        </p>
+                    </div>
+                )}
+
+                {/* Переключатель типа токена */}
+                <div className="form-group">
+                    <label>Тип токена</label>
+                    <div className="radio-group">
+                        <label className="radio-label">
+                            <input
+                                type="radio"
+                                name="tokenType"
+                                value="regular"
+                                checked={tokenType === 'regular'}
+                                onChange={() => setTokenType('regular')}
+                            />
+                            Обычные токены
+                        </label>
+                        <label className="radio-label">
+                            <input
+                                type="radio"
+                                name="tokenType"
+                                value="personal"
+                                checked={tokenType === 'personal'}
+                                onChange={() => setTokenType('personal')}
+                            />
+                            Персональные токены
+                        </label>
+                    </div>
+                </div>
+
                 <div className="form-row">
                     <div className="form-group">
                         <label htmlFor="course-select">Курс</label>
                         <select
                             id="course-select"
-                            value={creationData.course_id}
-                            onChange={(e) => setCreationData({ ...creationData, course_id: e.target.value, tariff_id: '' })}
+                            value={tokenType === 'regular' ? creationData.course_id : personalData.course_id}
+                            onChange={(e) => {
+                                if (tokenType === 'regular') {
+                                    setCreationData({ ...creationData, course_id: e.target.value, tariff_id: '' });
+                                } else {
+                                    setPersonalData({ ...personalData, course_id: e.target.value, tariff_id: '' });
+                                }
+                            }}
                             required
                         >
                             <option value="" disabled>Выберите курс</option>
@@ -74,10 +189,16 @@ const TokensManager = () => {
                         <label htmlFor="tariff-select">Тариф</label>
                         <select
                             id="tariff-select"
-                            value={creationData.tariff_id}
-                            onChange={(e) => setCreationData({ ...creationData, tariff_id: e.target.value })}
+                            value={tokenType === 'regular' ? creationData.tariff_id : personalData.tariff_id}
+                            onChange={(e) => {
+                                if (tokenType === 'regular') {
+                                    setCreationData({ ...creationData, tariff_id: e.target.value });
+                                } else {
+                                    setPersonalData({ ...personalData, tariff_id: e.target.value });
+                                }
+                            }}
                             required
-                            disabled={!creationData.course_id}
+                            disabled={tokenType === 'regular' ? !creationData.course_id : !personalData.course_id}
                         >
                             <option value="" disabled>Выберите тариф</option>
                             {/* TODO: Filter tariffs by course */}
@@ -86,21 +207,54 @@ const TokensManager = () => {
                             ))}
                         </select>
                     </div>
-                    <div className="form-group">
-                        <label htmlFor="count-input">Количество</label>
-                        <input
-                            id="count-input"
-                            type="number"
-                            min="1"
-                            max="1000"
-                            value={creationData.count}
-                            onChange={(e) => setCreationData({ ...creationData, count: parseInt(e.target.value, 10) })}
-                            required
-                        />
-                    </div>
+
+                    {/* Поле количества для обычных токенов */}
+                    {tokenType === 'regular' && (
+                        <div className="form-group">
+                            <label htmlFor="count-input">Количество</label>
+                            <input
+                                id="count-input"
+                                type="number"
+                                min="1"
+                                max="100"
+                                value={creationData.count}
+                                onChange={(e) => setCreationData({ ...creationData, count: parseInt(e.target.value, 10) })}
+                                required
+                            />
+                            <small className="form-help">От 1 до 100 токенов за раз</small>
+                        </div>
+                    )}
+
+                    {/* Поле Telegram ID для персональных токенов */}
+                    {tokenType === 'personal' && (
+                        <div className="form-group">
+                            <label htmlFor="tg-id-input">Telegram ID пользователя</label>
+                            <input
+                                id="tg-id-input"
+                                type="number"
+                                placeholder="Например: 123456789"
+                                value={personalData.tg_id || ''}
+                                onChange={(e) => setPersonalData({ ...personalData, tg_id: parseInt(e.target.value, 10) || 0 })}
+                                required
+                            />
+                            <small className="form-help">
+                                ID можно получить от пользователя или из админки студентов<br />
+                            </small>
+                        </div>
+                    )}
                 </div>
-                <button type="submit" className="admin-button" disabled={isCreating}>
-                    {isCreating ? 'Создание...' : 'Сгенерировать'}
+
+                <button
+                    type="submit"
+                    className="admin-button"
+                    disabled={isCreating || isAssigning}
+                >
+                    {(isCreating || isAssigning)
+                        ? 'Обработка...'
+                        : tokenType === 'regular'
+                            ? 'Создать ссылки'
+                            : 'Назначить тариф пользователю'
+                    }
                 </button>
             </form>
 
@@ -114,6 +268,7 @@ const TokensManager = () => {
                         <thead>
                             <tr>
                                 <th>Токен</th>
+                                <th>Тип токена</th>
                                 <th>Статус</th>
                                 <th>Курс</th>
                                 <th>Тариф</th>
@@ -126,7 +281,16 @@ const TokensManager = () => {
                             {tokens.map(token => (
                                 <tr key={token.id}>
                                     <td><code className="token-value">{token.token}</code></td>
-                                    <td><span className={`status-badge status-${token.status}`}>{token.status}</span></td>
+                                    <td>
+                                        <span className={`token-type-badge ${token.tg_id ? 'personal' : 'regular'}`}>
+                                            {getTokenTypeDisplay(token)}
+                                        </span>
+                                    </td>
+                                    <td>
+                                        <span className={`status-badge status-${token.status}`}>
+                                            {token.status === 'used' && token.tg_id ? 'Активирован автоматически' : token.status}
+                                        </span>
+                                    </td>
                                     <td>{token.courses?.title || 'N/A'}</td>
                                     <td>{token.tariffs?.name || 'N/A'}</td>
                                     <td>
@@ -137,9 +301,20 @@ const TokensManager = () => {
                                     </td>
                                     <td>{new Date(token.created_at).toLocaleString()}</td>
                                     <td>
-                                        <button onClick={() => handleCopyLink(token.token)} className="admin-button-sm">Копировать</button>
+                                        {/* Кнопка копирования только для обычных токенов */}
+                                        {!token.tg_id && (
+                                            <button onClick={() => handleCopyLink(token.token)} className="admin-button-sm">
+                                                Копировать
+                                            </button>
+                                        )}
                                         {token.status === 'created' && (
-                                            <button onClick={() => handleRevokeToken(token.id)} className="admin-button-sm danger" disabled={isRevoking}>Отозвать</button>
+                                            <button
+                                                onClick={() => handleRevokeToken(token.id)}
+                                                className="admin-button-sm danger"
+                                                disabled={isRevoking}
+                                            >
+                                                Отозвать
+                                            </button>
                                         )}
                                     </td>
                                 </tr>
