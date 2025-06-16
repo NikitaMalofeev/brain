@@ -294,7 +294,7 @@ export const UserPage = () => {
                     </motion.div>
 
                     <motion.div variants={itemVariants} className={'bg-white rounded-t-3xl pt-5'}>
-                        <div className={'px-4 flex flex-col gap-3'}>
+                        <div className={'px-4 flex flex-col gap-3 pb-8'}>
                             {links.map((el, i) => (
                                 <Ripple key={el.link} className="rounded-2xl overflow-hidden">
                                     <Link
