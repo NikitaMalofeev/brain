@@ -1,6 +1,6 @@
 ---
 description: 
-globs: **/*.ts,**/*.tsx,**/*.js
+globs: 
 alwaysApply: false
 ---
 ---
@@ -24,12 +24,14 @@ globs:
 
 # autoAttached — правило подхватывается моделью, когда файлы совпадают с шаблонами
 alwaysApply: false
+
 ---
 
 ### Когда применять
 Подключай автоматически при создании или редактировании любого файла,
 соответствующего `globs`. Вставляй маркеры, если их нет, но **никогда не
 удаляй** существующие без прямого указания пользователя.
+
 
 ---
 
@@ -90,6 +92,7 @@ alwaysApply: false
     * Короткие, однотокенные мысли внутри сложной логики:
       `// micro-CoT: fetched user → validated → saved`
 
+
 ---
 
 ### Не делай
@@ -98,9 +101,11 @@ alwaysApply: false
 * Не превышай 300 LOC в файле; при необходимости раздели файл и добавь паспорта
   в каждую часть.
 
+
 ---
 
 ### Примеры
 
 
-[semantic-anchors-example.md](mdc:docs/semantic-anchors-example.md)
+
+@semantic-anchors-example.md
