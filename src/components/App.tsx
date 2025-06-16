@@ -7,7 +7,7 @@ import { AnimatePresence } from 'framer-motion';
 import { routers } from '@/navigation/routes.tsx';
 import Onboarding from "@/pages/Onboarding.tsx";
 import { ScrollToTop } from "@/ScrollToTop.tsx";
-import { useSupabaseUser, useActiveTariff, useRedeemToken } from '@/lib/supabase/hooks';
+import { useSupabaseUser, useActiveTariff, useRedeemToken, useFindTokenByTgId } from '@/lib/supabase/hooks';
 import TokenErrorPage from '@/pages/TokenErrorPage/TokenErrorPage';
 import { AppMotionProvider } from '@/animations/motionConfig';
 import TabBar from '@/components/TabBar/TabBar';
@@ -22,10 +22,15 @@ function AppContent({ showSplash }: { showSplash: boolean }) {
     const { supabaseUser, loading: userLoading } = useSupabaseUser(initData);
     const { data: activeTariff, isLoading: tariffLoading } = useActiveTariff(supabaseUser?.id);
     const { mutate: redeemToken, isPending: isRedeeming, isIdle } = useRedeemToken();
+    const { mutate: findTokenByTgId, isPending: isFindingToken, isIdle: isFindIdle } = useFindTokenByTgId();
 
     // Извлекаем start parameter согласно документации Telegram Mini Apps
     // https://docs.telegram-mini-apps.com/platform/start-parameter
     const accessToken = lp.tgWebAppStartParam || initData?.start_param;
+
+    // Для поиска персональных токенов
+    const [personalToken, setPersonalToken] = useState<string | null>(null);
+    const [hasSearchedPersonalToken, setHasSearchedPersonalToken] = useState(false);
 
     // Debug Logs
     console.log('%c--- Render AppContent ---', 'color: yellow; font-weight: bold;');
@@ -34,18 +39,52 @@ function AppContent({ showSplash }: { showSplash: boolean }) {
     console.log('Active Tariff:', activeTariff ? `Code: ${activeTariff.tariff_code}` : 'null');
     console.log(`Access Token: ${accessToken || 'null'}`);
 
+    // Поиск персонального токена если нет startapp токена
     useEffect(() => {
-        // Условие для активации токена
-        const canRedeem = accessToken && supabaseUser && !userLoading && isIdle && !isRedeeming;
+        const shouldSearchPersonalToken =
+            !accessToken && // Нет токена из startapp
+            supabaseUser && // Пользователь загружен
+            !userLoading && // Данные пользователя загружены
+            !hasSearchedPersonalToken && // Еще не искали
+            isFindIdle && // Поиск не выполняется
+            !isFindingToken; // Поиск не в процессе
+
+        if (shouldSearchPersonalToken) {
+            console.log('🔍 Searching for personal token by tg_id...');
+            setHasSearchedPersonalToken(true);
+
+            findTokenByTgId(
+                { tgId: String(supabaseUser.telegram_id) },
+                {
+                    onSuccess: (data) => {
+                        if (data.found && data.token) {
+                            console.log('✅ Personal token found, setting for redemption');
+                            setPersonalToken(data.token);
+                        }
+                    }
+                }
+            );
+        }
+    }, [accessToken, supabaseUser, userLoading, hasSearchedPersonalToken, isFindIdle, isFindingToken, findTokenByTgId]);
+
+    // Активация токена (startapp или персональный)
+    useEffect(() => {
+        const tokenToRedeem = accessToken || personalToken;
+        const canRedeem = tokenToRedeem && supabaseUser && !userLoading && isIdle && !isRedeeming;
 
         if (canRedeem) {
-            console.log('🚀 Triggering token redemption...');
-            redeemToken({ accessToken, userId: supabaseUser.id });
+            console.log('🚀 Triggering token redemption...', {
+                tokenType: accessToken ? 'startapp' : 'personal',
+                token: tokenToRedeem
+            });
+            redeemToken({ accessToken: tokenToRedeem, userId: supabaseUser.id });
         }
-    }, [accessToken, supabaseUser, userLoading, isIdle, isRedeeming, redeemToken]);
+    }, [accessToken, personalToken, supabaseUser, userLoading, isIdle, isRedeeming, redeemToken]);
 
     // Показываем загрузку пока не завершатся все критичные процессы
-    const isAppLoading = userLoading || tariffLoading || (accessToken && isRedeeming);
+    const isAppLoading = userLoading || tariffLoading ||
+        ((accessToken || personalToken) && isRedeeming) ||
+        (!accessToken && !hasSearchedPersonalToken && !isFindingToken);
     if (isAppLoading && showSplash) {
         // Показываем сплэш-скрин вместо обычной загрузки
         return null; // Сплэш будет показан в App() компоненте
@@ -59,8 +98,8 @@ function AppContent({ showSplash }: { showSplash: boolean }) {
         );
     }
 
-    // Если нет активного тарифа И нет токена для активации - блокируем доступ
-    if (supabaseUser && !activeTariff && !accessToken) {
+    // Если нет активного тарифа И нет токенов для активации - блокируем доступ
+    if (supabaseUser && !activeTariff && !accessToken && !personalToken && hasSearchedPersonalToken) {
         return <TokenErrorPage />;
     }
 

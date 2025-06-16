@@ -9,6 +9,7 @@ export * from './useCuratorsAdmin';
 export * from './useLessonsAdmin';
 export * from './useLibraryStages';
 export * from './useRedeemToken';
+export * from './useFindTokenByTgId';
 export * from './useStageDetails';
 export * from './useStagesAdmin';
 export * from './useStudentActions';
