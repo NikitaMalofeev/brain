@@ -123,6 +123,18 @@
     /* red */
 }
 
+/* Специальные статусы для персональных токенов */
+.status-auto-activated {
+    background-color: #28a745;
+    /* зеленый - успешная автоактивация */
+}
+
+.status-pending-activation {
+    background-color: #ffc107;
+    color: #212529;
+    /* желтый - ожидание активации */
+}
+
 /* Стили для бейджей типа токена */
 .token-type-badge {
     padding: 4px 8px;

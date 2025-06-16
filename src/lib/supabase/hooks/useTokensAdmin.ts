@@ -15,6 +15,79 @@ import { customAlphabet } from 'nanoid';
 // Base62 алфавит для генерации токенов, как в документации
 const alphabet = '0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ';
 const nanoid = customAlphabet(alphabet, 16); // 16 символов
+
+// Константы для статусов персональных токенов
+export const PERSONAL_TOKEN_STATUSES = {
+    AUTO_ACTIVATED: 'Активирован автоматически',
+    PENDING_ACTIVATION: 'Ожидает активации',
+    CREATED: 'Создан',
+    USED: 'Использован',
+    REVOKED: 'Отозван'
+} as const;
+
+// Сообщения для UI
+export const PERSONAL_TOKEN_MESSAGES = {
+    SUCCESS_AUTO_ACTIVATED: '✅ Тариф успешно назначен пользователю!\n\nПользователь найден в системе - тариф активирован автоматически.',
+    SUCCESS_PENDING: '✅ Персональный токен создан!\n\nТариф будет активирован при первом входе пользователя в приложение.',
+    ERROR_ACTIVE_TARIFF: '⚠️ Невозможно создать токен\n\nУ данного пользователя уже есть активный тариф. Один пользователь может иметь только один активный тариф.',
+    ERROR_TOKEN_EXISTS: '⚠️ Невозможно создать токен\n\nДля данного Telegram ID уже создан персональный токен. Дождитесь его активации или отзовите существующий токен.',
+    ERROR_DATA_NOT_FOUND: '❌ Ошибка данных\n\n{error}\n\nПроверьте правильность выбранного курса и тарифа.',
+    ERROR_GENERAL: '❌ Ошибка при назначении тарифа\n\n{error}'
+} as const;
+//#endregion
+
+//#region Utility Functions
+
+// @anchor: get-token-display-status-3f8b
+/// <summary>
+/// Утилитарная функция для получения отображаемого статуса токена
+/// </summary>
+/// <param name="token">AccessToken - токен для анализа</param>
+/// <returns>string - отображаемый статус</returns>
+export const getTokenDisplayStatus = (token: AccessToken): string => {
+    // Для персональных токенов со статусом 'used' показываем специальный статус
+    if (token.tg_id && token.status === 'used') {
+        return PERSONAL_TOKEN_STATUSES.AUTO_ACTIVATED;
+    }
+
+    // Для персональных токенов со статусом 'created' показываем ожидание
+    if (token.tg_id && token.status === 'created') {
+        return PERSONAL_TOKEN_STATUSES.PENDING_ACTIVATION;
+    }
+
+    // Для обычных токенов возвращаем русские переводы базовых статусов
+    switch (token.status) {
+        case 'created':
+            return PERSONAL_TOKEN_STATUSES.CREATED;
+        case 'used':
+            return PERSONAL_TOKEN_STATUSES.USED;
+        case 'revoked':
+            return PERSONAL_TOKEN_STATUSES.REVOKED;
+        default:
+            return token.status;
+    }
+};
+
+// @anchor: get-token-css-class-7d2e  
+/// <summary>
+/// Утилитарная функция для получения CSS класса статуса токена
+/// </summary>
+/// <param name="token">AccessToken - токен для анализа</param>
+/// <returns>string - CSS класс для статуса</returns>
+export const getTokenStatusCssClass = (token: AccessToken): string => {
+    // Для персональных токенов используем специальные классы
+    if (token.tg_id && token.status === 'used') {
+        return 'status-auto-activated';
+    }
+
+    if (token.tg_id && token.status === 'created') {
+        return 'status-pending-activation';
+    }
+
+    // Для обычных токенов возвращаем стандартные классы
+    return `status-${token.status}`;
+};
+
 //#endregion
 
 //#region TypeScript Interfaces
@@ -211,7 +284,20 @@ const assignPersonalTokenMutation = async (formData: PersonalTokenData): Promise
     // Затем проверяем бизнес-ошибки в data (функция возвращает JSON с полем error)
     if (data && data.error) {
         console.error('❌ [PersonalToken] Бизнес-ошибка от функции:', data.error);
-        throw new Error(data.error);
+
+        // Форматируем ошибку согласно константам
+        let formattedError = data.error;
+        if (data.error.includes('уже есть активный тариф')) {
+            formattedError = PERSONAL_TOKEN_MESSAGES.ERROR_ACTIVE_TARIFF;
+        } else if (data.error.includes('уже создан персональный токен')) {
+            formattedError = PERSONAL_TOKEN_MESSAGES.ERROR_TOKEN_EXISTS;
+        } else if (data.error.includes('не найден')) {
+            formattedError = PERSONAL_TOKEN_MESSAGES.ERROR_DATA_NOT_FOUND.replace('{error}', data.error);
+        } else {
+            formattedError = PERSONAL_TOKEN_MESSAGES.ERROR_GENERAL.replace('{error}', data.error);
+        }
+
+        throw new Error(formattedError);
     }
 
     // Проверяем успешный результат
@@ -221,7 +307,14 @@ const assignPersonalTokenMutation = async (formData: PersonalTokenData): Promise
     }
 
     console.log('✅ [PersonalToken] Персональный токен успешно создан и назначен:', data);
-    return data;
+
+    // Добавляем флаг для UI на основе ответа функции
+    return {
+        ...data,
+        displayMessage: data.auto_activated
+            ? PERSONAL_TOKEN_MESSAGES.SUCCESS_AUTO_ACTIVATED
+            : PERSONAL_TOKEN_MESSAGES.SUCCESS_PENDING
+    };
 };
 
 //#endregion

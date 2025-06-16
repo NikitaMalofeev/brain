@@ -1,5 +1,12 @@
 import React, { useState } from 'react';
-import { useTokensAdmin, TokenCreationData, PersonalTokenData } from '@/lib/supabase/hooks/useTokensAdmin';
+import {
+    useTokensAdmin,
+    TokenCreationData,
+    PersonalTokenData,
+    getTokenDisplayStatus,
+    getTokenStatusCssClass,
+    PERSONAL_TOKEN_MESSAGES
+} from '@/lib/supabase/hooks/useTokensAdmin';
 import { useCoursesAdmin } from '@/lib/supabase/hooks/useCoursesAdmin';
 import { useTariffsAdmin } from '@/lib/supabase/hooks/useTariffsAdmin';
 import { BOT_CONFIG } from '@/lib/config/constants';
@@ -77,30 +84,14 @@ const TokensManager = () => {
                 console.log('🎉 [UI] Персональный токен успешно создан! Результат:', result);
 
                 // Показываем успешное сообщение с деталями
-                if (result?.auto_activated) {
-                    alert('✅ Тариф успешно назначен пользователю!\n\nПользователь найден в системе - тариф активирован автоматически.');
-                } else {
-                    alert('✅ Персональный токен создан!\n\nТариф будет активирован при первом входе пользователя в приложение.');
-                }
+                alert(result?.displayMessage || PERSONAL_TOKEN_MESSAGES.SUCCESS_PENDING);
 
                 // Reset form
                 setPersonalData({ tg_id: 0, course_id: '', tariff_id: '' });
             } catch (e: any) {
                 console.error('💥 [UI] Ошибка при создании персонального токена:', e);
-
-                // Специфичные сообщения для разных типов ошибок
-                let errorMessage = '';
-                if (e.message.includes('уже есть активный тариф')) {
-                    errorMessage = '⚠️ Невозможно создать токен\n\nУ данного пользователя уже есть активный тариф. Один пользователь может иметь только один активный тариф.';
-                } else if (e.message.includes('уже создан персональный токен')) {
-                    errorMessage = '⚠️ Невозможно создать токен\n\nДля данного Telegram ID уже создан персональный токен. Дождитесь его активации или отзовите существующий токен.';
-                } else if (e.message.includes('не найден')) {
-                    errorMessage = '❌ Ошибка данных\n\n' + e.message + '\n\nПроверьте правильность выбранного курса и тарифа.';
-                } else {
-                    errorMessage = `❌ Ошибка при назначении тарифа\n\n${e.message}`;
-                }
-
-                alert(errorMessage);
+                // Ошибки уже отформатированы в хуке согласно константам
+                alert(e.message);
             }
         }
     };
@@ -287,8 +278,8 @@ const TokensManager = () => {
                                         </span>
                                     </td>
                                     <td>
-                                        <span className={`status-badge status-${token.status}`}>
-                                            {token.status === 'used' && token.tg_id ? 'Активирован автоматически' : token.status}
+                                        <span className={`status-badge ${getTokenStatusCssClass(token)}`}>
+                                            {getTokenDisplayStatus(token)}
                                         </span>
                                     </td>
                                     <td>{token.courses?.title || 'N/A'}</td>
