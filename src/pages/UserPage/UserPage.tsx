@@ -293,20 +293,22 @@ export const UserPage = () => {
                         </div>
                     </motion.div>
 
-                    <div className={'px-4 flex flex-col gap-3'}>
-                        {links.map((el, i) => (
-                            <Ripple key={el.link} className="rounded-2xl overflow-hidden">
-                                <Link
-                                    className={'relative bg-[linear-gradient(271.99deg,_#F1F8FE_0%,_#F1EFFF_100%)] py-4 px-6 rounded-2xl flex flex-col gap-2 items-start justify-between block'}
-                                    to={el.link}>
-                                    <p className={'font-semibold'}>{el.title}</p>
-                                    <img src={'/arrow-icon.svg'} alt="" className={'w-[36px] h-[36px]'}/>
-                                    <img src={el.image}
-                                         className={clsx(`absolute top-1/2 -right-[70px] -translate-y-1/2 bg-breathe-${i + 5}`, el.className)}/>
-                                </Link>
-                            </Ripple>
-                        ))}
-                    </div>
+                    <motion.div variants={itemVariants} className={'bg-white rounded-t-3xl pt-5'}>
+                        <div className={'px-4 flex flex-col gap-3'}>
+                            {links.map((el, i) => (
+                                <Ripple key={el.link} className="rounded-2xl overflow-hidden">
+                                    <Link
+                                        className={'relative bg-[linear-gradient(271.99deg,_#F1F8FE_0%,_#F1EFFF_100%)] py-4 px-6 rounded-2xl flex flex-col gap-2 items-start justify-between block'}
+                                        to={el.link}>
+                                        <p className={'font-semibold'}>{el.title}</p>
+                                        <img src={'/arrow-icon.svg'} alt="" className={'w-[36px] h-[36px]'}/>
+                                        <img src={el.image}
+                                             className={clsx(`absolute top-1/2 -right-[70px] -translate-y-1/2 bg-breathe-${i + 5}`, el.className)}/>
+                                    </Link>
+                                </Ripple>
+                            ))}
+                        </div>
+                    </motion.div>
                 </motion.div>
                 {/* end of stats grid */}
             </div>
