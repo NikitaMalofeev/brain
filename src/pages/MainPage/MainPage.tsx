@@ -3,11 +3,7 @@ import { COURSE_CONFIG } from "@/lib/config/constants.ts";
 import { useSupabaseUser } from "@/lib/supabase/hooks";
 import { initDataState, useSignal } from "@telegram-apps/sdk-react";
 import { Link } from "react-router-dom";
-import { clsx } from "clsx";
-import { buildImageUrl } from "@/lib/cloudflareR2Service.ts";
-import { useQuery } from "@tanstack/react-query";
-import { supabase } from "@/lib/supabase/client.ts";
-import { StageProgressData, UserProgress } from "@/components/UserProgress/UserProgress.tsx";
+import { UserProgress } from "@/components/UserProgress/UserProgress.tsx";
 import useLibraryStages from '@/lib/supabase/hooks/useLibraryStages';
 import { Ripple } from "@/components/ui/Ripple/Ripple.tsx";
 import StageCard from "@/components/StageCard/StageCard.tsx";
@@ -43,7 +39,7 @@ export const MainPage = () => {
     const { supabaseUser } = useSupabaseUser(initDataSignal);
 
     // Используем хук для получения ступеней с поддержкой fallback
-    const { stages, loading: isLoading, error: stagesError } = useLibraryStages(
+    const { stages, loading: isLoading } = useLibraryStages(
         supabaseUser?.id || null,
         COURSE_ID
     );

@@ -331,3 +331,39 @@ body {
 .bg-breathe-4 {
   animation: breathe-4 7s ease-in-out infinite;
 }
+
+@keyframes breathe-5 {
+  0%, 100% {
+    transform: scale(1) rotate(0deg);
+  }
+  50% {
+    transform: scale(1.07) rotate(-2deg);
+  }
+}
+.bg-breathe-5 {
+  animation: breathe-5 6s ease-in-out infinite;
+}
+
+@keyframes breathe-6 {
+  0%, 100% {
+    transform: scale(1) rotate(0deg);
+  }
+  50% {
+    transform: scale(1.04) rotate(2deg);
+  }
+}
+.bg-breathe-6 {
+  animation: breathe-6 7.5s ease-in-out infinite;
+}
+
+@keyframes breathe-7 {
+  0%, 100% {
+    transform: scale(1) rotate(0deg);
+  }
+  50% {
+    transform: scale(1.1) rotate(-3deg);
+  }
+}
+.bg-breathe-7 {
+  animation: breathe-7 6s ease-in-out infinite;
+}

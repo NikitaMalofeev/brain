@@ -37,7 +37,7 @@ export const FaqPage = () => {
                 <div
                     className={'relative items-center rounded-b-3xl bg-[url("/bg3.jpg")] bg-cover bg-bottom h-[328px] overflow-hidden'}>
                     <img src={'/sphere-faq.png'} alt={''}
-                         className={'object-cover w-[502px] h-[502px] absolute -top-[35px] left-1/2 -translate-x-1/2'}/>
+                         className={'bg-breathe-2 object-cover w-[502px] h-[502px] absolute -top-[35px] left-1/2 -translate-x-1/2'}/>
                 </div>
                 <div className={'p-4 flex flex-col gap-3'}>
                     <h2 className={'font-bold text-xl'}>FAQ</h2>
