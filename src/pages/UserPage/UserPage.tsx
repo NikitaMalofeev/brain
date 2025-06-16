@@ -210,8 +210,7 @@ export const UserPage = () => {
                             </svg>}
 
                     </div>
-                    <p className={'pt-[58px] text-xl font-semibold text-center text-wrap max-w-full px-3 mb-2'}>Привет, {user?.first_name} мусульманка
-                        со стажжем</p>
+                    <p className={'pt-[58px] text-xl font-semibold text-center text-wrap max-w-full px-3 mb-2'}>Привет, {user?.first_name}</p>
                     <motion.div variants={itemVariants} className={' grid grid-cols-2 gap-3 mb-3 px-4'}>
                         <div
                             className={'row-span-2 flex flex-col items-center justify-center gap-3 px-2 rounded-2xl bg-white'}>
@@ -281,7 +280,6 @@ export const UserPage = () => {
                                 </div>
                                 <a href={'https://t.me/katyaasta'} target={'_blank'}>
                                     <Ripple className="rounded-3xl overflow-hidden inline-block">
-
                                         <button
                                             className="text-sm font-bold w-max leading-5 text-white py-2 px-4 rounded-3xl text-center bg-[linear-gradient(135deg,rgba(141,197,241,0.4)_-48.61%,#63ABE6_105.56%),linear-gradient(91.99deg,#F3F3F3_0%,#EAEAEA_100%)]">
                                             Повысить тариф
@@ -295,22 +293,20 @@ export const UserPage = () => {
                         </div>
                     </motion.div>
 
-                    <motion.div variants={itemVariants} className={'bg-white rounded-t-3xl pt-5'}>
-                        <div className={'px-4 flex flex-col gap-3'}>
-                            {links.map((el, i) => (
-                                <Ripple key={el.link} className="rounded-2xl overflow-hidden">
-                                    <Link
-                                        className={'relative bg-[linear-gradient(271.99deg,_#F1F8FE_0%,_#F1EFFF_100%)] py-4 px-6 rounded-2xl flex flex-col gap-2 items-start justify-between block'}
-                                        to={el.link}>
-                                        <p className={'font-semibold'}>{el.title}</p>
-                                        <img src={'/arrow-icon.svg'} alt="" className={'w-[36px] h-[36px]'}/>
-                                        <img src={el.image}
-                                             className={clsx(`absolute top-1/2 -right-[70px] -translate-y-1/2 bg-breathe-${i + 5}`, el.className)}/>
-                                    </Link>
-                                </Ripple>
-                            ))}
-                        </div>
-                    </motion.div>
+                    <div className={'px-4 flex flex-col gap-3'}>
+                        {links.map((el, i) => (
+                            <Ripple key={el.link} className="rounded-2xl overflow-hidden">
+                                <Link
+                                    className={'relative bg-[linear-gradient(271.99deg,_#F1F8FE_0%,_#F1EFFF_100%)] py-4 px-6 rounded-2xl flex flex-col gap-2 items-start justify-between block'}
+                                    to={el.link}>
+                                    <p className={'font-semibold'}>{el.title}</p>
+                                    <img src={'/arrow-icon.svg'} alt="" className={'w-[36px] h-[36px]'}/>
+                                    <img src={el.image}
+                                         className={clsx(`absolute top-1/2 -right-[70px] -translate-y-1/2 bg-breathe-${i + 5}`, el.className)}/>
+                                </Link>
+                            </Ripple>
+                        ))}
+                    </div>
                 </motion.div>
                 {/* end of stats grid */}
             </div>
