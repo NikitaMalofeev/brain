@@ -105,7 +105,7 @@ function AppContent({ showSplash }: { showSplash: boolean }) {
 
     // Если есть доступ, но не завершен онбординг
     const shouldShowOnboarding = supabaseUser && !supabaseUser.onboarding_completed;
-    const tabBatRoutes = ['/', '/library', '/profile', '/profile2', '/faq', '/help'];
+    const tabBatRoutes = ['/', '/library', '/profile', '/profile2', '/faq', '/help', '/chats'];
     const showTabBar = tabBatRoutes.includes(location.pathname);
 
     if (shouldShowOnboarding) {
