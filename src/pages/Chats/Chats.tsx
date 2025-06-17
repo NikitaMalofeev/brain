@@ -35,11 +35,11 @@ export const Chats = () => {
     }
     return (
         <Page>
-            <div className={'flex flex-col gap-2 text-black min-h-[calc(100vh-60px)]'}>
+            <div className={'flex flex-col gap-2 text-black min-h-[calc(100vh-60px)] pb-8'}>
                 <h2 className={'font-bold text-xl p-4 pt-24'}>Важные чаты</h2>
                 <div className={'relative overflow-hidden bg-[url("/bg3.jpg")] bg-cover bg-top p-4 rounded-t-3xl flex-1 flex flex-col gap-3'}>
                     <img src={'/bg-chat.png'} alt={''}
-                        className={'bg-breathe-6 absolute left-0 top-0'} />
+                        className={'bg-breathe-6 absolute left-0 -bottom-6'} />
                     <div className={'flex flex-col gap-3 relative z-[2]'}>
                         {data?.map(el => (
                             <Ripple key={el.id} className="rounded-3xl overflow-hidden">
