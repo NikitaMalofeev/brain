@@ -94,7 +94,7 @@ export const HelpPage = () => {
                 </div> : <p className={'px-4'}>Не указан</p>}
                 <div className={'bg-[url("/bg3.jpg")] relative overflow-hidden bg-cover bg-top p-4 rounded-t-3xl flex-1 flex flex-col gap-3'}>
                     <img src={'/micro2.png'} alt={''}
-                        className={'absolute bg-breathe-1 -z-[0] rotate-[5deg] mix-blend-multiply -left-6 bottom-0'} />
+                        className={'absolute bg-breathe-1 -z-[0] rotate-[5deg] mix-blend-multiply -left-6 -bottom-8'} />
                     <p className={'font-bold text-xl relative z-[2]'}>Другие кураторы</p>
                     <div className={'flex flex-col gap-3 relative z-[2]'}>
                         {data?.filter(el => el.id !== (userCurator?.curator_id || undefined)).map((el, i) => (
