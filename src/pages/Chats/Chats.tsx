@@ -15,7 +15,7 @@ export const Chats = () => {
                 .order('order_num', { ascending: true })
 
             if (error) {
-                // выбрасываем ошибку, чтобы React-Query перевёл загрузку в состояние “isError”
+                // выбрасываем ошибку, чтобы React-Query перевёл загрузку в состояние "isError"
                 throw new Error(error.message)
             }
             // data здесь — это массив User[] (или null/[]), в зависимости от схемы
@@ -50,7 +50,7 @@ export const Chats = () => {
 
                                         </div>
                                         <div className={'flex flex-col gap-1'}>
-                                            <p className={' font-semibold'}>{el.title}</p>
+                                            <p className={' font-semibold'}>{el.name}</p>
                                             <p className={'text-sm font-medium text-[#9F9F9F]'}>{el.description}</p>
                                         </div>
                                     </div>

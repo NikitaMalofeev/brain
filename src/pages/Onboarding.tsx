@@ -9,10 +9,10 @@ import { useSignal, initDataState } from '@telegram-apps/sdk-react';
 import { Ripple } from '@/components/ui/Ripple/Ripple';
 
 const slides = [
-    { title: 'Добро пожаловать', description: 'Это вводное видео поможет тебе быстро разобраться в устройстве курса и возможностях приложения. Посмотри его до конца, чтобы начать обучение на полной скорости.', img: '' },
+    { title: 'Добро пожаловать', description: 'Просмотри это видео. Оно поможет разобраться, как устроено обучение, что тебя ждёт и какие секретные функции есть в приложении.', img: '' },
     { title: 'Главная', description: 'Главная страница — это твой личный центр управления. Здесь ты видишь свой прогресс, баллы и путь по ступеням курса.', img: '/o1.jpg', icon: '/icon1-active.svg' },
-    { title: 'Библиотека', description: 'Библиотека — это центр твоего обучения. Здесь ты смотришь и слушаешь материалы, а после сразу выполняешь домашние задания. Всё, что нужно для погружения и практики в одном месте.', img: '/o2.jpg', icon: '/icon2-active.svg' },
-    { title: 'Профиль', description: 'Профиль — твоя личная навигация. Здесь всё важное под рукой: чаты, помощь, FAQ и твои эдельштейны. Заглядывай сюда, когда нужен быстрый доступ или поддержка.\n', img: '/o3.jpg', icon: '/icon3-active.svg' },
+    { title: 'Библиотека', description: 'Библиотека — это центр обучения. Здесь ты найдёшь все материалы: видеоуроки, техники, практики и домашние задания. \n\nЯ уверена, это место станет одним из твоих любимых 🤍', img: '/o2.jpg', icon: '/icon2-active.svg' },
+    { title: 'Профиль', description: 'Профиль — твоя личная страница. Здесь я собрала для тебя все самое важное: чаты, твои Эдельштейны, FAQ и связь с отделом заботы, если появятся вопросы.', img: '/o3.jpg', icon: '/icon3-active.svg' },
 ];
 
 export const Onboarding = ({ onClose }: { onClose: () => void }) => {
@@ -61,7 +61,7 @@ export const Onboarding = ({ onClose }: { onClose: () => void }) => {
                                     <img className={'w-11 h-11'} src={slide.icon} alt={''} />
                                 </div>}
                                 <h2 className="w-max text-2xl font-bold">{slide.title}</h2>
-                                <p className="text-center text-sm text-[#242424]">{slide.description}</p>
+                                <p className="text-center text-sm text-[#242424] whitespace-pre-line">{slide.description}</p>
                             </div>
                         </div>
 
