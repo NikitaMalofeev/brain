@@ -47,6 +47,7 @@ export const UserProgress: React.FC<UserProgressProps> = ({ stages, className })
     }
 
     const nextStageIndex = stages.findIndex(s => !s.is_unlocked);
+    const nextStage = stages.find(s => !s.is_unlocked);
 
     // Подсчитываем количество НЕоткрытых уроков в открытых ступенях до следующей неоткрытой ступени
     let unlockedLessonsUntilNextStage = 0;
@@ -72,12 +73,12 @@ export const UserProgress: React.FC<UserProgressProps> = ({ stages, className })
 
     // Генерируем текст в зависимости от количества неоткрытых уроков
     let progressText = '';
-    const word = getNounPluralForm(unlockedLessonsUntilNextStage, 'задание', 'задания', 'заданий');
+    const word = getNounPluralForm(unlockedLessonsUntilNextStage, 'день', 'дня', 'дней');
 
     if (nextStageIndex !== -1 && unlockedLessonsUntilNextStage > 0) {
-        progressText = `Еще ${unlockedLessonsUntilNextStage} ${word} до открытия ${getWordByIndex(nextStageIndex + 1)} ступени`;
+        progressText = `Еще ${unlockedLessonsUntilNextStage} ${word} до перехода на уровень «${nextStage?.stage_name}»`;
     } else if (nextStageIndex !== -1 && unlockedLessonsUntilNextStage === 0) {
-        progressText = `Все задания открыты до следующей ступени!`;
+        progressText = `Все задания до ступени «${nextStage?.stage_name}» открыты`;
     } else if (unlockedLessonsUntilNextStage > 0) {
         progressText = `Еще ${unlockedLessonsUntilNextStage} ${word} до полного открытия`;
     } else {

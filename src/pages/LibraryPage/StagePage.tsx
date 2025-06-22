@@ -144,7 +144,7 @@ const StagePage: React.FC = () => {
             </Page>
         );
     }
-
+    const nextStage = stages.find(s => !s.is_unlocked);
     const completedLessons = stageDetails.lessons.filter(lesson => lesson.is_completed).length;
     const unlockedLessons = stageDetails.lessons.filter(lesson => lesson.is_unlocked).length;
     const totalLessons = stageDetails.lessons.length;
@@ -161,8 +161,8 @@ const StagePage: React.FC = () => {
     let nextStageText = '';
 
     if (unlockedLessonsInCurrentStage > 0) {
-        const word = getNounPluralForm(unlockedLessonsInCurrentStage, 'задание', 'задания', 'заданий');
-        nextStageText = `Еще ${unlockedLessonsInCurrentStage} ${word} до открытия второй ступени`;
+        const word = getNounPluralForm(unlockedLessonsInCurrentStage, 'день', 'дня', 'дней');
+        nextStageText = `Еще ${unlockedLessonsInCurrentStage} ${word} до перехода на уровень «${nextStage?.stage_name}»`;
     } else {
         // Если все уроки в текущей ступени открыты, проверяем следующую ступень
         const currentStageIndex = stages.findIndex(s => s.stage_id === parseInt(stageId || '0'));
@@ -171,7 +171,7 @@ const StagePage: React.FC = () => {
         if (nextStageIndex !== -1 && nextStageIndex > currentStageIndex) {
             const stageWords = ["первой", "второй", "третьей", "четвёртой", "пятой"];
             const nextStageName = stageWords[nextStageIndex] || `${nextStageIndex + 1}-й`;
-            nextStageText = `Все уроки открыты! Переходите к ${nextStageName} ступени`;
+            nextStageText = `Все задания до ступени «${nextStage?.stage_name}» открыты`;
         } else {
             nextStageText = 'Все уроки открыты!';
         }

@@ -9,7 +9,7 @@ import { useSignal, initDataState } from '@telegram-apps/sdk-react';
 import { Ripple } from '@/components/ui/Ripple/Ripple';
 
 const slides = [
-    { title: 'Добро пожаловать', description: 'Просмотри это видео. Оно поможет разобраться, как устроено обучение, что тебя ждёт и какие секретные функции есть в приложении.', img: '' },
+    { title: 'Добро пожаловать 🤍', description: 'Просмотри это видео. Оно поможет разобраться, как устроено обучение, что тебя ждёт и какие секретные функции есть в приложении.', img: '' },
     { title: 'Главная', description: 'Главная страница — это твой личный центр управления. Здесь ты видишь свой прогресс, баллы и путь по ступеням курса.', img: '/o1.jpg', icon: '/icon1-active.svg' },
     { title: 'Библиотека', description: 'Библиотека — это центр обучения. Здесь ты найдёшь все материалы: видеоуроки, техники, практики и домашние задания. \n\nЯ уверена, это место станет одним из твоих любимых 🤍', img: '/o2.jpg', icon: '/icon2-active.svg' },
     { title: 'Профиль', description: 'Профиль — твоя личная страница. Здесь я собрала для тебя все самое важное: чаты, твои Эдельштейны, FAQ и связь с отделом заботы, если появятся вопросы.', img: '/o3.jpg', icon: '/icon3-active.svg' },
@@ -81,7 +81,7 @@ export const Onboarding = ({ onClose }: { onClose: () => void }) => {
             </div>
 
             {/* Кнопка Далее */}
-            <div className="p-4">
+            <div className="p-4 pb-12">
                 <Ripple className="rounded-3xl overflow-hidden">
                     <button
                         onClick={handleNext}

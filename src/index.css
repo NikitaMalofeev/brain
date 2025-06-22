@@ -358,10 +358,10 @@ body {
 
 @keyframes breathe-7 {
   0%, 100% {
-    transform: scale(1) rotate(0deg);
+    transform: scale(1) rotate(20deg);
   }
   50% {
-    transform: scale(1.1) rotate(-3deg);
+    transform: scale(1.1) rotate(23deg);
   }
 }
 .bg-breathe-7 {

@@ -9,13 +9,14 @@ const TokenErrorPage = () => {
     const isNoAccessError = !error;
 
     const title = isNoAccessError ?
-        <span>Приложение<br /> доступно только<br /> для учеников программы Brain Programming<br /> <br />Присоединяйтесь<br /> к обучению и откройте для себя все возможности своего мозга и жизни</span> : 'Ошибка активации доступа';
+        <span>Приложение<br /> доступно только<br /> ученикам программы Brain Programming<br /></span> : 'Ошибка активации доступа';
 
     return (
         <div className="flex flex-col py-6 justify-between gap-6 items-center min-h-screen bg-[linear-gradient(180deg,_#D5D9F4_0%,_#E3E0F7_33.65%,_#EDF7FE_68.27%,_#E8F1FD_100%)]">
             <div className={'flex flex-col items-center gap-5'}>
                 <img src={'/hand.png'} alt={''} className={'w-[250px]'} />
                 <h1 className={'font-bold text-2xl px-4 leading-6 text-center text-black'}>{title}</h1>
+                <p>Присоединяйтесь к обучению и откройте для себя все возможности своего мозга и жизни</p>
             </div>
             <div className="w-full max-w-xs px-4">
                 <Ripple className="rounded-3xl overflow-hidden">

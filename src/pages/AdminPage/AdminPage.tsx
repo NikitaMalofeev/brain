@@ -2118,7 +2118,7 @@ const AdminPage: React.FC = () => {
                 className={`admin-tab ${currentTab === 'tokens' ? 'active' : ''}`}
                 onClick={() => handleTabChange('tokens')}
               >
-                Токены
+                Доступы
               </button>
             </>
           )}
