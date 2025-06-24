@@ -7,7 +7,7 @@ interface IFrameSplashProps {
 
 export default function IFrameSplash({ onDone }: IFrameSplashProps) {
     useEffect(() => {
-        const id = setTimeout(onDone, 1000000); // 6 секунд
+        const id = setTimeout(onDone, 6000); // 6 секунд
         return () => clearTimeout(id);
     }, [onDone]);
 
@@ -55,7 +55,7 @@ export default function IFrameSplash({ onDone }: IFrameSplashProps) {
             </div>
 
             {/* Текст вынесен из видео-контейнера для надежного позиционирования */}
-            <div className="absolute bottom-8 left-0 right-0 z-[100]">
+            <div className="absolute bottom-16 left-0 right-0 z-[100]">
                 <h2 className="text-black text-center text-4xl font-bold w-full">
                     <TypeAnimation
                         sequence={[
