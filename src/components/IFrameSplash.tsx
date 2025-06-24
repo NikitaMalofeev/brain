@@ -23,7 +23,7 @@ export default function IFrameSplash({ onDone }: IFrameSplashProps) {
                     background: 'transparent'
                 }}
             />
-            <div className={'relative bg-[rgba(196,213,243,1)]'}>
+            <div className={'relative bg-[rgba(224,231,251,1)]'}>
                 <div
                     className="absolute top-0 left-0 h-full w-[100px] pointer-events-none z-10"
                     style={{
@@ -40,7 +40,7 @@ export default function IFrameSplash({ onDone }: IFrameSplashProps) {
                 <div
                     className="absolute bottom-0 right-0 h-[100px] w-full pointer-events-none z-10"
                     style={{
-                        background: 'linear-gradient(to top, rgba(196,213,243,1) 0%, rgba(196,213,243,1) 80%, rgba(196,213,243,0) 100%)'
+                        background: 'linear-gradient(to top, rgba(224,231,251,1) 0%, rgba(224,231,251,1) 80%, rgba(224,231,251,0) 100%)'
                     }}
                 />
                 <video
