@@ -44,7 +44,7 @@ export default function IFrameSplash({ onDone }: IFrameSplashProps) {
                     }}
                 />
                 <video
-                    className={'w-full min-h-screen top-0 left-0 -translate-y-[60px] object-cover'}
+                    className={'w-full h-full object-contain'}
                     src="/brain.mov"        /* или CDN-ссылка */
                     autoPlay
                     muted
@@ -52,7 +52,11 @@ export default function IFrameSplash({ onDone }: IFrameSplashProps) {
                     playsInline
                 />
 
-                <h2 className={'text-black text-center text-4xl font-bold absolute bottom-8 left-1/2 -translate-x-1/2 w-full z-[50]'}>
+            </div>
+
+            {/* Текст вынесен из видео-контейнера для надежного позиционирования */}
+            <div className="absolute bottom-8 left-0 right-0 z-[100]">
+                <h2 className="text-black text-center text-4xl font-bold w-full">
                     <TypeAnimation
                         sequence={[
                             'Brain Programming Activated',
