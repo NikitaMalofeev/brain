@@ -186,7 +186,7 @@ export const UserPage = () => {
             <div className={'relative text-black min-h-screen bg-white pt-[180px] overflow-hidden'}>
                 <video
                     className={'absolute top-[150px] left-1/2 -translate-y-1/2 -translate-x-1/2 rotate-[16deg] object-cover scale-125'}
-                    src="/brain.mov"        /* или CDN-ссылка */
+                    src="/brain2.mov"        /* или CDN-ссылка */
                     autoPlay
                     muted
                     loop
