@@ -376,7 +376,7 @@ const LessonsManager: React.FC<LessonsManagerProps> = ({ courseId, stageId, onBa
                         Обновить
                     </button>
                     <button
-                        className="admin-add-btn"
+                        className="admin-add-btn before:hidden"
                         onClick={onBack}
                     >
                         ← Назад к ступеням
