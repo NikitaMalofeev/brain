@@ -274,9 +274,9 @@ export const UserPage = () => {
                                 <div>
                                     <div className="flex items-center gap-1.5">
                                         <p className="text-sm font-medium text-[#9F9F9F]">Тариф</p>
-                                        <Ripple className="rounded-full overflow-hidden inline-block">
+                                        {/*<Ripple className="rounded-full overflow-hidden inline-block">
                                             <img src="/ask-icon.svg" alt="info" className="w-4 h-4"/>
-                                        </Ripple>
+                                        </Ripple>*/}
                                     </div>
                                     <p className="text-sm font-bold text-black">
                                         {userTariff ? userTariff.name : 'Базовый'}

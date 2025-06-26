@@ -80,7 +80,7 @@ export const UserProgress: React.FC<UserProgressProps> = ({ stages, className })
     } else if (nextStageIndex !== -1 && unlockedLessonsUntilNextStage === 0) {
         progressText = `Все задания до ступени «${nextStage?.stage_name}» открыты`;
     } else if (unlockedLessonsUntilNextStage > 0) {
-        progressText = `Еще ${unlockedLessonsUntilNextStage} ${word} до полного открытия`;
+        progressText = `Еще ${unlockedLessonsUntilNextStage} ${word} до полного открытия всех уровней`;
     } else {
         progressText = 'Все задания открыты!';
     }

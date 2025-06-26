@@ -744,7 +744,7 @@ const StagesManager: React.FC<StagesManagerProps> = ({ courseId, onBack, onStage
             Обновить
           </button>
           <button
-            className="admin-add-btn"
+            className="admin-add-btn before:hidden"
             onClick={onBack}
           >
             ← Назад к курсам

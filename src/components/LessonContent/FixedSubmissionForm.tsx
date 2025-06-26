@@ -222,7 +222,7 @@ const FixedSubmissionForm: React.FC<FixedSubmissionFormProps> = ({
     }
 
     return (
-        <div className="fixed bottom-0 left-0 right-0 z-50 bg-[#E9E9E9] border-t border-gray-200 shadow-lg">
+        <div className="max-w-[600px] mx-auto fixed bottom-0 left-0 right-0 z-50 bg-[#E9E9E9] border-t border-gray-200 shadow-lg">
             {/* Прикрепленные файлы */}
             {uploadedFiles.length > 0 && (
                 <div className="px-4 pt-3">

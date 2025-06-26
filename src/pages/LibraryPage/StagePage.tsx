@@ -5,7 +5,7 @@ import { User } from '@supabase/supabase-js';
 import { Page } from '@/components/Page';
 import LessonCard from '@/components/LessonCard/LessonCard';
 import useStageDetails, { StageDetailsData } from '@/lib/supabase/hooks/useStageDetails';
-import useLibraryStages from '@/lib/supabase/hooks/useLibraryStages';
+import useLibraryStages, {LibraryStageData} from '@/lib/supabase/hooks/useLibraryStages';
 import { useSupabaseUser } from '@/lib/supabase/hooks/useSupabaseUser';
 import { useAppContext } from '@/contexts/AppContext';
 import { logger } from '@/lib/logger';
@@ -144,7 +144,11 @@ const StagePage: React.FC = () => {
             </Page>
         );
     }
-    const nextStage = stages.find(s => !s.is_unlocked);
+    function getNextById(arr: LibraryStageData[], currentId: string | undefined): LibraryStageData | undefined {
+        const idx = arr.findIndex(item => item.stage_id === +(currentId || 4));
+        return idx !== -1 && idx + 1 < arr.length ? arr[idx + 1] : undefined;
+    }
+    const nextStage = getNextById(stages, stageId);
     const completedLessons = stageDetails.lessons.filter(lesson => lesson.is_completed).length;
     const unlockedLessons = stageDetails.lessons.filter(lesson => lesson.is_unlocked).length;
     const totalLessons = stageDetails.lessons.length;
@@ -162,7 +166,11 @@ const StagePage: React.FC = () => {
 
     if (unlockedLessonsInCurrentStage > 0) {
         const word = getNounPluralForm(unlockedLessonsInCurrentStage, 'день', 'дня', 'дней');
-        nextStageText = `Еще ${unlockedLessonsInCurrentStage} ${word} до перехода на уровень «${nextStage?.stage_name}»`;
+        if(nextStage){
+            nextStageText = `Еще ${unlockedLessonsInCurrentStage} ${word} до перехода на уровень «${nextStage?.stage_name}»`;
+        } else {
+            nextStageText = `Еще ${unlockedLessonsInCurrentStage} ${word} до полного открытия ступени`;
+        }
     } else {
         // Если все уроки в текущей ступени открыты, проверяем следующую ступень
         const currentStageIndex = stages.findIndex(s => s.stage_id === parseInt(stageId || '0'));
@@ -180,7 +188,7 @@ const StagePage: React.FC = () => {
     return (
         <Page showTabBar={false}>
             <div
-                className={'text-black'}
+                className={'text-black min-h-full'}
             >
                 <div className={'bg-white p-4 flex flex-col gap-3 p-4 pt-24'}>
                     <div className={'flex items-center justify-between'}>
@@ -201,7 +209,7 @@ const StagePage: React.FC = () => {
                     </div>
                 </div>
                 <motion.div
-                    className={'bg-[url("/bg3.jpg")] bg-cover bg-top p-4 rounded-t-3xl flex-1 flex flex-col gap-3'}
+                    className={'bg-[url("/bg3.jpg")] min-h-full bg-cover bg-top p-4 rounded-t-3xl flex-1 flex flex-col gap-3'}
                     variants={listVariants}
                     initial="hidden"
                     animate="show"
