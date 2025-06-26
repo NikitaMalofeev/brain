@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '../client';
 import { Database } from '../types';
+import { deleteFile } from '../supabaseStorageService';
 
 type LessonBlock = Database['public']['Tables']['lesson_blocks']['Row'];
 type LessonBlockInsert = Database['public']['Tables']['lesson_blocks']['Insert'];
@@ -26,6 +27,10 @@ export const useBlocksAdmin = (lessonId: number): UseBlocksAdminResult => {
             setLoading(true);
             setError(null);
 
+            if (!supabase) {
+                throw new Error('Supabase client не инициализирован');
+            }
+
             const { data, error: fetchError } = await supabase
                 .from('lesson_blocks')
                 .select('*')
@@ -47,6 +52,10 @@ export const useBlocksAdmin = (lessonId: number): UseBlocksAdminResult => {
 
     const createBlock = async (data: LessonBlockInsert) => {
         try {
+            if (!supabase) {
+                throw new Error('Supabase client не инициализирован');
+            }
+
             const { error: createError } = await supabase
                 .from('lesson_blocks')
                 .insert(data);
@@ -64,6 +73,10 @@ export const useBlocksAdmin = (lessonId: number): UseBlocksAdminResult => {
 
     const updateBlock = async (id: number, data: LessonBlockUpdate) => {
         try {
+            if (!supabase) {
+                throw new Error('Supabase client не инициализирован');
+            }
+
             const { error: updateError } = await supabase
                 .from('lesson_blocks')
                 .update(data)
@@ -82,6 +95,46 @@ export const useBlocksAdmin = (lessonId: number): UseBlocksAdminResult => {
 
     const deleteBlock = async (id: number) => {
         try {
+            if (!supabase) {
+                throw new Error('Supabase client не инициализирован');
+            }
+
+            // 1. Сначала получаем данные блока для извлечения пути к файлу
+            const { data: blockData, error: fetchError } = await supabase
+                .from('lesson_blocks')
+                .select('content_url')
+                .eq('id', id)
+                .single();
+
+            if (fetchError) {
+                throw new Error(`Ошибка при получении данных блока: ${fetchError.message}`);
+            }
+
+            // 2. Если у блока есть файл, удаляем его из Storage
+            if (blockData?.content_url) {
+                try {
+                    // Извлекаем путь файла из URL (убираем базовый URL Supabase Storage)
+                    const storageUrl = blockData.content_url;
+
+                    // Если это URL Supabase Storage, извлекаем путь файла
+                    if (storageUrl.includes('/storage/v1/object/public/media/')) {
+                        const filePath = storageUrl.split('/storage/v1/object/public/media/')[1];
+                        if (filePath) {
+                            console.log(`Удаляем файл из Storage: ${filePath}`);
+                            await deleteFile(filePath);
+                        }
+                    } else {
+                        // Если это прямой путь к файлу (относительный), удаляем как есть
+                        console.log(`Удаляем файл из Storage: ${storageUrl}`);
+                        await deleteFile(storageUrl);
+                    }
+                } catch (storageError) {
+                    console.warn('Не удалось удалить файл из Storage, продолжаем удаление блока:', storageError);
+                    // Не прерываем процесс - возможно файл уже удален или недоступен
+                }
+            }
+
+            // 3. Удаляем запись из базы данных
             const { error: deleteError } = await supabase
                 .from('lesson_blocks')
                 .delete()

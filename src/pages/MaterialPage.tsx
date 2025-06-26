@@ -5,7 +5,7 @@ import { supabase } from "@/lib/supabase/client.ts";
 import { LessonBlock } from "@/lib/supabase/types.ts";
 import VideoPlayer from "@/components/Player/VideoPlayer.tsx";
 import { getKinescopeId } from "@/components/LessonContent/VideoBlock.tsx";
-import { buildImageUrl, buildFileUrl } from "@/lib/cloudflareR2Service.ts";
+import { buildFileUrl } from "@/lib/supabase/supabaseStorageService";
 import NewPlayer from "@/components/NewPlayer/NewPlayer.tsx";
 
 const BlockRenderer = ({ block }: { block: LessonBlock }) => {
@@ -27,7 +27,7 @@ const BlockRenderer = ({ block }: { block: LessonBlock }) => {
                     <h3 className="text-xl font-bold">{block.title}</h3>
                     {block.content_url && (
                         <img
-                            src={buildFileUrl(block.content_url)}
+                            src={buildFileUrl(block.content_url) || ''}
                             alt={block.title || 'Изображение к материалу'}
                             className="w-full rounded-2xl object-cover"
                         />
@@ -121,7 +121,7 @@ export const MaterialPage = () => {
     const mainBlock = blocks.find(b => b.block_type === data.material_type);
     const otherBlocks = blocks.filter(b => b.id !== mainBlock?.id);
 
-    const mainContentUrl = mainBlock?.content_url ? buildFileUrl(mainBlock.content_url) : '';
+    const mainContentUrl = mainBlock?.content_url ? buildFileUrl(mainBlock.content_url) : null;
 
     return (
         <Page>
@@ -142,7 +142,7 @@ export const MaterialPage = () => {
             {data.material_type === 'audio' && mainBlock && (
                 <div className={'flex flex-col gap-2 text-black'}>
                     <img
-                        src={buildImageUrl(data.cover_image_path)}
+                        src={buildFileUrl(data.cover_image_path) || ''}
                         alt={data.name || 'Обложка материала'}
                         className={'h-[300px] rounded-b-3xl object-cover'}
                     />

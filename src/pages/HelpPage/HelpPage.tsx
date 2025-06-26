@@ -8,7 +8,7 @@ import {
 import { useSupabaseUser } from "@/lib/supabase/hooks";
 import { useQuery } from "@tanstack/react-query";
 import { Ripple } from "@/components/ui/Ripple/Ripple";
-import { buildImageUrl } from "@/lib/cloudflareR2Service";
+import { buildFileUrl } from "@/lib/supabase/supabaseStorageService";
 
 export const HelpPage = () => {
     const initDataState = useSignal(_initDataState);
@@ -70,7 +70,7 @@ export const HelpPage = () => {
                                     if (photoUrl) {
                                         return (
                                             <img
-                                                src={buildImageUrl(photoUrl)}
+                                                src={buildFileUrl(photoUrl) || ''}
                                                 alt={curator?.first_name || 'Куратор'}
                                                 className={'w-[60px] h-[60px] rounded-full object-cover'}
                                                 onError={(e) => {
@@ -103,7 +103,7 @@ export const HelpPage = () => {
                                     to={`https://t.me/${el.username}`}>
                                     <div className={'flex items-center gap-2'}>
                                         {el.photo_url ?
-                                            <img src={buildImageUrl(el.photo_url)} className={'w-12 h-12 rounded-full object-cover'}
+                                            <img src={buildFileUrl(el.photo_url) || ''} className={'w-12 h-12 rounded-full object-cover'}
                                                 alt={el.first_name || 'Куратор'} /> : <div className={'w-12 h-12 rounded-full bg-[#EEEEEE]'}></div>}
                                         <p className={'font-semibold'}>{el.first_name}</p>
                                     </div>

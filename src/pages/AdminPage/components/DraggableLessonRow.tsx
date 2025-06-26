@@ -1,7 +1,7 @@
 import React, { useRef, useEffect, useState } from 'react';
 import { draggable, dropTargetForElements } from '@atlaskit/pragmatic-drag-and-drop/element/adapter';
 import { combine } from '@atlaskit/pragmatic-drag-and-drop/combine';
-import { buildFileUrl } from '@/lib/cloudflareR2Service';
+import { buildFileUrl } from '@/lib/supabase/supabaseStorageService';
 
 interface DraggableLessonRowProps {
     lesson: any;
@@ -102,7 +102,7 @@ const DraggableLessonRow: React.FC<DraggableLessonRowProps> = ({
                 <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                     {lesson.cover_image_path ? (
                         <img
-                            src={buildFileUrl(lesson.cover_image_path)}
+                            src={buildFileUrl(lesson.cover_image_path) || ''}
                             alt="Обложка урока"
                             style={{
                                 width: '40px',

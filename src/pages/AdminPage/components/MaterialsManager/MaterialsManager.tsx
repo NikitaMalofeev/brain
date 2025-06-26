@@ -1,6 +1,8 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { FileUploader, FileUploaderRef } from '@/components/FileUploader/FileUploader';
-import { buildFileUrl, buildImageUrl, FILE_PREFIXES, deleteFileFromR2 } from '@/lib/cloudflareR2Service';
+import { buildFileUrl } from '@/lib/supabase/supabaseStorageService';
+import { deleteFile } from '@/lib/supabase/supabaseStorageService';
+import { FILE_PREFIXES } from '@/lib/supabase/storage_prefixes';
 import { supabase } from '../../../../lib/supabase/client';
 import DraggableMaterialBlockRow from './DraggableMaterialBlockRow';
 import DraggableMaterialRow from './DraggableMaterialRow';
@@ -112,6 +114,7 @@ const MaterialsManager: React.FC = () => {
     const [coverSaving, setCoverSaving] = useState(false);
     const [updateLoading, setUpdateLoading] = useState(false);
     const [updateError, setUpdateError] = useState<string | null>(null);
+    const [isBlockSaveDisabled, setIsBlockSaveDisabled] = useState(true);
 
     // Загрузка материалов
     const loadMaterials = async () => {
@@ -181,12 +184,38 @@ const MaterialsManager: React.FC = () => {
         filterMaterials();
     }, [materials, materialTypeFilter]);
 
+    // Применяем фильтры при изменении материалов или фильтров
+    useEffect(() => {
+        filterMaterials();
+    }, [materials, materialTypeFilter]);
+
     // Синхронизируем выбранные тарифы с данными из хука
     useEffect(() => {
         if (materialTariffAccess.accessibleTariffIds) {
             setSelectedTariffIds(materialTariffAccess.accessibleTariffIds);
         }
     }, [materialTariffAccess.accessibleTariffIds]);
+
+    // Определяем, должна ли кнопка сохранения блока быть неактивной
+    useEffect(() => {
+        const { block_type, content_text, content_url } = blockForm;
+        const hasFile = !!selectedFile;
+        const hasExistingUrl = editingBlock?.content_url;
+
+        if (block_type === 'text') {
+            setIsBlockSaveDisabled(!content_text.trim());
+        } else if (block_type === 'video') {
+            // Для видео нужен хотя бы URL или описание
+            const hasUrl = content_url.trim();
+            const hasText = content_text.trim();
+            setIsBlockSaveDisabled(!hasUrl && !hasText);
+        } else {
+            // Для файловых блоков (audio, image, pdf) нужен только файл/URL, описание опционально
+            const hasUrl = content_url.trim();
+            setIsBlockSaveDisabled(!hasUrl && !hasFile && !hasExistingUrl);
+        }
+
+    }, [blockForm, editingBlock, selectedFile]);
 
     // Фильтрация материалов
     const filterMaterials = () => {
@@ -429,7 +458,7 @@ const MaterialsManager: React.FC = () => {
             setCoverSaving(true);
 
             // Удаляем файл из CloudFlare R2
-            await deleteFileFromR2(selectedMaterialForCover.cover_image_path);
+            await deleteFile(selectedMaterialForCover.cover_image_path);
 
             // Удаляем путь из базы данных
             const { error } = await supabase
@@ -526,30 +555,16 @@ const MaterialsManager: React.FC = () => {
         try {
             setUpdateLoading(true);
 
-            // Если файл выбран но не загружен, загружаем его сначала
-            let finalUploadedFileUrl = uploadedFileUrl;
-            if (selectedFile && !uploadedFileUrl && blockFileUploaderRef.current) {
-                const uploadResult = await blockFileUploaderRef.current.uploadFile();
-                if (uploadResult) {
-                    finalUploadedFileUrl = uploadResult.filePath;
+            let finalContentUrl = blockForm.content_url.trim() || null;
+
+            // Если выбран новый файл, загружаем его и используем его путь
+            if (selectedFile) {
+                const uploadResult = await blockFileUploaderRef.current?.uploadFile();
+                if (uploadResult && uploadResult.filePath) {
+                    finalContentUrl = uploadResult.filePath;
                 } else {
                     alert('Ошибка загрузки файла. Попробуйте еще раз.');
-                    return;
-                }
-            }
-
-            // Валидация КАК В УРОКАХ: блок должен иметь хотя бы текст или URL (для не-text типов)
-            const hasText = blockForm.content_text && blockForm.content_text.trim();
-            const hasUrl = (finalUploadedFileUrl || blockForm.content_url) && (finalUploadedFileUrl || blockForm.content_url.trim());
-
-            if (blockForm.block_type === 'text') {
-                if (!hasText) {
-                    alert('Для текстового блока необходимо заполнить содержимое');
-                    return;
-                }
-            } else {
-                if (!hasText && !hasUrl) {
-                    alert(`Для блока типа "${getBlockTypeLabel(blockForm.block_type)}" необходимо заполнить URL или описание`);
+                    setUpdateLoading(false);
                     return;
                 }
             }
@@ -559,7 +574,7 @@ const MaterialsManager: React.FC = () => {
                 title: blockForm.title.trim() || null,
                 block_type: blockForm.block_type,
                 content_text: blockForm.content_text.trim() || null,
-                content_url: (finalUploadedFileUrl || blockForm.content_url.trim()) || null,
+                content_url: finalContentUrl,
                 order_num: blockForm.order_num
             };
 
@@ -1294,11 +1309,11 @@ const MaterialsManager: React.FC = () => {
                                                         blockForm.block_type === 'pdf' ? 'application/pdf' : '*/*'
                                             }
                                             filePrefix={
-                                                blockForm.block_type === 'audio' ? 'audio/' :
-                                                    blockForm.block_type === 'image' ? 'images/' :
-                                                        blockForm.block_type === 'pdf' ? 'documents/' : 'documents/'
+                                                blockForm.block_type === 'audio' ? FILE_PREFIXES.AUDIO :
+                                                    blockForm.block_type === 'image' ? FILE_PREFIXES.IMAGE :
+                                                        blockForm.block_type === 'pdf' ? FILE_PREFIXES.DOCUMENT : FILE_PREFIXES.DOCUMENT
                                             }
-                                            currentFileUrl={editingBlock?.content_url ? buildFileUrl(editingBlock.content_url) : undefined}
+                                            currentFileUrl={editingBlock?.content_url ? buildFileUrl(editingBlock.content_url) || undefined : undefined}
                                             disabled={updateLoading}
                                         />
                                         <small style={{ color: 'var(--admin-text-secondary)', marginTop: '8px', display: 'block' }}>
@@ -1333,12 +1348,7 @@ const MaterialsManager: React.FC = () => {
                                 <button
                                     type="submit"
                                     className="admin-button"
-                                    disabled={
-                                        updateLoading ||
-                                        !blockForm.block_type ||
-                                        (blockForm.block_type === 'text' && !blockForm.content_text.trim()) ||
-                                        (blockForm.block_type !== 'text' && !blockForm.content_text.trim() && !blockForm.content_url.trim() && !uploadedFileUrl && !selectedFile)
-                                    }
+                                    disabled={isBlockSaveDisabled || updateLoading}
                                 >
                                     {updateLoading ? 'Сохранение...' : (editingBlock ? 'Сохранить' : 'Добавить')}
                                 </button>
@@ -1370,7 +1380,7 @@ const MaterialsManager: React.FC = () => {
                             {selectedMaterialForCover?.cover_image_path ? (
                                 <div style={{ marginBottom: '16px' }}>
                                     <img
-                                        src={buildImageUrl(selectedMaterialForCover.cover_image_path)}
+                                        src={buildFileUrl(selectedMaterialForCover.cover_image_path) || ''}
                                         alt="Текущая обложка материала"
                                         style={{
                                             width: '200px',
@@ -1414,7 +1424,7 @@ const MaterialsManager: React.FC = () => {
                                 onUploadError={(error) => setError(`Ошибка загрузки: ${error}`)}
                                 acceptedTypes="image/*"
                                 filePrefix={FILE_PREFIXES.IMAGE}
-                                currentFileUrl={selectedMaterialForCover?.cover_image_path ? buildImageUrl(selectedMaterialForCover.cover_image_path) : undefined}
+                                currentFileUrl={buildFileUrl(selectedMaterialForCover?.cover_image_path) || undefined}
                                 disabled={coverSaving}
                             />
                             <small style={{ color: 'var(--admin-text-secondary)', marginTop: '8px', display: 'block' }}>

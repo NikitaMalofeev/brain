@@ -1,11 +1,19 @@
 # Схема базы данных Supabase - Brain Programming
-*Обновлено: 06.06.2025 - Актуальное состояние БД*
+*Обновлено: 26.06.2025 - Миграция на Supabase Storage*
 
 ## Обзор
 
-База данных приложения "Brain Programming" построена на PostgreSQL через Supabase и содержит 21 основную таблицу для управления пользователями, курсами, этапами обучения, уроками, блоками контента, прогрессом пользователей, тарифами, токенами доступа, а также новые таблицы для чатов, FAQ и эфиров.
+База данных приложения "Brain Programming" построена на PostgreSQL через Supabase и содержит 22 основные таблицы и 1 бакет в Storage для управления пользователями, курсами, медиа-контентом, прогрессом, тарифами и доступом.
 
 **Проект Supabase:** `bzbpwmzhywaqwsjthwid` (EU Central 1)
+
+## Supabase Storage
+
+### Бакет `media`
+- **Назначение:** Хранение всего медиа-контента приложения (обложки, аудио, видео, PDF).
+- **Доступ:**
+  - **Чтение:** Публичное. Любой пользователь может просматривать файлы.
+  - **Запись/Изменение/Удаление:** Только для аутентифицированных пользователей с ролью `admin`.
 
 ## Таблицы и их назначение
 
@@ -42,10 +50,9 @@
 - **admin** - администратор, полный доступ к админке включая управление контентом
 
 **✅ Веб-авторизация:**
-- Поля `web_login` и `web_password_hash` для входа в админку
-- Ограничения: `web_login` может содержать только буквы, цифры, _ и -
-- Система сохранения сессии в localStorage
-- Работает только для пользователей с ролями 'admin' и 'curator'
+- Поля `web_login` и `web_password_hash` для входа в админку.
+- При успешном входе через функцию `authenticate_web_user` генерируется JWT-токен, который используется для аутентификации запросов к защищенным ресурсам (например, Supabase Storage).
+- Работает только для пользователей с ролями 'admin' и 'curator'.
 
 **RLS:** Включен (Row Level Security)
 
@@ -74,12 +81,12 @@
 - `created_at` (timestamptz, default: CURRENT_TIMESTAMP) - Время создания
 - `updated_at` (timestamptz, default: CURRENT_TIMESTAMP) - Время обновления
 - `is_unlocked` (boolean, default: false, NOT NULL) - Флаг разблокировки этапа
-- `cover_image_path` (text, nullable) - Путь к файлу обложки ступени в CloudFlare R2 (например: images/stage_cover_123.jpg)
+- `cover_image_path` (text, nullable) - Путь к файлу обложки ступени в Supabase Storage (например: images/stage_cover_123.jpg)
 
 **✅ Система обложек:**
 - Поле `cover_image_path` для хранения пути к обложке ступени
-- Файлы обложек хранятся в CloudFlare R2 в папке `images/`
-- Полный URL формируется динамически через `buildImageUrl(cover_image_path)`
+- Файлы обложек хранятся в Supabase Storage в папке `images/`
+- Полный URL формируется динамически через `supabase.storage.from('media').getPublicUrl(cover_image_path)`
 - При отсутствии обложки используется дефолтная заглушка
 
 **RLS:** ВЫКЛЮЧЕН
@@ -95,7 +102,7 @@
 - `order_num` (int4, NOT NULL) - Порядковый номер урока в этапе
 - `created_at` (timestamptz, default: CURRENT_TIMESTAMP) - Время создания
 - `updated_at` (timestamptz, default: CURRENT_TIMESTAMP) - Время обновления
-- `cover_image_path` (text, nullable) - Путь к файлу обложки в CloudFlare R2 (например: images/filename.webp)
+- `cover_image_path` (text, nullable) - Путь к файлу обложки в Supabase Storage (например: images/filename.webp)
 - `has_assignment` (boolean, default: false) - Есть ли в уроке домашнее задание для сдачи
 - `open_at` (timestamptz, nullable) - Дата и время открытия урока (до этого времени урок недоступен)
 - `deadline_at` (timestamptz, nullable) - Дедлайн сдачи задания (после этого времени поздняя сдача)
@@ -109,8 +116,8 @@
 
 **✅ Система обложек:**
 - Поле `cover_image_path` для хранения пути к обложке урока
-- Интеграция с CloudFlare R2 в папке `images/`
-- Полный URL строится через buildImageUrl()
+- Интеграция с Supabase Storage в папке `images/`
+- Полный URL строится через `supabase.storage.from('media').getPublicUrl()`
 
 **RLS:** ВЫКЛЮЧЕН
 
@@ -216,7 +223,7 @@
 - `id` (uuid, PK, default: gen_random_uuid()) - Уникальный идентификатор материала
 - `name` (text, NOT NULL) - Название материала
 - `description` (text, nullable) - Описание материала
-- `cover_image_path` (text, nullable) - Путь к файлу обложки в CloudFlare R2
+- `cover_image_path` (text, nullable) - Путь к файлу обложки в Supabase Storage
 - `material_type` (text, NOT NULL) - Тип материала ('video', 'audio', 'article', 'link', 'file')
 - `order_num` (int4, default: 0, NOT NULL) - Порядковый номер для сортировки
 - `created_at` (timestamptz, default: now(), NOT NULL) - Время создания
@@ -234,7 +241,7 @@
 - `title` (text, nullable) - Заголовок блока
 - `block_type` (text, NOT NULL) - Тип блока: 'text', 'video' (для Kinescope), 'audio', 'image', 'pdf'
 - `content_text` (text, nullable) - Текстовое содержимое для 'text' блоков
-- `content_url` (text, nullable) - URL для 'video', 'audio', 'image', 'pdf' блоков (файлы из R2 или Kinescope URL)
+- `content_url` (text, nullable) - URL для 'video', 'audio', 'image', 'pdf' блоков (файлы из Supabase Storage или Kinescope URL)
 - `meta_json` (jsonb, default: '{}', nullable) - Дополнительные метаданные (например, длительность видео)
 - `created_at` (timestamptz, default: now(), NOT NULL) - Время создания
 - `updated_at` (timestamptz, default: now(), NOT NULL) - Время последнего обновления
@@ -433,7 +440,7 @@
 - `completed_lessons` (bigint)
 - `unlock_condition_type_val` (text)
 - `unlock_condition_value_val` (text)
-- `cover_image_path` (text) - путь к обложке ступени в CloudFlare R2
+- `cover_image_path` (text) - путь к обложке ступени в Supabase Storage
 
 ### `lesson_has_submission(lesson_id_param BIGINT)` ⚠️ УСТАРЕВШАЯ
 **Назначение:** Проверяет есть ли в уроке форма сдачи.
@@ -463,14 +470,20 @@ END;
 
 **Возвращает:** `BOOLEAN`
 
-### `authenticate_web_user(login TEXT, password TEXT)` ✅ НОВАЯ ФУНКЦИЯ
+### `is_admin()` ✅ НОВАЯ ФУНКЦИЯ
+**Назначение:** Проверяет, является ли текущий аутентифицированный пользователь администратором.
+**Логика:** Извлекает `user_role` из метаданных JWT-токена (`raw_app_meta_data`) и сравнивает ее со значением `'admin'`.
+**Возвращает:** `BOOLEAN`.
+
+### `authenticate_web_user(login TEXT, password TEXT)` ✅ ОБНОВЛЕНО
 **Назначение:** Аутентификация пользователей для веб-интерфейса админки.
+**Логика:**
+1. Находит пользователя по `web_login`.
+2. Проверяет пароль с помощью `extensions.crypt`.
+3. В случае успеха обновляет `web_last_login`.
+4. **Генерирует и возвращает JWT-токен** со сроком жизни 8 часов, содержащий `user_id` и кастомную роль `user_role`.
 
-**Параметры:**
-- `login` - веб-логин пользователя
-- `password` - пароль в открытом виде
-
-**Возвращает:** Запись пользователя или NULL
+**Возвращает:** Таблицу с полями `user_id`, `user_role`, `first_name`, `last_name`, `is_authenticated`, `access_token`.
 
 ## Триггеры
 
@@ -516,6 +529,14 @@ END;
 
 ### `user_curator`
 - Политики доступа настроены для админов и кураторов
+
+### ✅ Политики доступа к Storage (Бакет: `media`)
+- **`Public Read Access` (SELECT):**
+  - **Назначение:** Разрешает публичное чтение всех файлов в бакете `media`.
+  - **Условие:** `USING ( bucket_id = 'media' )`
+- **`Admin Write Access` (ALL):**
+  - **Назначение:** Разрешает создание, обновление и удаление файлов.
+  - **Условие:** `WITH CHECK ( is_admin() )` - только для пользователей, для которых функция `is_admin()` возвращает `true`.
 
 ## Выявленные проблемы и несоответствия
 

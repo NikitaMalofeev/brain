@@ -11,7 +11,7 @@ import { LessonWithBlocks, LessonBlock, Submission, LessonProgress } from '@/lib
 import { VideoBlock, FixedSubmissionForm, DocumentBlock, ImageBlock } from '@/components/LessonContent';
 import { Button } from '@/components/ui/button';
 import { getDeadlineStatus, formatDeadline } from '@/helpers/deadlineUtils';
-import { buildImageUrl } from '@/lib/cloudflareR2Service';
+import { buildFileUrl } from '@/lib/supabase/supabaseStorageService';
 import NewPlayer from "@/components/NewPlayer/NewPlayer.tsx";
 import { clsx } from "clsx";
 import { Ripple } from '@/components/ui/Ripple/Ripple';
@@ -787,7 +787,7 @@ const LessonPage: React.FC = () => {
         <Page back={true} showTabBar={false}>
             <div className={'text-black'}>
                 <img
-                    src={state.lesson.cover_image_path ? buildImageUrl(state.lesson.cover_image_path) : '/test.png'}
+                    src={buildFileUrl(state.lesson.cover_image_path) || '/test.png'}
                     className={'w-full h-[193px] object-cover'}
                     style={{
                         borderRadius: '0 0 24px 24px', // Скругление только снизу как в Figma

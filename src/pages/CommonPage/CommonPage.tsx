@@ -2,7 +2,7 @@ import { Page } from "@/components";
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/lib/supabase/client.ts";
-import { buildImageUrl } from "@/lib/cloudflareR2Service.ts";
+import { buildFileUrl } from "@/lib/supabase/supabaseStorageService";
 import { Link } from "react-router-dom";
 import { motion } from "framer-motion";
 import { Ripple } from "@/components/ui/Ripple/Ripple";
@@ -119,7 +119,7 @@ export const CommonPage = () => {
                                             className="w-full"
                                         >
                                             <Link to={`/material/${lesson.id}`} className={'bg-white rounded-3xl flex flex-col block'}>
-                                                <img src={buildImageUrl(lesson.cover_image_path)} alt={''} className={'h-[200px] md:h-[300px] rounded-3xl object-cover'} />
+                                                <img src={buildFileUrl(lesson.cover_image_path) || ''} alt={''} className={'h-[200px] md:h-[300px] rounded-3xl object-cover'} />
                                                 <p className={'p-4 font-semibold'}>{lesson.name}</p>
                                             </Link>
                                         </motion.div>

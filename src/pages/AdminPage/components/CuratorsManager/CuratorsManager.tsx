@@ -1,6 +1,6 @@
 import React, { useState, useRef } from 'react';
 import { useCuratorsAdmin, type CreateCuratorData, type UpdateCuratorData, type Curator } from '@/lib/supabase/hooks/useCuratorsAdmin';
-import { buildImageUrl } from '@/lib/cloudflareR2Service';
+import { buildFileUrl } from '@/lib/supabase/supabaseStorageService';
 import CuratorCard from './CuratorCard';
 import StudentCard from '../StudentsManager/StudentCard';
 import AssignStudentModal from './AssignStudentModal';
@@ -236,7 +236,7 @@ const CuratorsManager: React.FC = () => {
         if (photo_url) {
             return (
                 <img
-                    src={buildImageUrl(photo_url)}
+                    src={buildFileUrl(photo_url) || ''}
                     alt={`${curator.first_name || ''} ${curator.last_name || ''}`.trim()}
                     style={{
                         width: '40px',
