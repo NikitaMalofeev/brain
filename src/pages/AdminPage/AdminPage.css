@@ -2,7 +2,11 @@
 /* CSS-переменные для админки Brain Programming */
 /* Светлая тема с glass-эффектами и градиентами */
 /* ========================================= */
+@import url('https://fonts.googleapis.com/css2?family=Nunito:wght@300;400;500;600;700&display=swap');
 
+body{
+  font-family: 'Nunito', sans-serif !important;
+}
 :root {
   /* ===== ГРАДИЕНТЫ ===== */
   /* Основные градиенты для кнопок, элементов управления и акцентов */
