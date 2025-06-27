@@ -1184,22 +1184,13 @@ const AdminPage: React.FC = () => {
   const [login, setLogin] = useState<string>('');
   const [authLoading, setAuthLoading] = useState<boolean>(false);
 
-  // Устанавливаем стили для админки независимо от Telegram
+  // Устанавливаем класс для body, чтобы применились стили админки
   useEffect(() => {
-    // Устанавливаем стили body для админки
-    document.body.style.background = 'linear-gradient(135deg, #1e1e2e 0%, #313244 50%, #181825 100%)';
-    document.body.style.margin = '0';
-    document.body.style.padding = '0';
-    document.body.style.fontFamily = "'Inter', -apple-system, BlinkMacSystemFont, sans-serif";
-    document.body.className = 'admin-mode';
+    document.body.classList.add('admin-mode');
 
     // Очистка при размонтировании
     return () => {
-      document.body.style.background = '';
-      document.body.style.margin = '';
-      document.body.style.padding = '';
-      document.body.style.fontFamily = '';
-      document.body.className = '';
+      document.body.classList.remove('admin-mode');
     };
   }, []);
 
