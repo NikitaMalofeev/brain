@@ -2,7 +2,8 @@ import React, { useState, useEffect, useRef } from 'react';
 import { useLessonsAdmin } from '@/lib/supabase/hooks';
 import DraggableLessonRow from './DraggableLessonRow';
 import { FileUploader, type FileUploaderRef } from '@/components/FileUploader/FileUploader';
-import { buildFileUrl, buildImageUrl, FILE_PREFIXES, deleteFileFromR2 } from '@/lib/cloudflareR2Service';
+import { buildFileUrl } from '@/lib/supabase/supabaseStorageService';
+import { deleteFile } from '@/lib/supabase/supabaseStorageService';
 
 interface LessonsManagerProps {
     courseId: string;
@@ -346,7 +347,7 @@ const LessonsManager: React.FC<LessonsManagerProps> = ({ courseId, stageId, onBa
             setCoverSaving(true);
 
             // Удаляем файл из CloudFlare R2
-            await deleteFileFromR2(selectedLessonForCover.cover_image_path);
+            await deleteFile(selectedLessonForCover.cover_image_path);
 
             // Удаляем путь из базы данных (устанавливаем пустую строку)
             await updateLesson(selectedLessonForCover.id, {
@@ -529,7 +530,7 @@ const LessonsManager: React.FC<LessonsManagerProps> = ({ courseId, stageId, onBa
                             {selectedLessonForCover?.cover_image_path ? (
                                 <div style={{ marginBottom: '16px' }}>
                                     <img
-                                        src={buildFileUrl(selectedLessonForCover.cover_image_path)}
+                                        src={buildFileUrl(selectedLessonForCover.cover_image_path) || ''}
                                         alt="Текущая обложка урока"
                                         style={{
                                             width: '200px',
@@ -573,7 +574,7 @@ const LessonsManager: React.FC<LessonsManagerProps> = ({ courseId, stageId, onBa
                                 onUploadError={handleFileUploadError}
                                 acceptedTypes="image/*"
                                 filePrefix="images/"
-                                currentFileUrl={selectedLessonForCover?.cover_image_path ? buildImageUrl(selectedLessonForCover.cover_image_path) : undefined}
+                                currentFileUrl={buildFileUrl(selectedLessonForCover?.cover_image_path) || undefined}
                                 disabled={coverSaving}
                             />
                             <small style={{ color: 'var(--admin-text-secondary)', marginTop: '8px', display: 'block' }}>

@@ -1,7 +1,8 @@
 import React, { useRef, useState, useCallback } from 'react';
 import { FileUploader, FileUploaderRef } from '@/components/FileUploader/FileUploader';
 import { Curator } from '@/lib/supabase/hooks/useCuratorsAdmin';
-import { uploadFileToR2, FILE_PREFIXES, buildImageUrl } from '@/lib/cloudflareR2Service';
+import { buildFileUrl } from '@/lib/supabase/supabaseStorageService';
+import { uploadFile } from '@/lib/supabase/supabaseStorageService';
 import ReactCrop, { Crop, PixelCrop } from 'react-image-crop';
 import 'react-image-crop/dist/ReactCrop.css';
 
@@ -132,7 +133,7 @@ const CuratorAvatarModal: React.FC<CuratorAvatarModalProps> = ({
             });
 
             // Загружаем обрезанный файл напрямую в R2
-            const filePath = await uploadFileToR2(croppedFile, FILE_PREFIXES.IMAGE);
+            const filePath = await uploadFile(croppedFile, 'images/');
             await onSave(filePath);
 
             // Сбрасываем состояния
@@ -202,7 +203,7 @@ const CuratorAvatarModal: React.FC<CuratorAvatarModalProps> = ({
                                 filePrefix="images/"
                                 onFileSelected={handleFileSelected}
                                 disabled={isSaving}
-                                currentFileUrl={curator.photo_url ? buildImageUrl(curator.photo_url) : undefined}
+                                currentFileUrl={buildFileUrl(curator.photo_url) || undefined}
                                 showDeleteButton={false}
                             />
                         </div>

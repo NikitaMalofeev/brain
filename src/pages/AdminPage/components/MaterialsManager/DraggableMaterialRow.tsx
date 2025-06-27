@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { buildImageUrl } from '@/lib/cloudflareR2Service';
+import { buildFileUrl } from '@/lib/supabase/supabaseStorageService';
 
 // TODO: Использовать глобальный тип Material, когда он будет определен
 interface Material {
@@ -96,7 +96,7 @@ const DraggableMaterialRow: React.FC<DraggableMaterialRowProps> = ({
             <td>
                 {material.cover_image_path ? (
                     <img
-                        src={buildImageUrl(material.cover_image_path)}
+                        src={buildFileUrl(material.cover_image_path) || ''}
                         alt={material.name}
                         className="admin-image-preview"
                     />

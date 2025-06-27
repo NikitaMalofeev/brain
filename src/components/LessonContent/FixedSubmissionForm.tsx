@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { uploadFileToR2, buildFileUrl } from '@/lib/cloudflareR2Service';
+import { uploadFile, buildFileUrl } from '@/lib/supabase/supabaseStorageService';
 import { supabase } from '@/lib/supabase/client';
 import { LessonBlock, Submission } from '@/lib/supabase/types';
 import { User } from '@supabase/supabase-js';
@@ -96,7 +96,7 @@ const FixedSubmissionForm: React.FC<FixedSubmissionFormProps> = ({
         try {
             const uploadPromises = Array.from(files).map(async (file) => {
                 // Загружаем файл в R2 и получаем file path
-                const filePath = await uploadFileToR2(file);
+                const filePath = await uploadFile(file, 'submissions/');
                 // Проверяем, что filePath существует и является строкой
                 if (!filePath || typeof filePath !== 'string') {
                     // Если filePath невалиден, кидаем ошибку, чтобы она была поймана ниже
@@ -108,7 +108,7 @@ const FixedSubmissionForm: React.FC<FixedSubmissionFormProps> = ({
             });
 
             const newFileUrls = await Promise.all(uploadPromises);
-            setUploadedFiles(prev => [...prev, ...newFileUrls]);
+            setUploadedFiles(prev => [...prev, ...newFileUrls.filter(url => url !== null)]);
         } catch (error) {
             console.error('Ошибка загрузки файлов:', error); // Теперь здесь будет более детальная ошибка
             // TODO: Добавить нормальное уведомление об ошибке вместо alert

@@ -1,6 +1,6 @@
 import React from 'react';
 import { LessonData } from '@/lib/supabase/hooks/useStageDetails';
-import { buildImageUrl } from '@/lib/cloudflareR2Service';
+import { buildFileUrl } from '@/lib/supabase/supabaseStorageService';
 import { clsx } from "clsx";
 import NativeModal from "@/components/NativeModal.tsx";
 import { getDeadlineStatus } from '@/helpers/deadlineUtils';
@@ -163,9 +163,7 @@ const LessonCard: React.FC<LessonCardProps> = ({ lesson, onClick }) => {
     };
 
     // ВРЕМЕННО: используем дефолтную обложку вместо CloudFlare R2
-    const coverImageUrl = lesson.cover_image_path
-        ? buildImageUrl(lesson.cover_image_path)
-        : getDefaultCover();
+    const coverImageUrl = buildFileUrl(lesson.cover_image_path) || getDefaultCover();
 
     // ВРЕМЕННАЯ ДИАГНОСТИКА: выводим в консоль для отладки
     if (lesson.cover_image_path) {

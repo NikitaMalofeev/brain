@@ -1,19 +1,16 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { FileUploader, CloudFlareR2Diagnostics } from '@/components';
-import type { FileUploaderRef } from '@/components/FileUploader/FileUploader';
+import { FileUploader, type FileUploaderRef } from '@/components/FileUploader/FileUploader';
 import { supabase } from '@/lib/supabase/client';
 import { useCoursesAdmin, useStagesAdmin, useLessonsAdmin, useBlocksAdmin } from '@/lib/supabase/hooks';
 import { useTariffsAdmin } from '@/lib/supabase/hooks/useTariffsAdmin';
 import { useTariffLimits } from '@/lib/supabase/hooks/useTariffLimits';
-import { FILE_PREFIXES, buildImageUrl, deleteFileFromR2 } from '@/lib/cloudflareR2Service';
+import { buildFileUrl } from '@/lib/supabase/supabaseStorageService';
+import { deleteFile } from '@/lib/supabase/supabaseStorageService';
 import { PlayerProvider } from '@/contexts/PlayerContext';
 import './AdminPage.css';
-import { MdRefresh, MdLogout, MdArrowBack } from 'react-icons/md';
 import { Database } from '../../lib/supabase/types';
-import { draggable, dropTargetForElements } from '@atlaskit/pragmatic-drag-and-drop/element/adapter';
-import { combine } from '@atlaskit/pragmatic-drag-and-drop/combine';
-import { logger } from '@/lib/logger';
+
 
 // Импорты для компонентов проверки ДЗ
 import SubmissionsManager from './SubmissionsManager';
@@ -32,6 +29,7 @@ import FaqManager from './components/FaqManager/FaqManager';
 import BroadcastsManager from './components/BroadcastsManager/BroadcastsManager';
 import TariffsManager from './components/TariffsManager/TariffsManager';
 import TokensManager from './components/TokensManager/TokensManager';
+import { BlocksManager as BlocksManagerComponent } from './components/BlocksManager';
 
 type SupabaseUser = Database['public']['Tables']['users']['Row'];
 
@@ -52,15 +50,7 @@ interface SubmissionsNavigationState {
   selectedSubmissionId?: number;
 }
 
-// Типы для блоков
-interface BlockModalData {
-  id?: number;
-  title: string;
-  block_type: 'text' | 'video' | 'audio' | 'image' | 'pdf';
-  content_text: string;
-  content_url: string;
-  order_num: number;
-}
+
 
 // Компоненты менеджеров (пока заглушки)
 interface CoursesManagerProps {
@@ -80,12 +70,7 @@ interface LessonsManagerProps {
   onLessonSelect: (lessonId: number, lessonName: string) => void;
 }
 
-interface BlocksManagerProps {
-  courseId: string;
-  stageId: number;
-  lessonId: number;
-  onBack: () => void;
-}
+
 
 // Компонент для настройки лимитов тарифов для этапа
 interface TariffLimitsSectionProps {
@@ -596,7 +581,7 @@ const StagesManager: React.FC<StagesManagerProps> = ({ courseId, onBack, onStage
   const deleteStageCover = async () => {
     if (!editingCoverStage || !editingCoverStage.cover_image_path) return;
 
-    const confirmDelete = confirm('Вы уверены, что хотите удалить обложку ступени? Файл будет удален из CloudFlare R2.');
+    const confirmDelete = confirm('Вы уверены, что хотите удалить обложку ступени? Файл будет удален безвозвратно');
     if (!confirmDelete) return;
 
     try {
@@ -604,7 +589,7 @@ const StagesManager: React.FC<StagesManagerProps> = ({ courseId, onBack, onStage
       setUpdateError(null);
 
       // Удаляем файл из CloudFlare R2
-      await deleteFileFromR2(editingCoverStage.cover_image_path);
+      await deleteFile(editingCoverStage.cover_image_path);
 
       // Обновляем запись в БД - используем null вместо undefined
       await updateStage(editingCoverStage.id, {
@@ -829,7 +814,7 @@ const StagesManager: React.FC<StagesManagerProps> = ({ courseId, onBack, onStage
                     <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                       {stage.cover_image_path ? (
                         <img
-                          src={buildImageUrl(stage.cover_image_path)}
+                          src={buildFileUrl(stage.cover_image_path) || ''}
                           alt="Обложка ступени"
                           style={{
                             width: '40px',
@@ -982,7 +967,7 @@ const StagesManager: React.FC<StagesManagerProps> = ({ courseId, onBack, onStage
               {editingCoverStage.cover_image_path ? (
                 <div style={{ marginBottom: '16px' }}>
                   <img
-                    src={buildImageUrl(editingCoverStage.cover_image_path)}
+                    src={buildFileUrl(editingCoverStage.cover_image_path) || ''}
                     alt="Текущая обложка ступени"
                     style={{
                       width: '200px',
@@ -1033,7 +1018,7 @@ const StagesManager: React.FC<StagesManagerProps> = ({ courseId, onBack, onStage
                   editingCoverStage.cover_image_path ? 'image/*' : 'image/*'
                 }
                 filePrefix="images/"
-                currentFileUrl={editingCoverStage?.cover_image_path ? buildImageUrl(editingCoverStage.cover_image_path) : undefined}
+                currentFileUrl={buildFileUrl(editingCoverStage?.cover_image_path) || undefined}
                 disabled={updateLoading}
                 showDeleteButton={true}
               />
@@ -1080,563 +1065,7 @@ const StagesManager: React.FC<StagesManagerProps> = ({ courseId, onBack, onStage
   );
 };
 
-// Компонент для управления блоками урока
-const BlocksManager: React.FC<BlocksManagerProps> = ({ courseId, stageId, lessonId, onBack }) => {
-  const { blocks, loading, error, refetch, createBlock, updateBlock, deleteBlock } = useBlocksAdmin(lessonId);
-  const [updateLoading, setUpdateLoading] = useState<boolean>(false);
-  const [updateError, setUpdateError] = useState<string | null>(null);
 
-  // Модальное окно
-  const [isModalOpen, setIsModalOpen] = useState(false);
-  const [modalData, setModalData] = useState<BlockModalData>({
-    title: '',
-    block_type: 'text',
-    content_text: '',
-    content_url: '',
-    order_num: 1,
-  });
-  const [modalMode, setModalMode] = useState<'add' | 'edit'>('add');
-
-  // Редактирование блока
-  const [editingBlock, setEditingBlock] = useState<any | null>(null);
-
-  // Состояние для загрузки файлов
-  const [uploadError, setUploadError] = useState<string | null>(null);
-
-  // Состояние для локального редактирования порядка
-  const [localOrderValues, setLocalOrderValues] = useState<{ [key: number]: number }>({});
-  const [orderUpdateTimeouts, setOrderUpdateTimeouts] = useState<{ [key: number]: NodeJS.Timeout }>({});
-
-  // Обработчики для загрузки файлов
-  const handleFileUploadComplete = (filePath: string, fileUrl: string) => {
-    setModalData(prev => ({ ...prev, content_url: fileUrl }));
-    setUploadError(null);
-  };
-
-  const handleFileUploadError = (error: string) => {
-    setUploadError(error);
-  };
-
-  // Открыть модал для добавления
-  const openAddModal = () => {
-    const nextOrder = blocks.length > 0 ? Math.max(...blocks.map(b => b.order_num)) + 1 : 1;
-    setModalData({
-      title: '',
-      block_type: 'text',
-      content_text: '',
-      content_url: '',
-      order_num: nextOrder,
-    });
-    setModalMode('add');
-    setUploadError(null);
-    setIsModalOpen(true);
-  };
-
-  // Открыть модал для редактирования
-  const openEditModal = (block: any) => {
-    setModalData({
-      id: block.id,
-      title: block.title || '',
-      block_type: block.block_type,
-      content_text: block.content_text || '',
-      content_url: block.content_url || '',
-      order_num: block.order_num,
-    });
-    setModalMode('edit');
-    setUploadError(null);
-    setIsModalOpen(true);
-  };
-
-  // Закрыть модал
-  const closeModal = () => {
-    setIsModalOpen(false);
-    setUploadError(null);
-    setModalData({
-      title: '',
-      block_type: 'text',
-      content_text: '',
-      content_url: '',
-      order_num: 1,
-    });
-  };
-
-  // Сохранить блок
-  const saveBlock = async () => {
-    try {
-      setUpdateLoading(true);
-      setUpdateError(null);
-
-      // Валидация: блок должен иметь хотя бы текст или URL (для не-text типов)
-      const hasText = modalData.content_text && modalData.content_text.trim();
-      const hasUrl = modalData.content_url && modalData.content_url.trim();
-
-      if (modalData.block_type === 'text') {
-        if (!hasText) {
-          alert('Для текстового блока необходимо заполнить содержимое');
-          return;
-        }
-      } else {
-        if (!hasText && !hasUrl) {
-          alert(`Для блока типа "${getBlockTypeName(modalData.block_type)}" необходимо заполнить URL или описание`);
-          return;
-        }
-      }
-
-      if (modalMode === 'add') {
-        // Просто создаем новый блок без проверки конфликтов
-        await createBlock({
-          lesson_id: lessonId,
-          title: modalData.title || undefined,
-          block_type: modalData.block_type,
-          content_text: modalData.content_text || undefined,
-          content_url: modalData.content_url || undefined,
-          order_num: modalData.order_num,
-        });
-      } else {
-        // Просто обновляем блок без проверки конфликтов
-        await updateBlock(modalData.id!, {
-          title: modalData.title || undefined,
-          block_type: modalData.block_type,
-          content_text: modalData.content_text || undefined,
-          content_url: modalData.content_url || undefined,
-          order_num: modalData.order_num,
-        });
-      }
-
-      closeModal();
-    } catch (error: any) {
-      console.error('Ошибка при сохранении блока:', error);
-      setUpdateError(error.message || 'Произошла ошибка при сохранении блока');
-    } finally {
-      setUpdateLoading(false);
-    }
-  };
-
-  // Удаление блока
-  const handleDeleteBlock = async (id: number, title?: string) => {
-    const blockName = title || 'Безымянный блок';
-    if (!confirm(`Вы уверены, что хотите удалить блок "${blockName}"?`)) {
-      return;
-    }
-
-    try {
-      setUpdateLoading(true);
-      setUpdateError(null);
-
-      await deleteBlock(id);
-    } catch (error: any) {
-      console.error('Ошибка при удалении блока:', error);
-      setUpdateError(error.message || 'Произошла ошибка при удалении блока');
-    } finally {
-      setUpdateLoading(false);
-    }
-  };
-
-  // Инлайн-редактирование порядка с debounce
-  const handleOrderInputChange = (blockId: number, newOrder: number) => {
-    // Обновляем локальное значение немедленно
-    setLocalOrderValues(prev => ({ ...prev, [blockId]: newOrder }));
-
-    // Очищаем предыдущий таймер если есть
-    if (orderUpdateTimeouts[blockId]) {
-      clearTimeout(orderUpdateTimeouts[blockId]);
-    }
-
-    // Устанавливаем новый таймер для отложенного обновления
-    const timeoutId = setTimeout(() => {
-      handleOrderChange(blockId, newOrder);
-    }, 1000); // 1 секунда задержки
-
-    setOrderUpdateTimeouts(prev => ({ ...prev, [blockId]: timeoutId }));
-  };
-
-  const handleOrderChange = async (blockId: number, newOrder: number) => {
-    try {
-      // Просто обновляем порядок без проверки конфликтов
-      await updateBlock(blockId, { order_num: newOrder });
-
-      // Очищаем локальное значение после успешного обновления
-      setLocalOrderValues(prev => {
-        const newValues = { ...prev };
-        delete newValues[blockId];
-        return newValues;
-      });
-    } catch (error: any) {
-      console.error('Ошибка при изменении порядка:', error);
-      setUpdateError(error.message || 'Произошла ошибка при изменении порядка');
-
-      // Возвращаем локальное значение к исходному
-      setLocalOrderValues(prev => {
-        const newValues = { ...prev };
-        delete newValues[blockId];
-        return newValues;
-      });
-    }
-  };
-
-  // Обработка drag & drop перестановки блоков
-  const handleBlockReorder = async (draggedBlockId: number, targetBlockId: number) => {
-    try {
-      setUpdateLoading(true);
-      setUpdateError(null);
-
-      // Находим блоки в текущем массиве
-      const draggedBlock = blocks.find(b => b.id === draggedBlockId);
-      const targetBlock = blocks.find(b => b.id === targetBlockId);
-
-      if (!draggedBlock || !targetBlock) {
-        throw new Error('Блоки не найдены');
-      }
-
-      // Создаем копию массива блоков для расчета новых позиций
-      const sortedBlocks = [...blocks].sort((a, b) => a.order_num - b.order_num);
-      const draggedIndex = sortedBlocks.findIndex(b => b.id === draggedBlockId);
-      const targetIndex = sortedBlocks.findIndex(b => b.id === targetBlockId);
-
-      if (draggedIndex === -1 || targetIndex === -1) {
-        throw new Error('Индексы блоков не найдены');
-      }
-
-      // Перемещаем элемент в новую позицию
-      const reorderedBlocks = [...sortedBlocks];
-      const [movedBlock] = reorderedBlocks.splice(draggedIndex, 1);
-      reorderedBlocks.splice(targetIndex, 0, movedBlock);
-
-      // Обновляем order_num для всех затронутых блоков
-      const updates = [];
-      for (let i = 0; i < reorderedBlocks.length; i++) {
-        const newOrderNum = i + 1;
-        if (reorderedBlocks[i].order_num !== newOrderNum) {
-          updates.push(updateBlock(reorderedBlocks[i].id, { order_num: newOrderNum }));
-        }
-      }
-
-      // Выполняем все обновления
-      await Promise.all(updates);
-
-      // Перезагружаем данные для отображения обновленного порядка
-      await refetch();
-
-    } catch (error: any) {
-      console.error('Ошибка при перестановке блоков:', error);
-      setUpdateError(error.message || 'Произошла ошибка при перестановке блоков');
-    } finally {
-      setUpdateLoading(false);
-    }
-  };
-
-  // Получение названия типа блока для отображения
-  const getBlockTypeName = (type: string) => {
-    const types: Record<string, string> = {
-      text: 'Текст',
-      video: 'Видео',
-      audio: 'Аудио',
-      image: 'Изображение',
-      pdf: 'PDF',
-    };
-    return types[type] || type;
-  };
-
-  // Рендер контента блока
-  const renderBlockContent = (block: any) => {
-    const hasText = block.content_text && block.content_text.trim();
-    const hasUrl = block.content_url && block.content_url.trim();
-
-    switch (block.block_type) {
-      case 'text':
-        return (
-          <div className="block-content-preview">
-            {hasText ?
-              (block.content_text.substring(0, 100) + (block.content_text.length > 100 ? '...' : ''))
-              : <span className="empty-value">Нет текста</span>
-            }
-          </div>
-        );
-      case 'video':
-        return (
-          <div className="block-content-preview">
-            {hasUrl && <div>🎥 {block.content_url.substring(0, 40)}...</div>}
-            {hasText && <div>📝 {block.content_text.substring(0, 60)}...</div>}
-            {!hasUrl && !hasText && <span className="empty-value">Нет контента</span>}
-          </div>
-        );
-      case 'audio':
-        return (
-          <div className="block-content-preview">
-            {hasUrl && <div>🔊 {block.content_url.substring(0, 40)}...</div>}
-            {hasText && <div>📝 {block.content_text.substring(0, 60)}...</div>}
-            {!hasUrl && !hasText && <span className="empty-value">Нет контента</span>}
-          </div>
-        );
-      case 'image':
-        return (
-          <div className="block-content-preview">
-            {hasUrl && <div>🖼️ {block.content_url.substring(0, 40)}...</div>}
-            {hasText && <div>📝 {block.content_text.substring(0, 60)}...</div>}
-            {!hasUrl && !hasText && <span className="empty-value">Нет контента</span>}
-          </div>
-        );
-      case 'pdf':
-        return (
-          <div className="block-content-preview">
-            {hasUrl && <div>📄 {block.content_url.substring(0, 40)}...</div>}
-            {hasText && <div>📝 {block.content_text.substring(0, 60)}...</div>}
-            {!hasUrl && !hasText && <span className="empty-value">Нет контента</span>}
-          </div>
-        );
-      default:
-        return <span className="empty-value">Неизвестный тип</span>;
-    }
-  };
-
-  const handleFileSelected = (file: File | null) => {
-    // Пока что ничего не делаем - файл будет загружен при сохранении
-    console.log('Файл выбран для ступени:', file?.name);
-  };
-
-  return (
-    <div className="admin-section">
-      <div className="section-header">
-        <h2>Блоки урока</h2>
-        <div style={{ display: 'flex', gap: '12px' }}>
-          <button
-            className="admin-refresh-btn"
-            onClick={refetch}
-            disabled={loading}
-          >
-            Обновить
-          </button>
-          <button
-            className="admin-add-btn"
-            onClick={openAddModal}
-            disabled={loading}
-          >
-            + Добавить блок
-          </button>
-          <button
-            className="admin-button"
-            onClick={onBack}
-            style={{ background: 'var(--admin-secondary)' }}
-          >
-            ← Назад к урокам
-          </button>
-        </div>
-      </div>
-
-      {updateError && (
-        <div className="admin-error admin-update-error">
-          {updateError}
-        </div>
-      )}
-
-      {loading ? (
-        <div className="admin-loading">Загрузка блоков...</div>
-      ) : error ? (
-        <div className="admin-error">Ошибка: {error.message}</div>
-      ) : blocks.length === 0 ? (
-        <div className="empty-table">
-          Блоки не найдены. Добавьте первый блок урока.
-        </div>
-      ) : (
-        <div className="admin-table">
-          <table>
-            <thead>
-              <tr>
-                <th>Порядок</th>
-                <th>Заголовок</th>
-                <th>Тип</th>
-                <th>Контент/URL</th>
-                <th>Действия</th>
-              </tr>
-            </thead>
-            <tbody>
-              {blocks.map((block) => (
-                <DraggableBlockRow
-                  key={block.id}
-                  block={block}
-                  localOrderValues={localOrderValues}
-                  onOrderInputChange={handleOrderInputChange}
-                  getBlockTypeName={getBlockTypeName}
-                  renderBlockContent={renderBlockContent}
-                  onEdit={openEditModal}
-                  onDelete={handleDeleteBlock}
-                  onReorder={handleBlockReorder}
-                />
-              ))}
-            </tbody>
-          </table>
-        </div>
-      )}
-
-      {/* Модальное окно редактирования блока */}
-      {isModalOpen && (
-        <div className="admin-modal-backdrop" onClick={closeModal}>
-          <div className="admin-modal" onClick={(e) => e.stopPropagation()}>
-            <button className="admin-modal-close" onClick={closeModal}>×</button>
-
-            <h3>{modalMode === 'add' ? 'Добавить блок' : 'Редактировать блок'}</h3>
-
-            <div className="form-group">
-              <label>Заголовок блока (опционально):</label>
-              <input
-                className="admin-input"
-                value={modalData.title}
-                onChange={(e) => setModalData({ ...modalData, title: e.target.value })}
-                placeholder="Заголовок блока..."
-              />
-            </div>
-
-            <div className="form-row">
-              <div className="form-group">
-                <label>Тип блока:</label>
-                <select
-                  className="admin-input"
-                  value={modalData.block_type}
-                  onChange={(e) => setModalData({ ...modalData, block_type: e.target.value as any })}
-                >
-                  <option value="text">📝 Текст</option>
-                  <option value="video">🎥 Видео</option>
-                  <option value="audio">🔊 Аудио</option>
-                  <option value="image">🖼️ Изображение</option>
-                  <option value="pdf">📄 PDF</option>
-                </select>
-              </div>
-              <div className="form-group">
-                <label>Порядковый номер:</label>
-                <input
-                  className="admin-input"
-                  type="number"
-                  value={modalData.order_num}
-                  onChange={(e) => setModalData({ ...modalData, order_num: parseInt(e.target.value) || 1 })}
-                  min="1"
-                />
-              </div>
-            </div>
-
-            {/* Контент в зависимости от типа блока */}
-            {modalData.block_type === 'text' ? (
-              // Для текстового блока - только текст
-              <div className="form-group">
-                <label>Текстовое содержимое:</label>
-                <textarea
-                  className="admin-input"
-                  value={modalData.content_text}
-                  onChange={(e) => setModalData({ ...modalData, content_text: e.target.value })}
-                  rows={6}
-                  placeholder="Введите текстовое содержимое блока..."
-                  style={{ resize: 'vertical' }}
-                />
-              </div>
-            ) : modalData.block_type === 'video' ? (
-              // Для видео - только URL (Kinescope)
-              <>
-                <div className="form-group">
-                  <label>URL видео (Kinescope и др.):</label>
-                  <input
-                    className="admin-input"
-                    value={modalData.content_url}
-                    onChange={(e) => setModalData({ ...modalData, content_url: e.target.value })}
-                    placeholder="https://..."
-                  />
-                  <small style={{ color: 'var(--admin-text-secondary)', marginTop: '8px', display: 'block' }}>
-                    💡 Вставьте ссылку на видео Kinescope
-                  </small>
-                </div>
-
-                <div className="form-group">
-                  <label>Описание видео (опционально):</label>
-                  <textarea
-                    className="admin-input"
-                    value={modalData.content_text}
-                    onChange={(e) => setModalData({ ...modalData, content_text: e.target.value })}
-                    rows={3}
-                    placeholder="Введите описание к видео..."
-                    style={{ resize: 'vertical' }}
-                  />
-                </div>
-              </>
-            ) : (
-              // Для файлов (audio, image, pdf) - FileUploader + текст
-              <>
-                <div className="form-group">
-                  <label>
-                    Загрузка файла ({getBlockTypeName(modalData.block_type).toLowerCase()}):
-                  </label>
-                  {uploadError && (
-                    <div className="admin-error" style={{ marginBottom: '12px' }}>
-                      {uploadError}
-                    </div>
-                  )}
-                  <FileUploader
-                    onFileSelected={handleFileSelected}
-                    onUploadComplete={handleFileUploadComplete}
-                    onUploadError={handleFileUploadError}
-                    acceptedTypes={
-                      modalData.block_type === 'audio' ? 'audio/mpeg,audio/wav,audio/mp3,audio/mp4,audio/m4a,audio/ogg,audio/aac,audio/flac' :
-                        modalData.block_type === 'image' ? 'image/jpeg,image/png,image/webp,image/gif,image/svg+xml' :
-                          modalData.block_type === 'pdf' ? 'application/pdf' : '*/*'
-                    }
-                    filePrefix={
-                      modalData.block_type === 'audio' ? 'audio/' :
-                        modalData.block_type === 'image' ? 'images/' :
-                          modalData.block_type === 'pdf' ? 'documents/' : 'documents/'
-                    }
-                    currentFileUrl={modalData.content_url}
-                    disabled={updateLoading}
-                  />
-                  <small style={{ color: 'var(--admin-text-secondary)', marginTop: '8px', display: 'block' }}>
-                    💡 Или вставьте готовый URL файла:
-                  </small>
-                  <input
-                    className="admin-input"
-                    style={{ marginTop: '8px' }}
-                    value={modalData.content_url}
-                    onChange={(e) => setModalData({ ...modalData, content_url: e.target.value })}
-                    placeholder="https://..."
-                  />
-                </div>
-
-                <div className="form-group">
-                  <label>
-                    {modalData.block_type === 'image' ? 'Подпись к изображению' : 'Описание'} (опционально):
-                  </label>
-                  <textarea
-                    className="admin-input"
-                    value={modalData.content_text}
-                    onChange={(e) => setModalData({ ...modalData, content_text: e.target.value })}
-                    rows={3}
-                    placeholder={`Введите ${modalData.block_type === 'image' ? 'подпись к изображению' : 'описание'}...`}
-                    style={{ resize: 'vertical' }}
-                  />
-                </div>
-              </>
-            )}
-
-            <div className="form-actions">
-              <button
-                className="admin-button"
-                onClick={saveBlock}
-                disabled={updateLoading || !modalData.block_type ||
-                  (modalData.block_type === 'text' ? !modalData.content_text.trim() :
-                    !modalData.content_text.trim() && !modalData.content_url.trim())}
-              >
-                {updateLoading ? 'Сохранение...' : (modalMode === 'add' ? 'Добавить' : 'Сохранить')}
-              </button>
-              <button
-                className="admin-button"
-                onClick={closeModal}
-                disabled={updateLoading}
-                style={{ background: 'var(--admin-danger)' }}
-              >
-                Отмена
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-    </div>
-  );
-};
 
 // Breadcrumb компонент
 interface BreadcrumbProps {
@@ -1779,19 +1208,32 @@ const AdminPage: React.FC = () => {
     try {
       const authStored = localStorage.getItem('admin_auth');
       const userStored = localStorage.getItem('admin_user');
+      const tokenStored = localStorage.getItem('admin_access_token'); // Читаем токен
 
-      if (authStored === 'true' && userStored) {
+      if (authStored === 'true' && userStored && tokenStored) {
         const userData = JSON.parse(userStored);
 
         // Проверяем что данные пользователя валидны
         if (userData && userData.id && userData.role &&
           ['admin', 'curator'].includes(userData.role)) {
+
+          // Восстанавливаем сессию в Supabase client
+          if (supabase) { // <--- ВОТ ИСПРАВЛЕНИЕ
+            supabase.auth.setSession({
+              access_token: tokenStored,
+              refresh_token: '',
+            });
+          } else {
+            console.warn('Supabase client не был доступен при восстановлении сессии.');
+          }
+
           // Данные корректны, оставляем авторизацию
           console.log('Сессия восстановлена из localStorage:', userData.role);
         } else {
           // Данные невалидны, очищаем
           localStorage.removeItem('admin_auth');
           localStorage.removeItem('admin_user');
+          localStorage.removeItem('admin_access_token'); // Очищаем токен
           setPasswordAuth(false);
           setAdminUser(null);
         }
@@ -1801,6 +1243,7 @@ const AdminPage: React.FC = () => {
       // При ошибке парсинга очищаем все
       localStorage.removeItem('admin_auth');
       localStorage.removeItem('admin_user');
+      localStorage.removeItem('admin_access_token'); // Очищаем токен
       setPasswordAuth(false);
       setAdminUser(null);
     }
@@ -1842,12 +1285,27 @@ const AdminPage: React.FC = () => {
 
       const userData = data[0];
 
+      // Проверяем, что бэкенд вернул токен
+      if (!userData.access_token) {
+        console.error('Токен доступа не был получен от функции авторизации. Убедитесь, что миграция БД применена.');
+        setError('Ошибка конфигурации сервера. Не удалось получить токен.');
+        return;
+      }
+
       const userInfo = {
         id: userData.user_id,
         role: userData.user_role,
         first_name: userData.first_name,
         last_name: userData.last_name
       };
+
+      const accessToken = userData.access_token;
+
+      // Устанавливаем сессию в Supabase client
+      supabase.auth.setSession({
+        access_token: accessToken,
+        refresh_token: '', // Мы не используем refresh-токены в этой схеме
+      });
 
       // Успешная авторизация - сохраняем в localStorage
       try {
@@ -1872,11 +1330,19 @@ const AdminPage: React.FC = () => {
     }
   };
 
-  const handleLogout = () => {
+  const handleLogout = async () => {
+    // Завершаем сессию в Supabase, если клиент доступен
+    if (supabase) {
+      await supabase.auth.signOut();
+    } else {
+      console.warn('Supabase client не был доступен при выходе из системы.');
+    }
+
     // Очищаем localStorage
     try {
       localStorage.removeItem('admin_auth');
       localStorage.removeItem('admin_user');
+      localStorage.removeItem('admin_access_token'); // Очищаем токен
     } catch (err) {
       console.warn('Ошибка очистки localStorage:', err);
     }
@@ -2152,7 +1618,7 @@ const AdminPage: React.FC = () => {
               )}
 
               {navigation.view === 'blocks' && navigation.lessonId && (
-                <BlocksManager
+                <BlocksManagerComponent
                   courseId={navigation.courseId!}
                   stageId={navigation.stageId!}
                   lessonId={navigation.lessonId}

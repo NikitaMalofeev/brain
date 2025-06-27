@@ -1,6 +1,6 @@
 // Компонент карточки ступени
 import React from 'react';
-import { buildImageUrl } from '@/lib/cloudflareR2Service';
+import { buildFileUrl } from '@/lib/supabase/supabaseStorageService';
 import { motion } from 'framer-motion';
 import { Ripple } from '@/components/ui/Ripple/Ripple';
 import { clsx } from 'clsx';
@@ -44,7 +44,7 @@ const StageCard: React.FC<StageCardProps> = ({
                     )}
                 >
                     <img
-                        src={coverImagePath ? buildImageUrl(coverImagePath) : `/step${orderNum}${orderNum}.png`}
+                        src={buildFileUrl(coverImagePath) || `/step${orderNum}${orderNum}.png`}
                         className={clsx("w-full h-[140px] md:h-[200px] object-cover", `bg-breathe-${orderNum}`)}
                         onError={(e) => {
                             e.currentTarget.src = `/step${orderNum}${orderNum}.png`;

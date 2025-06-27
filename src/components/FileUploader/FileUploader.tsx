@@ -1,5 +1,6 @@
 import React, { useState, useRef, useImperativeHandle, forwardRef } from 'react';
-import { uploadFileToR2, buildFileUrl, getFilePrefixByType, FILE_PREFIXES, FilePrefix } from '@/lib/cloudflareR2Service';
+import { uploadFile, buildFileUrl } from '@/lib/supabase/supabaseStorageService';
+import { FilePrefix, FILE_PREFIXES } from '@/lib/supabase/storage_prefixes';
 
 interface FileUploaderProps {
     onFileSelected: (file: File | null) => void;
@@ -18,6 +19,7 @@ export interface FileUploaderRef {
     uploadFile: () => Promise<{ filePath: string, fileUrl: string } | null>;
     clearFile: () => void;
     hasSelectedFile: () => boolean;
+    isUploading: () => boolean;
 }
 
 export const FileUploader = forwardRef<FileUploaderRef, FileUploaderProps>(({
@@ -38,15 +40,15 @@ export const FileUploader = forwardRef<FileUploaderRef, FileUploaderProps>(({
     const fileInputRef = useRef<HTMLInputElement>(null);
 
     // Публичная функция для загрузки файла (вызывается снаружи при сохранении)
-    const uploadFile = async (): Promise<{ filePath: string, fileUrl: string } | null> => {
+    const handleUpload = async (): Promise<{ filePath: string, fileUrl: string } | null> => {
         if (!selectedFile) return null;
 
         try {
             setUploading(true);
 
-            const effectivePrefix = filePrefix || getFilePrefixByType(selectedFile);
-            const filePath = await uploadFileToR2(selectedFile, effectivePrefix);
-            const fileUrl = buildFileUrl(filePath);
+            const effectivePrefix = filePrefix || FILE_PREFIXES.DOCUMENT;
+            const filePath = await uploadFile(selectedFile, effectivePrefix);
+            const fileUrl = buildFileUrl(filePath) || '';
 
             onUploadComplete?.(filePath, fileUrl);
             return { filePath, fileUrl };
@@ -69,13 +71,17 @@ export const FileUploader = forwardRef<FileUploaderRef, FileUploaderProps>(({
     };
 
     const hasSelectedFile = () => !!selectedFile;
+    const isUploadingFile = () => uploading;
 
     // Экспортируем функции через ref
     useImperativeHandle(ref, () => ({
-        uploadFile,
+        uploadFile: handleUpload,
         clearFile,
-        hasSelectedFile
+        hasSelectedFile,
+        isUploading: isUploadingFile
     }));
+
+
 
     const handleFileSelect = (file: File | null) => {
         setSelectedFile(file);

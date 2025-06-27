@@ -1,5 +1,6 @@
 import React from 'react';
 import { LessonBlock } from '@/lib/supabase/types';
+import { buildFileUrl } from '@/lib/supabase/supabaseStorageService';
 
 interface DocumentBlockProps {
     block: LessonBlock;
@@ -27,6 +28,9 @@ const DocumentBlock = ({ block }: DocumentBlockProps) => {
         }
         return { type: 'unknown', icon: '📎', name: fileName };
     };
+
+    // Получаем правильный URL через buildFileUrl
+    const documentUrl = buildFileUrl(block.content_url);
 
     // Убираем стили белого контейнера
     // Оставляем только div для структуры, стили будут применены родителем (LessonPage)
@@ -59,9 +63,9 @@ const DocumentBlock = ({ block }: DocumentBlockProps) => {
                     )}
                 </div>
 
-                {block.content_url ? (
+                {documentUrl ? (
                     <a
-                        href={block.content_url}
+                        href={documentUrl}
                         target="_blank"
                         rel="noopener noreferrer"
                         className={"w-full font-bold leading-5 text-white py-2 px-4 rounded-3xl text-center bg-[linear-gradient(135deg,rgba(141,197,241,0.4)_-48.61%,#63ABE6_105.56%),linear-gradient(91.99deg,#F3F3F3_0%,#EAEAEA_100%)]"}
