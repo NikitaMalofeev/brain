@@ -2,16 +2,40 @@ import React, { useEffect, useState } from 'react';
 import { useStudentDetails, StudentLessonProgress, StudentMaterialView } from '@/lib/supabase/hooks/useStudentDetails';
 import { useStudentActions } from '@/lib/supabase/hooks/useStudentActions';
 import { useTariffsAdmin } from '@/lib/supabase/hooks/useTariffsAdmin';
+import { useCuratorsAdmin } from '@/lib/supabase/hooks/useCuratorsAdmin';
+import { validateCuratorPassword, validateLoginFormat } from '@/helpers/validationHelpers';
+import { CURATOR_PASSWORD_CONFIG } from '@/lib/config/constants';
+import { supabase } from '@/lib/supabase/client';
 
 interface StudentCardProps {
     studentId: string;
     onBack: () => void;
+    currentUser?: {
+        id: string;
+        role: string;
+    } | null;
 }
 
-const StudentCard: React.FC<StudentCardProps> = ({ studentId, onBack }) => {
+const StudentCard: React.FC<StudentCardProps> = ({ studentId, onBack, currentUser }) => {
     const { studentDetails, loading, error, loadStudentDetails, assignStudentTariff, assigningTariff } = useStudentDetails();
     const { resetLessonProgress, markMaterialViewed, resetMaterialView, updateStudentPoints, markLessonAsCompleted, markLessonAsIncomplete } = useStudentActions();
     const { tariffs, loading: tariffsLoading } = useTariffsAdmin();
+    const { promoteToCurator, isPromoting } = useCuratorsAdmin();
+
+    // Cостояние для модального окна назначения куратором
+    const [isPromoteModalOpen, setIsPromoteModalOpen] = useState(false);
+    const [promoteFormData, setPromoteFormData] = useState({
+        webLogin: '',
+        password: '',
+    });
+    const [formError, setFormError] = useState<string | null>(null);
+
+    // Состояние для модального окна успешного назначения
+    const [isSuccessModalOpen, setIsSuccessModalOpen] = useState(false);
+    const [successCredentials, setSuccessCredentials] = useState<{
+        login: string;
+        password: string;
+    } | null>(null);
 
     // Состояние для выбранного тарифа
     const [selectedTariffId, setSelectedTariffId] = useState<string>('');
@@ -202,6 +226,140 @@ const StudentCard: React.FC<StudentCardProps> = ({ studentId, onBack }) => {
         }
     };
 
+    const openPromoteModal = () => {
+        if (!studentDetails) return;
+        setPromoteFormData({
+            webLogin: '',
+            password: '',
+        });
+        setFormError(null);
+        setIsPromoteModalOpen(true);
+    };
+
+    const closePromoteModal = () => {
+        setIsPromoteModalOpen(false);
+    };
+
+    const handlePromoteFormChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        setPromoteFormData({
+            ...promoteFormData,
+            [e.target.name]: e.target.value,
+        });
+    };
+
+    const handlePromoteToCurator = async () => {
+        // Валидация логина и пароля
+        const loginError = validateLoginFormat(promoteFormData.webLogin);
+        if (loginError) {
+            setFormError(loginError);
+            return;
+        }
+
+        const passwordError = validateCuratorPassword(promoteFormData.password);
+        if (passwordError) {
+            setFormError(passwordError);
+            return;
+        }
+
+        setFormError(null);
+
+        try {
+            if (!currentUser?.id) {
+                throw new Error('Не удалось определить ID текущего пользователя');
+            }
+
+            await promoteToCurator({
+                userId: studentId,
+                webLogin: promoteFormData.webLogin,
+                password: promoteFormData.password,
+                adminId: currentUser.id, // Передаем ID текущего админа
+            });
+
+            // Показываем модальное окно с учетными данными вместо alert
+            setSuccessCredentials({
+                login: promoteFormData.webLogin,
+                password: promoteFormData.password,
+            });
+            setIsPromoteModalOpen(false);
+            setIsSuccessModalOpen(true);
+        } catch (error: any) {
+            console.error('Ошибка при назначении куратора:', error);
+            alert(`Ошибка: ${error.message || 'Не удалось назначить куратора'}`);
+        }
+    };
+
+    // Компонент модального окна успешного назначения
+    const SuccessModal = () => {
+        const [copyFeedback, setCopyFeedback] = useState<string | null>(null);
+
+        const copyToClipboard = async (text: string, type: string) => {
+            try {
+                await navigator.clipboard.writeText(text);
+                setCopyFeedback(`${type} скопирован!`);
+                setTimeout(() => setCopyFeedback(null), 2000);
+            } catch (error) {
+                console.error('Ошибка при копировании:', error);
+                setCopyFeedback('Ошибка копирования');
+                setTimeout(() => setCopyFeedback(null), 2000);
+            }
+        };
+
+        const closeSuccessModal = () => {
+            setIsSuccessModalOpen(false);
+            setSuccessCredentials(null);
+            setCopyFeedback(null);
+        };
+
+        if (!successCredentials) return null;
+
+        return (
+            <div className="admin-modal-backdrop" onClick={closeSuccessModal}>
+                <div className="admin-modal" onClick={e => e.stopPropagation()}>
+                    <h3>✅ Куратор назначен успешно!</h3>
+                    <p>Передайте эти данные новому куратору:</p>
+
+                    <div className="credentials-block">
+                        <div className="credential-item">
+                            <label>Логин:</label>
+                            <code className="credential-value">{successCredentials.login}</code>
+                            <button
+                                className="admin-button copy-btn"
+                                onClick={() => copyToClipboard(successCredentials.login, 'Логин')}
+                            >
+                                📋 Скопировать
+                            </button>
+                        </div>
+
+                        <div className="credential-item">
+                            <label>Пароль:</label>
+                            <code className="credential-value">{successCredentials.password}</code>
+                            <button
+                                className="admin-button copy-btn"
+                                onClick={() => copyToClipboard(successCredentials.password, 'Пароль')}
+                            >
+                                📋 Скопировать
+                            </button>
+                        </div>
+                    </div>
+
+                    {copyFeedback && (
+                        <div className="copy-feedback">
+                            {copyFeedback}
+                        </div>
+                    )}
+
+                    <div className="form-actions">
+                        <button className="admin-button" onClick={closeSuccessModal}>
+                            Понятно
+                        </button>
+                    </div>
+                </div>
+            </div>
+        );
+    };
+
+
+
     if (loading) return <div className="admin-loading">Загрузка...</div>;
     if (error) return <div className="admin-error">Ошибка: {error.message}</div>;
     if (!studentDetails) return null;
@@ -318,6 +476,29 @@ const StudentCard: React.FC<StudentCardProps> = ({ studentId, onBack }) => {
                         </div>
                     </div>
                 </div>
+
+                {/* === НАШ НОВЫЙ БЛОК === */}
+                {currentUser?.role === 'admin' && (
+                    <div className="form-group" style={{ marginTop: '20px' }}>
+                        <label>Роль пользователя:</label>
+                        <p>Текущая роль: <strong>{basicInfo.role}</strong></p>
+                        <div style={{ display: 'flex', justifyContent: 'flex-start' }}>
+                            <button
+                                className="admin-button"
+                                style={{ width: 'auto', minWidth: '180px', maxWidth: '250px' }}
+                                onClick={openPromoteModal}
+                                disabled={isPromoting || basicInfo.role === 'curator' || basicInfo.role === 'admin'}
+                                title={
+                                    basicInfo.role === 'curator' ? 'Пользователь уже является куратором' :
+                                        basicInfo.role === 'admin' ? 'Нельзя изменить роль администратора' :
+                                            'Назначить пользователя куратором'
+                                }
+                            >
+                                {isPromoting ? 'Назначение...' : 'Сделать куратором'}
+                            </button>
+                        </div>
+                    </div>
+                )}
             </div>
 
             <div className="admin-card">
@@ -484,6 +665,62 @@ const StudentCard: React.FC<StudentCardProps> = ({ studentId, onBack }) => {
                     </table>
                 </div>
             </div>
+            {isPromoteModalOpen && (
+                <div className="admin-modal-backdrop">
+                    <div className="admin-modal">
+                        <h3>Назначение куратора</h3>
+                        <p>Пользователь: <strong>{basicInfo.full_name}</strong></p>
+
+                        <div className="form-group">
+                            <label>Логин для входа*</label>
+                            <input
+                                type="text"
+                                name="webLogin"
+                                className="admin-input"
+                                value={promoteFormData.webLogin}
+                                onChange={handlePromoteFormChange}
+                                placeholder="Только a-z, A-Z, 0-9, _, -"
+                                disabled={isPromoting}
+                            />
+                        </div>
+
+                        <div className="form-group">
+                            <label>Пароль (мин. {CURATOR_PASSWORD_CONFIG.MIN_LENGTH} символов)*</label>
+                            <input
+                                type="password"
+                                name="password"
+                                className="admin-input"
+                                value={promoteFormData.password}
+                                onChange={handlePromoteFormChange}
+                                placeholder="Придумайте надежный пароль"
+                                disabled={isPromoting}
+                            />
+                        </div>
+
+                        {formError && <p className="admin-error-message">{formError}</p>}
+
+                        <div className="form-actions">
+                            <button
+                                className="admin-button"
+                                onClick={handlePromoteToCurator}
+                                disabled={isPromoting}
+                            >
+                                {isPromoting ? 'Назначение...' : 'Назначить куратором'}
+                            </button>
+                            <button
+                                className="admin-button secondary"
+                                onClick={closePromoteModal}
+                                disabled={isPromoting}
+                            >
+                                Отмена
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* Модальное окно успешного назначения куратора */}
+            {isSuccessModalOpen && <SuccessModal />}
         </div >
     );
 };

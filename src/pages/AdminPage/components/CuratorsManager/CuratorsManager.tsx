@@ -1,10 +1,12 @@
 import React, { useState, useRef } from 'react';
 import { useCuratorsAdmin, type CreateCuratorData, type UpdateCuratorData, type Curator } from '@/lib/supabase/hooks/useCuratorsAdmin';
 import { buildFileUrl } from '@/lib/supabase/supabaseStorageService';
-import CuratorCard from './CuratorCard';
-import StudentCard from '../StudentsManager/StudentCard';
-import AssignStudentModal from './AssignStudentModal';
-import CuratorAvatarModal from './CuratorAvatarModal';
+import { CURATOR_PASSWORD_CONFIG } from '@/lib/config/constants';
+import { validateCuratorPassword } from '@/helpers/validationHelpers';
+import CuratorCard from '@/pages/AdminPage/components/CuratorsManager/CuratorCard';
+import StudentCard from '@/pages/AdminPage/components/StudentsManager/StudentCard';
+import AssignStudentModal from '@/pages/AdminPage/components/CuratorsManager/AssignStudentModal';
+import CuratorAvatarModal from '@/pages/AdminPage/components/CuratorsManager/CuratorAvatarModal';
 
 const CuratorsManager: React.FC = () => {
     const [isAddModalVisible, setIsAddModalVisible] = useState(false);
@@ -79,10 +81,14 @@ const CuratorsManager: React.FC = () => {
             setFormError('Логин обязателен для заполнения');
             return;
         }
-        if (!formData.web_password.trim()) {
-            setFormError('Пароль обязателен для заполнения');
+
+        // Валидация пароля с использованием общей функции
+        const passwordError = validateCuratorPassword(formData.web_password);
+        if (passwordError) {
+            setFormError(passwordError);
             return;
         }
+
         if (!formData.username.trim()) {
             setFormError('Юзернейм Telegram обязателен для заполнения');
             return;
@@ -443,7 +449,7 @@ const CuratorsManager: React.FC = () => {
                             <input
                                 className="admin-input"
                                 type="password"
-                                placeholder="Минимум 8 символов"
+                                placeholder={CURATOR_PASSWORD_CONFIG.PLACEHOLDER}
                                 value={formData.web_password}
                                 onChange={(e) => handleInputChange('web_password', e.target.value)}
                                 required

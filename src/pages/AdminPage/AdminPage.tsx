@@ -1302,6 +1302,7 @@ const AdminPage: React.FC = () => {
       try {
         localStorage.setItem('admin_auth', 'true');
         localStorage.setItem('admin_user', JSON.stringify(userInfo));
+        localStorage.setItem('admin_access_token', accessToken); // Сохраняем токен
       } catch (err) {
         console.warn('Ошибка сохранения в localStorage:', err);
       }

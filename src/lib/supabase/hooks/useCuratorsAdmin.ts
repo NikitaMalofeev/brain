@@ -1,5 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '../client';
+import { validateCuratorPassword, validateLoginFormat } from '@/helpers/validationHelpers';
 
 // Типы для хука кураторов
 export interface Curator {
@@ -51,6 +52,8 @@ export interface CuratorsAdminResult {
     deleteCurator: (userId: string) => Promise<{ success: boolean; error?: string }>;
     updateCuratorAvatar: (userId: string, photoUrl: string) => Promise<void>;
     deleteCuratorAvatar: (userId: string) => Promise<void>;
+    promoteToCurator: (data: { userId: string; webLogin: string; password: string; adminId: string }) => Promise<void>;
+    isPromoting: boolean;
 }
 
 /**
@@ -133,10 +136,12 @@ export function useCuratorsAdmin() {
             if (!supabase) throw new Error('Supabase клиент не инициализирован');
 
             // Валидация на клиенте
-            if (!data.web_login.trim()) throw new Error('Логин обязателен для заполнения');
-            if (!data.web_password.trim()) throw new Error('Пароль обязателен для заполнения');
-            if (data.web_password.length < 8) throw new Error('Пароль должен быть не менее 8 символов');
-            if (!/^[a-zA-Z0-9_-]+$/.test(data.web_login)) throw new Error('Логин может содержать только буквы, цифры, _ и -');
+            const loginError = validateLoginFormat(data.web_login);
+            if (loginError) throw new Error(loginError);
+
+            const passwordError = validateCuratorPassword(data.web_password);
+            if (passwordError) throw new Error(passwordError);
+
             if (!data.username.trim()) throw new Error('Юзернейм Telegram обязателен');
 
             const { error: createError } = await supabase.rpc('create_curator', {
@@ -154,9 +159,11 @@ export function useCuratorsAdmin() {
                 throw createError;
             }
         },
-        onSuccess: () => {
-            // Инвалидация кеша для автоматического обновления списка кураторов
-            return queryClient.invalidateQueries({ queryKey: ['curators'] });
+        onSuccess: (_, userId) => {
+            // Инвалидация кэшей для автоматического обновления UI
+            queryClient.invalidateQueries({ queryKey: ['curators'] });
+            queryClient.invalidateQueries({ queryKey: ['studentDetails', userId] });
+            queryClient.invalidateQueries({ queryKey: ['students'] }); // Обновляем список студентов
         },
     });
 
@@ -171,12 +178,8 @@ export function useCuratorsAdmin() {
             }
 
             if (data.web_login) {
-                if (!data.web_login.trim()) {
-                    throw new Error('Логин не может быть пустым');
-                }
-                if (!/^[a-zA-Z0-9_-]+$/.test(data.web_login)) {
-                    throw new Error('Логин может содержать только буквы, цифры, _ и -');
-                }
+                const loginError = validateLoginFormat(data.web_login);
+                if (loginError) throw new Error(loginError);
             }
 
             if (!data.username?.trim()) {
@@ -265,6 +268,42 @@ export function useCuratorsAdmin() {
         },
     });
 
+    // Мутация для повышения статуса куратора
+    const { mutateAsync: promoteToCurator, isPending: isPromoting } = useMutation({
+        mutationFn: async (data: { userId: string; webLogin: string; password: string; adminId: string }) => {
+            if (!supabase) throw new Error('Supabase клиент не инициализирован');
+
+            // Клиентская валидация перед отправкой на сервер
+            if (!data.webLogin.trim()) {
+                throw new Error('Логин для входа не может быть пустым.');
+            }
+            const passwordError = validateCuratorPassword(data.password);
+            if (passwordError) {
+                throw new Error(passwordError);
+            }
+
+            const { error: promoteError } = await supabase.rpc('promote_user_to_curator', {
+                p_user_id: data.userId,
+                p_web_login: data.webLogin,
+                p_web_password: data.password,
+                p_admin_id: data.adminId,
+            });
+
+            if (promoteError) {
+                if (promoteError.message.includes('уже существует')) {
+                    throw new Error('Пользователь с таким логином уже существует.');
+                }
+                throw promoteError;
+            }
+        },
+        onSuccess: (_, variables) => {
+            // Инвалидация кеша для автоматического обновления списков
+            queryClient.invalidateQueries({ queryKey: ['curators'] });
+            queryClient.invalidateQueries({ queryKey: ['students'] });
+            queryClient.invalidateQueries({ queryKey: ['studentDetails', variables.userId] });
+        },
+    });
+
     return {
         curators,
         loading: isLoading,
@@ -280,5 +319,7 @@ export function useCuratorsAdmin() {
         isUpdatingAvatar,
         deleteCuratorAvatar,
         isDeletingAvatar,
+        promoteToCurator,
+        isPromoting,
     };
 } 
