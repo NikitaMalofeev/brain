@@ -1,0 +1,275 @@
+---
+description: 
+globs: *sql
+alwaysApply: false
+---
+# Supabase Migrations: Правила и Паттерны для Brain Programming
+
+Стандарты создания, именования и применения миграций PostgreSQL в проекте Brain Programming.
+
+## 🚨 КРИТИЧЕСКИЕ ПРАВИЛА
+
+### 1. НЕ применяй миграции через MCP-команды
+**❌ НИКОГДА не используй MCP Supabase для применения миграций в продакшене!**
+- Создавай только SQL-скрипты
+- Применение миграций - ответственность разработчика через Supabase CLI или Dashboard
+
+### 2. Одна миграция = один концепт
+- Одна задача/фича = одна миграция
+- НЕ смешивай разные изменения в одном файле
+- Группируй связанные изменения (таблица + функции + RLS)
+
+## 📝 Именование Миграций
+
+### Формат имени файла:
+```
+YYYYMMDDHHMMSS_описание_изменения.sql
+```
+
+### Примеры из проекта:
+- `20250627120000_add_promote_user_to_curator_function.sql`
+- `20240731100000_add_access_tokens.sql`
+- `20250613160000_add_tg_id_to_access_tokens.sql`
+
+### Правила описания:
+- **Действие**: `add_`, `update_`, `remove_`, `fix_`
+- **Объект**: `table_`, `function_`, `index_`, `policy_`
+- **Детали**: краткое описание на английском
+- **Разделитель**: подчеркивание `_`
+
+## 🏗️ Структура Миграции
+
+### Обязательный заголовок:
+```sql
+-- Migration: Краткое описание
+-- Date: DD.MM.YYYY
+-- Purpose: Подробное объяснение цели миграции
+
+-- Дополнительные комментарии о зависимостях, рисках, и т.д.
+```
+
+### Пример из проекта:
+```sql
+-- Migration: Add promote_user_to_curator function
+-- Date: 27.06.2025
+-- Purpose: Allow admins to promote regular users to curator role with web credentials
+
+-- Примечание: Используем extensions.crypt() вместо прямого pgcrypto для совместимости с authenticate_web_user
+```
+
+## 🔒 Безопасность и Права
+
+### SECURITY DEFINER функции:
+```sql
+CREATE OR REPLACE FUNCTION function_name(...)
+RETURNS return_type
+LANGUAGE plpgsql
+SECURITY DEFINER  -- ✅ Обязательно для admin функций
+AS $$
+```
+
+### Права доступа:
+```sql
+-- ✅ Предоставляем права authenticated пользователям
+GRANT EXECUTE ON FUNCTION function_name(...) TO authenticated;
+
+-- ✅ Добавляем комментарий с описанием
+COMMENT ON FUNCTION function_name(...) IS 'Описание функции и параметров';
+```
+
+### Проверка прав в функциях:
+```sql
+-- ✅ Проверяем роль пользователя
+SELECT role INTO user_role 
+FROM public.users 
+WHERE id = auth.uid();
+
+IF user_role != 'admin' THEN
+    RAISE EXCEPTION 'Forbidden: Only admins can perform this action';
+END IF;
+```
+
+### Хеширование паролей в Supabase:
+```sql
+-- ✅ Используй extensions.crypt() для совместимости с authenticate_web_user
+UPDATE public.users 
+SET web_password_hash = extensions.crypt(p_web_password, extensions.gen_salt('bf'))
+WHERE id = p_user_id;
+
+-- ❌ НЕ используй прямые вызовы pgcrypto
+-- crypt(p_web_password, gen_salt('bf')) -- Может не работать!
+```
+
+### Хеширование паролей в Supabase:
+```sql
+-- ✅ Используй extensions.crypt() для совместимости с authenticate_web_user
+UPDATE public.users 
+SET web_password_hash = extensions.crypt(p_web_password, extensions.gen_salt('bf'))
+WHERE id = p_user_id;
+
+-- ❌ НЕ используй прямые вызовы pgcrypto
+-- crypt(p_web_password, gen_salt('bf')) -- Может не работать!
+```
+
+## 🛠️ Типовые Паттерны
+
+### 1. Создание таблицы:
+```sql
+-- Создание таблицы с базовыми полями
+CREATE TABLE IF NOT EXISTS public.table_name (
+    id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+    created_at TIMESTAMPTZ DEFAULT NOW() NOT NULL,
+    updated_at TIMESTAMPTZ DEFAULT NOW() NOT NULL,
+    -- остальные поля
+);
+
+-- RLS политики
+ALTER TABLE public.table_name ENABLE ROW LEVEL SECURITY;
+
+-- Индексы
+CREATE INDEX CONCURRENTLY IF NOT EXISTS idx_table_name_field 
+ON public.table_name(field_name);
+```
+
+### 2. Создание функции с валидацией:
+```sql
+CREATE OR REPLACE FUNCTION function_name(
+    p_param_1 TEXT,
+    p_param_2 UUID,
+    p_web_password TEXT  -- Если нужно хешировать пароль
+)
+RETURNS return_type
+LANGUAGE plpgsql
+SECURITY DEFINER
+AS $$
+DECLARE
+    user_role TEXT;
+    -- объявление переменных
+BEGIN
+    -- Шаг 1: Проверка прав доступа
+    SELECT role INTO user_role FROM public.users WHERE id = auth.uid();
+    IF user_role != 'admin' THEN
+        RAISE EXCEPTION 'Forbidden: Only admins can perform this action';
+    END IF;
+    
+    -- Шаг 2: Валидация входных параметров
+    IF p_web_password IS NULL OR LENGTH(p_web_password) < 8 THEN
+        RAISE EXCEPTION 'Password must be at least 8 characters long';
+    END IF;
+    
+    -- Шаг 3: Основная логика с хешированием пароля
+    UPDATE public.users 
+    SET web_password_hash = extensions.crypt(p_web_password, extensions.gen_salt('bf'))
+    WHERE id = p_param_2;
+    
+    -- Шаг 4: Логирование результата
+    RAISE NOTICE 'Function executed successfully';
+END;
+$$;
+```
+
+### 3. Обновление существующей функции:
+```sql
+-- Дропаем старую версию (если изменилась сигнатура)
+DROP FUNCTION IF EXISTS old_function_name(old_params);
+
+-- Создаем новую версию
+CREATE OR REPLACE FUNCTION new_function_name(new_params)
+-- ... остальной код
+```
+
+## 🔗 Интеграция с Frontend
+
+### После создания функции, обновляй хуки:
+1. **Создай/обнови хук** в `[src/lib/supabase/hooks/](mdc:src/lib/supabase/hooks)`
+2. **Используй react-query паттерны** из `[.cursor/rules/react_query_patterns.mdc](mdc:.cursor/rules/react_query_patterns.mdc)`
+3. **Добавь TypeScript типы** в `[src/lib/supabase/types.ts](mdc:src/lib/supabase/types.ts)`
+
+### Пример интеграции:
+```sql
+-- Миграция: функция promote_user_to_curator
+```
+↓
+```typescript
+// Хук: useCuratorsAdmin.ts с мутацией promoteToCurator
+export const useCuratorsAdmin = () => {
+  return useMutation({
+    mutationFn: ({ userId, webLogin, webPassword, adminId }) =>
+      supabase.rpc('promote_user_to_curator', {
+        p_user_id: userId,
+        p_web_login: webLogin, 
+        p_web_password: webPassword,
+        p_admin_id: adminId
+      })
+  });
+};
+```
+
+## 🧪 Тестирование Миграций
+
+### Локальное тестирование:
+1. **Создай тестовые данные** для проверки функции
+2. **Протестируй граничные случаи** (невалидные данные, отсутствие прав)
+3. **Проверь rollback сценарии** (если функция меняет данные)
+
+### Чек-лист перед применением:
+- [ ] Заголовок миграции заполнен
+- [ ] SECURITY DEFINER добавлен (для admin функций)
+- [ ] GRANT EXECUTE добавлен
+- [ ] COMMENT ON FUNCTION добавлен
+- [ ] Валидация входных параметров реализована
+- [ ] Проверка прав доступа реализована
+- [ ] Используется `extensions.crypt()` вместо прямого `crypt()` (для паролей)
+- [ ] Соответствующий хук обновлен/создан
+
+## 📋 Процесс Создания Миграции
+
+### 1. Планирование:
+- Определи цель изменения
+- Проверь зависимости от существующих таблиц/функций
+- Спланируй rollback стратегию
+
+### 2. Создание файла:
+```bash
+# Формат: YYYYMMDDHHMMSS_описание.sql
+touch supabase/migrations/20250628120000_add_new_feature.sql
+```
+
+### 3. Написание SQL:
+- Добавь заголовок с описанием
+- Реализуй изменения по паттернам выше
+- Добавь комментарии для сложной логики
+
+### 4. Интеграция с фронтендом:
+- Обнови соответствующие хуки
+- Добавь TypeScript типы
+- Протестируй в UI
+
+## 🚫 Что НЕ ДЕЛАТЬ
+
+- ❌ НЕ применяй миграции через MCP Supabase
+- ❌ НЕ смешивай разные фичи в одной миграции  
+- ❌ НЕ забывай SECURITY DEFINER для admin функций
+- ❌ НЕ создавай функции без валидации входных данных
+- ❌ НЕ используй `crypt()` напрямую - только `extensions.crypt()`
+- ❌ НЕ забывай обновлять соответствующие хуки
+
+## 📁 Связанные файлы:
+
+- [supabase/migrations/](mdc:supabase/migrations) - папка с миграциями
+- [src/lib/supabase/hooks/](mdc:src/lib/supabase/hooks) - хуки для интеграции
+- [src/lib/supabase/types.ts](mdc:src/lib/supabase/types.ts) - TypeScript типы
+- [.cursor/rules/react_query_patterns.mdc](mdc:.cursor/rules/react_query_patterns.mdc) - паттерны react-query
+- [.cursor/rules/supabase_patterns.mdc](mdc:.cursor/rules/supabase_patterns.mdc) - общие Supabase паттерны
+
+---
+
+*Миграции для Brain Programming. Безопасность, консистентность, интеграция с фронтендом.*
+
+
+
+
+
+
+
+

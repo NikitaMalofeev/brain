@@ -57,3 +57,4 @@ alwaysApply: true
  [react_query_patterns.mdc](mdc:.cursor/rules/react_query_patterns.mdc)
  [style-gude.mdc](mdc:.cursor/rules/style-gude.mdc)
  [supabase_patterns.mdc](mdc:.cursor/rules/supabase_patterns.mdc)
+ [supabase_migrations.mdc](mdc:.cursor/rules/supabase_migrations.mdc)

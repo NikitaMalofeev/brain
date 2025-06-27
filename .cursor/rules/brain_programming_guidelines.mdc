@@ -109,7 +109,7 @@ alwaysApply: true
 ### При Работе с Данными
 1. Используй существующие Supabase хуки
 2. Если нужен новый хук - создавай по аналогии с `[src/lib/supabase/hooks/index.ts](mdc:src/lib/supabase/hooks/index.ts)`
-3. НЕ применяй миграции через MCP - только генерируй SQL скрипты
+3. НЕ применяй миграции через MCP - только генерируй SQL скрипты (см. [supabase_migrations.mdc](mdc:.cursor/rules/supabase_migrations.mdc))
 
 ### При Рефакторинге
 1. Учитывай лимит в 300 строк
