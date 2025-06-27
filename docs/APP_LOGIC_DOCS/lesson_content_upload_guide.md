@@ -83,12 +83,13 @@ VALUES (1, 2, 'Документальный фильм «Программиро�
 
 ## 3. Аудио блоки (`block_type: 'audio'`)
 
-### Через CloudFlare R2
+### Через Supabase Storage
 
 **Формат URL в `content_url`:**
 ```
-https://ACCOUNT_ID.r2.cloudflarestorage.com/brain-programming/audio/filename.mp3
+audio/filename.mp3
 ```
+*В базу сохраняется только относительный путь внутри бакета `media`.*
 
 **Пример SQL вставки:**
 ```sql
@@ -98,7 +99,7 @@ VALUES (1, 3, 'Медитация "Спокойствие"', 'audio',
 Медитация длится 10 минут.
 
 Закройте глаза и следуйте инструкциям голоса.', 
-'https://abc123.r2.cloudflarestorage.com/brain-programming/audio/meditation_calm.mp3');
+'audio/meditation_calm.mp3');
 ```
 
 ### Поддерживаемые форматы аудио:
@@ -113,12 +114,13 @@ VALUES (1, 3, 'Медитация "Спокойствие"', 'audio',
 
 ## 4. Изображения (`block_type: 'image'`)
 
-### Через CloudFlare R2
+### Через Supabase Storage
 
 **Формат URL в `content_url`:**
 ```
-https://ACCOUNT_ID.r2.cloudflarestorage.com/brain-programming/images/filename.jpg
+images/filename.jpg
 ```
+*В базу сохраняется только относительный путь внутри бакета `media`.*
 
 **Пример SQL вставки:**
 ```sql
@@ -128,7 +130,7 @@ VALUES (1, 4, 'Схема работы мозга', 'image',
 Она поможет понять, как работает наш мозг при обработке информации.
 
 Обратите внимание на связи между разными областями.', 
-'https://abc123.r2.cloudflarestorage.com/brain-programming/images/brain_scheme.jpg');
+'images/brain_scheme.jpg');
 ```
 
 ### Поддерживаемые форматы изображений:
@@ -143,12 +145,13 @@ VALUES (1, 4, 'Схема работы мозга', 'image',
 
 ## 5. PDF файлы (`block_type: 'pdf'`)
 
-### Через CloudFlare R2
+### Через Supabase Storage
 
 **Формат URL в `content_url`:**
 ```
-https://ACCOUNT_ID.r2.cloudflarestorage.com/brain-programming/documents/filename.pdf
+documents/filename.pdf
 ```
+*В базу сохраняется только относительный путь внутри бакета `media`.*
 
 **Пример SQL вставки:**
 ```sql
@@ -158,7 +161,7 @@ VALUES (1, 5, 'Рабочая тетрадь урока 1', 'pdf',
 Заполняйте её по ходу урока.
 
 Вы можете писать прямо в PDF или от руки на бумаге.', 
-'https://abc123.r2.cloudflarestorage.com/brain-programming/documents/lesson1_workbook.pdf');
+'documents/lesson1_workbook.pdf');
 ```
 
 ### Особенности:
@@ -174,14 +177,13 @@ VALUES (1, 5, 'Рабочая тетрадь урока 1', 'pdf',
 ### Шаг 1: Подготовка файла (для медиа-контента)
 
 **Для аудио/изображений/PDF:**
-1. Загрузите файл в CloudFlare R2 через Dashboard или API
-2. Получите публичный URL файла
-3. Убедитесь, что файл доступен по URL
+1. Загрузите файл в бакет `media` в Supabase Storage через админ-панель или напрямую.
+2. Убедитесь, что файл находится в нужной папке (`audio/`, `images/`, `documents/`).
 
 **Для видео:**
-1. Загрузите видео в Kinescope
-2. Получите ID видео из URL
-3. Можете использовать любой формат Kinescope URL
+1. Загрузите видео в Kinescope.
+2. Получите ID видео из URL.
+3. Можете использовать любой формат Kinescope URL.
 
 ### Шаг 2: Создание записи в БД
 
@@ -199,7 +201,7 @@ INSERT INTO lesson_blocks (
   'Заголовок блока',   -- Заголовок (может быть NULL)
   'BLOCK_TYPE',        -- text|video|audio|image|pdf
   'Описание контента', -- Текстовое описание (может быть NULL)
-  'URL_АДРЕС'          -- URL файла/видео (NULL для text блоков)
+  'ОТНОСИТЕЛЬНЫЙ_ПУТЬ' -- Относительный путь в Supabase Storage (NULL для text и video)
 );
 ```
 
@@ -218,16 +220,12 @@ INSERT INTO lesson_blocks (
 **Решение:** Проверьте URL в браузере, убедитесь что видео публично
 
 ### ❌ Аудио не загружается  
-**Причина:** Неверный URL CloudFlare R2 или файл недоступен
-**Решение:** Проверьте URL прямо в браузере, убедитесь в публичном доступе
+**Причина:** Неверный путь к файлу в `content_url` или файл недоступен в Supabase Storage.
+**Решение:** Проверьте путь в таблице `lesson_blocks` и наличие файла в бакете `media`. Убедитесь, что на бакет настроены правильные RLS-политики на чтение.
 
 ### ❌ Изображение не отображается
-**Причина:** Битая ссылка или ограничения CORS
-**Решение:** Проверьте URL и настройки CORS в CloudFlare R2
-
-### ❌ Блоки отображаются не в том порядке
-**Причина:** Неправильные значения `order_num`  
-**Решение:** Убедитесь, что `order_num` идут по порядку: 1, 2, 3, 4...
+**Причина:** Битая ссылка или неправильные RLS-политики.
+**Решение:** Проверьте путь к файлу и настройки RLS для бакета `media`.
 
 ---
 

@@ -182,7 +182,7 @@ const status = getLessonPageStatus(); // Для страницы урока
 
 ### 3.3 Аудио блоки (`block_type: 'audio'`)
 - **Плеер:** AudioBlock компонент  
-- **Источник:** CloudFlare R2 URL в `content_url`
+- **Источник:** Supabase Storage URL в `content_url`
 - **Стиль:** Кастомные контролы с визуализацией
 
 ### 3.4 Изображения (`block_type: 'image'`)

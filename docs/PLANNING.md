@@ -2,7 +2,7 @@
 
 ## 1. Введение
 
-*   **Backend:** Supabase (PostgreSQL, Auth, Storage, Functions)
+*   **Backend:** Supabase (PostgreSQL, Auth, Realtime, Edge Functions)
 *   **Frontend:** React (TypeScript, Vite)
 *   **Telegram Mini App SDK**
 
@@ -18,7 +18,7 @@
 *   **Backend:** Python (FastAPI / Flask - выбрать или уточнить) или Node.js (Express - выбрать или уточнить). Пока что логика на клиенте, бекенда как такового нет, используется Supabase.
 *   **База данных:** Supabase (PostgreSQL).
 *   **Аутентификация:** Supabase Auth.
-*   **Файловое хранилище:** Cloudflare R2.
+*   **Файловое хранилище:** Supabase Storage.
 *   **Развертывание:** Vercel (Frontend), Railway (Backend - если будет).
 
 ## 4. Стек Технологий
@@ -94,4 +94,8 @@
 
 *   Всегда проверять актуальность `PLANNING.md` и `TASK.md` в папке `docs`.
 *   При возникновении вопросов или неясностей – обсуждать с командой (со мной).
-*   Проактивно предлагать улучшения и сообщать о проблемах. 
+*   Проактивно предлагать улучшения и сообщать о проблемах.
+
+## 🔑 Ключевые принципы
+
+- **Быстрый старт**: Развертывание минимально жизнеспособного продукта (MVP) в кратчайшие сроки. 
