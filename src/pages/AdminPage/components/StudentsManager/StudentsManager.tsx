@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import StudentCard from './StudentCard';
+import StudentCard from '@/pages/AdminPage/components/StudentsManager/StudentCard';
 import { useStudentsAdmin } from '@/lib/supabase/hooks/useStudentsAdmin';
 
 interface StudentsManagerProps {
@@ -56,7 +56,7 @@ const StudentsManager: React.FC<StudentsManagerProps> = ({ currentUser }) => {
     }, [students, currentUser]);
 
     if (selectedStudentId) {
-        return <StudentCard studentId={selectedStudentId} onBack={() => setSelectedStudentId(null)} />;
+        return <StudentCard studentId={selectedStudentId} onBack={() => setSelectedStudentId(null)} currentUser={currentUser} />;
     }
 
     const handleSort = (field: 'points' | 'created_at' | 'last_login') => {

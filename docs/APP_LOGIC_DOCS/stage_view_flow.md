@@ -5,7 +5,7 @@
 
 ## 🎯 Цель флоу
 
-Позволить пользователю зайти в конкретную ступень курса, изучить список уроков с реальными обложками из CloudFlare R2 и перейти к их просмотру или выполнению задания через архитектуру has_assignment.
+Позволить пользователю зайти в конкретную ступень курса, изучить список уроков с реальными обложками из Supabase Storage и перейти к их просмотру или выполнению задания через архитектуру has_assignment.
 
 ---
 
@@ -58,7 +58,7 @@
 - **Статусы:** "Завершено" / "Доступно" / "Заблокированно"
 - **Иконка замка:** для заблокированных уроков на обложке
 - **Метка "Задание":** синий бейдж если has_assignment = true (поле в таблице lessons)
-- **Обложки уроков:** Реальные изображения из CloudFlare R2 через buildImageUrl()
+- **Обложки уроков:** Реальные изображения из Supabase Storage через buildFileUrl()
 - **Диагностика:** Логи загрузки изображений в консоли браузера для отладки
 
 #### 5. Пустое состояние
@@ -138,7 +138,7 @@ interface LessonData {
   lesson_id: number;
   lesson_name: string;
   content_type: string;        // 'mixed' для всех уроков
-  cover_image_path?: string;   // реализовано: путь к обложке в CloudFlare R2
+  cover_image_path?: string;   // реализовано: путь к обложке в Supabase Storage
   order_num: number;
   has_assignment: boolean;     // реализовано: поле из таблицы lessons
   is_completed: boolean;       // Есть ли запись в lesson_progress
@@ -218,9 +218,9 @@ if (lesson.is_unlocked) {
 - `material_status` - заменено на lesson_progress
 - `user_gamification` - lives_remaining в users
 
-**CloudFlare R2 (реализовано):**
-- Бакет `brain-programming` с папками `images/`, `audio/`, `documents/`
-- Публичный URL: `https://pub-77b01fa701e84f019ef02376a7fb67f1.r2.dev`
+**Supabase Storage (реализовано):**
+- Бакет `media` с папками `images/`, `audio/`, `documents/`
+- Публичный URL формируется через `supabase.storage.from('media').getPublicUrl()`
 
 ---
 
@@ -237,11 +237,11 @@ if (lesson.is_unlocked) {
   opacity: lesson.is_unlocked ? 1 : 0.6,
   cursor: lesson.is_unlocked ? 'pointer' : 'not-allowed'
 }}>
-  {/* Обложка 171px высота - реализовано: CloudFlare R2 */}
+  {/* Обложка 171px высота - реализовано: Supabase Storage */}
   <div style={{ height: '171px', borderRadius: '12px' }}>
     <img 
       src={lesson.cover_image_path 
-        ? buildImageUrl(lesson.cover_image_path) 
+        ? buildFileUrl(lesson.cover_image_path) 
         : getDefaultCover(lesson.content_type)
       }
       onError={(e) => {
@@ -305,14 +305,19 @@ if (lesson.is_unlocked) {
 - ✅ Ступень загружается с правильным списком уроков
 - ✅ Последовательная разблокировка: следующий урок доступен после завершения предыдущего
 - ✅ **реализовано**: has_assignment теперь поле в таблице lessons (не через lesson_blocks)
-- ✅ **реализовано**: Реальные обложки уроков загружаются из CloudFlare R2
-- ✅ **реализовано**: buildImageUrl() корректно строит URL изображений
+- ✅ **реализовано**: Реальные обложки уроков загружаются из Supabase Storage
+- ✅ **реализовано**: buildFileUrl() корректно строит URL изображений
 - ✅ **реализовано**: Диагностические логи для отладки загрузки изображений
 - ✅ Предупреждение о жизнях показывается при `lives_remaining = 0`
 - ✅ Заблокированные уроки неактивны (opacity, cursor, иконка замка на обложке)
 - ✅ Навигация к уроку работает только для разблокированных
 - ✅ Прогресс ступени подсчитывается корректно
 - ✅ **реализовано**: Fallback на дефолтные обложки при ошибке загрузки
+- ✅ **реализовано**: Определение заданий - через поле has_assignment в таблице lessons
+- ✅ **реализовано**: CloudFlare R2 интеграция - реальные обложки уроков
+- ✅ **реализовано**: buildFileUrl функция - правильные URL для изображений
+- ✅ **реализовано**: Диагностика изображений - логи в консоли для отладки
+- ✅ Адаптивный дизайн - максимум 375px ширина
 
 ---
 
@@ -366,8 +371,8 @@ src/lib/supabase/hooks/useStageDetails.ts    - хук загрузки данн�
 - **Последовательная разблокировка** - через логику в useStageDetails
 - **Визуальная блокировка** - opacity + cursor + иконка замка на обложке
 - **реализовано: Определение заданий** - через поле has_assignment в таблице lessons
-- **реализовано: CloudFlare R2 интеграция** - реальные обложки уроков
-- **реализовано: buildImageUrl функция** - правильные URL для изображений
+- **реализовано: Supabase Storage интеграция** - реальные обложки уроков
+- **реализовано: buildFileUrl функция** - правильные URL для изображений
 - **реализовано: Диагностика изображений** - логи в консоли для отладки
 - **Адаптивный дизайн** - максимум 375px ширина
 - **Предупреждения о жизнях** - без блокировки функционала

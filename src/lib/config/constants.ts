@@ -25,4 +25,11 @@ export const COURSE_CONFIG = {
 } as const;
 
 // Экспорт для обратной совместимости
-export const HARDCODED_COURSE_ID = COURSE_CONFIG.DEFAULT_COURSE_ID; 
+export const HARDCODED_COURSE_ID = COURSE_CONFIG.DEFAULT_COURSE_ID;
+
+// Конфигурация требований к паролям для кураторов
+export const CURATOR_PASSWORD_CONFIG = {
+    MIN_LENGTH: 8,
+    PLACEHOLDER: 'Минимум 8 символов',
+    ERROR_MESSAGE: 'Пароль должен содержать минимум 8 символов'
+} as const; 

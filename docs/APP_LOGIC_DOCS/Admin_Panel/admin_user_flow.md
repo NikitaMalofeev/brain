@@ -444,7 +444,7 @@ graph TD;
   - Поддержка JPG, PNG, WEBP форматов
   - Превью текущей обложки в таблице ступеней
   - Сохранение в поле `course_stages.cover_image_path`
-  - Интеграция с CloudFlare R2 в папке `images/`
+  - Интеграция с Supabase Storage в папке `images/`
 - Условия разблокировки (опционально для будущего)
 - Кнопки: Сохранить, Отмена
 
@@ -458,7 +458,7 @@ graph TD;
   - Поддержка JPG, PNG, WEBP форматов
   - Превью текущей обложки в таблице уроков
   - Сохранение в поле `lessons.cover_image_path`
-  - Интеграция с CloudFlare R2 в папке `images/`
+  - Интеграция с Supabase Storage в папке `images/`
 - **Время открытия урока (`open_at`):**
   - **Автоматическое значение по умолчанию:** завтра в 9:00 утра
   - Поле типа `datetime-local` для установки конкретного времени открытия
@@ -490,9 +490,9 @@ graph TD;
 - Тип блока (select: text, video, audio, image, pdf)
 - **Для text:** Текстовое содержимое (textarea)
 - **Для video:** URL Kinescope
-- **Для audio:** Загрузка файла в CloudFlare R2
-- **Для image:** Загрузка файла в CloudFlare R2  
-- **Для pdf:** Загрузка файла в CloudFlare R2
+- **Для audio:** Загрузка файла в Supabase Storage
+- **Для image:** Загрузка файла в Supabase Storage  
+- **Для pdf:** Загрузка файла в Supabase Storage
 - Порядковый номер
 - Кнопки: Сохранить, Отмена
 
