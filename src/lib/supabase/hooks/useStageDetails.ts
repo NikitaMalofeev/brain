@@ -33,6 +33,47 @@ export interface StageDetailsData {
 }
 
 /**
+ * Проверяет доступность урока с учетом временных и тарифных ограничений
+ * @param lesson - данные урока
+ * @param index - индекс урока в массиве
+ * @param allLessons - все уроки ступени
+ * @param maxLessonsLimit - максимальное количество доступных уроков (из тарифа)
+ * @returns true если урок доступен, false если заблокирован
+ */
+const isLessonAccessible = (
+    lesson: any,
+    index: number,
+    allLessons: any[],
+    maxLessonsLimit: number | null
+): boolean => {
+    // Сначала проверяем временное ограничение
+    const now = new Date();
+    const openAt = lesson.open_at ? new Date(lesson.open_at) : null;
+
+    if (openAt && now < openAt) {
+        return false; // Урок еще не открыт по времени
+    }
+
+    // Если нет тарифного ограничения - урок доступен
+    if (!maxLessonsLimit) {
+        return true;
+    }
+
+    // Считаем количество уроков, которые должны быть открыты до текущего
+    // (те, у которых open_at наступило или отсутствует)
+    const unlockedBeforeCurrent = allLessons
+        .slice(0, index)
+        .filter(l => {
+            const lessonOpenAt = l.open_at ? new Date(l.open_at) : null;
+            return !lessonOpenAt || now >= lessonOpenAt;
+        })
+        .length;
+
+    // Урок доступен если не превышен лимит
+    return unlockedBeforeCurrent < maxLessonsLimit;
+};
+
+/**
  * Хук для получения деталей ступени и связанных уроков
  * @param user - пользователь Supabase
  * @param stageId - ID ступени
@@ -111,6 +152,33 @@ const useStageDetails = (user: User | null, stageId: string | number) => {
                     console.warn('Ошибка загрузки submissions:', submissionsError.message);
                 }
 
+                // Получаем активный тариф пользователя
+                const { data: userTariffData, error: userTariffError } = await supabase
+                    .from('user_tariffs')
+                    .select('tariff_id')
+                    .eq('user_id', user.id)
+                    .eq('is_active', true)
+                    .single();
+
+                if (userTariffError && userTariffError.code !== 'PGRST116') {
+                    console.warn('Ошибка загрузки тарифа пользователя:', userTariffError.message);
+                }
+
+                // Получаем ограничения тарифа для текущей ступени (если есть активный тариф)
+                let maxLessonsLimit: number | null = null;
+                if (userTariffData?.tariff_id) {
+                    const { data: tariffLimitData, error: tariffLimitError } = await supabase
+                        .from('tariff_limits')
+                        .select('max_days_access')
+                        .eq('tariff_id', userTariffData.tariff_id)
+                        .eq('stage_id', stageId)
+                        .single();
+
+                    if (!tariffLimitError && tariffLimitData?.max_days_access) {
+                        maxLessonsLimit = tariffLimitData.max_days_access;
+                    }
+                }
+
                 // Создаем мапы для быстрого доступа
                 const progressMap = new Map();
                 progressData?.forEach(progress => {
@@ -148,10 +216,8 @@ const useStageDetails = (user: User | null, stageId: string | number) => {
                         isCompleted = !!progress?.completed_at;
                     }
 
-                    // Логика разблокировки: уроки открываются только по времени
-                    const now = new Date();
-                    const openAt = lesson.open_at ? new Date(lesson.open_at) : null;
-                    const isUnlocked = !openAt || now >= openAt;
+                    // Используем централизованную функцию для проверки доступности
+                    const isUnlocked = isLessonAccessible(lesson, index, allLessonsData || [], maxLessonsLimit);
 
                     // Определяем, начал ли пользователь урок
                     const hasStarted = !!progress?.started_at || !!submission;
