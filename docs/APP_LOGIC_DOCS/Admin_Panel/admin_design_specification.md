@@ -183,6 +183,26 @@
 }
 ```
 
+#### Вторичная кнопка (admin-button-secondary)
+- **Статус:** ✅ **ОБНОВЛЕНО 28.06.2025**
+- **Описание:** Нейтральная серая кнопка для второстепенных действий, таких как "Отмена" в модальных окнах или опциональные действия.
+
+```css
+.admin-button.secondary {
+  background: var(--admin-bg-secondary);
+  color: var(--admin-text-secondary);
+  border: 1px solid var(--admin-border);
+  box-shadow: none;
+}
+
+.admin-button.secondary:hover {
+  background: #e0e0e0;
+  color: var(--admin-text);
+  transform: translateY(-2px);
+  box-shadow: var(--admin-shadow-button);
+}
+```
+
 #### Кнопка выхода (admin-logout-btn)
 ```css
 .admin-logout-btn {
@@ -798,6 +818,64 @@ body.admin-mode {
 }
 ```
 
+### Модальное окно с учетными данными (Credentials Modal)
+- **Статус:** ✅ **НОВОЕ (27.06.2025)**
+- **Описание:** Специализированное модальное окно для отображения сгенерированных учетных данных (логин/пароль) с кнопками для копирования. Используется после успешного назначения пользователя куратором.
+- **Структура:** Основано на `.admin-modal`, но содержит дополнительные блоки для учетных данных.
+
+```css
+/* Блок для отображения логина и пароля */
+.credentials-block {
+  margin: 20px 0;
+  padding: 16px;
+  background: var(--admin-bg-secondary);
+  border-radius: var(--admin-radius-md);
+  border: 1px solid var(--admin-border);
+}
+
+/* Отдельный элемент (строка) для логина или пароля */
+.credential-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 12px;
+}
+
+/* Стилизация самого логина/пароля */
+.credential-item code {
+  font-family: 'Courier New', Courier, monospace;
+  background: #e0e0e0;
+  padding: 4px 8px;
+  border-radius: 4px;
+  font-size: 16px;
+}
+
+/* Кнопка "Копировать" */
+.copy-btn {
+  background: var(--admin-secondary);
+  color: white;
+  border: none;
+  padding: 6px 12px;
+  border-radius: var(--admin-radius-sm);
+  cursor: pointer;
+  font-size: 12px;
+  font-weight: 500;
+  transition: var(--admin-transition);
+}
+
+.copy-btn:hover {
+  opacity: 0.9;
+}
+
+/* Обратная связь при копировании */
+.copy-feedback {
+  color: var(--admin-success);
+  font-size: 12px;
+  font-weight: 600;
+  margin-left: 10px;
+}
+```
+
 ---
 
 ## 📊 Реальные примеры использования
@@ -890,8 +968,7 @@ body.admin-mode {
 5. **Разблокирована** - переключатель доступа
 6. **Действия** - кнопки управления
 
-**❌ УБРАНО:** Колонка "Уроков" с счетчиком `lessons?.count`
-**✅ ИЗМЕНЕНО:** Колонка "Обложка" перемещена на первое место
+**❌ УБРАНО:** Колонка "Уроков" с счетчиком `lessons?.count`**✅ ИЗМЕНЕНО:** Колонка "Обложка" перемещена на первое место
 
 **Обоснование:** 
 - Обложка как первая колонка улучшает визуальное восприятие
