@@ -63,23 +63,6 @@ async function saveMaterialTariffAccess(materialId: string, tariffIds: string[])
 }
 
 // Функции для работы с чатами
-async function fetchChatTariffAccess(chatId: string): Promise<string[]> {
-    if (!supabase) {
-        throw new Error('Supabase не инициализирован');
-    }
-
-    const { data, error } = await supabase
-        .from('tariff_chat_access')
-        .select('tariff_id')
-        .eq('chat_id', chatId);
-
-    if (error) {
-        logger.error('Ошибка загрузки доступов тарифов к чату:', error);
-        throw error;
-    }
-
-    return data?.map(item => item.tariff_id) || [];
-}
 
 async function saveChatTariffAccess(chatId: string, tariffIds: string[]): Promise<void> {
     if (!supabase) {
@@ -163,45 +146,3 @@ export function useMaterialTariffAccess(materialId: string | null) {
     };
 }
 
-/**
- * Хук для работы с доступами тарифов к чату
- */
-export function useChatTariffAccess(chatId: string | null) {
-    const queryClient = useQueryClient();
-
-    // Получение доступных тарифов для чата
-    const {
-        data: accessibleTariffIds = [],
-        isLoading: loading,
-        error,
-        refetch,
-    } = useQuery({
-        queryKey: ['chat-tariff-access', chatId],
-        queryFn: () => fetchChatTariffAccess(chatId!),
-        enabled: !!chatId,
-    });
-
-    // Мутация для сохранения доступов
-    const saveAccessMut = useMutation({
-        mutationFn: ({ chatId, tariffIds }: { chatId: string; tariffIds: string[] }) =>
-            saveChatTariffAccess(chatId, tariffIds),
-        onSuccess: () => {
-            // Инвалидируем кэш доступов для перезагрузки данных
-            queryClient.invalidateQueries({ queryKey: ['chat-tariff-access', chatId] });
-        },
-    });
-
-    return {
-        // Данные
-        accessibleTariffIds,
-        loading,
-        error,
-        refetch,
-
-        // Операции сохранения
-        saveTariffAccess: (tariffIds: string[]) =>
-            saveAccessMut.mutateAsync({ chatId: chatId!, tariffIds }),
-        saving: saveAccessMut.isPending,
-        saveError: saveAccessMut.error,
-    };
-} 

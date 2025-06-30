@@ -1,25 +1,40 @@
 import React, { useState, useEffect } from 'react';
 import { useChatsAdmin } from '@/lib/supabase/hooks/useChatsAdmin';
-import { useTariffsAdmin, useChatTariffAccess } from '@/lib/supabase/hooks';
+import { useChatAccess } from '@/lib/supabase/hooks/useChatAccess';
 import type { Chat, CreateChatData, UpdateChatData } from '@/types';
 
 /**
  * Компонент для управления Telegram чатами в админ-панели
- * Полный CRUD функционал с drag & drop сортировкой
+ * Полный CRUD функционал с drag & drop сортировкой, фильтрацией по курсам
  */
 const ChatsManager: React.FC = () => {
-    const { chats, loading, error, loadChats, createChat, updateChat, deleteChat } = useChatsAdmin();
-    const tariffsAdmin = useTariffsAdmin();
+    const {
+        chats,
+        loading,
+        error,
+        loadChats,
+        createChat,
+        updateChat,
+        deleteChat,
+        courses,
+        coursesLoading,
+        tariffs,
+        tariffsLoading
+    } = useChatsAdmin();
+
+    // Состояние для фильтрации по курсам
+    const [selectedCourseFilter, setSelectedCourseFilter] = useState<string>('all');
 
     // Состояние для модальных окон
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [editingChat, setEditingChat] = useState<Chat | null>(null);
     const [modalLoading, setModalLoading] = useState(false);
 
-    // Хук для работы с доступами тарифов к чату
-    const chatTariffAccess = useChatTariffAccess(editingChat?.id || null);
+    // Хук для работы с доступами конкретного чата (курс + тарифы)
+    const chatAccess = useChatAccess(editingChat?.id || null);
 
-    // Состояние для выбранных тарифов
+    // Локальное состояние для формы (курс + тарифы)
+    const [selectedCourseId, setSelectedCourseId] = useState<string>('');
     const [selectedTariffIds, setSelectedTariffIds] = useState<string[]>([]);
 
     // Состояние для формы
@@ -33,12 +48,39 @@ const ChatsManager: React.FC = () => {
     // Состояние для drag & drop
     const [draggedChatId, setDraggedChatId] = useState<string | null>(null);
 
-    // Синхронизируем выбранные тарифы с данными из хука
+    // Синхронизируем выбранные курс и тарифы с данными из хука
     useEffect(() => {
-        if (chatTariffAccess.accessibleTariffIds) {
-            setSelectedTariffIds(chatTariffAccess.accessibleTariffIds);
+        if (editingChat && !chatAccess.loading) {
+            // Устанавливаем курс только если он изменился
+            if (chatAccess.courseId !== selectedCourseId) {
+                setSelectedCourseId(chatAccess.courseId || '');
+            }
+
+            // Устанавливаем тарифы только если они изменились
+            const currentTariffIds = chatAccess.tariffIds || [];
+            const hasChanged = currentTariffIds.length !== selectedTariffIds.length ||
+                !currentTariffIds.every(id => selectedTariffIds.includes(id));
+
+            if (hasChanged) {
+                setSelectedTariffIds(currentTariffIds);
+            }
         }
-    }, [chatTariffAccess.accessibleTariffIds]);
+    }, [editingChat?.id, chatAccess.courseId, chatAccess.tariffIds?.join(','), chatAccess.loading]);
+
+    // Фильтрация чатов по выбранному курсу
+    const filteredChats = selectedCourseFilter === 'all'
+        ? chats
+        : chats.filter(chat => chat.course_id === selectedCourseFilter);
+
+    // Обработчик изменения фильтра курсов
+    const handleCourseFilterChange = (courseId: string) => {
+        setSelectedCourseFilter(courseId);
+    };
+
+    // Обработчик изменения курса в форме
+    const handleCourseChange = (courseId: string) => {
+        setSelectedCourseId(courseId);
+    };
 
     // Обработчик изменения чекбоксов тарифов
     const handleTariffCheckboxChange = (tariffId: string, checked: boolean) => {
@@ -54,7 +96,8 @@ const ChatsManager: React.FC = () => {
     // Обработчики модального окна
     const openCreateModal = () => {
         setEditingChat(null);
-        setSelectedTariffIds([]); // Сбрасываем тарифы для нового чата
+        setSelectedCourseId('');
+        setSelectedTariffIds([]);
         setFormData({
             name: '',
             description: '',
@@ -78,6 +121,7 @@ const ChatsManager: React.FC = () => {
     const closeModal = () => {
         setIsModalOpen(false);
         setEditingChat(null);
+        setSelectedCourseId('');
         setSelectedTariffIds([]);
         setModalLoading(false);
     };
@@ -92,6 +136,9 @@ const ChatsManager: React.FC = () => {
         }
         if (!formData.link.includes('t.me/')) {
             return 'Ссылка должна содержать t.me/';
+        }
+        if (!selectedCourseId) {
+            return 'Курс обязателен для выбора';
         }
         if (formData.order_num < 1) {
             return 'Порядковый номер должен быть больше 0';
@@ -110,8 +157,6 @@ const ChatsManager: React.FC = () => {
         try {
             setModalLoading(true);
 
-            let chatId: string;
-
             if (editingChat) {
                 // Обновление существующего чата
                 const updateData: UpdateChatData = {
@@ -119,38 +164,54 @@ const ChatsManager: React.FC = () => {
                     name: formData.name.trim(),
                     description: formData.description.trim() || undefined,
                     link: formData.link.trim(),
-                    order_num: formData.order_num
+                    order_num: formData.order_num,
+                    course_id: selectedCourseId
                 };
-                await updateChat(updateData);
 
-                // Сохраняем доступы тарифов для существующего чата
-                if (chatTariffAccess.saveTariffAccess) {
-                    await chatTariffAccess.saveTariffAccess(selectedTariffIds);
-                }
+                // Параллельно обновляем чат и доступы
+                await Promise.all([
+                    updateChat(updateData),
+                    chatAccess.saveAccess({
+                        courseId: selectedCourseId,
+                        tariffIds: selectedTariffIds
+                    })
+                ]);
             } else {
                 // Создание нового чата
                 const createData: CreateChatData = {
                     name: formData.name.trim(),
                     description: formData.description.trim() || undefined,
                     link: formData.link.trim(),
-                    order_num: formData.order_num
+                    order_num: formData.order_num,
+                    course_id: selectedCourseId
                 };
                 const createdChat = await createChat(createData);
 
-                // Сохраняем доступы тарифов для нового чата
+                // Сохраняем доступы для нового чата (если есть тарифы)
                 if (selectedTariffIds.length > 0) {
-                    // Импортируем функцию напрямую для сохранения доступов
-                    const { saveChatTariffAccess } = await import('@/lib/supabase/hooks/useTariffAccess');
+                    const { saveChatTariffAccess } = await import('@/lib/supabase/hooks');
                     await saveChatTariffAccess(createdChat.id, selectedTariffIds);
                 }
             }
 
-            // Сразу закрываем модальное окно после успешного сохранения
+            // Закрываем модальное окно после успешного сохранения
             closeModal();
         } catch (error: any) {
             console.error('Ошибка при сохранении чата:', error);
-            alert(error.message || 'Произошла ошибка при сохранении чата');
-            setModalLoading(false); // Убираем loading только в случае ошибки
+
+            // Более понятные сообщения об ошибках
+            let errorMessage = 'Произошла ошибка при сохранении чата';
+            if (error.message?.includes('duplicate')) {
+                errorMessage = 'Чат с таким названием уже существует';
+            } else if (error.message?.includes('course_id')) {
+                errorMessage = 'Ошибка при связывании с курсом. Проверьте выбранный курс.';
+            } else if (error.message) {
+                errorMessage = error.message;
+            }
+
+            alert(errorMessage);
+        } finally {
+            setModalLoading(false);
         }
     };
 
@@ -279,12 +340,43 @@ const ChatsManager: React.FC = () => {
                 </div>
             </div>
 
-            {chats.length === 0 ? (
+            {/* Панель фильтров */}
+            <div className="admin-toolbar">
+                <div className="admin-filters">
+                    <div className="admin-filter-group">
+                        <label>Фильтр по курсу:</label>
+                        <select
+                            className="admin-input"
+                            value={selectedCourseFilter}
+                            onChange={(e) => handleCourseFilterChange(e.target.value)}
+                            style={{ margin: 0, minWidth: '200px' }}
+                        >
+                            <option value="all">Все курсы</option>
+                            {courses.map(course => (
+                                <option key={course.id} value={course.id}>
+                                    {course.title}
+                                </option>
+                            ))}
+                        </select>
+                    </div>
+                    <div className="admin-filter-info">
+                        Найдено чатов: {filteredChats.length} из {chats.length}
+                    </div>
+                </div>
+            </div>
+
+            {filteredChats.length === 0 ? (
                 <div className="admin-empty-state">
-                    <p>Чаты не найдены</p>
-                    <button className="admin-button" onClick={openCreateModal}>
-                        Добавить первый чат
-                    </button>
+                    {selectedCourseFilter === 'all' ? (
+                        <>
+                            <p>Чаты не найдены</p>
+                            <button className="admin-button" onClick={openCreateModal}>
+                                Добавить первый чат
+                            </button>
+                        </>
+                    ) : (
+                        <p>Чаты для выбранного курса не найдены</p>
+                    )}
                 </div>
             ) : (
                 <div className="admin-table">
@@ -294,14 +386,14 @@ const ChatsManager: React.FC = () => {
                                 <th>🔄</th>
                                 <th>Порядок</th>
                                 <th>Название</th>
-                                <th>Описание</th>
+                                <th>Название курса</th>
                                 <th>Ссылка</th>
                                 <th>Дата создания</th>
                                 <th>Действия</th>
                             </tr>
                         </thead>
                         <tbody>
-                            {chats
+                            {filteredChats
                                 .sort((a, b) => a.order_num - b.order_num)
                                 .map((chat) => (
                                     <tr
@@ -325,7 +417,7 @@ const ChatsManager: React.FC = () => {
                                         </td>
                                         <td className="font-medium">{chat.name}</td>
                                         <td className="text-gray-600">
-                                            {chat.description || '—'}
+                                            {chat.course_name || '—'}
                                         </td>
                                         <td>
                                             <a
@@ -367,33 +459,6 @@ const ChatsManager: React.FC = () => {
             {isModalOpen && (
                 <div className="admin-modal-backdrop" onClick={closeModal}>
                     <div className="admin-modal" onClick={(e) => e.stopPropagation()}>
-                        {/* Секция управления доступом по тарифам */}
-                        <div className="form-group">
-                            <label>Доступно для тарифов</label>
-                            {tariffsAdmin.loading || chatTariffAccess.loading ? (
-                                <div className="admin-loading">Загрузка тарифов...</div>
-                            ) : (
-                                <div className="checkbox-group">
-                                    {tariffsAdmin.tariffs.map(tariff => (
-                                        <label key={tariff.id} className="checkbox-inline" style={{ marginRight: '12px' }}>
-                                            <input
-                                                type="checkbox"
-                                                className="admin-checkbox"
-                                                checked={selectedTariffIds.includes(tariff.id)}
-                                                onChange={(e) => handleTariffCheckboxChange(tariff.id, e.target.checked)}
-                                                disabled={modalLoading}
-                                            />
-                                            {tariff.name} ({tariff.code})
-                                        </label>
-                                    ))}
-                                </div>
-                            )}
-                            {chatTariffAccess.error && (
-                                <div className="admin-error" style={{ marginTop: '8px', fontSize: '12px' }}>
-                                    Ошибка загрузки доступов: {chatTariffAccess.error.message}
-                                </div>
-                            )}
-                        </div>
                         <button className="admin-modal-close" onClick={closeModal}>×</button>
 
                         <h3>{editingChat ? 'Редактирование чата' : 'Создание чата'}</h3>
@@ -432,6 +497,57 @@ const ChatsManager: React.FC = () => {
                                 placeholder="https://t.me/your_chat"
                                 disabled={modalLoading}
                             />
+                        </div>
+
+                        {/* Селектор курса */}
+                        <div className="form-group">
+                            <label>Курс *</label>
+                            {coursesLoading ? (
+                                <div className="admin-loading">Загрузка курсов...</div>
+                            ) : (
+                                <select
+                                    className="admin-input"
+                                    value={selectedCourseId}
+                                    onChange={(e) => handleCourseChange(e.target.value)}
+                                    disabled={modalLoading}
+                                >
+                                    <option value="">Выберите курс</option>
+                                    {courses.map(course => (
+                                        <option key={course.id} value={course.id}>
+                                            {course.title}
+                                        </option>
+                                    ))}
+                                </select>
+                            )}
+                        </div>
+
+                        {/* Мульти-селект тарифов */}
+                        <div className="form-group">
+                            <label>Доступно для тарифов</label>
+                            {tariffsLoading || chatAccess.loading ? (
+                                <div className="admin-loading">Загрузка тарифов...</div>
+                            ) : (
+                                <div className="checkbox-group" style={{ maxHeight: '200px', overflowY: 'auto', border: '1px solid var(--admin-border)', borderRadius: 'var(--admin-radius-md)', padding: '12px' }}>
+                                    {tariffs.map(tariff => (
+                                        <label key={tariff.id} className="checkbox-inline" style={{ display: 'block', marginBottom: '8px' }}>
+                                            <input
+                                                type="checkbox"
+                                                className="admin-checkbox"
+                                                checked={selectedTariffIds.includes(tariff.id)}
+                                                onChange={(e) => handleTariffCheckboxChange(tariff.id, e.target.checked)}
+                                                disabled={modalLoading}
+                                                style={{ marginRight: '8px' }}
+                                            />
+                                            {tariff.name} ({tariff.code})
+                                        </label>
+                                    ))}
+                                </div>
+                            )}
+                            {chatAccess.error && (
+                                <div className="admin-error" style={{ marginTop: '8px', fontSize: '12px' }}>
+                                    Ошибка загрузки доступов: {chatAccess.error.message}
+                                </div>
+                            )}
                         </div>
 
                         <div className="form-group">

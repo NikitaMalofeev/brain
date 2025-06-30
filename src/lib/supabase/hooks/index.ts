@@ -34,4 +34,5 @@ export { useFaqAdmin } from './useFaqAdmin';
 export { useBroadcastsAdmin } from './useBroadcastsAdmin';
 export { useTariffsAdmin } from './useTariffsAdmin';
 export { useTariffLimits } from './useTariffLimits';
-export { useMaterialTariffAccess, useChatTariffAccess } from './useTariffAccess'; 
+export { useChatAccess } from './useChatAccess';
+export { useMaterialTariffAccess, saveChatTariffAccess, saveMaterialTariffAccess } from './useTariffAccess'; 

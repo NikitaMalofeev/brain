@@ -8,6 +8,8 @@ export interface Chat {
     link: string;
     order_num: number;
     created_at: string;
+    course_id?: string;  // ID привязанного курса
+    course_name?: string; // Название курса (приходит из JOIN)
 }
 
 // Тип для FAQ
@@ -40,6 +42,7 @@ export interface CreateChatData {
     description?: string;
     link: string;
     order_num: number;
+    course_id: string; // Обязательное поле при создании
 }
 
 export interface UpdateChatData extends Partial<CreateChatData> {
