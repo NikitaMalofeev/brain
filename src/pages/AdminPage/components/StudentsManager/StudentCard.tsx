@@ -18,7 +18,7 @@ interface StudentCardProps {
 
 const StudentCard: React.FC<StudentCardProps> = ({ studentId, onBack, currentUser }) => {
     const { studentDetails, loading, error, loadStudentDetails, assignStudentTariff, assigningTariff } = useStudentDetails();
-    const { resetLessonProgress, markMaterialViewed, resetMaterialView, updateStudentPoints, markLessonAsCompleted, markLessonAsIncomplete } = useStudentActions();
+    const { resetLessonProgress, markMaterialViewed, resetMaterialView, updateStudentPoints, updatePersonalChatLink, markLessonAsCompleted, markLessonAsIncomplete } = useStudentActions();
     const { tariffs, loading: tariffsLoading } = useTariffsAdmin();
     const { promoteToCurator, isPromoting } = useCuratorsAdmin();
 
@@ -48,6 +48,11 @@ const StudentCard: React.FC<StudentCardProps> = ({ studentId, onBack, currentUse
     const [deltaPoints, setDeltaPoints] = useState<string>('');
     const [pointsLoading, setPointsLoading] = useState<boolean>(false);
 
+    // Состояние для редактирования ссылки на личный чат
+    const [personalChatLink, setPersonalChatLink] = useState<string>('');
+    const [chatLinkLoading, setChatLinkLoading] = useState<boolean>(false);
+    const [isEditingChatLink, setIsEditingChatLink] = useState<boolean>(false);
+
     useEffect(() => {
         loadStudentDetails(studentId);
     }, [studentId]);
@@ -60,6 +65,15 @@ const StudentCard: React.FC<StudentCardProps> = ({ studentId, onBack, currentUse
             setSelectedTariffId('');
         }
     }, [studentDetails?.basicInfo.current_tariff_id]);
+
+    // Синхронизируем ссылку на личный чат с данными студента
+    useEffect(() => {
+        if (studentDetails?.basicInfo.personal_chat_link) {
+            setPersonalChatLink(studentDetails.basicInfo.personal_chat_link);
+        } else {
+            setPersonalChatLink('');
+        }
+    }, [studentDetails?.basicInfo.personal_chat_link]);
 
     const formatDate = (dateString?: string | null) => {
         if (!dateString) return '—';
@@ -145,6 +159,33 @@ const StudentCard: React.FC<StudentCardProps> = ({ studentId, onBack, currentUse
         } finally {
             setPointsLoading(false);
         }
+    };
+
+    // Функции для работы с личным чатом
+    const handleEditChatLink = () => {
+        setIsEditingChatLink(true);
+    };
+
+    const handleSaveChatLink = async () => {
+        setChatLinkLoading(true);
+        try {
+            const linkToSave = personalChatLink.trim() || null;
+            await updatePersonalChatLink(studentId, linkToSave);
+            await loadStudentDetails(studentId);
+            setIsEditingChatLink(false);
+            alert('Ссылка на личный чат обновлена');
+        } catch (error) {
+            console.error('Ошибка при обновлении ссылки на чат:', error);
+            alert('Ошибка при обновлении ссылки на чат');
+        } finally {
+            setChatLinkLoading(false);
+        }
+    };
+
+    const handleCancelEditChatLink = () => {
+        // Восстанавливаем исходное значение
+        setPersonalChatLink(studentDetails?.basicInfo.personal_chat_link || '');
+        setIsEditingChatLink(false);
     };
 
     // Bulk: отметить все уроки как пройденные
@@ -390,6 +431,62 @@ const StudentCard: React.FC<StudentCardProps> = ({ studentId, onBack, currentUse
                     <strong>Баллы:</strong> {basicInfo.total_points}{' '}
                     <button className="action-btn edit-btn" onClick={handleUpdatePoints}>Изменить</button>
                 </p>
+
+                {/* Поле для личного чата */}
+                <div className="form-group" style={{ paddingTop: '12px' }}>
+                    <label style={{ fontSize: '16px', fontWeight: '600' }}>Личный чат:</label>
+                    {!isEditingChatLink ? (
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginTop: '4px' }}>
+                            {basicInfo.personal_chat_link ? (
+                                <a 
+                                    href={basicInfo.personal_chat_link} 
+                                    target="_blank" 
+                                    rel="noopener noreferrer"
+                                    style={{ color: '#0088cc', textDecoration: 'none' }}
+                                >
+                                    {basicInfo.personal_chat_link}
+                                </a>
+                            ) : (
+                                <span style={{ color: '#999' }}>Не указан</span>
+                            )}
+                            <button 
+                                className="action-btn edit-btn" 
+                                onClick={handleEditChatLink}
+                                title="Редактировать ссылку на чат"
+                            >
+                                Изменить
+                            </button>
+                        </div>
+                    ) : (
+                        <div style={{ marginTop: '4px' }}>
+                            <input
+                                type="url"
+                                className="admin-input"
+                                style={{ width: '100%', marginBottom: '8px' }}
+                                placeholder="https://t.me/username или ссылка на чат"
+                                value={personalChatLink}
+                                onChange={(e) => setPersonalChatLink(e.target.value)}
+                                disabled={chatLinkLoading}
+                            />
+                            <div style={{ display: 'flex', gap: '8px' }}>
+                                <button
+                                    className="action-btn edit-btn"
+                                    onClick={handleSaveChatLink}
+                                    disabled={chatLinkLoading}
+                                >
+                                    {chatLinkLoading ? 'Сохранение...' : 'Сохранить'}
+                                </button>
+                                <button
+                                    className="action-btn delete-btn"
+                                    onClick={handleCancelEditChatLink}
+                                    disabled={chatLinkLoading}
+                                >
+                                    Отмена
+                                </button>
+                            </div>
+                        </div>
+                    )}
+                </div>
 
                 {/* Форма для добавления/удаления баллов */}
                 <div className="form-group" style={{ paddingTop: '12px' }}>

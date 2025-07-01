@@ -12,6 +12,7 @@ export interface StudentBasicInfo {
     last_login?: string | null;
     web_last_login?: string | null;
     total_points: number;
+    personal_chat_link?: string | null;
     // Информация о текущем тарифе
     current_tariff_id?: string | null;
     current_tariff_name?: string | null;
@@ -102,7 +103,8 @@ export function useStudentDetails(): StudentDetailsResult {
                     created_at,
                     last_login,
                     web_last_login,
-                    total_points
+                    total_points,
+                    personal_chat_link
                 `)
                 .eq('id', studentId)
                 .eq('role', 'user')
@@ -278,6 +280,7 @@ export function useStudentDetails(): StudentDetailsResult {
                 last_login: userInfo.last_login,
                 web_last_login: userInfo.web_last_login,
                 total_points: userInfo.total_points,
+                personal_chat_link: userInfo.personal_chat_link,
                 current_tariff_id: tariffInfo?.id || null,
                 current_tariff_name: tariffInfo?.name || null,
                 current_tariff_code: tariffInfo?.code || null,
