@@ -5,7 +5,7 @@ import { User } from '@supabase/supabase-js';
 import { Page } from '@/components/Page';
 import LessonCard from '@/components/LessonCard/LessonCard';
 import useStageDetails, { StageDetailsData } from '@/lib/supabase/hooks/useStageDetails';
-import useLibraryStages, {LibraryStageData} from '@/lib/supabase/hooks/useLibraryStages';
+import useLibraryStages, { LibraryStageData } from '@/lib/supabase/hooks/useLibraryStages';
 import { useSupabaseUser } from '@/lib/supabase/hooks/useSupabaseUser';
 import { useAppContext } from '@/contexts/AppContext';
 import { logger } from '@/lib/logger';
@@ -44,6 +44,10 @@ const StagePage: React.FC = () => {
 
     const { id: stageId } = useParams<{ id: string }>();
 
+    // Простой сброс скролла при монтировании
+    useEffect(() => {
+        window.scrollTo(0, 0);
+    }, []);
 
     const [isOpen, setIsOpen] = useState(false);
 
@@ -166,7 +170,7 @@ const StagePage: React.FC = () => {
 
     if (unlockedLessonsInCurrentStage > 0) {
         const word = getNounPluralForm(unlockedLessonsInCurrentStage, 'день', 'дня', 'дней');
-        if(nextStage){
+        if (nextStage) {
             nextStageText = `Еще ${unlockedLessonsInCurrentStage} ${word} до перехода на уровень «${nextStage?.stage_name}»`;
         } else {
             nextStageText = `Еще ${unlockedLessonsInCurrentStage} ${word} до полного открытия ступени`;
