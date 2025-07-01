@@ -434,7 +434,7 @@ const StudentCard: React.FC<StudentCardProps> = ({ studentId, onBack, currentUse
 
                 {/* Поле для личного чата */}
                 <div className="form-group" style={{ paddingTop: '12px' }}>
-                    <label style={{ fontSize: '16px', fontWeight: '600' }}>Личный чат:</label>
+                    <label style={{ fontSize: '16px', fontWeight: '600' }}>Чат десятки:</label>
                     {!isEditingChatLink ? (
                         <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginTop: '4px' }}>
                             {basicInfo.personal_chat_link ? (
