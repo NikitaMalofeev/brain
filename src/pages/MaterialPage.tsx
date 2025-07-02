@@ -147,9 +147,9 @@ export const MaterialPage = () => {
                         className={'h-[300px] rounded-b-3xl object-cover'}
                     />
                     <div className={'p-4 flex flex-col gap-3'}>
-                        <NewPlayer
+                        {mainContentUrl && <NewPlayer
                             audioUrl={mainContentUrl}
-                        />
+                        />}
                         <p className={'text-2xl font-bold leading-7'}>{mainBlock.title}</p>
                         <p>{mainBlock.content_text}</p>
                     </div>

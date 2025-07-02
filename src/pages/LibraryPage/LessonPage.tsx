@@ -58,7 +58,7 @@ function BlockContent({ block }: { block: LessonBlock }) {
         case 'audio':
             return <div className={'flex flex-col gap-3'}>
                 {block.content_url && <NewPlayer
-                    audioUrl={block.content_url} />}
+                    audioUrl={buildFileUrl(block.content_url) || ''} />}
                 <p>{block.content_text}</p>
             </div>
 
@@ -819,7 +819,7 @@ const LessonPage: React.FC = () => {
                 </div>
                 <div className={'p-4 mb-16'}>
                     {state.lesson.blocks.map((block, i) => (
-                        <BlockItem block={block} initialState={i === 0} />
+                        <BlockItem key={block.id} block={block} initialState={i === 0} />
                     ))}
                 </div>
                 {state.submission && (
