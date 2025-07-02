@@ -564,7 +564,7 @@ const BlocksManager: React.FC<BlocksManagerProps> = ({ courseId, stageId, lesson
                                         onUploadComplete={handleFileUploadComplete}
                                         onUploadError={handleFileUploadError}
                                         acceptedTypes={
-                                            modalData.block_type === 'audio' ? 'audio/mpeg,audio/wav,audio/mp3,audio/mp4,audio/m4a,audio/ogg,audio/aac,audio/flac' :
+                                            modalData.block_type === 'audio' ? 'audio/mpeg,audio/wav,audio/mp3,audio/mp4,audio/m4a,audio/aac,audio/flac' :
                                                 modalData.block_type === 'image' ? 'image/jpeg,image/png,image/webp,image/gif,image/svg+xml' :
                                                     modalData.block_type === 'pdf' ? 'application/pdf' : '*/*'
                                         }

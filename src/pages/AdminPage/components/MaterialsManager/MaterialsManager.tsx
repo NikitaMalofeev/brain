@@ -1304,7 +1304,7 @@ const MaterialsManager: React.FC = () => {
                                             onUploadComplete={handleFileUploadComplete}
                                             onUploadError={handleFileUploadError}
                                             acceptedTypes={
-                                                blockForm.block_type === 'audio' ? 'audio/mpeg,audio/wav,audio/mp3,audio/mp4,audio/m4a,audio/ogg,audio/aac,audio/flac' :
+                                                blockForm.block_type === 'audio' ? 'audio/mpeg,audio/wav,audio/mp3,audio/mp4,audio/m4a,audio/aac,audio/flac' :
                                                     blockForm.block_type === 'image' ? 'image/jpeg,image/png,image/webp,image/gif,image/svg+xml' :
                                                         blockForm.block_type === 'pdf' ? 'application/pdf' : '*/*'
                                             }

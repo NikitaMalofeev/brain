@@ -233,7 +233,7 @@ const FixedSubmissionForm: React.FC<FixedSubmissionFormProps> = ({
                             const extension = fileName.split('.').pop()?.toLowerCase() || '';
                             const fileIcon =
                                 (['jpg', 'jpeg', 'png', 'gif', 'webp', 'svg', 'bmp'].includes(extension)) ? '🖼️' :
-                                    (['mp3', 'wav', 'ogg', 'aac', 'flac', 'm4a'].includes(extension)) ? '🎵' :
+                                    (['mp3', 'wav', 'aac', 'flac', 'm4a'].includes(extension)) ? '🎵' :
                                         (extension === 'pdf') ? '📄' :
                                             (['doc', 'docx'].includes(extension)) ? '📝' : '📎';
 

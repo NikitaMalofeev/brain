@@ -84,6 +84,13 @@ export const FileUploader = forwardRef<FileUploaderRef, FileUploaderProps>(({
 
 
     const handleFileSelect = (file: File | null) => {
+        // Проверяем на OGG формат - блокируем для iOS совместимости
+        if (file && file.name.toLowerCase().endsWith('.ogg')) {
+            const errorMessage = '⚠️ OGG файлы не поддерживаются на iOS устройствах. Пожалуйста, используйте MP3, M4A, AAC или WAV формат.';
+            onUploadError?.(errorMessage);
+            return;
+        }
+
         setSelectedFile(file);
         onFileSelected(file);
     };
@@ -141,7 +148,7 @@ export const FileUploader = forwardRef<FileUploaderRef, FileUploaderProps>(({
             if (source.includes('/images/') || source.match(/\.(jpg|jpeg|png|gif|webp|svg|bmp)$/i)) {
                 return 'image';
             }
-            if (source.includes('/audio/') || source.match(/\.(mp3|wav|ogg|aac|flac|m4a)$/i)) {
+            if (source.includes('/audio/') || source.match(/\.(mp3|wav|aac|flac|m4a)$/i)) {
                 return 'audio';
             }
             if (source.includes('/documents/') || source.match(/\.(pdf)$/i)) {

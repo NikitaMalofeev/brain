@@ -18,7 +18,7 @@
 ### 📁 Организация файлов по типам
 | Тип блока | Папка в Supabase Storage (Бакет: `media`) | Поддерживаемые форматы |
 |-----------|--------------------------------------------|--------------------------|
-| `audio` | `audio/` | mp3, wav, ogg, aac, flac, **m4a** |
+| `audio` | `audio/` | mp3, wav, aac, flac, **m4a** (iOS совместимые) |
 | `image` | `images/` | jpg, png, gif, webp, svg, bmp |
 | `pdf` | `documents/` | pdf |
 | `material_covers` | `images/` | jpg, png, webp |

@@ -32,17 +32,17 @@ const AudioBlock: React.FC<AudioBlockProps> = ({ block }) => {
         isTelegramApp
     } = useAppContext();
 
-    // Проверяем, что URL ведет на CloudFlare R2 аудио
+    // Проверяем, что URL ведет на Supabase Storage аудио
     const isValidAudioUrl = (url: string): boolean => {
         if (!url) return false;
 
-        // Проверяем CloudFlare R2 аудио bucket или общие аудио форматы
+        // Проверяем Supabase Storage аудио или общие аудио форматы (iOS совместимые)
         return (
-            url.includes('r2.cloudflarestorage.com') && url.includes('/audio/') ||
+            url.includes('/storage/v1/object/public/media/audio/') ||
             url.endsWith('.mp3') ||
             url.endsWith('.wav') ||
-            url.endsWith('.ogg') ||
-            url.endsWith('.m4a')
+            url.endsWith('.m4a') ||
+            url.endsWith('.aac')
         );
     };
 

@@ -17,7 +17,7 @@ const DocumentBlock = ({ block }: DocumentBlockProps) => {
         if (['jpg', 'jpeg', 'png', 'gif', 'webp', 'svg', 'bmp'].includes(extension)) {
             return { type: 'image', icon: '🖼️', name: fileName };
         }
-        if (['mp3', 'wav', 'ogg', 'aac', 'flac', 'm4a'].includes(extension)) {
+        if (['mp3', 'wav', 'aac', 'flac', 'm4a'].includes(extension)) {
             return { type: 'audio', icon: '🎵', name: fileName };
         }
         if (extension === 'pdf') {
