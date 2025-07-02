@@ -8,6 +8,7 @@ export interface StudentActionsResult {
     markMaterialViewed: (studentId: string, materialId: string) => Promise<void>;
     resetMaterialView: (studentId: string, materialId: string) => Promise<void>;
     updateStudentPoints: (studentId: string, newPoints: number) => Promise<void>;
+    updatePersonalChatLink: (studentId: string, chatLink: string | null) => Promise<void>;
     // Новые функции для ручного управления прогрессом уроков
     setLessonProgress: (studentId: string, lessonId: number, isCompleted: boolean) => Promise<void>;
     markLessonAsCompleted: (studentId: string, lessonId: number) => Promise<void>;
@@ -214,6 +215,36 @@ export function useStudentActions(): StudentActionsResult {
         }
     };
 
+    // Обновить ссылку на личный чат ученика
+    const updatePersonalChatLink = async (studentId: string, chatLink: string | null): Promise<void> => {
+        if (!supabase) {
+            throw new Error('Supabase клиент не инициализирован');
+        }
+
+        try {
+            setLoading(true);
+            setError(null);
+
+            // Обновляем поле personal_chat_link у пользователя
+            const { error: updateError } = await supabase
+                .from('users')
+                .update({
+                    personal_chat_link: chatLink,
+                    updated_at: new Date().toISOString()
+                })
+                .eq('id', studentId);
+
+            if (updateError) throw updateError;
+
+        } catch (err) {
+            console.error('Ошибка при обновлении ссылки на личный чат:', err);
+            setError(err instanceof Error ? err : new Error('Ошибка при обновлении ссылки на личный чат'));
+            throw err;
+        } finally {
+            setLoading(false);
+        }
+    };
+
     // Универсальная функция для установки прогресса урока
     const setLessonProgress = async (studentId: string, lessonId: number, isCompleted: boolean): Promise<void> => {
         if (!supabase) {
@@ -273,6 +304,7 @@ export function useStudentActions(): StudentActionsResult {
         markMaterialViewed,
         resetMaterialView,
         updateStudentPoints,
+        updatePersonalChatLink,
         setLessonProgress,
         markLessonAsCompleted,
         markLessonAsIncomplete,
