@@ -211,17 +211,33 @@ const SubmissionDetail: React.FC<SubmissionDetailProps> = ({
         loadSubmissionDetail();
     }, [submissionId, propCurrentUser]);
 
-    // Сохранение проверки (работает и для первичной проверки, и для изменения решения)
-    const saveReview = async () => {
+    // Тип для параметров проверки
+    type ReviewParams = {
+        status: SubmissionStatus;
+        points: number;
+        feedback: string;
+        isQuickAction?: boolean;
+    };
+
+    // Универсальная функция отправки проверки
+    const submitReview = async (params: ReviewParams) => {
         if (!submission) {
             setError('Данные о сдаче не загружены');
             return;
         }
 
-        // Проверяем обязательные поля
-        if (!reviewForm.feedback.trim()) {
-            setError('Обратная связь обязательна');
-            return;
+        // Валидация для обычной формы (не для быстрых действий)
+        if (!params.isQuickAction) {
+            const isInitialReview = ['submitted', 'pending_review'].includes(submission.status);
+            if (isInitialReview && !params.feedback.trim()) {
+                setError('Обратная связь обязательна');
+                return;
+            }
+
+            // Для изменения решения - используем старый комментарий если новый пустой
+            if (showDecisionChange && !params.feedback.trim()) {
+                params.feedback = submission.feedback_text || '';
+            }
         }
 
         try {
@@ -235,14 +251,14 @@ const SubmissionDetail: React.FC<SubmissionDetailProps> = ({
 
             const oldStatus = submission.status;
             const oldPoints = submission.points_awarded;
-            const newStatus = reviewForm.status;
-            const newPoints = newStatus === 'approved' ? reviewForm.points : 0;
+            const newStatus = params.status;
+            const newPoints = newStatus === 'approved' ? params.points : 0;
 
             // Обновляем сабмит
             const updateData: any = {
                 status: newStatus,
                 reviewed_at: new Date().toISOString(),
-                feedback_text: reviewForm.feedback,
+                feedback_text: params.feedback,
                 points_awarded: newPoints,
                 reviewed_by_curator_id: currentUser?.id || null
             };
@@ -334,6 +350,28 @@ const SubmissionDetail: React.FC<SubmissionDetailProps> = ({
             setSaving(false);
         }
     };
+
+    // Функции-обёртки для удобства использования
+    const quickApprove = () => submitReview({
+        status: 'approved',
+        points: 100,
+        feedback: 'Отличная работа!',
+        isQuickAction: true
+    });
+
+    const quickReject = () => submitReview({
+        status: 'rejected',
+        points: 0,
+        feedback: 'Работа требует доработки.',
+        isQuickAction: true
+    });
+
+    const saveReview = () => submitReview({
+        status: reviewForm.status,
+        points: reviewForm.points,
+        feedback: reviewForm.feedback,
+        isQuickAction: false
+    });
 
     // Проверка прав доступа для изменения решения
     const canEditDecision = () => {
@@ -606,19 +644,17 @@ const SubmissionDetail: React.FC<SubmissionDetailProps> = ({
                                     <div className="quick-actions-buttons">
                                         <button
                                             className="admin-button admin-yes"
-                                            onClick={() => {
-                                                setReviewForm({ status: 'approved', points: 100, feedback: 'Отличная работа!' });
-                                            }}
+                                            onClick={quickApprove}
+                                            disabled={saving}
                                         >
-                                            ✅ Принять с 100 баллами
+                                            {saving ? 'Сохранение...' : '✅ Принять с 100 баллами'}
                                         </button>
                                         <button
                                             className="admin-button admin-no"
-                                            onClick={() => {
-                                                setReviewForm({ status: 'rejected', points: 0, feedback: 'Работа требует доработки.' });
-                                            }}
+                                            onClick={quickReject}
+                                            disabled={saving}
                                         >
-                                            ❌ Отклонить
+                                            {saving ? 'Сохранение...' : '❌ Отклонить'}
                                         </button>
                                     </div>
                                 </div>
@@ -751,7 +787,7 @@ const SubmissionDetail: React.FC<SubmissionDetailProps> = ({
                                         <button
                                             className="admin-button"
                                             onClick={saveReview}
-                                            disabled={saving || !reviewForm.feedback.trim()}
+                                            disabled={saving}
                                             style={{ flex: 1 }}
                                         >
                                             {saving ? 'Сохранение...' : 'Сохранить изменения'}
