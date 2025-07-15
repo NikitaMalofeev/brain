@@ -25,13 +25,37 @@ interface LessonPageState {
     userDataLoading: boolean; // Добавляем флаг загрузки пользовательских данных
 }
 
+// Функция для преобразования URL в тексте в кликабельные ссылки
+function linkifyText(text: string): React.ReactNode[] {
+    // Регулярное выражение для поиска URL
+    const urlRegex = /(https?:\/\/[^\s]+)/g;
+    const parts = text.split(urlRegex);
+    
+    return parts.map((part, index) => {
+        if (part.match(urlRegex)) {
+            return (
+                <a 
+                    key={index} 
+                    href={part} 
+                    target="_blank" 
+                    rel="noopener noreferrer"
+                    style={{ color: '#4e9bff', textDecoration: 'underline' }}
+                >
+                    {part}
+                </a>
+            );
+        }
+        return part;
+    });
+}
+
 function BlockContent({ block }: { block: LessonBlock }) {
     switch (block.block_type) {
         case 'text':
             return (
                 <div className={'flex flex-col gap-3'}>
                     {block.content_text?.split('\n').map((line, i) => {
-                        return (<p key={i}>{line}</p>)
+                        return (<p key={i}>{linkifyText(line)}</p>)
                     })}
                 </div>
             );
@@ -48,7 +72,7 @@ function BlockContent({ block }: { block: LessonBlock }) {
                             whiteSpace: 'pre-wrap',
                         }}>
                             {block.content_text?.split('\n').map((line, i) => {
-                                return (<p key={i}>{line}</p>)
+                                return (<p key={i}>{linkifyText(line)}</p>)
                             })}
                         </div>
                     )}
@@ -59,7 +83,7 @@ function BlockContent({ block }: { block: LessonBlock }) {
             return <div className={'flex flex-col gap-3'}>
                 {block.content_url && <NewPlayer
                     audioUrl={buildFileUrl(block.content_url) || ''} />}
-                <p>{block.content_text}</p>
+                {block.content_text && <p>{linkifyText(block.content_text)}</p>}
             </div>
 
 
@@ -90,15 +114,22 @@ function BlockContent({ block }: { block: LessonBlock }) {
     }
 }
 
-export const BlockItem = ({ block, initialState }: { block: LessonBlock, initialState: boolean }) => {
+export const BlockItem = ({ block, initialState, childBlocks = [] }: { block: LessonBlock, initialState: boolean, childBlocks?: LessonBlock[] }) => {
     const [collapsed, setCollapsed] = useState(initialState);
     return (
         <div className={'mb-6 flex flex-col gap-3'}>
-            <div onClick={() => setCollapsed((prev) => !prev)} className={'flex items-center gap-2'}>
+            <div onClick={() => setCollapsed((prev) => !prev)} className={'flex items-center gap-2 cursor-pointer'}>
                 <img src={'/arrow-right.svg'} className={clsx('w-3 h-3 duration-200', collapsed && 'rotate-90')} alt={''} />
                 <h3 className={'font-bold text-lg'}>{block.title}</h3>
             </div>
-            {collapsed && <BlockContent block={block} key={block.id} />}
+            {collapsed && (
+                <div className={'flex flex-col gap-6'}>
+                    <BlockContent block={block} key={block.id} />
+                    {childBlocks.map((childBlock) => (
+                        <BlockContent block={childBlock} key={childBlock.id} />
+                    ))}
+                </div>
+            )}
         </div>
     )
 };
@@ -818,9 +849,43 @@ const LessonPage: React.FC = () => {
                     </div>
                 </div>
                 <div className={'p-4 mb-16'}>
-                    {state.lesson.blocks.map((block, i) => (
-                        <BlockItem key={block.id} block={block} initialState={i === 0} />
-                    ))}
+                    {(() => {
+                        // Группируем блоки: блоки без заголовков попадают в предыдущий блок с заголовком
+                        const groupedBlocks: Array<{ parent: LessonBlock, children: LessonBlock[] }> = [];
+                        let currentGroup: { parent: LessonBlock, children: LessonBlock[] } | null = null;
+                        
+                        state.lesson.blocks.forEach((block) => {
+                            if (block.title && block.title.trim() !== '') {
+                                // Блок с заголовком - начинаем новую группу
+                                currentGroup = { parent: block, children: [] };
+                                groupedBlocks.push(currentGroup);
+                            } else if (currentGroup) {
+                                // Блок без заголовка - добавляем в текущую группу
+                                currentGroup.children.push(block);
+                            } else {
+                                // Блок без заголовка, но нет предыдущего блока с заголовком
+                                // Отображаем его как обычный контент без обертки
+                                groupedBlocks.push({ parent: block, children: [] });
+                            }
+                        });
+                        
+                        return groupedBlocks.map((group, i) => {
+                            if (group.parent.title && group.parent.title.trim() !== '') {
+                                // Блок с заголовком - используем BlockItem
+                                return (
+                                    <BlockItem 
+                                        key={group.parent.id} 
+                                        block={group.parent} 
+                                        initialState={i === 0}
+                                        childBlocks={group.children}
+                                    />
+                                );
+                            } else {
+                                // Блок без заголовка и без группы - отображаем просто контент
+                                return <BlockContent block={group.parent} key={group.parent.id} />;
+                            }
+                        });
+                    })()}
                 </div>
                 {state.submission && (
                     <div className={'p-4 pb-8'}>

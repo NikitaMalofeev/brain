@@ -203,7 +203,9 @@ const MaterialsManager: React.FC = () => {
         const hasExistingUrl = editingBlock?.content_url;
 
         if (block_type === 'text') {
-            setIsBlockSaveDisabled(!content_text.trim());
+            // Для текстового блока нужен хотя бы заголовок или контент
+            const hasTitle = blockForm.title && blockForm.title.trim();
+            setIsBlockSaveDisabled(!content_text.trim() && !hasTitle);
         } else if (block_type === 'video') {
             // Для видео нужен хотя бы URL или описание
             const hasUrl = content_url.trim();

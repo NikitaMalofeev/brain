@@ -1,0 +1,36 @@
+name: Deploy to Production via Docker
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: SSH and Deploy
+        uses: appleboy/ssh-action@master
+        with:
+          host: ${{ secrets.SSH_HOST }}
+          username: ${{ secrets.SSH_USER }}
+          key: ${{ secrets.SSH_KEY }}
+          script: |
+            # Переходим в папку проекта на сервере
+            cd ${{ secrets.PROJECT_PATH }}
+            
+            # Забираем последние изменения (включая новые Dockerfile, nginx.conf и т.д.)
+            echo "⚡ Pulling latest changes..."
+            git pull origin master
+            
+            # Ставим зависимости
+            npm i
+            
+            # Запускаем билд
+            npm run build
+
+            echo "✅ Deployment successful!"

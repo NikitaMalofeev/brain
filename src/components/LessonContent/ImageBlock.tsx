@@ -1,5 +1,30 @@
 import React, { useState } from 'react';
 import { LessonBlock } from '@/lib/supabase/types';
+import { buildFileUrl } from '@/lib/supabase/supabaseStorageService';
+
+// Функция для преобразования URL в тексте в кликабельные ссылки
+function linkifyText(text: string): React.ReactNode[] {
+    // Регулярное выражение для поиска URL
+    const urlRegex = /(https?:\/\/[^\s]+)/g;
+    const parts = text.split(urlRegex);
+    
+    return parts.map((part, index) => {
+        if (part.match(urlRegex)) {
+            return (
+                <a 
+                    key={index} 
+                    href={part} 
+                    target="_blank" 
+                    rel="noopener noreferrer"
+                    style={{ color: '#4e9bff', textDecoration: 'underline' }}
+                >
+                    {part}
+                </a>
+            );
+        }
+        return part;
+    });
+}
 
 interface ImageBlockProps {
     block: LessonBlock;
@@ -8,9 +33,10 @@ interface ImageBlockProps {
 const ImageBlock: React.FC<ImageBlockProps> = ({ block }) => {
 
     const [isFullScreenOpen, setIsFullScreenOpen] = useState(false);
+    const imageUrl = block.content_url ? buildFileUrl(block.content_url) : null;
 
     const handleImageClick = () => {
-        if (block.content_url) {
+        if (imageUrl) {
             setIsFullScreenOpen(true);
         }
     };
@@ -24,15 +50,15 @@ const ImageBlock: React.FC<ImageBlockProps> = ({ block }) => {
 
 
             {/* Изображение или заглушка */}
-            {block.content_url ? (
+            {imageUrl ? (
                 <img
-                    src={block.content_url}
+                    src={imageUrl}
                     alt={block.title || 'Изображение'}
                     style={{
                         width: '100%',
                         height: 'auto',
                         borderRadius: '12px',
-                        cursor: block.content_url ? 'pointer' : 'default', // Курсор pointer если есть URL
+                        cursor: imageUrl ? 'pointer' : 'default', // Курсор pointer если есть URL
                     }}
                     onClick={handleImageClick} // Добавляем обработчик клика
                 />
@@ -61,7 +87,7 @@ const ImageBlock: React.FC<ImageBlockProps> = ({ block }) => {
                     whiteSpace: 'pre-wrap',
                 }}>
                     {block.content_text?.split('\n').map((line, i) => {
-                        return (<p key={i}>{line}</p>)
+                        return (<p key={i}>{linkifyText(line)}</p>)
                     })}
                 </div>
             )}
@@ -85,7 +111,7 @@ const ImageBlock: React.FC<ImageBlockProps> = ({ block }) => {
                     onClick={handleCloseFullScreen} // Закрываем при клике вне изображения
                 >
                     <img
-                        src={block.content_url}
+                        src={imageUrl}
                         alt={block.title || 'Изображение'}
                         style={{
                             maxWidth: '95%',

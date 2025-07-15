@@ -2,6 +2,30 @@ import React from 'react';
 import { LessonBlock } from '@/lib/supabase/types';
 import { buildFileUrl } from '@/lib/supabase/supabaseStorageService';
 
+// Функция для преобразования URL в тексте в кликабельные ссылки
+function linkifyText(text: string): React.ReactNode[] {
+    // Регулярное выражение для поиска URL
+    const urlRegex = /(https?:\/\/[^\s]+)/g;
+    const parts = text.split(urlRegex);
+    
+    return parts.map((part, index) => {
+        if (part.match(urlRegex)) {
+            return (
+                <a 
+                    key={index} 
+                    href={part} 
+                    target="_blank" 
+                    rel="noopener noreferrer"
+                    style={{ color: '#4e9bff', textDecoration: 'underline' }}
+                >
+                    {part}
+                </a>
+            );
+        }
+        return part;
+    });
+}
+
 interface DocumentBlockProps {
     block: LessonBlock;
 }
@@ -57,7 +81,7 @@ const DocumentBlock = ({ block }: DocumentBlockProps) => {
                             whiteSpace: 'pre-wrap',
                         }}>
                             {block.content_text?.split('\n').map((line, i) => {
-                                return (<p key={i}>{line}</p>)
+                                return (<p key={i}>{linkifyText(line)}</p>)
                             })}
                         </div>
                     )}

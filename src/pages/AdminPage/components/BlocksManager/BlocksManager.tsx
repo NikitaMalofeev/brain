@@ -134,8 +134,10 @@ const BlocksManager: React.FC<BlocksManagerProps> = ({ courseId, stageId, lesson
             const hasUrl = finalContentUrl;
 
             if (modalData.block_type === 'text') {
-                if (!hasText) {
-                    alert('Для текстового блока необходимо заполнить содержимое');
+                // Для текстового блока нужен хотя бы заголовок или контент
+                const hasTitle = modalData.title && modalData.title.trim();
+                if (!hasText && !hasTitle) {
+                    alert('Для текстового блока необходимо заполнить заголовок или содержимое');
                     setUpdateLoading(false);
                     return;
                 }
@@ -373,12 +375,15 @@ const BlocksManager: React.FC<BlocksManagerProps> = ({ courseId, stageId, lesson
 
         switch (modalData.block_type) {
             case 'text':
-                return modalData.content_text.trim().length > 0;
+                // Для текстового блока нужен хотя бы заголовок или контент
+                return modalData.title.trim().length > 0 || modalData.content_text.trim().length > 0;
             case 'video':
+                // Для видео нужен хотя бы URL или описание
                 return modalData.content_text.trim().length > 0 || modalData.content_url.trim().length > 0;
             case 'audio':
             case 'image':
             case 'pdf':
+                // Для файловых блоков нужен файл/URL, заголовок и описание опциональны
                 return modalData.content_url.trim().length > 0 || fileUploaderRef.current?.hasSelectedFile();
             default:
                 return false;
