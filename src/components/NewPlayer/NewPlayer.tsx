@@ -81,6 +81,7 @@ const NewPlayer = ({ audioUrl }: { audioUrl: string }) => {
     }, [audioUrl]);
 
     const handlePlayPause = () => {
+        if (isLoading) return; // Не выполняем действие если загружается
         wavesurferRef.current?.playPause();
     };
 
@@ -93,26 +94,30 @@ const NewPlayer = ({ audioUrl }: { audioUrl: string }) => {
                 }
             `}</style>
             <Ripple className="rounded-full overflow-hidden inline-block">
-                <button onClick={handlePlayPause} className="outline-none cursor-pointer p-2 rounded-full bg-[linear-gradient(109.65deg,_#E1C1F4_13.64%,_#B862EA_124.92%)]">
+                <button 
+                    onClick={handlePlayPause} 
+                    disabled={isLoading}
+                    className={`outline-none p-2 rounded-full bg-[linear-gradient(109.65deg,_#E1C1F4_13.64%,_#B862EA_124.92%)] transition-opacity ${
+                        isLoading ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'
+                    }`}
+                >
                     {isPlaying ? <PauseIcon /> : <PlayIcon />}
                 </button>
             </Ripple>
             <div className={'h-8 flex-1 relative'}>
                 {isLoading && (
-                    <div className={'absolute inset-0 flex items-center justify-center'}>
-                        <div className={'flex items-center gap-1'}>
-                            {Array.from({ length: 20 }).map((_, i) => (
-                                <div
-                                    key={i}
-                                    className={'w-1 bg-[#B8B8B8] rounded-full'}
-                                    style={{
-                                        height: `${Math.random() * 20 + 8}px`,
-                                        animationDelay: `${i * 0.1}s`,
-                                        animation: 'pulse 1.5s ease-in-out infinite'
-                                    }}
-                                />
-                            ))}
-                        </div>
+                    <div className={'absolute inset-0 flex items-center'}>
+                        {Array.from({ length: 50 }).map((_, i) => (
+                            <div
+                                key={i}
+                                className={'flex-1 bg-[#B8B8B8] rounded-sm mx-0.5'}
+                                style={{
+                                    height: `${Math.random() * 20 + 8}px`,
+                                    animationDelay: `${i * 0.05}s`,
+                                    animation: 'pulse 1.5s ease-in-out infinite'
+                                }}
+                            />
+                        ))}
                     </div>
                 )}
                 <div ref={waveformRef} className={'h-full'} />
