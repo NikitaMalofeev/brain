@@ -107,13 +107,13 @@ const NewPlayer = ({ audioUrl }: { audioUrl: string }) => {
             <div className={'h-8 flex-1 relative'}>
                 {isLoading && (
                     <div className={'absolute inset-0 flex items-center'}>
-                        {Array.from({ length: 50 }).map((_, i) => (
+                        {Array.from({ length: 25 }).map((_, i) => (
                             <div
                                 key={i}
-                                className={'flex-1 bg-[#B8B8B8] rounded-sm mx-0.5'}
+                                className={'flex-1 bg-[#B8B8B8] rounded-sm mx-1'}
                                 style={{
                                     height: `${Math.random() * 20 + 8}px`,
-                                    animationDelay: `${i * 0.05}s`,
+                                    animationDelay: `${i * 0.1}s`,
                                     animation: 'pulse 1.5s ease-in-out infinite'
                                 }}
                             />
