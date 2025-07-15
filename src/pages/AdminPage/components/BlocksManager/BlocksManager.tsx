@@ -161,18 +161,18 @@ const BlocksManager: React.FC<BlocksManagerProps> = ({ courseId, stageId, lesson
                 // Просто создаем новый блок без проверки конфликтов
                 await createBlock({
                     lesson_id: lessonId,
-                    title: modalData.title?.trim() || undefined,
+                    title: modalData.title?.trim() || '',
                     block_type: modalData.block_type,
-                    content_text: modalData.content_text?.trim() || undefined,
+                    content_text: modalData.content_text?.trim() || '',
                     content_url: finalContentUrl,
                     order_num: modalData.order_num,
                 });
             } else {
                 // Просто обновляем блок без проверки конфликтов
                 await updateBlock(modalData.id!, {
-                    title: modalData.title?.trim() || undefined,
+                    title: modalData.title?.trim() || '',
                     block_type: modalData.block_type,
-                    content_text: modalData.content_text?.trim() || undefined,
+                    content_text: modalData.content_text?.trim() || '',
                     content_url: finalContentUrl,
                     order_num: modalData.order_num,
                 });

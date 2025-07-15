@@ -573,9 +573,9 @@ const MaterialsManager: React.FC = () => {
 
             const blockData = {
                 material_id: currentMaterialId,
-                title: blockForm.title.trim() || null,
+                title: blockForm.title.trim() || '',
                 block_type: blockForm.block_type,
-                content_text: blockForm.content_text.trim() || null,
+                content_text: blockForm.content_text.trim() || '',
                 content_url: finalContentUrl,
                 order_num: blockForm.order_num
             };
