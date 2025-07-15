@@ -29,6 +29,7 @@ const NewPlayer = ({ audioUrl }: { audioUrl: string }) => {
     const wavesurferRef = useRef<WaveSurfer | null>(null);
     const [isPlaying, setIsPlaying] = useState(false);
     const [duration, setDuration] = useState('0:00');
+    const [isLoading, setIsLoading] = useState(true);
 
     // Функция для форматирования времени из секунд в ММ:СС
     const formatTime = (seconds: number) => {
@@ -39,6 +40,9 @@ const NewPlayer = ({ audioUrl }: { audioUrl: string }) => {
     };
 
     useEffect(() => {
+        // Сбрасываем состояние загрузки при смене аудио
+        setIsLoading(true);
+        
         // Инициализация WaveSurfer
         if (waveformRef.current) {
             wavesurferRef.current = WaveSurfer.create({
@@ -58,11 +62,16 @@ const NewPlayer = ({ audioUrl }: { audioUrl: string }) => {
             // Обработчики событий
             wavesurferRef.current.on('ready', () => {
                 setDuration(formatTime(wavesurferRef.current?.getDuration() || 0));
+                setIsLoading(false);
             });
 
             wavesurferRef.current.on('play', () => setIsPlaying(true));
             wavesurferRef.current.on('pause', () => setIsPlaying(false));
             wavesurferRef.current.on('finish', () => setIsPlaying(false));
+            wavesurferRef.current.on('error', () => {
+                setIsLoading(false);
+                console.error('Ошибка загрузки аудио файла');
+            });
 
             // Очистка при размонтировании компонента
             return () => {
@@ -77,12 +86,37 @@ const NewPlayer = ({ audioUrl }: { audioUrl: string }) => {
 
     return (
         <div className={'border border-[#595959]/14 p-4 rounded-full flex items-center gap-3'}>
+            <style>{`
+                @keyframes pulse {
+                    0%, 100% { opacity: 0.3; }
+                    50% { opacity: 1; }
+                }
+            `}</style>
             <Ripple className="rounded-full overflow-hidden inline-block">
                 <button onClick={handlePlayPause} className="outline-none cursor-pointer p-2 rounded-full bg-[linear-gradient(109.65deg,_#E1C1F4_13.64%,_#B862EA_124.92%)]">
                     {isPlaying ? <PauseIcon /> : <PlayIcon />}
                 </button>
             </Ripple>
-            <div ref={waveformRef} className={'h-8 flex-1'} />
+            <div className={'h-8 flex-1 relative'}>
+                {isLoading && (
+                    <div className={'absolute inset-0 flex items-center justify-center'}>
+                        <div className={'flex items-center gap-1'}>
+                            {Array.from({ length: 20 }).map((_, i) => (
+                                <div
+                                    key={i}
+                                    className={'w-1 bg-[#B8B8B8] rounded-full'}
+                                    style={{
+                                        height: `${Math.random() * 20 + 8}px`,
+                                        animationDelay: `${i * 0.1}s`,
+                                        animation: 'pulse 1.5s ease-in-out infinite'
+                                    }}
+                                />
+                            ))}
+                        </div>
+                    </div>
+                )}
+                <div ref={waveformRef} className={'h-full'} />
+            </div>
             <span className={'text-xs text-[#9F9F9F]'}>{duration}</span>
         </div>
     );
