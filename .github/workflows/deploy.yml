@@ -25,7 +25,7 @@ jobs:
             
             # Забираем последние изменения (включая новые Dockerfile, nginx.conf и т.д.)
             echo "⚡ Pulling latest changes..."
-            git pull origin master
+            git pull origin main
             
             # Ставим зависимости
             npm i
