@@ -30,6 +30,7 @@ const NewPlayer = ({ audioUrl }: { audioUrl: string }) => {
     const [isPlaying, setIsPlaying] = useState(false);
     const [duration, setDuration] = useState('0:00');
     const [isLoading, setIsLoading] = useState(true);
+    const [containerWidth, setContainerWidth] = useState(0);
 
     // Функция для форматирования времени из секунд в ММ:СС
     const formatTime = (seconds: number) => {
@@ -39,9 +40,27 @@ const NewPlayer = ({ audioUrl }: { audioUrl: string }) => {
         return `${minutes}:${secs}`;
     };
 
+    // Функция для расчета количества полосок на основе ширины контейнера
+    const calculateBarsCount = () => {
+        if (containerWidth === 0) return 25; // Дефолтное значение
+        
+        // Примерно 8px на полоску (4px ширина + 4px отступ)
+        const barWidth = 8;
+        const barsCount = Math.floor(containerWidth / barWidth);
+        
+        // Ограничиваем количество полосок разумными пределами
+        return Math.max(10, Math.min(100, barsCount));
+    };
+
     useEffect(() => {
         // Сбрасываем состояние загрузки при смене аудио
         setIsLoading(true);
+        
+        // Получаем ширину контейнера для расчета количества полосок
+        if (waveformRef.current) {
+            const width = waveformRef.current.offsetWidth;
+            setContainerWidth(width);
+        }
         
         // Инициализация WaveSurfer
         if (waveformRef.current) {
@@ -80,6 +99,19 @@ const NewPlayer = ({ audioUrl }: { audioUrl: string }) => {
         }
     }, [audioUrl]);
 
+    // Обработчик изменения размера окна для пересчета полосок
+    useEffect(() => {
+        const handleResize = () => {
+            if (waveformRef.current) {
+                const width = waveformRef.current.offsetWidth;
+                setContainerWidth(width);
+            }
+        };
+
+        window.addEventListener('resize', handleResize);
+        return () => window.removeEventListener('resize', handleResize);
+    }, []);
+
     const handlePlayPause = () => {
         if (isLoading) return; // Не выполняем действие если загружается
         wavesurferRef.current?.playPause();
@@ -107,7 +139,7 @@ const NewPlayer = ({ audioUrl }: { audioUrl: string }) => {
             <div className={'h-8 flex-1 relative'}>
                 {isLoading && (
                     <div className={'absolute inset-0 flex items-center'}>
-                        {Array.from({ length: 25 }).map((_, i) => (
+                        {Array.from({ length: calculateBarsCount() }).map((_, i) => (
                             <div
                                 key={i}
                                 className={'flex-1 bg-[#B8B8B8] rounded-sm mx-1'}
