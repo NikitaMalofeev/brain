@@ -161,18 +161,18 @@ const BlocksManager: React.FC<BlocksManagerProps> = ({ courseId, stageId, lesson
                 // Просто создаем новый блок без проверки конфликтов
                 await createBlock({
                     lesson_id: lessonId,
-                    title: modalData.title || undefined,
+                    title: modalData.title?.trim() || undefined,
                     block_type: modalData.block_type,
-                    content_text: modalData.content_text || undefined,
+                    content_text: modalData.content_text?.trim() || undefined,
                     content_url: finalContentUrl,
                     order_num: modalData.order_num,
                 });
             } else {
                 // Просто обновляем блок без проверки конфликтов
                 await updateBlock(modalData.id!, {
-                    title: modalData.title || undefined,
+                    title: modalData.title?.trim() || undefined,
                     block_type: modalData.block_type,
-                    content_text: modalData.content_text || undefined,
+                    content_text: modalData.content_text?.trim() || undefined,
                     content_url: finalContentUrl,
                     order_num: modalData.order_num,
                 });
@@ -376,10 +376,14 @@ const BlocksManager: React.FC<BlocksManagerProps> = ({ courseId, stageId, lesson
         switch (modalData.block_type) {
             case 'text':
                 // Для текстового блока нужен хотя бы заголовок или контент
-                return modalData.title.trim().length > 0 || modalData.content_text.trim().length > 0;
+                const hasTitle = modalData.title && modalData.title.trim();
+                const hasText = modalData.content_text && modalData.content_text.trim();
+                return hasTitle || hasText;
             case 'video':
                 // Для видео нужен хотя бы URL или описание
-                return modalData.content_text.trim().length > 0 || modalData.content_url.trim().length > 0;
+                const hasVideoUrl = modalData.content_url && modalData.content_url.trim();
+                const hasVideoText = modalData.content_text && modalData.content_text.trim();
+                return hasVideoUrl || hasVideoText;
             case 'audio':
             case 'image':
             case 'pdf':
