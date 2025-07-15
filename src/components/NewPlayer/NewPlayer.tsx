@@ -110,14 +110,15 @@ const NewPlayer = ({ audioUrl }: { audioUrl: string }) => {
             </Ripple>
             <div className={'h-8 flex-1 relative'}>
                 {isLoading && (
-                    <div className={'absolute inset-0 grid items-center'} style={{ gridTemplateColumns: 'repeat(auto-fit, 4px)', gap: '1px' }}>
-                        {Array.from({ length: 100 }).map((_, i) => (
+                    <div className={'absolute inset-0 flex items-center'} style={{ gap: '4px' }}>
+                        {Array.from({ length: 60 }).map((_, i) => (
                             <div
                                 key={i}
                                 className={'bg-[#B8B8B8] rounded-sm'}
                                 style={{
+                                    width: '4px',
                                     height: `${Math.random() * 20 + 8}px`,
-                                    animationDelay: `${i * 0.03}s`,
+                                    animationDelay: `${i * 0.05}s`,
                                     animation: 'pulse 1.5s ease-in-out infinite'
                                 }}
                             />
