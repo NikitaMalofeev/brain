@@ -7,10 +7,10 @@ import useLibraryStages, { LibraryStageData } from '../../lib/supabase/hooks/use
 import { User } from '@supabase/supabase-js';
 import { useSignal, initDataState } from '@telegram-apps/sdk-react';
 import { useSupabaseUser } from '@/lib/supabase/hooks/useSupabaseUser';
+import { useActiveCourse } from '@/lib/supabase/hooks/useActiveCourse';
 import { logger } from '@/lib/logger';
 import { useAppContext } from '@/contexts/AppContext';
 import { Page } from '@/components/Page';
-import { COURSE_CONFIG } from '@/lib/config/constants';
 import { StageProgressData, UserProgress } from "@/components/UserProgress/UserProgress.tsx";
 
 // Расширяем глобальный объект Window, добавляя Telegram
@@ -19,9 +19,6 @@ declare global {
         Telegram?: unknown;
     }
 }
-
-// ID курса теперь берется из централизованного конфига
-const COURSE_ID = COURSE_CONFIG.DEFAULT_COURSE_ID;
 
 const LibraryPage: React.FC = () => {
     const navigate = useNavigate();
@@ -35,26 +32,30 @@ const LibraryPage: React.FC = () => {
     // Всегда используем хук useSupabaseUser, независимо от режима приложения
     const { supabaseUser, loading: supabaseUserLoading, error: supabaseUserError } = useSupabaseUser(initDataSignal);
 
+    // Получаем активный курс пользователя
+    const { activeCourse, loading: courseLoading, error: courseError } = useActiveCourse(supabaseUser?.id);
+
     // Логируем для отладки
     useEffect(() => {
         logger.debug('LibraryPage User State:', {
             userLoaded: !!supabaseUser,
             loading: supabaseUserLoading,
             error: supabaseUserError ? supabaseUserError.message : null,
+            activeCourse: activeCourse?.course_id,
         });
-    }, [supabaseUser, supabaseUserLoading, supabaseUserError]);
+    }, [supabaseUser, supabaseUserLoading, supabaseUserError, activeCourse]);
 
     // ID пользователя берем НАПРЯМУЮ из хука useSupabaseUser
     const activeUserId = supabaseUser?.id || null;
 
-    // Используем хук для получения ступеней, передавая ID напрямую
-    const { stages, loading: stagesLoading, error: stagesError } = useLibraryStages(activeUserId, COURSE_ID);
+    // Используем хук для получения ступеней, передавая ID активного курса
+    const { stages, loading: stagesLoading, error: stagesError } = useLibraryStages(activeUserId, activeCourse?.course_id || null);
 
     // Объединяем состояния загрузки
-    const loading = supabaseUserLoading || stagesLoading;
+    const loading = supabaseUserLoading || courseLoading || stagesLoading;
 
     // Объединяем ошибки
-    const error = supabaseUserError || stagesError;
+    const error = supabaseUserError || courseError || stagesError;
 
     const handleStageClick = (stageId: number) => {
         logger.debug('Navigating to stage', { stageId });

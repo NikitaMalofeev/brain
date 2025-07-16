@@ -258,23 +258,30 @@ const TokensManager = () => {
                     <table>
                         <thead>
                             <tr>
-                                <th>Токен</th>
-                                <th>Тип токена</th>
-                                <th>Статус</th>
-                                <th>Курс</th>
-                                <th>Тариф</th>
-                                <th>Использован</th>
-                                <th>Дата создания</th>
-                                <th>Действия</th>
+                                <th style={{ minWidth: '120px' }}>Токен</th>
+                                <th style={{ minWidth: '100px' }}>Тип</th>
+                                <th style={{ minWidth: '100px' }}>Статус</th>
+                                <th style={{ minWidth: '120px' }}>Курс</th>
+                                <th style={{ minWidth: '100px' }}>Тариф</th>
+                                <th style={{ minWidth: '120px' }}>Использован</th>
+                                <th style={{ minWidth: '140px' }}>Дата создания</th>
+                                <th style={{ minWidth: '120px' }}>Действия</th>
                             </tr>
                         </thead>
                         <tbody>
                             {tokens.map(token => (
                                 <tr key={token.id}>
-                                    <td><code className="token-value">{token.token}</code></td>
+                                    <td>
+                                        <code className="token-value" title={token.token}>
+                                            {token.token.length > 12 
+                                                ? `${token.token.substring(0, 12)}...` 
+                                                : token.token
+                                            }
+                                        </code>
+                                    </td>
                                     <td>
                                         <span className={`token-type-badge ${token.tg_id ? 'personal' : 'regular'}`}>
-                                            {getTokenTypeDisplay(token)}
+                                            {token.tg_id ? 'Персональный' : 'Обычный'}
                                         </span>
                                     </td>
                                     <td>
@@ -290,23 +297,36 @@ const TokensManager = () => {
                                             : (token.status === 'used' ? 'N/A' : '')
                                         }
                                     </td>
-                                    <td>{new Date(token.created_at).toLocaleString()}</td>
+                                    <td>{new Date(token.created_at).toLocaleDateString('ru-RU', {
+                                        year: 'numeric',
+                                        month: 'short',
+                                        day: 'numeric',
+                                        hour: '2-digit',
+                                        minute: '2-digit'
+                                    })}</td>
                                     <td>
-                                        {/* Кнопка копирования только для обычных токенов */}
-                                        {!token.tg_id && (
-                                            <button onClick={() => handleCopyLink(token.token)} className="admin-button-sm">
-                                                Копировать
-                                            </button>
-                                        )}
-                                        {token.status === 'created' && (
-                                            <button
-                                                onClick={() => handleRevokeToken(token.id)}
-                                                className="admin-button-sm danger"
-                                                disabled={isRevoking}
-                                            >
-                                                Отозвать
-                                            </button>
-                                        )}
+                                        <div style={{ display: 'flex', gap: '4px', flexWrap: 'wrap' }}>
+                                            {/* Кнопка копирования только для обычных токенов */}
+                                            {!token.tg_id && (
+                                                <button 
+                                                    onClick={() => handleCopyLink(token.token)} 
+                                                    className="admin-button-sm"
+                                                    title="Копировать ссылку"
+                                                >
+                                                    Копировать
+                                                </button>
+                                            )}
+                                            {token.status === 'created' && (
+                                                <button
+                                                    onClick={() => handleRevokeToken(token.id)}
+                                                    className="admin-button-sm danger"
+                                                    disabled={isRevoking}
+                                                    title="Отозвать токен"
+                                                >
+                                                    Отозвать
+                                                </button>
+                                            )}
+                                        </div>
                                     </td>
                                 </tr>
                             ))}

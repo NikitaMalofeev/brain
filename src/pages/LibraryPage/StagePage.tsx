@@ -6,14 +6,13 @@ import { Page } from '@/components/Page';
 import LessonCard from '@/components/LessonCard/LessonCard';
 import useStageDetails, { StageDetailsData } from '@/lib/supabase/hooks/useStageDetails';
 import useLibraryStages, { LibraryStageData } from '@/lib/supabase/hooks/useLibraryStages';
-import { useSupabaseUser } from '@/lib/supabase/hooks/useSupabaseUser';
+import { useSupabaseUser, useActiveCourse } from '@/lib/supabase/hooks';
 import { useAppContext } from '@/contexts/AppContext';
 import { logger } from '@/lib/logger';
 import NativeModal from "@/components/NativeModal.tsx";
 import { Ripple } from '@/components/ui/Ripple/Ripple';
 import { motion } from 'framer-motion';
 import { clsx } from 'clsx';
-import { COURSE_CONFIG } from '@/lib/config/constants';
 import { getNounPluralForm } from '@/helpers/pluralize';
 
 const listVariants = {
@@ -91,10 +90,13 @@ const StagePage: React.FC = () => {
     // Используем хук для получения деталей ступени
     const { stageDetails, loading: stageLoading, error: stageError } = useStageDetails(activeUser, stageId || '');
 
+    // Получаем активный курс пользователя
+    const { activeCourse } = useActiveCourse(supabaseUser?.id);
+
     // Получаем данные обо всех ступенях для подсчета прогресса до следующей ступени
     const { stages, loading: stagesLoading } = useLibraryStages(
         supabaseUser?.id || null,
-        COURSE_CONFIG.DEFAULT_COURSE_ID
+        activeCourse?.course_id || null
     );
 
     // Объединяем состояния загрузки

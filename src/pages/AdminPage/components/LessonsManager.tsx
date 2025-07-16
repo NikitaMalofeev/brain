@@ -4,6 +4,7 @@ import DraggableLessonRow from './DraggableLessonRow';
 import { FileUploader, type FileUploaderRef } from '@/components/FileUploader/FileUploader';
 import { buildFileUrl } from '@/lib/supabase/supabaseStorageService';
 import { deleteFile } from '@/lib/supabase/supabaseStorageService';
+import { useLessonTariffAccess, useAllTariffs } from '@/lib/supabase/hooks/useLessonTariffAccess';
 
 interface LessonsManagerProps {
     courseId: string;
@@ -96,6 +97,16 @@ const LessonsManager: React.FC<LessonsManagerProps> = ({ courseId, stageId, onBa
     // Ref для FileUploader
     const fileUploaderRef = useRef<FileUploaderRef>(null);
 
+    // Состояния для управления доступом к урокам
+    const [selectedLessonForAccess, setSelectedLessonForAccess] = useState<any | null>(null);
+    const [accessModalOpen, setAccessModalOpen] = useState(false);
+    const [selectedTariffs, setSelectedTariffs] = useState<string[]>([]);
+    const [accessSaving, setAccessSaving] = useState(false);
+
+    // Хуки для управления доступом
+    const { accessibleTariffIds, loading: accessLoading, saveTariffAccess, saving: accessSavingState, saveError: accessSaveError } = useLessonTariffAccess(selectedLessonForAccess?.id || null);
+    const { tariffs, loading: tariffsLoading } = useAllTariffs();
+
     // Автоматически обновляем newOrderNum при изменении списка уроков
     useEffect(() => {
         if (lessons.length > 0) {
@@ -148,7 +159,7 @@ const LessonsManager: React.FC<LessonsManagerProps> = ({ courseId, stageId, onBa
             await createLesson({
                 stage_id: stageId,
                 name: newName.trim(),
-                description: newDescription.trim() || undefined,
+                description: newDescription.trim() || '', // Всегда передаем строку, даже пустую
                 order_num: newOrderNum,
                 has_assignment: newHasAssignment,
                 open_at: localToUtc(newOpenAt),
@@ -224,7 +235,7 @@ const LessonsManager: React.FC<LessonsManagerProps> = ({ courseId, stageId, onBa
 
             await updateLesson(editingLesson.id, {
                 name: editName.trim(),
-                description: editDescription.trim() || undefined,
+                description: editDescription.trim() || '', // Всегда передаем строку, даже пустую
                 order_num: editOrderNum,
                 has_assignment: editHasAssignment,
                 open_at: localToUtc(editOpenAt),
@@ -240,6 +251,49 @@ const LessonsManager: React.FC<LessonsManagerProps> = ({ courseId, stageId, onBa
             setUpdateLoading(false);
         }
     };
+
+    // Функции для управления доступом к урокам
+    const openAccessModal = (lesson: any) => {
+        setSelectedLessonForAccess(lesson);
+        setAccessModalOpen(true);
+    };
+
+    const closeAccessModal = () => {
+        setSelectedLessonForAccess(null);
+        setAccessModalOpen(false);
+        setSelectedTariffs([]);
+    };
+
+    const handleTariffToggle = (tariffId: string) => {
+        setSelectedTariffs(prev => {
+            if (prev.includes(tariffId)) {
+                return prev.filter(id => id !== tariffId);
+            } else {
+                return [...prev, tariffId];
+            }
+        });
+    };
+
+    const saveLessonAccess = async () => {
+        if (!selectedLessonForAccess) return;
+
+        try {
+            setAccessSaving(true);
+            await saveTariffAccess(selectedTariffs);
+            closeAccessModal();
+        } catch (error: any) {
+            console.error('Ошибка при сохранении доступа к уроку:', error);
+        } finally {
+            setAccessSaving(false);
+        }
+    };
+
+    // Инициализируем выбранные тарифы при открытии модального окна
+    useEffect(() => {
+        if (selectedLessonForAccess && accessibleTariffIds) {
+            setSelectedTariffs(accessibleTariffIds);
+        }
+    }, [selectedLessonForAccess, accessibleTariffIds]);
 
     // Drag & Drop функционал для уроков
     const handleLessonReorder = async (draggedLessonId: number, targetLessonId: number) => {
@@ -510,6 +564,7 @@ const LessonsManager: React.FC<LessonsManagerProps> = ({ courseId, stageId, onBa
                                     updateLoading={updateLoading}
                                     onReorder={handleLessonReorder}
                                     onEditCover={openCoverModal}
+                                    onEditAccess={openAccessModal}
                                 />
                             ))}
                         </tbody>
@@ -615,6 +670,75 @@ const LessonsManager: React.FC<LessonsManagerProps> = ({ courseId, stageId, onBa
                                 Отмена
                             </button>
                         </div>
+                    </div>
+                </div>
+            )}
+
+            {/* Модальное окно управления доступом к уроку */}
+            {accessModalOpen && (
+                <div className="admin-modal-backdrop" onClick={closeAccessModal}>
+                    <div className="admin-modal" onClick={(e) => e.stopPropagation()}>
+                        <button className="admin-modal-close" onClick={closeAccessModal}>×</button>
+
+                        <h3>Доступ к уроку: {selectedLessonForAccess?.name}</h3>
+
+                        <div className="form-group">
+                            <label>Доступные тарифы:</label>
+                            <div style={{ marginTop: '8px' }}>
+                                {tariffsLoading ? (
+                                    <div>Загрузка тарифов...</div>
+                                ) : accessLoading ? (
+                                    <div>Загрузка доступов...</div>
+                                ) : (
+                                    <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                                        {tariffs.map((tariff) => (
+                                            <label key={tariff.id} style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                                                <input
+                                                    type="checkbox"
+                                                    checked={selectedTariffs.includes(tariff.id)}
+                                                    onChange={() => handleTariffToggle(tariff.id)}
+                                                    disabled={accessSaving}
+                                                />
+                                                <span>
+                                                    {tariff.name} ({tariff.code})
+                                                </span>
+                                            </label>
+                                        ))}
+                                    </div>
+                                )}
+                            </div>
+                            <small style={{ color: 'var(--admin-text-secondary)', marginTop: '8px', display: 'block' }}>
+                                💡 Если ни один тариф не выбран, урок будет доступен всем тарифам<br />
+                                📋 Выберите конкретные тарифы для ограничения доступа к уроку
+                            </small>
+                        </div>
+
+                        <div className="form-actions">
+                            <button
+                                type="button"
+                                className="admin-button"
+                                onClick={saveLessonAccess}
+                                disabled={accessSaving || accessSavingState}
+                            >
+                                {accessSaving || accessSavingState ? 'Сохранение...' : 'Сохранить'}
+                            </button>
+
+                            <button
+                                type="button"
+                                className="admin-button"
+                                style={{ background: 'var(--admin-secondary)' }}
+                                onClick={closeAccessModal}
+                                disabled={accessSaving || accessSavingState}
+                            >
+                                Отмена
+                            </button>
+                        </div>
+
+                        {accessSaveError && (
+                            <div className="admin-error" style={{ marginTop: '12px' }}>
+                                Ошибка сохранения: {accessSaveError.message}
+                            </div>
+                        )}
                     </div>
                 </div>
             )}

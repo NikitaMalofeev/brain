@@ -33,18 +33,14 @@ export interface StageDetailsData {
 }
 
 /**
- * Проверяет доступность урока с учетом временных и тарифных ограничений
+ * Проверяет доступность урока с учетом временных ограничений и доступа по тарифам
  * @param lesson - данные урока
- * @param index - индекс урока в массиве
- * @param allLessons - все уроки ступени
- * @param maxLessonsLimit - максимальное количество доступных уроков (из тарифа)
+ * @param isAccessibleByTariff - доступен ли урок по тарифу
  * @returns true если урок доступен, false если заблокирован
  */
 const isLessonAccessible = (
     lesson: any,
-    index: number,
-    allLessons: any[],
-    maxLessonsLimit: number | null
+    isAccessibleByTariff: boolean
 ): boolean => {
     // Сначала проверяем временное ограничение
     const now = new Date();
@@ -54,23 +50,8 @@ const isLessonAccessible = (
         return false; // Урок еще не открыт по времени
     }
 
-    // Если нет тарифного ограничения - урок доступен
-    if (!maxLessonsLimit) {
-        return true;
-    }
-
-    // Считаем количество уроков, которые должны быть открыты до текущего
-    // (те, у которых open_at наступило или отсутствует)
-    const unlockedBeforeCurrent = allLessons
-        .slice(0, index)
-        .filter(l => {
-            const lessonOpenAt = l.open_at ? new Date(l.open_at) : null;
-            return !lessonOpenAt || now >= lessonOpenAt;
-        })
-        .length;
-
-    // Урок доступен если не превышен лимит
-    return unlockedBeforeCurrent < maxLessonsLimit;
+    // Затем проверяем доступ по тарифу
+    return isAccessibleByTariff;
 };
 
 /**
@@ -109,74 +90,41 @@ const useStageDetails = (user: User | null, stageId: string | number) => {
                     throw new Error('Ступень не найдена');
                 }
 
-                // Получаем все уроки ступени
-                const { data: allLessonsData, error: allLessonsError } = await supabase
-                    .from('lessons')
-                    .select(`
-                        id,
-                        name,
-                        description,
-                        order_num,
-                        has_assignment,
-                        cover_image_path,
-                        open_at,
-                        deadline_at
-                    `)
-                    .eq('stage_id', stageId)
-                    .order('order_num');
+                // Получаем все уроки ступени с информацией о доступности (ОПТИМИЗИРОВАННО)
+                const { data: lessonsWithAccess, error: lessonsError } = await supabase
+                    .rpc('get_user_accessible_lessons_optimized', {
+                        p_user_id: user.id,
+                        p_stage_id: parseInt(stageId.toString())
+                    });
 
-                if (allLessonsError) {
-                    throw new Error(`Ошибка загрузки уроков: ${allLessonsError.message}`);
+                if (lessonsError) {
+                    throw new Error(`Ошибка загрузки уроков: ${lessonsError.message}`);
                 }
 
                 // Получаем прогресс пользователя по урокам
+                // ФИЛЬТРУЕМ: получаем прогресс только для доступных уроков
+                const accessibleLessonIds = lessonsWithAccess?.filter(l => l.is_accessible)?.map(l => l.lesson_id) || [];
                 const { data: progressData, error: progressError } = await supabase
                     .from('lesson_progress')
                     .select('lesson_id, completed_at, started_at, is_completed')
                     .eq('user_id', user.id)
-                    .in('lesson_id', allLessonsData?.map(l => l.id) || []);
+                    .in('lesson_id', accessibleLessonIds);
 
                 if (progressError) {
                     console.warn('Ошибка загрузки прогресса уроков:', progressError.message);
                 }
 
                 // Получаем submissions пользователя для уроков с заданиями
-                const lessonsWithAssignments = allLessonsData?.filter(l => l.has_assignment) || [];
+                // ФИЛЬТРУЕМ: получаем submissions только для доступных уроков с заданиями
+                const accessibleLessonsWithAssignments = lessonsWithAccess?.filter(l => l.is_accessible && l.has_assignment) || [];
                 const { data: submissionsData, error: submissionsError } = await supabase
                     .from('submissions')
                     .select('id, lesson_id, status')
                     .eq('user_id', user.id)
-                    .in('lesson_id', lessonsWithAssignments.map(l => l.id));
+                    .in('lesson_id', accessibleLessonsWithAssignments.map(l => l.lesson_id));
 
                 if (submissionsError) {
                     console.warn('Ошибка загрузки submissions:', submissionsError.message);
-                }
-
-                // Получаем активный тариф пользователя
-                const { data: userTariffData, error: userTariffError } = await supabase
-                    .from('user_tariffs')
-                    .select('tariff_id')
-                    .eq('user_id', user.id)
-                    .eq('is_active', true)
-                    .single();
-
-                if (userTariffError && userTariffError.code !== 'PGRST116') {
-                    console.warn('Ошибка загрузки тарифа пользователя:', userTariffError.message);
-                }
-
-                // Получаем ограничения тарифа для текущей ступени (если есть активный тариф)
-                let maxLessonsLimit: number | null = null;
-                if (userTariffData?.tariff_id) {
-                    const { data: tariffLimitData, error: tariffLimitError } = await supabase
-                        .from('tariff_limits')
-                        .select('max_days_access')
-                        .eq('tariff_id', userTariffData.tariff_id)
-                        .eq('stage_id', stageId)
-                        .single();
-
-                    if (!tariffLimitError && tariffLimitData?.max_days_access) {
-                        maxLessonsLimit = tariffLimitData.max_days_access;
-                    }
                 }
 
                 // Создаем мапы для быстрого доступа
@@ -198,47 +146,50 @@ const useStageDetails = (user: User | null, stageId: string | number) => {
                 });
 
                 // Формируем данные уроков с улучшенной логикой статусов
-                const lessons: LessonData[] = allLessonsData?.map((lesson, index) => {
-                    const progress = progressMap.get(lesson.id);
-                    const submission = submissionsMap.get(lesson.id);
+                // ФИЛЬТРУЕМ: показываем только доступные уроки (is_accessible = true)
+                const lessons: LessonData[] = lessonsWithAccess
+                    ?.filter(lessonWithAccess => lessonWithAccess.is_accessible)
+                    ?.map((lessonWithAccess) => {
+                        const progress = progressMap.get(lessonWithAccess.lesson_id);
+                        const submission = submissionsMap.get(lessonWithAccess.lesson_id);
 
-                    // Определяем статус завершения
-                    // ПРИОРИТЕТ 1: Флаг is_completed из lesson_progress (покрывает админское управление)
-                    let isCompleted = !!progress?.is_completed;
+                        // Определяем статус завершения
+                        // ПРИОРИТЕТ 1: Флаг is_completed из lesson_progress (покрывает админское управление)
+                        let isCompleted = !!progress?.is_completed;
 
-                    // ПРИОРИТЕТ 2: Для уроков с заданием - также засчитываем approved submission
-                    if (!isCompleted && lesson.has_assignment) {
-                        isCompleted = submission?.status === 'approved';
-                    }
+                        // ПРИОРИТЕТ 2: Для уроков с заданием - также засчитываем approved submission
+                        if (!isCompleted && lessonWithAccess.has_assignment) {
+                            isCompleted = submission?.status === 'approved';
+                        }
 
-                    // ПРИОРИТЕТ 3: Для уроков без задания - также засчитываем completed_at
-                    if (!isCompleted && !lesson.has_assignment) {
-                        isCompleted = !!progress?.completed_at;
-                    }
+                        // ПРИОРИТЕТ 3: Для уроков без задания - также засчитываем completed_at
+                        if (!isCompleted && !lessonWithAccess.has_assignment) {
+                            isCompleted = !!progress?.completed_at;
+                        }
 
-                    // Используем централизованную функцию для проверки доступности
-                    const isUnlocked = isLessonAccessible(lesson, index, allLessonsData || [], maxLessonsLimit);
+                        // Используем централизованную функцию для проверки доступности
+                        const isUnlocked = isLessonAccessible(lessonWithAccess, lessonWithAccess.is_accessible);
 
-                    // Определяем, начал ли пользователь урок
-                    const hasStarted = !!progress?.started_at || !!submission;
+                        // Определяем, начал ли пользователь урок
+                        const hasStarted = !!progress?.started_at || !!submission;
 
-                    return {
-                        lesson_id: lesson.id,
-                        lesson_name: lesson.name,
-                        content_type: 'mixed', // Теперь уроки могут содержать разные типы блоков
-                        cover_image_path: lesson.cover_image_path, // Используем путь к файлу из БД
-                        order_num: lesson.order_num,
-                        has_assignment: lesson.has_assignment || false,
-                        is_completed: isCompleted,
-                        is_unlocked: isUnlocked,
-                        completion_date: progress?.completed_at,
-                        open_at: lesson.open_at,
-                        deadline_at: lesson.deadline_at,
-                        submission_status: submission?.status || null,
-                        submission_id: submission?.id,
-                        has_started: hasStarted,
-                    };
-                }) || [];
+                        return {
+                            lesson_id: lessonWithAccess.lesson_id,
+                            lesson_name: lessonWithAccess.lesson_name,
+                            content_type: 'mixed', // Теперь уроки могут содержать разные типы блоков
+                            cover_image_path: lessonWithAccess.cover_image_path, // Используем путь к файлу из БД
+                            order_num: lessonWithAccess.order_num,
+                            has_assignment: lessonWithAccess.has_assignment || false,
+                            is_completed: isCompleted,
+                            is_unlocked: isUnlocked,
+                            completion_date: progress?.completed_at,
+                            open_at: lessonWithAccess.open_at,
+                            deadline_at: lessonWithAccess.deadline_at,
+                            submission_status: submission?.status || null,
+                            submission_id: submission?.id,
+                            has_started: hasStarted,
+                        };
+                    }) || [];
 
                 // Подсчитываем статистику
                 const completedLessons = lessons.filter(l => l.is_completed).length;

@@ -1,6 +1,5 @@
 import { Page } from "@/components";
-import { COURSE_CONFIG } from "@/lib/config/constants.ts";
-import { useSupabaseUser } from "@/lib/supabase/hooks";
+import { useSupabaseUser, useActiveCourse } from "@/lib/supabase/hooks";
 import { initDataState, useSignal } from "@telegram-apps/sdk-react";
 import { Link } from "react-router-dom";
 import { UserProgress } from "@/components/UserProgress/UserProgress.tsx";
@@ -8,8 +7,6 @@ import useLibraryStages from '@/lib/supabase/hooks/useLibraryStages';
 import { Ripple } from "@/components/ui/Ripple/Ripple.tsx";
 import StageCard from "@/components/StageCard/StageCard.tsx";
 import { motion } from "framer-motion";
-
-const COURSE_ID = COURSE_CONFIG.DEFAULT_COURSE_ID;
 
 const listVariants = {
     hidden: { opacity: 0 },
@@ -38,10 +35,13 @@ export const MainPage = () => {
     const initDataSignal = useSignal(initDataState);
     const { supabaseUser } = useSupabaseUser(initDataSignal);
 
+    // Получаем активный курс пользователя
+    const { activeCourse } = useActiveCourse(supabaseUser?.id);
+
     // Используем хук для получения ступеней с поддержкой fallback
     const { stages, loading: isLoading } = useLibraryStages(
         supabaseUser?.id || null,
-        COURSE_ID
+        activeCourse?.course_id || null
     );
 
 

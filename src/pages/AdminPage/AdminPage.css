@@ -2488,3 +2488,120 @@ body.admin-mode {
     min-width: 120px;
   }
 }
+
+/* ========================================= */
+/* ОПТИМИЗАЦИЯ ТАБЛИЦЫ УРОКОВ */
+/* Компактное отображение с выпадающим меню */
+/* ========================================= */
+
+/* Компактные кнопки действий */
+.action-btn {
+  border: none;
+  padding: 6px 12px;
+  border-radius: var(--admin-radius-md);
+  cursor: pointer;
+  font-size: 12px;
+  font-weight: 600;
+  transition: var(--admin-transition);
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-family: var(--admin-font-family);
+  white-space: nowrap;
+}
+
+/* Уменьшаем отступы в ячейке действий */
+.actions-cell {
+  display: flex;
+  gap: 8px;
+  flex-wrap: nowrap;
+  padding: 8px 12px;
+  min-width: 200px;
+}
+
+/* Стили для выпадающего меню действий */
+.actions-dropdown {
+  position: relative;
+}
+
+.actions-dropdown-menu {
+  position: absolute;
+  top: 100%;
+  right: 0;
+  z-index: 1000;
+  background: white;
+  border: 1px solid var(--admin-border);
+  border-radius: 8px;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+  min-width: 160px;
+  padding: 8px 0;
+  margin-top: 4px;
+}
+
+.actions-dropdown-item {
+  width: 100%;
+  text-align: left;
+  background: transparent;
+  border: none;
+  padding: 8px 16px;
+  font-size: 12px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  cursor: pointer;
+  transition: var(--admin-transition);
+}
+
+.actions-dropdown-item:hover {
+  background: rgba(184, 98, 234, 0.05);
+}
+
+.actions-dropdown-item.delete {
+  color: var(--admin-danger);
+}
+
+.actions-dropdown-item.access {
+  color: var(--admin-accent);
+}
+
+/* Кнопка "еще" для выпадающего меню */
+.actions-more-btn {
+  background: var(--admin-gradient-neutral) !important;
+  color: var(--admin-text-secondary) !important;
+  border: 1px solid var(--admin-border-light) !important;
+}
+
+.actions-more-btn:hover {
+  background: rgba(0, 0, 0, 0.05) !important;
+  transform: translateY(-1px) !important;
+}
+
+/* Оптимизация таблицы для мобильных устройств */
+@media (max-width: 1200px) {
+  .admin-table th:nth-child(4),
+  .admin-table th:nth-child(5),
+  .admin-table td:nth-child(4),
+  .admin-table td:nth-child(5) {
+    display: none;
+  }
+  
+  .actions-cell {
+    min-width: 150px;
+  }
+}
+
+@media (max-width: 768px) {
+  .admin-table th:nth-child(3),
+  .admin-table td:nth-child(3) {
+    display: none;
+  }
+  
+  .actions-cell {
+    min-width: 120px;
+  }
+  
+  .action-btn {
+    padding: 4px 8px;
+    font-size: 11px;
+  }
+}

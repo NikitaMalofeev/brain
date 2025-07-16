@@ -97,7 +97,7 @@ export const CommonPage = () => {
                     </div>
                 </motion.div>
                 <motion.div
-                    className={'bg-[url("/bg3.jpg")] bg-cover bg-top p-4 rounded-t-3xl flex-1 flex flex-col gap-3'}
+                    className={'bg-[url("/bg3.jpg")] bg-cover bg-top p-4 rounded-t-3xl flex-1 flex flex-col gap-3 pb-12'}
                     variants={listVariants}
                     initial="hidden"
                     animate="show"

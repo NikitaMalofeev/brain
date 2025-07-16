@@ -1,4 +1,4 @@
-import {useSupabaseUser} from '@/lib/supabase/hooks/useSupabaseUser';
+import {useSupabaseUser, useActiveCourse} from '@/lib/supabase/hooks';
 import {useMemo} from "react";
 import {
     initDataState as _initDataState,
@@ -8,7 +8,6 @@ import {Link} from "react-router-dom";
 import {Page} from "@/components";
 import {useQuery} from '@tanstack/react-query';
 import {supabase} from '@/lib/supabase/client';
-import {COURSE_CONFIG} from '@/lib/config/constants';
 import {StageProgressData} from '@/components/UserProgress/UserProgress';
 import {Ripple} from '@/components/ui/Ripple/Ripple';
 import HealingChart from "@/components/Chart.tsx";
@@ -92,10 +91,13 @@ export const UserPage = () => {
             initDataState && initDataState.user ? initDataState.user : undefined,
         [initDataState]);
 
+    // Получаем активный курс пользователя
+    const { activeCourse } = useActiveCourse(supabaseUser?.id);
+
     // Используем хук для получения ступеней с поддержкой fallback
     const {stages, loading: stagesLoading, error: stagesError} = useLibraryStages(
         supabaseUser?.id || null,
-        COURSE_CONFIG.DEFAULT_COURSE_ID
+        activeCourse?.course_id || null
     );
 
     // Получение тарифа текущего пользователя

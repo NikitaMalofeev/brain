@@ -1,6 +1,7 @@
 // Экспорт всех хуков из директории hooks
 export * from './useAccessCheck';
 export * from './useActiveTariff';
+export * from './useActiveCourse';
 export * from './useBlocksAdmin';
 export * from './useCoursesAdmin';
 export * from './useCuratorActions';

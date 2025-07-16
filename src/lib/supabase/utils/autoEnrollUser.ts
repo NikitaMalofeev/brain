@@ -4,7 +4,7 @@ import { COURSE_CONFIG } from '../../config/constants';
 import { logger } from '../../logger';
 
 /**
- * Автоматически записывает пользователя на дефолтный курс
+ * Автоматически записывает пользователя на активный курс
  * @param userId - UUID пользователя из таблицы users
  * @returns Promise<boolean> - успешность операции
  */
@@ -21,7 +21,21 @@ export async function autoEnrollUserToCourse(userId: string): Promise<boolean> {
     }
 
     try {
-        const courseId = COURSE_CONFIG.AUTO_ENROLLMENT.COURSE_ID;
+        // Получаем активный курс пользователя из user_course_enrollments
+        const { data: activeEnrollment, error: enrollmentError } = await supabase
+            .from('user_course_enrollments')
+            .select('course_id')
+            .eq('user_id', userId)
+            .eq('is_active', true)
+            .single();
+
+        if (enrollmentError && enrollmentError.code !== 'PGRST116') {
+            logger.error('Error checking active enrollment', { userId, error: enrollmentError });
+            return false;
+        }
+
+        // Если у пользователя уже есть активный курс, используем его
+        const courseId = activeEnrollment?.course_id || COURSE_CONFIG.AUTO_ENROLLMENT.COURSE_ID;
 
         logger.debug('Starting auto-enrollment process', { userId, courseId });
 

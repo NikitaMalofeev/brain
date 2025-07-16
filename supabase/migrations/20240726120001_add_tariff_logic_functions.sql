@@ -5,24 +5,48 @@ DECLARE
   previous_stages_total_lessons BIGINT;
   previous_stages_completed_lessons BIGINT;
   target_course_id UUID;
+  user_tariff_id UUID;
 BEGIN
   -- Находим курс, к которому относится текущий этап
   SELECT course_id INTO target_course_id FROM public.course_stages WHERE id = p_current_stage_id;
+  
+  -- Если курс не найден, возвращаем false
+  IF target_course_id IS NULL THEN
+    RETURN FALSE;
+  END IF;
 
-  -- Считаем общее количество уроков на всех ПРЕДЫДУЩИХ этапах этого курса
+  -- Получаем активный тариф пользователя
+  SELECT tariff_id INTO user_tariff_id
+  FROM public.user_tariffs
+  WHERE user_id = p_user_id AND is_active = true;
+
+  -- Если у пользователя нет активного тарифа, возвращаем false
+  IF user_tariff_id IS NULL THEN
+    RETURN FALSE;
+  END IF;
+
+  -- Считаем общее количество ДОСТУПНЫХ уроков на всех ПРЕДЫДУЩИХ этапах этого курса
   SELECT COALESCE(COUNT(l.id), 0)
   INTO previous_stages_total_lessons
   FROM public.lessons l
   JOIN public.course_stages s ON l.stage_id = s.id
   WHERE s.course_id = target_course_id
-    AND s.order_num < (SELECT order_num FROM public.course_stages WHERE id = p_current_stage_id);
+    AND s.order_num < (SELECT order_num FROM public.course_stages WHERE id = p_current_stage_id)
+    -- Проверяем доступ к уроку по тарифу
+    AND (
+      -- Если для урока нет ограничений в tariff_lesson_access - он доступен всем
+      NOT EXISTS (SELECT 1 FROM public.tariff_lesson_access tla WHERE tla.lesson_id = l.id)
+      OR
+      -- Если есть ограничения - проверяем доступ пользователя
+      EXISTS (SELECT 1 FROM public.tariff_lesson_access tla WHERE tla.lesson_id = l.id AND tla.tariff_id = user_tariff_id)
+    );
 
-  -- Если на предыдущих этапах нет уроков, считаем условие выполненным
+  -- Если на предыдущих этапах нет доступных уроков, считаем условие выполненным
   IF previous_stages_total_lessons = 0 THEN
     RETURN TRUE;
   END IF;
 
-  -- Считаем количество ЗАВЕРШЕННЫХ уроков на предыдущих этапах
+  -- Считаем количество ЗАВЕРШЕННЫХ доступных уроков на предыдущих этапах
   SELECT COALESCE(COUNT(lp.lesson_id), 0)
   INTO previous_stages_completed_lessons
   FROM public.lesson_progress lp
@@ -31,13 +55,22 @@ BEGIN
   WHERE lp.user_id = p_user_id
     AND lp.is_completed = TRUE
     AND s.course_id = target_course_id
-    AND s.order_num < (SELECT order_num FROM public.course_stages WHERE id = p_current_stage_id);
+    AND s.order_num < (SELECT order_num FROM public.course_stages WHERE id = p_current_stage_id)
+    -- Проверяем доступ к уроку по тарифу
+    AND (
+      -- Если для урока нет ограничений в tariff_lesson_access - он доступен всем
+      NOT EXISTS (SELECT 1 FROM public.tariff_lesson_access tla WHERE tla.lesson_id = l.id)
+      OR
+      -- Если есть ограничения - проверяем доступ пользователя
+      EXISTS (SELECT 1 FROM public.tariff_lesson_access tla WHERE tla.lesson_id = l.id AND tla.tariff_id = user_tariff_id)
+    );
 
+  -- СТРОГАЯ ПРОВЕРКА: ВСЕ доступные уроки должны быть завершены
   RETURN previous_stages_total_lessons = previous_stages_completed_lessons;
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
 
-COMMENT ON FUNCTION public.check_all_previous_lessons_completed IS 'Проверяет, завершил ли пользователь все уроки (просмотр и ДЗ) на этапах, предшествующих текущему.';
+COMMENT ON FUNCTION public.check_all_previous_lessons_completed IS 'Проверяет, завершил ли пользователь все доступные ему уроки (просмотр и ДЗ) на этапах, предшествующих текущему. Учитывает доступ к урокам по тарифам.';
 
 -- Этап 2: Основная функция для проверки доступа к этапу
 CREATE OR REPLACE FUNCTION public.can_user_access_stage(p_user_id UUID, p_stage_id BIGINT)

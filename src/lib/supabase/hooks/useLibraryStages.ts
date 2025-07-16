@@ -3,7 +3,7 @@ import { useQuery } from '@tanstack/react-query';
 import { supabase } from '../client';
 import { logger } from '../../logger';
 
-// Интерфейс для данных ступени, которые мы ожидаем от RPC функции get_library_stages
+// Интерфейс для данных ступени, которые мы ожидаем от RPC функции get_library_stages_optimized
 // Важно, чтобы поля соответствовали тем, что возвращает функция
 export interface LibraryStageData {
     stage_id: number; // ИСПРАВЛЕНО: теперь BIGINT из PostgreSQL
@@ -20,8 +20,6 @@ export interface LibraryStageData {
     cover_image_path: string | null; // Добавлено для поддержки обложек ступеней
 }
 
-
-
 interface UseLibraryStagesResult {
     stages: LibraryStageData[];
     loading: boolean;
@@ -30,31 +28,31 @@ interface UseLibraryStagesResult {
 }
 
 /**
- * Хук для получения ступеней библиотеки
+ * Хук для получения ступеней библиотеки (ОПТИМИЗИРОВАННАЯ ВЕРСИЯ)
  */
 const useLibraryStages = (userId: string | null, courseId: string | null): UseLibraryStagesResult => {
     const query = useQuery({
-        queryKey: ['library-stages', userId, courseId],
+        queryKey: ['library-stages-optimized', userId, courseId],
         queryFn: async (): Promise<LibraryStageData[]> => {
             if (!userId || !courseId || !supabase) {
                 logger.debug('Missing required parameters for library stages', { userId, courseId });
                 return [];
             }
 
-            logger.debug('Fetching library stages', { userId, courseId });
+            logger.debug('Fetching library stages (optimized)', { userId, courseId });
 
-            // Вызываем RPC функцию get_library_stages из Supabase
-            const { data, error } = await supabase.rpc('get_library_stages', {
+            // Вызываем ОПТИМИЗИРОВАННУЮ RPC функцию get_library_stages_optimized из Supabase
+            const { data, error } = await supabase.rpc('get_library_stages_optimized', {
                 p_user_id: userId,
                 p_course_id: courseId,
             });
 
             if (error) {
-                logger.error('Error fetching library stages', { userId, courseId, error });
+                logger.error('Error fetching library stages (optimized)', { userId, courseId, error });
                 throw error;
             }
 
-            logger.debug('Library stages fetched successfully', {
+            logger.debug('Library stages fetched successfully (optimized)', {
                 userId,
                 courseId,
                 stagesCount: data?.length || 0
