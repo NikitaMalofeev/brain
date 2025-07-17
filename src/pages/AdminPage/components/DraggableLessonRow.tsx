@@ -58,99 +58,99 @@ const DraggableLessonRow: React.FC<DraggableLessonRowProps> = ({
 
     return (
         <>
-            <tr
-                style={{
-                    cursor: isEditing ? 'default' : 'grab',
-                    backgroundColor: isDraggedOver ? 'rgba(184, 98, 234, 0.1)' : undefined,
-                    transition: 'background-color 0.2s ease'
-                }}
-                className={isDraggedOver ? 'drag-over' : ''}
-            >
-                <td>
-                    {/* Столбец обложки урока */}
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                        {lesson.cover_image_path ? (
-                            <img
-                                src={buildFileUrl(lesson.cover_image_path) || ''}
-                                alt="Обложка урока"
-                                style={{
-                                    width: '40px',
-                                    height: '40px',
-                                    objectFit: 'cover',
-                                    borderRadius: '6px',
-                                    border: '1px solid var(--admin-border)'
-                                }}
-                            />
-                        ) : (
-                            <div style={{
+        <tr
+            style={{
+                cursor: isEditing ? 'default' : 'grab',
+                backgroundColor: isDraggedOver ? 'rgba(184, 98, 234, 0.1)' : undefined,
+                transition: 'background-color 0.2s ease'
+            }}
+            className={isDraggedOver ? 'drag-over' : ''}
+        >
+            <td>
+                {/* Столбец обложки урока */}
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    {lesson.cover_image_path ? (
+                        <img
+                            src={buildFileUrl(lesson.cover_image_path) || ''}
+                            alt="Обложка урока"
+                            style={{
                                 width: '40px',
                                 height: '40px',
-                                backgroundColor: '#f0f0f0',
-                                border: '1px dashed #ccc',
-                                borderRadius: '8px',
-                                display: 'flex',
-                                alignItems: 'center',
-                                justifyContent: 'center',
-                                fontSize: '12px',
-                                color: '#999'
-                            }}>
-                                📷
-                            </div>
-                        )}
-                        <button
-                            className="action-btn edit-btn"
-                            onClick={() => onEditCover(lesson)}
-                            title="Редактировать обложку"
-                        >
-                            {lesson.cover_image_path && lesson.cover_image_path.trim() ? 'Изменить' : 'Добавить'}
-                        </button>
-                    </div>
-                </td>
-                <td>
-                    {isEditing ? (
+                                objectFit: 'cover',
+                                borderRadius: '6px',
+                                border: '1px solid var(--admin-border)'
+                            }}
+                        />
+                    ) : (
+                        <div style={{
+                            width: '40px',
+                            height: '40px',
+                            backgroundColor: '#f0f0f0',
+                            border: '1px dashed #ccc',
+                            borderRadius: '8px',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            fontSize: '12px',
+                            color: '#999'
+                        }}>
+                            📷
+                        </div>
+                    )}
+                    <button
+                        className="action-btn edit-btn"
+                        onClick={() => onEditCover(lesson)}
+                        title="Редактировать обложку"
+                    >
+                        {lesson.cover_image_path && lesson.cover_image_path.trim() ? 'Изменить' : 'Добавить'}
+                    </button>
+                </div>
+            </td>
+            <td>
+                {isEditing ? (
                         <div style={{ fontSize: '12px', color: '#666', fontStyle: 'italic' }}>
                             Название редактируется ниже
                         </div>
-                    ) : (
-                        lesson.name
-                    )}
-                </td>
-                <td>
-                    {isEditing ? (
+                ) : (
+                    lesson.name
+                )}
+            </td>
+            <td>
+                {isEditing ? (
                         <div style={{ fontSize: '12px', color: '#666', fontStyle: 'italic' }}>
                             Описание редактируется ниже
                         </div>
-                    ) : (
-                        lesson.description || '-'
-                    )}
-                </td>
-                <td>
-                    {isEditing ? (
-                        <input
-                            className="admin-input"
-                            type="number"
-                            value={editOrderNum}
-                            onChange={e => onEditOrderChange(parseInt(e.target.value) || 1)}
-                            style={{ width: '80px' }}
-                        />
-                    ) : (
-                        lesson.order_num
-                    )}
-                </td>
-                <td>
-                    {isEditing ? (
-                        <input
-                            type="checkbox"
-                            checked={editHasAssignment}
-                            onChange={e => onEditHasAssignmentChange(e.target.checked)}
-                        />
-                    ) : (
-                        <span className={`admin-status ${lesson.has_assignment ? 'admin-yes' : 'admin-no'}`}>
-                            {lesson.has_assignment ? 'Да' : 'Нет'}
-                        </span>
-                    )}
-                </td>
-                            <td>
+                ) : (
+                    lesson.description || '-'
+                )}
+            </td>
+            <td>
+                {isEditing ? (
+                    <input
+                        className="admin-input"
+                        type="number"
+                        value={editOrderNum}
+                        onChange={e => onEditOrderChange(parseInt(e.target.value) || 1)}
+                        style={{ width: '80px' }}
+                    />
+                ) : (
+                    lesson.order_num
+                )}
+            </td>
+            <td>
+                {isEditing ? (
+                    <input
+                        type="checkbox"
+                        checked={editHasAssignment}
+                        onChange={e => onEditHasAssignmentChange(e.target.checked)}
+                    />
+                ) : (
+                    <span className={`admin-status ${lesson.has_assignment ? 'admin-yes' : 'admin-no'}`}>
+                        {lesson.has_assignment ? 'Да' : 'Нет'}
+                    </span>
+                )}
+            </td>
+            <td>
                 {isEditing ? (
                     <div style={{ fontSize: '12px', color: '#666', fontStyle: 'italic' }}>
                         Время редактируется ниже
@@ -180,42 +180,42 @@ const DraggableLessonRow: React.FC<DraggableLessonRowProps> = ({
                     }) : '-'
                 )}
             </td>
-                <td className="actions-cell">
-                    {isEditing ? (
-                        <>
-                            <button
-                                className="action-btn edit-btn"
-                                onClick={onSaveLesson}
-                                disabled={updateLoading}
-                            >
-                                Сохранить
-                            </button>
-                            <button
-                                className="action-btn delete-btn"
-                                onClick={onCancelEditing}
-                                disabled={updateLoading}
-                            >
-                                Отмена
-                            </button>
-                        </>
-                    ) : (
+            <td className="actions-cell">
+                {isEditing ? (
+                    <>
+                        <button
+                            className="action-btn edit-btn"
+                            onClick={onSaveLesson}
+                            disabled={updateLoading}
+                        >
+                            Сохранить
+                        </button>
+                        <button
+                            className="action-btn delete-btn"
+                            onClick={onCancelEditing}
+                            disabled={updateLoading}
+                        >
+                            Отмена
+                        </button>
+                    </>
+                ) : (
                         <div className="actions-dropdown">
                             {/* Основные действия - всегда видимые */}
                             <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
-                                <button
-                                    className="action-btn edit-btn"
-                                    onClick={() => onLessonSelect(lesson.id, lesson.name)}
-                                    title="Управление блоками"
-                                >
-                                    Блоки
-                                </button>
-                                <button
-                                    className="action-btn edit-btn"
-                                    onClick={() => onStartEditing(lesson)}
-                                    title="Редактировать урок"
-                                >
-                                    Изменить
-                                </button>
+                        <button
+                            className="action-btn edit-btn"
+                            onClick={() => onLessonSelect(lesson.id, lesson.name)}
+                            title="Управление блоками"
+                        >
+                            Блоки
+                        </button>
+                        <button
+                            className="action-btn edit-btn"
+                            onClick={() => onStartEditing(lesson)}
+                            title="Редактировать урок"
+                        >
+                            Изменить
+                        </button>
                                 
                                 {/* Выпадающее меню для дополнительных действий */}
                                 <button
@@ -240,17 +240,17 @@ const DraggableLessonRow: React.FC<DraggableLessonRowProps> = ({
                                                 🔒 Доступ
                                             </button>
                                         )}
-                                        <button
+                        <button
                                             className="actions-dropdown-item delete"
                                             onClick={() => {
                                                 onDeleteLesson(lesson.id, lesson.name);
                                                 setShowActionsMenu(false);
                                             }}
-                                            disabled={updateLoading}
-                                            title="Удалить урок"
-                                        >
+                            disabled={updateLoading}
+                            title="Удалить урок"
+                        >
                                             🗑️ Удалить
-                                        </button>
+                        </button>
                                     </div>
                                 )}
                             </div>
@@ -270,9 +270,9 @@ const DraggableLessonRow: React.FC<DraggableLessonRowProps> = ({
                                 />
                             )}
                         </div>
-                    )}
-                </td>
-            </tr>
+                )}
+            </td>
+        </tr>
             
             {/* Дополнительная строка для редактирования названия, описания и времени */}
             {isEditing && (

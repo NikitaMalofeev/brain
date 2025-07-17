@@ -8,7 +8,7 @@ import { useAppContext } from '@/contexts/AppContext';
 import { logger } from '@/lib/logger';
 import { supabase } from '@/lib/supabase/client';
 import { LessonWithBlocks, LessonBlock, Submission, LessonProgress } from '@/lib/supabase/types';
-import { VideoBlock, FixedSubmissionForm, DocumentBlock, ImageBlock } from '@/components/LessonContent';
+import { VideoBlock, FixedSubmissionForm, DocumentBlock, ImageBlock, MaterialBlock } from '@/components/LessonContent';
 import { Button } from '@/components/ui/button';
 import { getDeadlineStatus, formatDeadline } from '@/helpers/deadlineUtils';
 import { buildFileUrl } from '@/lib/supabase/supabaseStorageService';
@@ -95,22 +95,23 @@ function BlockContent({ block }: { block: LessonBlock }) {
             // Используем новый компонент PdfBlock
             return <DocumentBlock
                 block={block} />;
-        //
-        // // assignment_instruction блоки больше не существуют
-        // // Инструкции к заданию теперь обычные текстовые блоки
-        //
-        // default:
-        //     return (
-        //         <div key={block.id} style={commonBlockStyle}>
-        //             <div style={{
-        //                 color: '#6d6d6d',
-        //                 textAlign: 'center',
-        //                 padding: '20px',
-        //             }}>
-        //                 ❓ Неизвестный тип контента: {block.block_type}
-        //             </div>
-        //         </div>
-        //     );
+
+        case 'material':
+            // Используем новый компонент MaterialBlock
+            return <MaterialBlock block={block} />;
+
+        default:
+            return (
+                <div className={'flex flex-col gap-3'}>
+                    <div style={{
+                        color: '#6d6d6d',
+                        textAlign: 'center',
+                        padding: '20px',
+                    }}>
+                        ❓ Неизвестный тип контента: {block.block_type}
+                    </div>
+                </div>
+            );
     }
 }
 

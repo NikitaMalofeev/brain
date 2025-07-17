@@ -782,138 +782,138 @@ const StagesManager: React.FC<StagesManagerProps> = ({ courseId, onBack, onStage
               {stages.map((stage) => (
                 <Fragment key={stage.id}>
                   <tr>
-                    <td>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                        {stage.cover_image_path ? (
-                          <img
-                            src={buildFileUrl(stage.cover_image_path) || ''}
-                            alt="Обложка ступени"
-                            style={{
-                              width: '40px',
-                              height: '40px',
-                              borderRadius: '8px',
-                              objectFit: 'cover'
-                            }}
-                            onError={(e) => {
-                              console.warn('Ошибка загрузки обложки ступени:', stage.cover_image_path);
-                              e.currentTarget.style.display = 'none';
-                            }}
-                          />
-                        ) : (
-                          <div style={{
+                  <td>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                      {stage.cover_image_path ? (
+                        <img
+                          src={buildFileUrl(stage.cover_image_path) || ''}
+                          alt="Обложка ступени"
+                          style={{
                             width: '40px',
                             height: '40px',
                             borderRadius: '8px',
-                            background: '#f0f0f0',
-                            display: 'flex',
-                            alignItems: 'center',
-                            justifyContent: 'center',
-                            fontSize: '12px',
-                            color: '#999'
-                          }}>
-                            📷
-                          </div>
-                        )}
-                        <button
-                          className="action-btn edit-btn"
-                          onClick={() => openCoverModal(stage)}
-                          title="Редактировать обложку"
-                          style={{ fontSize: '12px' }}
-                        >
-                          {stage.cover_image_path ? 'Изменить' : 'Добавить'}
-                        </button>
-                      </div>
-                    </td>
-                    <td>
-                      {editingStage?.id === stage.id ? (
+                            objectFit: 'cover'
+                          }}
+                          onError={(e) => {
+                            console.warn('Ошибка загрузки обложки ступени:', stage.cover_image_path);
+                            e.currentTarget.style.display = 'none';
+                          }}
+                        />
+                      ) : (
+                        <div style={{
+                          width: '40px',
+                          height: '40px',
+                          borderRadius: '8px',
+                          background: '#f0f0f0',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          fontSize: '12px',
+                          color: '#999'
+                        }}>
+                          📷
+                        </div>
+                      )}
+                      <button
+                        className="action-btn edit-btn"
+                        onClick={() => openCoverModal(stage)}
+                        title="Редактировать обложку"
+                        style={{ fontSize: '12px' }}
+                      >
+                        {stage.cover_image_path ? 'Изменить' : 'Добавить'}
+                      </button>
+                    </div>
+                  </td>
+                  <td>
+                    {editingStage?.id === stage.id ? (
                         <div style={{ fontSize: '12px', color: '#666', fontStyle: 'italic' }}>
                           Название редактируется ниже
                         </div>
-                      ) : (
-                        stage.name
-                      )}
-                    </td>
-                    <td>
-                      {editingStage?.id === stage.id ? (
+                    ) : (
+                      stage.name
+                    )}
+                  </td>
+                  <td>
+                    {editingStage?.id === stage.id ? (
                         <div style={{ fontSize: '12px', color: '#666', fontStyle: 'italic' }}>
                           Описание редактируется ниже
                         </div>
-                      ) : (
-                        stage.description || '-'
-                      )}
-                    </td>
-                    <td>
-                      {editingStage?.id === stage.id ? (
-                        <input
-                          className="admin-input"
-                          type="number"
-                          value={editOrderNum}
-                          onChange={e => setEditOrderNum(parseInt(e.target.value) || 1)}
-                          style={{ width: '80px' }}
-                        />
-                      ) : (
-                        stage.order_num
-                      )}
-                    </td>
-                    <td>
-                      {editingStage?.id === stage.id ? (
-                        <input
-                          type="checkbox"
-                          checked={editIsUnlocked}
-                          onChange={e => setEditIsUnlocked(e.target.checked)}
-                        />
-                      ) : (
-                        <span className={`admin-status ${stage.is_unlocked ? 'admin-yes' : 'admin-no'}`}>
-                          {stage.is_unlocked ? 'Да' : 'Нет'}
-                        </span>
-                      )}
-                    </td>
-                    <td className="actions-cell">
-                      {editingStage?.id === stage.id ? (
-                        <>
-                          <button
-                            className="action-btn edit-btn"
-                            onClick={saveStage}
-                            disabled={updateLoading}
-                          >
-                            Сохранить
-                          </button>
-                          <button
-                            className="action-btn delete-btn"
-                            onClick={cancelEditing}
-                            disabled={updateLoading}
-                          >
-                            Отмена
-                          </button>
-                        </>
-                      ) : (
-                        <>
-                          <button
-                            className="action-btn edit-btn"
-                            onClick={() => onStageSelect(stage.id, stage.name)}
-                            title="Управление уроками"
-                          >
-                            Уроки
-                          </button>
-                          <button
-                            className="action-btn edit-btn"
-                            onClick={() => startEditing(stage)}
-                            title="Редактировать ступень"
-                          >
-                            Изменить
-                          </button>
-                          <button
-                            className="action-btn delete-btn"
-                            onClick={() => handleDeleteStage(stage.id, stage.name)}
-                            disabled={updateLoading}
-                            title="Удалить ступень"
-                          >
-                            Удалить
-                          </button>
-                        </>
-                      )}
-                    </td>
-                  </tr>
+                    ) : (
+                      stage.description || '-'
+                    )}
+                  </td>
+                  <td>
+                    {editingStage?.id === stage.id ? (
+                      <input
+                        className="admin-input"
+                        type="number"
+                        value={editOrderNum}
+                        onChange={e => setEditOrderNum(parseInt(e.target.value) || 1)}
+                        style={{ width: '80px' }}
+                      />
+                    ) : (
+                      stage.order_num
+                    )}
+                  </td>
+                  <td>
+                    {editingStage?.id === stage.id ? (
+                      <input
+                        type="checkbox"
+                        checked={editIsUnlocked}
+                        onChange={e => setEditIsUnlocked(e.target.checked)}
+                      />
+                    ) : (
+                      <span className={`admin-status ${stage.is_unlocked ? 'admin-yes' : 'admin-no'}`}>
+                        {stage.is_unlocked ? 'Да' : 'Нет'}
+                      </span>
+                    )}
+                  </td>
+                  <td className="actions-cell">
+                    {editingStage?.id === stage.id ? (
+                      <>
+                        <button
+                          className="action-btn edit-btn"
+                          onClick={saveStage}
+                          disabled={updateLoading}
+                        >
+                          Сохранить
+                        </button>
+                        <button
+                          className="action-btn delete-btn"
+                          onClick={cancelEditing}
+                          disabled={updateLoading}
+                        >
+                          Отмена
+                        </button>
+                      </>
+                    ) : (
+                      <>
+                        <button
+                          className="action-btn edit-btn"
+                          onClick={() => onStageSelect(stage.id, stage.name)}
+                          title="Управление уроками"
+                        >
+                          Уроки
+                        </button>
+                        <button
+                          className="action-btn edit-btn"
+                          onClick={() => startEditing(stage)}
+                          title="Редактировать ступень"
+                        >
+                          Изменить
+                        </button>
+                        <button
+                          className="action-btn delete-btn"
+                          onClick={() => handleDeleteStage(stage.id, stage.name)}
+                          disabled={updateLoading}
+                          title="Удалить ступень"
+                        >
+                          Удалить
+                        </button>
+                      </>
+                    )}
+                  </td>
+                </tr>
                   
                   {/* Дополнительная строка для редактирования названия и описания ступени */}
                   {editingStage?.id === stage.id && (

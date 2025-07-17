@@ -25,7 +25,7 @@ interface MaterialBlock {
     material_id: string; // uuid
     order_num: number;
     title?: string | null;
-    block_type: 'text' | 'video' | 'audio' | 'image' | 'pdf';
+    block_type: 'text' | 'video' | 'audio' | 'image' | 'pdf' | 'material';
     content_text?: string | null;
     content_url?: string | null;
     // meta_json - убрали для MVP
@@ -43,9 +43,10 @@ interface MaterialFormData {
 
 interface BlockFormData {
     title: string;
-    block_type: 'text' | 'video' | 'audio' | 'image' | 'pdf';
+    block_type: 'text' | 'video' | 'audio' | 'image' | 'pdf' | 'material';
     content_text: string;
     content_url: string;
+    material_id?: string;
     order_num: number;
 }
 
@@ -734,6 +735,14 @@ const MaterialsManager: React.FC = () => {
                         {!hasUrl && !hasText && <span className="empty-value">Нет контента</span>}
                     </div>
                 );
+            case 'material':
+                return (
+                    <div className="block-content-preview">
+                        <div>📚 Материал из библиотеки</div>
+                        {hasText && <div>📝 {block.content_text!.substring(0, 60)}...</div>}
+                        {!hasText && <span className="empty-value">Нет описания</span>}
+                    </div>
+                );
             default:
                 return <span className="empty-value">Неизвестный тип</span>;
         }
@@ -1231,6 +1240,7 @@ const MaterialsManager: React.FC = () => {
                                         <option value="audio">🎵 Аудио (файл)</option>
                                         <option value="image">🖼️ Изображение (файл)</option>
                                         <option value="pdf">📄 PDF (файл)</option>
+                                        <option value="material">📚 Материал</option>
                                     </select>
                                 </div>
 

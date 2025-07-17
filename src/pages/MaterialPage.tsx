@@ -7,6 +7,7 @@ import VideoPlayer from "@/components/Player/VideoPlayer.tsx";
 import { getKinescopeId } from "@/components/LessonContent/VideoBlock.tsx";
 import { buildFileUrl } from "@/lib/supabase/supabaseStorageService";
 import NewPlayer from "@/components/NewPlayer/NewPlayer.tsx";
+import { MaterialBlock } from "@/components/LessonContent";
 
 const BlockRenderer = ({ block }: { block: LessonBlock }) => {
     switch (block.block_type) {
@@ -37,6 +38,10 @@ const BlockRenderer = ({ block }: { block: LessonBlock }) => {
                     )}
                 </div>
             );
+
+        case 'material':
+            return <MaterialBlock block={block} />;
+
         default:
             return (
                 <div className="text-black flex flex-col gap-2">

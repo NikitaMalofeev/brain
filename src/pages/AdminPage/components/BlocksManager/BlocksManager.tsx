@@ -4,15 +4,24 @@ import { buildFileUrl } from '@/lib/supabase/supabaseStorageService';
 import { useBlocksAdmin } from '@/lib/supabase/hooks';
 import DraggableBlockRow from '../DraggableBlockRow';
 import { logger } from '@/lib/logger';
+import { supabase } from '@/lib/supabase/client';
 
 // Типы для блоков
 interface BlockModalData {
     id?: number;
     title: string;
-    block_type: 'text' | 'video' | 'audio' | 'image' | 'pdf';
+    block_type: 'text' | 'video' | 'audio' | 'image' | 'pdf' | 'material';
     content_text: string;
     content_url: string;
+    material_id?: string;
     order_num: number;
+}
+
+interface Material {
+    id: string;
+    name: string;
+    description?: string | null;
+    material_type: 'video' | 'audio' | 'article' | 'link' | 'file';
 }
 
 export interface BlocksManagerProps {
@@ -50,6 +59,10 @@ const BlocksManager: React.FC<BlocksManagerProps> = ({ courseId, stageId, lesson
     const [localOrderValues, setLocalOrderValues] = useState<{ [key: number]: number }>({});
     const [orderUpdateTimeouts, setOrderUpdateTimeouts] = useState<{ [key: number]: NodeJS.Timeout }>({});
 
+    // Состояние для материалов
+    const [materials, setMaterials] = useState<Material[]>([]);
+    const [materialsLoading, setMaterialsLoading] = useState(false);
+
     // Обработчики для загрузки файлов
     const handleFileUploadComplete = (filePath: string, fileUrl: string) => {
         setModalData(prev => ({ ...prev, content_url: fileUrl }));
@@ -68,6 +81,7 @@ const BlocksManager: React.FC<BlocksManagerProps> = ({ courseId, stageId, lesson
             block_type: 'text',
             content_text: '',
             content_url: '',
+            material_id: '',
             order_num: nextOrder,
         });
         setModalMode('add');
@@ -84,6 +98,7 @@ const BlocksManager: React.FC<BlocksManagerProps> = ({ courseId, stageId, lesson
             block_type: block.block_type,
             content_text: block.content_text || '',
             content_url: block.content_url || '',
+            material_id: block.material_id || '',
             order_num: block.order_num,
         });
         setModalMode('edit');
@@ -102,12 +117,38 @@ const BlocksManager: React.FC<BlocksManagerProps> = ({ courseId, stageId, lesson
             block_type: 'text',
             content_text: '',
             content_url: '',
+            material_id: '',
             order_num: 1,
         });
     };
 
     // Ref для FileUploader
     const fileUploaderRef = useRef<FileUploaderRef>(null);
+
+    // Загрузка материалов
+    const loadMaterials = async () => {
+        if (!supabase) return;
+        
+        try {
+            setMaterialsLoading(true);
+            const { data, error } = await supabase
+                .from('materials')
+                .select('id, name, description, material_type')
+                .order('name', { ascending: true });
+
+            if (error) throw error;
+            setMaterials(data || []);
+        } catch (err: any) {
+            console.error('Ошибка загрузки материалов:', err);
+        } finally {
+            setMaterialsLoading(false);
+        }
+    };
+
+    // Загружаем материалы при монтировании компонента
+    useEffect(() => {
+        loadMaterials();
+    }, []);
 
     // Сохранить блок
     const saveBlock = async () => {
@@ -148,6 +189,13 @@ const BlocksManager: React.FC<BlocksManagerProps> = ({ courseId, stageId, lesson
                     setUpdateLoading(false);
                     return;
                 }
+            } else if (modalData.block_type === 'material') {
+                // Для material блока нужен только выбранный материал
+                if (!modalData.material_id || !modalData.material_id.trim()) {
+                    alert('Для блока типа "Материал" необходимо выбрать материал из библиотеки');
+                    setUpdateLoading(false);
+                    return;
+                }
             } else {
                 // Для файловых блоков (audio, image, pdf) нужен только файл/URL, описание опционально
                 if (!hasUrl) {
@@ -165,6 +213,7 @@ const BlocksManager: React.FC<BlocksManagerProps> = ({ courseId, stageId, lesson
                     block_type: modalData.block_type,
                     content_text: modalData.content_text?.trim() || '',
                     content_url: finalContentUrl,
+                    material_id: modalData.material_id || undefined,
                     order_num: modalData.order_num,
                 });
             } else {
@@ -174,6 +223,7 @@ const BlocksManager: React.FC<BlocksManagerProps> = ({ courseId, stageId, lesson
                     block_type: modalData.block_type,
                     content_text: modalData.content_text?.trim() || '',
                     content_url: finalContentUrl,
+                    material_id: modalData.material_id || undefined,
                     order_num: modalData.order_num,
                 });
             }
@@ -308,6 +358,7 @@ const BlocksManager: React.FC<BlocksManagerProps> = ({ courseId, stageId, lesson
             audio: 'Аудио',
             image: 'Изображение',
             pdf: 'PDF',
+            material: 'Материал',
         };
         return types[type] || type;
     };
@@ -359,6 +410,15 @@ const BlocksManager: React.FC<BlocksManagerProps> = ({ courseId, stageId, lesson
                         {!hasUrl && !hasText && <span className="empty-value">Нет контента</span>}
                     </div>
                 );
+            case 'material':
+                const materialName = materials.find(m => m.id === block.material_id)?.name || 'Неизвестный материал';
+                return (
+                    <div className="block-content-preview">
+                        <div>📚 {materialName}</div>
+                        {hasText && <div>📝 {block.content_text.substring(0, 60)}...</div>}
+                        {!hasText && <span className="empty-value">Нет описания</span>}
+                    </div>
+                );
             default:
                 return <span className="empty-value">Неизвестный тип</span>;
         }
@@ -384,6 +444,9 @@ const BlocksManager: React.FC<BlocksManagerProps> = ({ courseId, stageId, lesson
                 const hasVideoUrl = modalData.content_url && modalData.content_url.trim();
                 const hasVideoText = modalData.content_text && modalData.content_text.trim();
                 return hasVideoUrl || hasVideoText;
+            case 'material':
+                // Для material блока нужен выбранный материал
+                return modalData.material_id && modalData.material_id.trim().length > 0;
             case 'audio':
             case 'image':
             case 'pdf':
@@ -499,6 +562,7 @@ const BlocksManager: React.FC<BlocksManagerProps> = ({ courseId, stageId, lesson
                                     <option value="audio">🔊 Аудио</option>
                                     <option value="image">🖼️ Изображение</option>
                                     <option value="pdf">📄 PDF</option>
+                                    <option value="material">📚 Материал</option>
                                 </select>
                             </div>
                             <div className="form-group">
@@ -527,6 +591,39 @@ const BlocksManager: React.FC<BlocksManagerProps> = ({ courseId, stageId, lesson
                                     style={{ resize: 'vertical' }}
                                 />
                             </div>
+                        ) : modalData.block_type === 'material' ? (
+                            // Для material блока - выбор материала + описание
+                            <>
+                                <div className="form-group">
+                                    <label>Выберите материал:</label>
+                                    <select
+                                        className="admin-input"
+                                        value={modalData.material_id || ''}
+                                        onChange={(e) => setModalData({ ...modalData, material_id: e.target.value })}
+                                        disabled={materialsLoading}
+                                    >
+                                        <option value="">Выберите материал из библиотеки...</option>
+                                        {materials.map((material) => (
+                                            <option key={material.id} value={material.id}>
+                                                {material.name} ({material.material_type})
+                                            </option>
+                                        ))}
+                                    </select>
+                                    {materialsLoading && <div className="text-sm text-gray-500">Загрузка материалов...</div>}
+                                </div>
+
+                                <div className="form-group">
+                                    <label>Описание материала (опционально):</label>
+                                    <textarea
+                                        className="admin-input"
+                                        value={modalData.content_text}
+                                        onChange={(e) => setModalData({ ...modalData, content_text: e.target.value })}
+                                        rows={3}
+                                        placeholder="Введите описание материала..."
+                                        style={{ resize: 'vertical' }}
+                                    />
+                                </div>
+                            </>
                         ) : modalData.block_type === 'video' ? (
                             // Для видео - только URL (Kinescope)
                             <>

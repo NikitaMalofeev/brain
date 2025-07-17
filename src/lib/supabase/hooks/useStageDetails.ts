@@ -153,43 +153,43 @@ const useStageDetails = (user: User | null, stageId: string | number) => {
                         const progress = progressMap.get(lessonWithAccess.lesson_id);
                         const submission = submissionsMap.get(lessonWithAccess.lesson_id);
 
-                        // Определяем статус завершения
-                        // ПРИОРИТЕТ 1: Флаг is_completed из lesson_progress (покрывает админское управление)
-                        let isCompleted = !!progress?.is_completed;
+                    // Определяем статус завершения
+                    // ПРИОРИТЕТ 1: Флаг is_completed из lesson_progress (покрывает админское управление)
+                    let isCompleted = !!progress?.is_completed;
 
-                        // ПРИОРИТЕТ 2: Для уроков с заданием - также засчитываем approved submission
+                    // ПРИОРИТЕТ 2: Для уроков с заданием - также засчитываем approved submission
                         if (!isCompleted && lessonWithAccess.has_assignment) {
-                            isCompleted = submission?.status === 'approved';
-                        }
+                        isCompleted = submission?.status === 'approved';
+                    }
 
-                        // ПРИОРИТЕТ 3: Для уроков без задания - также засчитываем completed_at
+                    // ПРИОРИТЕТ 3: Для уроков без задания - также засчитываем completed_at
                         if (!isCompleted && !lessonWithAccess.has_assignment) {
-                            isCompleted = !!progress?.completed_at;
-                        }
+                        isCompleted = !!progress?.completed_at;
+                    }
 
-                        // Используем централизованную функцию для проверки доступности
+                    // Используем централизованную функцию для проверки доступности
                         const isUnlocked = isLessonAccessible(lessonWithAccess, lessonWithAccess.is_accessible);
 
-                        // Определяем, начал ли пользователь урок
-                        const hasStarted = !!progress?.started_at || !!submission;
+                    // Определяем, начал ли пользователь урок
+                    const hasStarted = !!progress?.started_at || !!submission;
 
-                        return {
+                    return {
                             lesson_id: lessonWithAccess.lesson_id,
                             lesson_name: lessonWithAccess.lesson_name,
-                            content_type: 'mixed', // Теперь уроки могут содержать разные типы блоков
+                        content_type: 'mixed', // Теперь уроки могут содержать разные типы блоков
                             cover_image_path: lessonWithAccess.cover_image_path, // Используем путь к файлу из БД
                             order_num: lessonWithAccess.order_num,
                             has_assignment: lessonWithAccess.has_assignment || false,
-                            is_completed: isCompleted,
-                            is_unlocked: isUnlocked,
-                            completion_date: progress?.completed_at,
+                        is_completed: isCompleted,
+                        is_unlocked: isUnlocked,
+                        completion_date: progress?.completed_at,
                             open_at: lessonWithAccess.open_at,
                             deadline_at: lessonWithAccess.deadline_at,
-                            submission_status: submission?.status || null,
-                            submission_id: submission?.id,
-                            has_started: hasStarted,
-                        };
-                    }) || [];
+                        submission_status: submission?.status || null,
+                        submission_id: submission?.id,
+                        has_started: hasStarted,
+                    };
+                }) || [];
 
                 // Подсчитываем статистику
                 const completedLessons = lessons.filter(l => l.is_completed).length;

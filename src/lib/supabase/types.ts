@@ -105,7 +105,8 @@ export type BlockType =
   | 'video'     // Видео (Kinescope)
   | 'audio'     // Аудио (CloudFlare R2)
   | 'image'     // Изображение
-  | 'pdf';      // PDF файл
+  | 'pdf'       // PDF файл
+  | 'material'; // Ссылка на материал из библиотеки
 
 export interface LessonBlock extends TimestampFields {
   id: number;
@@ -115,6 +116,7 @@ export interface LessonBlock extends TimestampFields {
   block_type: BlockType;
   content_text?: string; // Для text-блоков и assignment_instruction
   content_url?: string; // Для файлов/медиа
+  material_id?: string; // Для material-блоков - ссылка на материал
   meta_json?: Record<string, any>; // Дополнительные поля
 }
 
@@ -238,6 +240,7 @@ export interface CreateLessonBlockRequest {
   block_type: BlockType;
   content_text?: string;
   content_url?: string;
+  material_id?: string;
   meta_json?: Record<string, any>;
 }
 
