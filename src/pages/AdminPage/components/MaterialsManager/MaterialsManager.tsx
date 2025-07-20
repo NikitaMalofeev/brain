@@ -6,7 +6,7 @@ import { FILE_PREFIXES } from '@/lib/supabase/storage_prefixes';
 import { supabase } from '../../../../lib/supabase/client';
 import DraggableMaterialBlockRow from './DraggableMaterialBlockRow';
 import DraggableMaterialRow from './DraggableMaterialRow';
-import { useTariffsAdmin, useMaterialTariffAccess } from '@/lib/supabase/hooks';
+import { useTariffsAdmin, useMaterialTariffAccess, useCoursesAdmin } from '@/lib/supabase/hooks';
 
 // TODO: Определить типы для Material и MaterialBlock на основе db_schema.md
 interface Material {
@@ -16,8 +16,10 @@ interface Material {
     cover_image_path?: string | null;
     material_type: 'video' | 'audio'; // Пока только эти типы
     order_num: number;
+    course_id?: string | null;
+    release_date?: string | null;
     created_at: string; // timestamptz
-    // ... другие поля из таблицы materials, если нужны для отображения
+    updated_at: string; // timestamptz
 }
 
 interface MaterialBlock {
@@ -39,6 +41,8 @@ interface MaterialFormData {
     description: string;
     material_type: 'video' | 'audio';
     order_num: number;
+    course_id: string;
+    release_date: string;
 }
 
 interface BlockFormData {
@@ -53,12 +57,14 @@ interface BlockFormData {
 const MaterialsManager: React.FC = () => {
     const fileUploaderRef = useRef<FileUploaderRef>(null);
     const tariffsAdmin = useTariffsAdmin();
+    const coursesAdmin = useCoursesAdmin();
     const blockFileUploaderRef = useRef<FileUploaderRef>(null);
 
     // Материалы
     const [materials, setMaterials] = useState<Material[]>([]);
     const [filteredMaterials, setFilteredMaterials] = useState<Material[]>([]);
     const [materialTypeFilter, setMaterialTypeFilter] = useState<string>('all');
+    const [courseFilter, setCourseFilter] = useState<string>('all');
 
     // Блоки материалов
     const [materialBlocks, setMaterialBlocks] = useState<MaterialBlock[]>([]);
@@ -90,7 +96,9 @@ const MaterialsManager: React.FC = () => {
         name: '',
         description: '',
         material_type: 'video',
-        order_num: 1
+        order_num: 1,
+        course_id: '',
+        release_date: new Date().toISOString().split('T')[0]
     });
 
     // Состояние для выбранных тарифов
@@ -183,12 +191,12 @@ const MaterialsManager: React.FC = () => {
     // Применяем фильтры при изменении материалов или фильтров
     useEffect(() => {
         filterMaterials();
-    }, [materials, materialTypeFilter]);
+    }, [materials, materialTypeFilter, courseFilter]);
 
     // Применяем фильтры при изменении материалов или фильтров
     useEffect(() => {
         filterMaterials();
-    }, [materials, materialTypeFilter]);
+    }, [materials, materialTypeFilter, courseFilter]);
 
     // Синхронизируем выбранные тарифы с данными из хука
     useEffect(() => {
@@ -228,6 +236,10 @@ const MaterialsManager: React.FC = () => {
             filtered = filtered.filter(material => material.material_type === materialTypeFilter);
         }
 
+        if (courseFilter !== 'all') {
+            filtered = filtered.filter(material => material.course_id === courseFilter);
+        }
+
         setFilteredMaterials(filtered);
     };
 
@@ -262,7 +274,9 @@ const MaterialsManager: React.FC = () => {
                 name: material.name,
                 description: material.description || '',
                 material_type: material.material_type,
-                order_num: material.order_num
+                order_num: material.order_num,
+                course_id: material.course_id || '',
+                release_date: material.release_date ? new Date(material.release_date).toISOString().split('T')[0] : new Date().toISOString().split('T')[0]
             });
         } else {
             setEditingMaterial(null);
@@ -271,7 +285,9 @@ const MaterialsManager: React.FC = () => {
                 name: '',
                 description: '',
                 material_type: 'video',
-                order_num: materials.length + 1
+                order_num: materials.length + 1,
+                course_id: coursesAdmin.courses.length > 0 ? coursesAdmin.courses[0].id : '',
+                release_date: new Date().toISOString().split('T')[0]
             });
         }
         setMaterialModalOpen(true);
@@ -301,7 +317,9 @@ const MaterialsManager: React.FC = () => {
                 name: materialForm.name.trim(),
                 description: materialForm.description.trim() || null,
                 material_type: materialForm.material_type,
-                order_num: materialForm.order_num
+                order_num: materialForm.order_num,
+                course_id: materialForm.course_id || null,
+                release_date: materialForm.release_date ? new Date(materialForm.release_date).toISOString() : null
             };
 
             let materialId: string;
@@ -1000,6 +1018,23 @@ const MaterialsManager: React.FC = () => {
                 <div className="admin-toolbar" style={{ marginBottom: '20px' }}>
                     <div className="admin-filters">
                         <div className="admin-filter-group">
+                            <label htmlFor="course-filter">Курс:</label>
+                            <select
+                                id="course-filter"
+                                className="admin-input"
+                                value={courseFilter}
+                                onChange={(e) => setCourseFilter(e.target.value)}
+                                style={{ minWidth: '200px' }}
+                            >
+                                <option value="all">🌟 Все курсы</option>
+                                {coursesAdmin.courses.map(course => (
+                                    <option key={course.id} value={course.id}>
+                                        {course.title}
+                                    </option>
+                                ))}
+                            </select>
+                        </div>
+                        <div className="admin-filter-group">
                             <label htmlFor="material-type-filter">Тип материала:</label>
                             <select
                                 id="material-type-filter"
@@ -1038,9 +1073,10 @@ const MaterialsManager: React.FC = () => {
                                     <th>Обложка</th>
                                     <th>Название</th>
                                     <th>Описание</th>
+                                    <th>Курс</th>
                                     <th>Тип</th>
+                                    <th>Дата открытия</th>
                                     <th>Порядок</th>
-                                    <th>Дата создания</th>
                                     <th>Действия</th>
                                 </tr>
                             </thead>
@@ -1056,6 +1092,7 @@ const MaterialsManager: React.FC = () => {
                                         onManageBlocks={navigateToMaterialBlocks}
                                         onDelete={handleDeleteMaterial}
                                         onReorder={handleMaterialReorder}
+                                        courses={coursesAdmin.courses}
                                     />
                                 ))}
                             </tbody>
@@ -1162,6 +1199,23 @@ const MaterialsManager: React.FC = () => {
                                 />
                             </div>
 
+                            <div className="form-group">
+                                <label>Курс *</label>
+                                <select
+                                    className="admin-input"
+                                    value={materialForm.course_id}
+                                    onChange={(e) => setMaterialForm({ ...materialForm, course_id: e.target.value })}
+                                    required
+                                >
+                                    <option value="">Выберите курс</option>
+                                    {coursesAdmin.courses.map(course => (
+                                        <option key={course.id} value={course.id}>
+                                            {course.title}
+                                        </option>
+                                    ))}
+                                </select>
+                            </div>
+
                             <div className="form-row">
                                 <div className="form-group">
                                     <label>Тип материала *</label>
@@ -1176,6 +1230,19 @@ const MaterialsManager: React.FC = () => {
                                     </select>
                                 </div>
 
+                                <div className="form-group">
+                                    <label>Дата открытия *</label>
+                                    <input
+                                        type="date"
+                                        className="admin-input"
+                                        value={materialForm.release_date}
+                                        onChange={(e) => setMaterialForm({ ...materialForm, release_date: e.target.value })}
+                                        required
+                                    />
+                                </div>
+                            </div>
+
+                            <div className="form-row">
                                 <div className="form-group">
                                     <label>Порядковый номер *</label>
                                     <input

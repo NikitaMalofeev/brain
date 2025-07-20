@@ -127,13 +127,16 @@ const BlocksManager: React.FC<BlocksManagerProps> = ({ courseId, stageId, lesson
 
     // Загрузка материалов
     const loadMaterials = async () => {
-        if (!supabase) return;
+        if (!supabase || !courseId) return;
         
         try {
             setMaterialsLoading(true);
             const { data, error } = await supabase
                 .from('materials')
-                .select('id, name, description, material_type')
+                .select('id, name, description, material_type, release_date')
+                .eq('course_id', courseId)
+                .lte('release_date', new Date().toISOString()) // Только материалы с датой открытия <= текущей
+                .order('release_date', { ascending: true })
                 .order('name', { ascending: true });
 
             if (error) throw error;
@@ -145,10 +148,10 @@ const BlocksManager: React.FC<BlocksManagerProps> = ({ courseId, stageId, lesson
         }
     };
 
-    // Загружаем материалы при монтировании компонента
+    // Загружаем материалы при монтировании компонента или изменении курса
     useEffect(() => {
         loadMaterials();
-    }, []);
+    }, [courseId]);
 
     // Сохранить блок
     const saveBlock = async () => {

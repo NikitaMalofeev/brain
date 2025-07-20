@@ -6,6 +6,9 @@ import { buildFileUrl } from "@/lib/supabase/supabaseStorageService";
 import { Link } from "react-router-dom";
 import { motion } from "framer-motion";
 import { Ripple } from "@/components/ui/Ripple/Ripple";
+import { useSupabaseUser } from "@/lib/supabase/hooks/useSupabaseUser";
+import { useActiveCourse } from "@/lib/supabase/hooks/useActiveCourse";
+import { useSignal, initDataState } from '@telegram-apps/sdk-react';
 
 const tabs = [
     'Все',
@@ -38,23 +41,35 @@ const itemVariants = {
 
 export const CommonPage = () => {
     const [currentTab, setCurrentTab] = useState<number>(0);
+    
+    // Получаем информацию о пользователе
+    const initDataSignal = useSignal(initDataState);
+    const { supabaseUser } = useSupabaseUser(initDataSignal);
+    const { activeCourse } = useActiveCourse(supabaseUser?.id);
+    
     const { data, isLoading } = useQuery({
         queryFn: async () => {
             // 1) Формируем запрос, вызываем .select(...).maybeSingle()/.then()/.throwOnError()
             if (!supabase) return []
 
+            // Если нет активного курса, возвращаем пустой массив
+            if (!activeCourse?.course_id) return []
+            
+            const now = new Date().toISOString();
+            
             const { data, error } = await supabase.from('materials')
                 .select('*')
+                .eq('course_id', activeCourse.course_id)
+                .lte('release_date', now) // Только материалы с датой открытия <= текущей
                 .order('order_num', { ascending: true })
 
             if (error) {
-                // выбрасываем ошибку, чтобы React-Query перевёл загрузку в состояние "isError"
                 throw new Error(error.message)
             }
-            // data здесь — это массив User[] (или null/[]), в зависимости от схемы
             return data || []
         },
-        queryKey: ['materials']
+        queryKey: ['materials', activeCourse?.course_id],
+        enabled: !!activeCourse?.course_id // Запрос выполняется только при наличии активного курса
     })
     if (isLoading) {
         return (
@@ -106,7 +121,15 @@ export const CommonPage = () => {
                         className="flex flex-col gap-3"
                         variants={listVariants}
                     >
-                        {data?.filter(el => currentTab === 0 ? true : currentTab === 1 ? el.material_type === "audio" : el.material_type === "video").map((lesson) => (
+                        {!activeCourse?.course_id ? (
+                            <div className="text-center text-gray-500 mt-8">
+                                Нет активного курса
+                            </div>
+                        ) : data?.length === 0 ? (
+                            <div className="text-center text-gray-500 mt-8">
+                                Нет доступных материалов
+                            </div>
+                        ) : data?.filter(el => currentTab === 0 ? true : currentTab === 1 ? el.material_type === "audio" : el.material_type === "video").map((lesson) => (
                             <motion.div
                                 key={lesson.id}
                                 variants={itemVariants}

@@ -9,7 +9,10 @@ interface Material {
     cover_image_path?: string | null;
     material_type: 'video' | 'audio';
     order_num: number;
+    course_id?: string | null;
+    release_date?: string | null;
     created_at: string;
+    updated_at: string;
 }
 
 interface DraggableMaterialRowProps {
@@ -21,6 +24,7 @@ interface DraggableMaterialRowProps {
     onManageBlocks: (material: Material) => void;
     onDelete: (material: Material) => void;
     onReorder: (draggedMaterialId: string, targetMaterialId: string) => void;
+    courses?: { id: string; title: string }[];
 }
 
 const DraggableMaterialRow: React.FC<DraggableMaterialRowProps> = ({
@@ -31,7 +35,8 @@ const DraggableMaterialRow: React.FC<DraggableMaterialRowProps> = ({
     onEditCover,
     onManageBlocks,
     onDelete,
-    onReorder
+    onReorder,
+    courses = []
 }) => {
     const [isDragging, setIsDragging] = useState(false);
     const [dragOver, setDragOver] = useState<'top' | 'bottom' | null>(null);
@@ -106,11 +111,18 @@ const DraggableMaterialRow: React.FC<DraggableMaterialRowProps> = ({
             </td>
             <td>{material.name}</td>
             <td>{material.description || <span className="empty-value">Нет описания</span>}</td>
-            <td>{getMaterialTypeLabel(material.material_type)}</td>
-            <td>{material.order_num}</td>
-            <td style={{ fontSize: '13px', color: 'var(--admin-text-secondary)' }}>
-                {formatDate(material.created_at)}
+            <td>
+                {material.course_id ? (
+                    courses.find(c => c.id === material.course_id)?.title || material.course_id
+                ) : (
+                    <span className="empty-value">Не привязан</span>
+                )}
             </td>
+            <td>{getMaterialTypeLabel(material.material_type)}</td>
+            <td style={{ fontSize: '13px', color: 'var(--admin-text-secondary)' }}>
+                {material.release_date ? formatDate(material.release_date) : <span className="empty-value">Не указана</span>}
+            </td>
+            <td>{material.order_num}</td>
             <td className="actions-cell">
                 <button
                     className="action-btn edit-btn"

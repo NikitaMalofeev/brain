@@ -183,6 +183,9 @@ export const UserPage = () => {
             </Page>
         );
     }
+    
+    // Проверяем наличие ступеней
+    const currentStage = stages && stages.length > 0 ? stages[currentLevel - 1] : null;
     return (
         <Page back={false}>
             <div className={'relative text-black min-h-screen bg-white pt-[180px] overflow-hidden'}>
@@ -220,20 +223,20 @@ export const UserPage = () => {
                                 <p className={'text-sm text-center font-medium text-[#9F9F9F]'}>Ваш уровень
                                     секретности</p>
                                 <p className={'font-bold text-sm uppercase'}>
-                                    {stages?.[currentLevel - 1]?.stage_name || 'Неизвестная ступень'}
+                                    {currentStage?.stage_name || 'Неизвестная ступень'}
                                 </p>
                                 <HealingChartRecharts
-                                    current={Math.round(3 * ((stages?.[currentLevel - 1].completed_lessons ?? 0) / (stages?.[currentLevel - 1].total_lessons ?? 1)))}/>
+                                    current={Math.round(3 * ((currentStage?.completed_lessons ?? 0) / (currentStage?.total_lessons ?? 1)))}/>
                             </div>
                         </div>
-                        <Link to={`/library/stage/${stages?.[currentLevel - 1].stage_id}`}>
+                        <Link to={currentStage ? `/library/stage/${currentStage.stage_id}` : '#'}>
                             <div className={'p-3 rounded-2xl bg-white flex items-center flex-col'}>
                                 <p className={'text-sm font-medium text-[#9F9F9F]'}>Выполнено</p>
-                                <p className={'text-[20px] font-bold'}>{stages?.[currentLevel - 1].completed_lessons} из {stages?.[currentLevel - 1].total_lessons ?? 10}</p>
+                                <p className={'text-[20px] font-bold'}>{currentStage?.completed_lessons ?? 0} из {currentStage?.total_lessons ?? 10}</p>
                                 <p className={'text-sm font-bold'}>заданий</p>
                             </div>
                         </Link>
-                        <Link to={`/library/stage/${stages?.[currentLevel - 1].stage_id}`}>
+                        <Link to={currentStage ? `/library/stage/${currentStage.stage_id}` : '#'}>
                             <div className={'p-3 rounded-2xl bg-white flex items-center flex-col'}>
                                 <p className={'text-sm font-medium text-[#9F9F9F] flex items-center gap-1'}>
                                     Просрочено

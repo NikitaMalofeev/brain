@@ -37,6 +37,8 @@ interface Material {
   description?: string | null;
   cover_image_path?: string | null;
   material_type: 'video' | 'audio' | 'article' | 'link' | 'file';
+  course_id?: string | null;
+  release_date?: string | null;
 }
 
 const MaterialBlock: React.FC<MaterialBlockProps> = ({ block }) => {
@@ -54,10 +56,13 @@ const MaterialBlock: React.FC<MaterialBlockProps> = ({ block }) => {
       }
 
       try {
+        const now = new Date().toISOString();
+        
         const { data, error } = await supabase
           .from('materials')
           .select('*')
           .eq('id', block.material_id)
+          .lte('release_date', now) // Только если дата открытия <= текущей
           .single();
 
         if (error) throw error;
@@ -113,9 +118,9 @@ const MaterialBlock: React.FC<MaterialBlockProps> = ({ block }) => {
   if (error || !material) {
     return (
       <div className="flex flex-col gap-3">
-        <div className="flex items-center justify-center p-8 bg-red-50 rounded-2xl">
-          <div className="text-red-500">
-            {error || 'Материал не найден'}
+        <div className="flex items-center justify-center p-8 bg-gray-50 rounded-2xl">
+          <div className="text-gray-500">
+            Материал ещё не доступен
           </div>
         </div>
       </div>
