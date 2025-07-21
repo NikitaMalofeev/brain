@@ -38,6 +38,7 @@ function AppContent({ showSplash }: { showSplash: boolean }) {
     console.log('Supabase User:', supabaseUser ? `ID: ${supabaseUser.id}` : 'null');
     console.log('Active Tariff:', activeTariff ? `Code: ${activeTariff.tariff_code}` : 'null');
     console.log(`Access Token: ${accessToken || 'null'}`);
+    console.log(`Has Access: ${!!activeTariff}, Has Token: ${!!(accessToken || personalToken)}`);
 
     // Поиск персонального токена если нет startapp токена
     useEffect(() => {
@@ -67,10 +68,10 @@ function AppContent({ showSplash }: { showSplash: boolean }) {
         }
     }, [accessToken, supabaseUser, userLoading, hasSearchedPersonalToken, isFindIdle, isFindingToken, findTokenByTgId]);
 
-    // Активация токена (startapp или персональный)
+    // Активация токена (startapp или персональный) - ТОЛЬКО если нет активного тарифа
     useEffect(() => {
         const tokenToRedeem = accessToken || personalToken;
-        const canRedeem = tokenToRedeem && supabaseUser && !userLoading && isIdle && !isRedeeming;
+        const canRedeem = tokenToRedeem && supabaseUser && !userLoading && isIdle && !isRedeeming && !activeTariff && !tariffLoading;
 
         if (canRedeem) {
             console.log('🚀 Triggering token redemption...', {
@@ -78,13 +79,18 @@ function AppContent({ showSplash }: { showSplash: boolean }) {
                 token: tokenToRedeem
             });
             redeemToken({ accessToken: tokenToRedeem, userId: supabaseUser.id });
+        } else if (tokenToRedeem && activeTariff && !tariffLoading) {
+            console.log('✅ User already has active tariff, skipping token redemption', {
+                tokenType: accessToken ? 'startapp' : 'personal',
+                activeTariff: activeTariff.tariff_code
+            });
         }
-    }, [accessToken, personalToken, supabaseUser, userLoading, isIdle, isRedeeming, redeemToken]);
+    }, [accessToken, personalToken, supabaseUser, userLoading, isIdle, isRedeeming, redeemToken, activeTariff, tariffLoading]);
 
     // Показываем загрузку пока не завершатся все критичные процессы
     const isAppLoading = userLoading || tariffLoading ||
-        ((accessToken || personalToken) && isRedeeming) ||
-        (!accessToken && !hasSearchedPersonalToken && !isFindingToken);
+        ((accessToken || personalToken) && !activeTariff && isRedeeming) ||
+        (!accessToken && !activeTariff && !hasSearchedPersonalToken && !isFindingToken);
     if (isAppLoading && showSplash) {
         // Показываем сплэш-скрин вместо обычной загрузки
         return null; // Сплэш будет показан в App() компоненте
