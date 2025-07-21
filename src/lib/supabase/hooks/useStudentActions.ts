@@ -9,6 +9,7 @@ export interface StudentActionsResult {
     resetMaterialView: (studentId: string, materialId: string) => Promise<void>;
     updateStudentPoints: (studentId: string, newPoints: number) => Promise<void>;
     updatePersonalChatLink: (studentId: string, chatLink: string | null) => Promise<void>;
+    assignCourseToStudent: (studentId: string, courseId: string) => Promise<void>;
     // Новые функции для ручного управления прогрессом уроков
     setLessonProgress: (studentId: string, lessonId: number, isCompleted: boolean) => Promise<void>;
     markLessonAsCompleted: (studentId: string, lessonId: number) => Promise<void>;
@@ -297,6 +298,72 @@ export function useStudentActions(): StudentActionsResult {
         return setLessonProgress(studentId, lessonId, false);
     };
 
+    // Назначить курс пользователю
+    const assignCourseToStudent = async (studentId: string, courseId: string): Promise<void> => {
+        if (!supabase) {
+            throw new Error('Supabase клиент не инициализирован');
+        }
+
+        try {
+            setLoading(true);
+            setError(null);
+
+            // 1. Деактивируем все старые записи курсов пользователя
+            const { error: deactivateError } = await supabase
+                .from('user_course_enrollments')
+                .update({ is_active: false, updated_at: new Date().toISOString() })
+                .eq('user_id', studentId)
+                .eq('is_active', true);
+
+            if (deactivateError) throw deactivateError;
+
+            // 2. Проверяем, есть ли уже неактивная запись для этого курса
+            const { data: existingEnrollment, error: checkError } = await supabase
+                .from('user_course_enrollments')
+                .select('id')
+                .eq('user_id', studentId)
+                .eq('course_id', courseId)
+                .single();
+
+            if (checkError && checkError.code !== 'PGRST116') { // PGRST116 = no rows returned
+                throw checkError;
+            }
+
+            if (existingEnrollment) {
+                // 3a. Если запись уже существует, просто активируем её
+                const { error: activateError } = await supabase
+                    .from('user_course_enrollments')
+                    .update({ 
+                        is_active: true, 
+                        enrollment_date: new Date().toISOString(),
+                        updated_at: new Date().toISOString() 
+                    })
+                    .eq('id', existingEnrollment.id);
+
+                if (activateError) throw activateError;
+            } else {
+                // 3b. Если записи нет, создаем новую
+                const { error: insertError } = await supabase
+                    .from('user_course_enrollments')
+                    .insert([{
+                        user_id: studentId,
+                        course_id: courseId,
+                        enrollment_date: new Date().toISOString(),
+                        is_active: true,
+                    }]);
+
+                if (insertError) throw insertError;
+            }
+
+        } catch (err) {
+            console.error('Ошибка при назначении курса:', err);
+            setError(err instanceof Error ? err : new Error('Ошибка при назначении курса'));
+            throw err;
+        } finally {
+            setLoading(false);
+        }
+    };
+
     return {
         loading,
         error,
@@ -305,6 +372,7 @@ export function useStudentActions(): StudentActionsResult {
         resetMaterialView,
         updateStudentPoints,
         updatePersonalChatLink,
+        assignCourseToStudent,
         setLessonProgress,
         markLessonAsCompleted,
         markLessonAsIncomplete,

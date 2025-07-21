@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { useStudentDetails, StudentLessonProgress, StudentMaterialView } from '@/lib/supabase/hooks/useStudentDetails';
 import { useStudentActions } from '@/lib/supabase/hooks/useStudentActions';
 import { useTariffsAdmin } from '@/lib/supabase/hooks/useTariffsAdmin';
+import { useCoursesAdmin } from '@/lib/supabase/hooks/useCoursesAdmin';
 import { useCuratorsAdmin } from '@/lib/supabase/hooks/useCuratorsAdmin';
 import { validateCuratorPassword, validateLoginFormat } from '@/helpers/validationHelpers';
 import { CURATOR_PASSWORD_CONFIG } from '@/lib/config/constants';
@@ -18,8 +19,9 @@ interface StudentCardProps {
 
 const StudentCard: React.FC<StudentCardProps> = ({ studentId, onBack, currentUser }) => {
     const { studentDetails, loading, error, loadStudentDetails, assignStudentTariff, assigningTariff } = useStudentDetails();
-    const { resetLessonProgress, markMaterialViewed, resetMaterialView, updateStudentPoints, updatePersonalChatLink, markLessonAsCompleted, markLessonAsIncomplete } = useStudentActions();
+    const { resetLessonProgress, markMaterialViewed, resetMaterialView, updateStudentPoints, updatePersonalChatLink, assignCourseToStudent, markLessonAsCompleted, markLessonAsIncomplete } = useStudentActions();
     const { tariffs, loading: tariffsLoading } = useTariffsAdmin();
+    const { courses, loading: coursesLoading } = useCoursesAdmin();
     const { promoteToCurator, isPromoting } = useCuratorsAdmin();
 
     // Cостояние для модального окна назначения куратором
@@ -39,6 +41,9 @@ const StudentCard: React.FC<StudentCardProps> = ({ studentId, onBack, currentUse
 
     // Состояние для выбранного тарифа
     const [selectedTariffId, setSelectedTariffId] = useState<string>('');
+
+    // Состояние для выбранного курса
+    const [selectedCourseId, setSelectedCourseId] = useState<string>('');
 
     // Локальный стейт для загрузки строк и bulk-операций
     const [rowLoading, setRowLoading] = useState<Record<number, boolean>>({});
@@ -112,6 +117,22 @@ const StudentCard: React.FC<StudentCardProps> = ({ studentId, onBack, currentUse
         } catch (error) {
             console.error('Ошибка при назначении тарифа:', error);
             alert('Ошибка при назначении тарифа');
+        }
+    };
+
+    const handleAssignCourse = async () => {
+        if (!selectedCourseId) {
+            alert('Выберите курс');
+            return;
+        }
+
+        try {
+            await assignCourseToStudent(studentId, selectedCourseId);
+            await loadStudentDetails(studentId);
+            alert('Курс успешно назначен');
+        } catch (error) {
+            console.error('Ошибка при назначении курса:', error);
+            alert('Ошибка при назначении курса');
         }
     };
 
@@ -538,13 +559,71 @@ const StudentCard: React.FC<StudentCardProps> = ({ studentId, onBack, currentUse
                         </button>
                     </div>
                 </div>
-                {/* Выбор тарифа пользователя */}
+                {/* Выбор курса пользователя */}
                 <div className="form-group">
-                    <label>Текущий тариф:</label>
-                    <div className="form-row">
-                        <div className="form-group" style={{ marginBottom: 0 }}>
+                    <label style={{ fontSize: '14px', fontWeight: '600', marginBottom: '8px', display: 'block' }}>Доступ к курсу:</label>
+                    <div style={{ display: 'flex', gap: '12px', alignItems: 'flex-start' }}>
+                        <div style={{ flex: 1 }}>
                             <select
                                 className="admin-input"
+                                style={{ 
+                                    fontSize: '14px', 
+                                    padding: '8px 12px', 
+                                    height: '36px',
+                                    minWidth: '200px'
+                                }}
+                                value={selectedCourseId}
+                                onChange={(e) => setSelectedCourseId(e.target.value)}
+                                disabled={coursesLoading || loading}
+                            >
+                                <option value="">-- Выберите курс --</option>
+                                {courses.map(course => (
+                                    <option key={course.id} value={course.id}>
+                                        {course.title}
+                                    </option>
+                                ))}
+                            </select>
+                            {studentDetails.courses?.find(c => c.is_active) && (
+                                <small style={{ 
+                                    display: 'block', 
+                                    marginTop: '4px', 
+                                    color: '#666',
+                                    fontSize: '12px'
+                                }}>
+                                    Активный курс: {studentDetails.courses.find(c => c.is_active)?.course_title}
+                                </small>
+                            )}
+                        </div>
+                        <button
+                            className="admin-button"
+                            style={{
+                                fontSize: '14px',
+                                padding: '8px 16px',
+                                height: '36px',
+                                minWidth: '100px',
+                                flexShrink: 0
+                            }}
+                            onClick={handleAssignCourse}
+                            disabled={loading || !selectedCourseId}
+                        >
+                            {loading ? 'Назначение...' : 'Назначить'}
+                        </button>
+                    </div>
+                </div>
+
+                {/* Выбор тарифа пользователя */}
+                <div className="form-group">
+                    <label style={{ fontSize: '14px', fontWeight: '600', marginBottom: '8px', display: 'block' }}>Текущий тариф:</label>
+                    <div style={{ display: 'flex', gap: '12px', alignItems: 'flex-start' }}>
+                        <div style={{ flex: 1 }}>
+                            <select
+                                className="admin-input"
+                                style={{ 
+                                    fontSize: '14px', 
+                                    padding: '8px 12px', 
+                                    height: '36px',
+                                    minWidth: '200px'
+                                }}
                                 value={selectedTariffId}
                                 onChange={(e) => setSelectedTariffId(e.target.value)}
                                 disabled={tariffsLoading || assigningTariff}
@@ -557,20 +636,30 @@ const StudentCard: React.FC<StudentCardProps> = ({ studentId, onBack, currentUse
                                 ))}
                             </select>
                             {basicInfo.current_tariff_name && (
-                                <small>
+                                <small style={{ 
+                                    display: 'block', 
+                                    marginTop: '4px', 
+                                    color: '#666',
+                                    fontSize: '12px'
+                                }}>
                                     Активный: {basicInfo.current_tariff_name} ({basicInfo.current_tariff_code})
                                 </small>
                             )}
                         </div>
-                        <div className="form-group" style={{ flex: 'none', marginBottom: 0 }}>
-                            <button
-                                className="admin-button"
-                                onClick={handleAssignTariff}
-                                disabled={assigningTariff || !selectedTariffId}
-                            >
-                                {assigningTariff ? 'Назначение...' : 'Назначить'}
-                            </button>
-                        </div>
+                        <button
+                            className="admin-button"
+                            style={{
+                                fontSize: '14px',
+                                padding: '8px 16px',
+                                height: '36px',
+                                minWidth: '100px',
+                                flexShrink: 0
+                            }}
+                            onClick={handleAssignTariff}
+                            disabled={assigningTariff || !selectedTariffId}
+                        >
+                            {assigningTariff ? 'Назначение...' : 'Назначить'}
+                        </button>
                     </div>
                 </div>
 
