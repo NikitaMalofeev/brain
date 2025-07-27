@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { LessonBlock } from '@/lib/supabase/types';
 import { buildFileUrl } from '@/lib/supabase/supabaseStorageService';
+import { MarkdownContent } from './MarkdownContent';
 
 // Функция для преобразования URL в тексте в кликабельные ссылки
 function linkifyText(text: string): React.ReactNode[] {
@@ -80,16 +81,7 @@ const ImageBlock: React.FC<ImageBlockProps> = ({ block }) => {
 
             {/* Описание блока, если есть */}
             {block.content_text && (
-                <div className={'flex flex-col gap-3 mt-4'} style={{
-                    fontSize: '16px',
-                    lineHeight: '1.5',
-                    color: '#242424',
-                    whiteSpace: 'pre-wrap',
-                }}>
-                    {block.content_text?.split('\n').map((line, i) => {
-                        return (<p key={i}>{linkifyText(line)}</p>)
-                    })}
-                </div>
+                <MarkdownContent content={block.content_text} className="mt-4" />
             )}
 
             {/* Полноэкранное модальное окно */}

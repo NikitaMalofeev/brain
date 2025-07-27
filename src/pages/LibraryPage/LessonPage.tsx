@@ -9,6 +9,7 @@ import { logger } from '@/lib/logger';
 import { supabase } from '@/lib/supabase/client';
 import { LessonWithBlocks, LessonBlock, Submission, LessonProgress } from '@/lib/supabase/types';
 import { VideoBlock, FixedSubmissionForm, DocumentBlock, ImageBlock, MaterialBlock } from '@/components/LessonContent';
+import { MarkdownContent } from '@/components/LessonContent/MarkdownContent';
 import { Button } from '@/components/ui/button';
 import { getDeadlineStatus, formatDeadline } from '@/helpers/deadlineUtils';
 import { buildFileUrl } from '@/lib/supabase/supabaseStorageService';
@@ -54,41 +55,7 @@ function BlockContent({ block }: { block: LessonBlock }) {
     switch (block.block_type) {
         case 'text':
             return (
-                <div className="text-[#242424] leading-relaxed">
-                    <ReactMarkdown
-                        components={{
-                            h1: ({ node, ...props }) => <h1 className="text-3xl font-bold mt-6 mb-4" {...props} />,
-                            h2: ({ node, ...props }) => <h2 className="text-2xl font-semibold mt-5 mb-3" {...props} />,
-                            h3: ({ node, ...props }) => <h3 className="text-xl font-semibold mt-4 mb-2" {...props} />,
-                            p: ({ node, ...props }) => <p className="my-3" {...props} />,
-                            ul: ({ node, ...props }) => <ul className="list-disc list-inside my-3 space-y-1" {...props} />,
-                            ol: ({ node, ...props }) => <ol className="list-decimal list-inside my-3 space-y-1" {...props} />,
-                            li: ({ node, ...props }) => <li className="ml-2" {...props} />,
-                            code: ({ node, inline, ...props }) => 
-                                inline ? (
-                                    <code className="bg-gray-100 px-1 py-0.5 rounded text-sm" {...props} />
-                                ) : (
-                                    <code className="block bg-gray-100 p-4 rounded-lg overflow-x-auto my-3" {...props} />
-                                ),
-                            pre: ({ node, ...props }) => <pre className="bg-gray-100 p-4 rounded-lg overflow-x-auto my-3" {...props} />,
-                            blockquote: ({ node, ...props }) => (
-                                <blockquote className="border-l-4 border-gray-300 pl-4 my-4 text-gray-600 italic" {...props} />
-                            ),
-                            a: ({ node, ...props }) => (
-                                <a className="text-[#B862EA] underline hover:no-underline" {...props} target="_blank" rel="noopener noreferrer" />
-                            ),
-                            hr: ({ node, ...props }) => <hr className="border-t border-gray-300 my-8" {...props} />,
-                            strong: ({ node, ...props }) => <strong className="font-semibold" {...props} />,
-                            em: ({ node, ...props }) => <em className="italic" {...props} />,
-                            img: ({ node, ...props }) => <img className="max-w-full h-auto my-4 rounded-lg" {...props} />,
-                            table: ({ node, ...props }) => <table className="w-full border-collapse my-4" {...props} />,
-                            th: ({ node, ...props }) => <th className="border border-gray-300 px-4 py-2 bg-gray-100 font-semibold text-left" {...props} />,
-                            td: ({ node, ...props }) => <td className="border border-gray-300 px-4 py-2" {...props} />,
-                        }}
-                    >
-                        {block.content_text || ''}
-                    </ReactMarkdown>
-                </div>
+                <MarkdownContent content={block.content_text || ''} />
             );
 
         case 'video':
@@ -96,16 +63,7 @@ function BlockContent({ block }: { block: LessonBlock }) {
                 <div className={'flex flex-col gap-3'}>
                     <VideoBlock block={block} />
                     {block.content_text && (
-                        <div className={'flex flex-col gap-3 mt-4'} style={{
-                            fontSize: '16px',
-                            lineHeight: '1.5',
-                            color: '#242424',
-                            whiteSpace: 'pre-wrap',
-                        }}>
-                            {block.content_text?.split('\n').map((line, i) => {
-                                return (<p key={i}>{linkifyText(line)}</p>)
-                            })}
-                        </div>
+                        <MarkdownContent content={block.content_text} className="mt-4" />
                     )}
                 </div>
             );
@@ -122,7 +80,7 @@ function BlockContent({ block }: { block: LessonBlock }) {
                     audioUrl={buildFileUrl(block.content_url) || ''} 
                     waveformData={audioWaveformData}
                 />}
-                {block.content_text && <p>{linkifyText(block.content_text)}</p>}
+                {block.content_text && <MarkdownContent content={block.content_text} className="mt-4" />}
             </div>
 
 
