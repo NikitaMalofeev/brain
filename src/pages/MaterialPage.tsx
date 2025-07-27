@@ -154,6 +154,7 @@ export const MaterialPage = () => {
                     <div className={'p-4 flex flex-col gap-3'}>
                         {mainContentUrl && <NewPlayer
                             audioUrl={mainContentUrl}
+                            waveformData={mainBlock?.meta_json?.audio_data}
                         />}
                         <p className={'text-2xl font-bold leading-7'}>{mainBlock.title}</p>
                         <p>{mainBlock.content_text}</p>

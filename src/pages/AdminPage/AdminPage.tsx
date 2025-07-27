@@ -294,10 +294,10 @@ const CoursesManager: React.FC<CoursesManagerProps> = ({ onCourseSelect }) => {
 
   return (
     <div className="admin-section">
-      <div className="section-header">
-        <h2>Управление курсами</h2>
+      <div className="section-header flex-col sm:flex-row">
+        <h2 className="text-xl sm:text-2xl">Управление курсами</h2>
         <button
-          className="admin-refresh-btn"
+          className="admin-refresh-btn w-full sm:w-auto mt-3 sm:mt-0"
           onClick={refetch}
           disabled={loading}
         >
@@ -307,24 +307,22 @@ const CoursesManager: React.FC<CoursesManagerProps> = ({ onCourseSelect }) => {
 
       {/* Форма добавления курса */}
       <div className="course-add-form">
-        <h3>Добавить курс</h3>
-        <div style={{ display: 'flex', gap: '8px', marginBottom: '16px' }}>
+        <h3 className="text-lg sm:text-xl">Добавить курс</h3>
+        <div className="flex flex-col sm:flex-row gap-3 mb-4">
           <input
-            className="admin-input"
+            className="admin-input w-full sm:flex-[2]"
             placeholder="Название курса"
             value={newTitle}
             onChange={e => setNewTitle(e.target.value)}
-            style={{ flex: 2 }}
           />
           <input
-            className="admin-input"
+            className="admin-input w-full sm:flex-[3]"
             placeholder="Подзаголовок (опционально)"
             value={newSubtitle}
             onChange={e => setNewSubtitle(e.target.value)}
-            style={{ flex: 3 }}
           />
           <button
-            className="admin-button"
+            className="admin-button w-full sm:w-auto"
             onClick={handleAddCourse}
             disabled={addLoading || !newTitle.trim()}
           >
@@ -346,8 +344,9 @@ const CoursesManager: React.FC<CoursesManagerProps> = ({ onCourseSelect }) => {
       ) : courses.length === 0 ? (
         <div className="empty-table">Курсы не найдены</div>
       ) : (
-        <div className="admin-table">
-          <table>
+        <div className="admin-table overflow-x-auto">
+          {/* Десктопная таблица */}
+          <table className="hidden sm:table">
             <thead>
               <tr>
                 <th>Название</th>
@@ -433,6 +432,81 @@ const CoursesManager: React.FC<CoursesManagerProps> = ({ onCourseSelect }) => {
               ))}
             </tbody>
           </table>
+
+          {/* Мобильные карточки */}
+          <div className="sm:hidden space-y-3">
+            {courses.map((course) => (
+              <div key={course.id} className="bg-white rounded-lg p-4 border border-gray-200 shadow-sm">
+                {editingCourse?.id === course.id ? (
+                  <div className="space-y-3">
+                    <input
+                      className="admin-input w-full text-sm"
+                      value={editTitle}
+                      onChange={e => setEditTitle(e.target.value)}
+                      placeholder="Название курса"
+                    />
+                    <input
+                      className="admin-input w-full text-sm"
+                      value={editSubtitle}
+                      onChange={e => setEditSubtitle(e.target.value)}
+                      placeholder="Подзаголовок"
+                    />
+                    <div className="flex gap-2">
+                      <button
+                        className="action-btn edit-btn flex-1 text-xs"
+                        onClick={saveCourse}
+                        disabled={updateLoading}
+                      >
+                        Сохранить
+                      </button>
+                      <button
+                        className="action-btn delete-btn flex-1 text-xs"
+                        onClick={cancelEditing}
+                        disabled={updateLoading}
+                      >
+                        Отмена
+                      </button>
+                    </div>
+                  </div>
+                ) : (
+                  <>
+                    <div className="mb-3">
+                      <h4 className="font-semibold text-lg">{course.title}</h4>
+                      {course.subtitle && (
+                        <p className="text-gray-600 text-sm mt-1">{course.subtitle}</p>
+                      )}
+                      <p className="text-gray-500 text-xs mt-2">
+                        Создан: {new Date(course.created_at || '').toLocaleDateString()}
+                      </p>
+                    </div>
+                    <div className="flex flex-col gap-2">
+                      <button
+                        className="action-btn edit-btn w-full text-sm justify-center"
+                        onClick={() => onCourseSelect(course.id, course.title)}
+                      >
+                        Управление ступенями
+                      </button>
+                      <div className="flex gap-2">
+                        <button
+                          className="action-btn edit-btn flex-1 text-xs justify-center"
+                          onClick={() => startEditing(course)}
+                        >
+                          Изменить
+                        </button>
+                        <button
+                          className="action-btn delete-btn flex-1 text-xs justify-center"
+                          onClick={() => handleDeleteCourse(course.id, course.title)}
+                          disabled={updateLoading}
+                        >
+                          Удалить
+                        </button>
+                      </div>
+                    </div>
+                  </>
+                )}
+              </div>
+            ))}
+          </div>
         </div>
       )}
     </div>

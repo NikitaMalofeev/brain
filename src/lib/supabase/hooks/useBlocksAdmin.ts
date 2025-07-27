@@ -1,7 +1,8 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '../client';
 import { Database } from '../types';
-import { deleteFile } from '../supabaseStorageService';
+import { deleteFile, buildFileUrl } from '../supabaseStorageService';
+import { generateWaveformData } from '@/lib/audio/waveformGenerator';
 
 type LessonBlock = Database['public']['Tables']['lesson_blocks']['Row'];
 type LessonBlockInsert = Database['public']['Tables']['lesson_blocks']['Insert'];
@@ -56,9 +57,32 @@ export const useBlocksAdmin = (lessonId: number): UseBlocksAdminResult => {
                 throw new Error('Supabase client не инициализирован');
             }
 
+            let finalData = { ...data };
+
+            // Если это аудио блок с URL, генерируем данные волны
+            if (data.block_type === 'audio' && data.content_url) {
+                try {
+                    const audioUrl = buildFileUrl(data.content_url);
+                    if (audioUrl) {
+                        console.log('Генерируем волну для аудио:', audioUrl);
+                        const waveformData = await generateWaveformData(audioUrl);
+                        
+                        // Добавляем audio_data в meta_json
+                        finalData.meta_json = {
+                            ...(data.meta_json || {}),
+                            audio_data: waveformData
+                        };
+                        console.log('Данные волны сгенерированы:', waveformData);
+                    }
+                } catch (waveformError) {
+                    console.error('Не удалось сгенерировать волну:', waveformError);
+                    // Продолжаем без волны
+                }
+            }
+
             const { error: createError } = await supabase
                 .from('lesson_blocks')
-                .insert(data);
+                .insert(finalData);
 
             if (createError) {
                 throw new Error(createError.message);
@@ -77,9 +101,42 @@ export const useBlocksAdmin = (lessonId: number): UseBlocksAdminResult => {
                 throw new Error('Supabase client не инициализирован');
             }
 
+            let finalData = { ...data };
+
+            // Если обновляется URL аудио, генерируем новую волну
+            if (data.block_type === 'audio' && data.content_url) {
+                // Проверяем, изменился ли URL
+                const { data: currentBlock } = await supabase
+                    .from('lesson_blocks')
+                    .select('content_url')
+                    .eq('id', id)
+                    .single();
+                
+                if (currentBlock?.content_url !== data.content_url) {
+                    try {
+                        const audioUrl = buildFileUrl(data.content_url);
+                        if (audioUrl) {
+                            console.log('Генерируем волну для обновленного аудио:', audioUrl);
+                            const waveformData = await generateWaveformData(audioUrl);
+                            
+                            // Обновляем audio_data в meta_json
+                            finalData.meta_json = {
+                                ...(currentBlock?.meta_json || {}),
+                                ...(data.meta_json || {}),
+                                audio_data: waveformData
+                            };
+                            console.log('Данные волны обновлены:', waveformData);
+                        }
+                    } catch (waveformError) {
+                        console.error('Не удалось сгенерировать волну:', waveformError);
+                        // Продолжаем без волны
+                    }
+                }
+            }
+
             const { error: updateError } = await supabase
                 .from('lesson_blocks')
-                .update(data)
+                .update(finalData)
                 .eq('id', id);
 
             if (updateError) {

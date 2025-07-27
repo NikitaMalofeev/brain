@@ -1,20 +1,21 @@
-import React, { useRef, useState, useEffect } from 'react';
-import { Play, Pause, Volume2 } from 'lucide-react';
+import React, { useRef, useState, useEffect, useCallback } from 'react';
+import { Play, Pause, Volume2, Download } from 'lucide-react';
 import { usePlayer, PlayerType } from '@/contexts/PlayerContext';
 import { useAppContext } from '@/contexts/AppContext';
 import { LessonBlock } from '@/lib/supabase/types';
-import StreamingAudioBlock from './StreamingAudioBlock';
 
-interface AudioBlockProps {
+interface StreamingAudioBlockProps {
     block: LessonBlock;
 }
 
-const AudioBlock: React.FC<AudioBlockProps> = ({ block }) => {
+const StreamingAudioBlock: React.FC<StreamingAudioBlockProps> = ({ block }) => {
     const audioRef = useRef<HTMLAudioElement>(null);
     const progressBarRef = useRef<HTMLDivElement>(null);
     const [duration, setDuration] = useState<number>(0);
     const [isLoading, setIsLoading] = useState<boolean>(true);
     const [isTrackingProgress, setIsTrackingProgress] = useState<boolean>(false);
+    const [bufferedRanges, setBufferedRanges] = useState<Array<{start: number, end: number}>>([]);
+    const [downloadProgress, setDownloadProgress] = useState<number>(0);
 
     const {
         state,
@@ -33,72 +34,86 @@ const AudioBlock: React.FC<AudioBlockProps> = ({ block }) => {
         isTelegramApp
     } = useAppContext();
 
-    // Проверяем, является ли URL HLS потоком
-    const isHLSUrl = (url: string): boolean => {
-        return url.endsWith('.m3u8') || url.includes('master.m3u8');
-    };
-
-    // Проверяем, что URL ведет на Supabase Storage аудио
-    const isValidAudioUrl = (url: string): boolean => {
-        if (!url) return false;
-
-        // Проверяем Supabase Storage аудио или общие аудио форматы (iOS совместимые)
-        return (
-            url.includes('/storage/v1/object/public/media/audio/') ||
-            url.endsWith('.mp3') ||
-            url.endsWith('.wav') ||
-            url.endsWith('.m4a') ||
-            url.endsWith('.aac') ||
-            isHLSUrl(url)
-        );
-    };
-
     const audioUrl = block.content_url || '';
-    const isValidAudio = isValidAudioUrl(audioUrl);
-
-    // Если это HLS поток, используем HLSAudioBlock
-    if (isHLSUrl(audioUrl)) {
-        return <HLSAudioBlock block={block} />;
-    }
-    
-    // Для обычных MP3 используем StreamingAudioBlock
-    return <StreamingAudioBlock block={block} />;
-
-    // Уникальный ID для этого аудио-плеера
-    const audioId = `audio-${audioUrl}`;
-
-    // Проверяем, активен ли именно этот плеер
+    const audioId = `streaming-audio-${audioUrl}`;
     const isThisPlayerActive = state.activeType === PlayerType.AUDIO && state.contentId === audioId;
 
-    // Загрузка метаданных аудио
+    // Обновление буферизированных диапазонов
+    const updateBufferedRanges = useCallback(() => {
+        if (!audioRef.current) return;
+        
+        const audio = audioRef.current;
+        const ranges: Array<{start: number, end: number}> = [];
+        
+        for (let i = 0; i < audio.buffered.length; i++) {
+            ranges.push({
+                start: audio.buffered.start(i),
+                end: audio.buffered.end(i)
+            });
+        }
+        
+        setBufferedRanges(ranges);
+        
+        // Вычисляем общий прогресс загрузки
+        if (duration > 0) {
+            let totalBuffered = 0;
+            ranges.forEach(range => {
+                totalBuffered += range.end - range.start;
+            });
+            setDownloadProgress((totalBuffered / duration) * 100);
+        }
+    }, [duration]);
+
+    // Оптимизированная загрузка с поддержкой Range requests
     useEffect(() => {
-        if (!audioRef.current || !isValidAudio) return;
+        if (!audioRef.current || !audioUrl) return;
 
         const audio = audioRef.current;
+
+        // Настройка для оптимального стриминга
+        audio.preload = 'none';
+        audio.crossOrigin = 'anonymous';
+
+        const handleLoadStart = () => {
+            setIsLoading(true);
+        };
 
         const handleLoadedMetadata = () => {
             setDuration(audio.duration || 0);
             setIsLoading(false);
         };
 
-        const handleError = () => {
-            setIsLoading(false);
-            console.error('Ошибка загрузки аудио:', audioUrl);
+        const handleProgress = () => {
+            updateBufferedRanges();
         };
 
+        const handleError = (e: Event) => {
+            setIsLoading(false);
+            console.error('Ошибка загрузки аудио:', e);
+        };
+
+        const handleCanPlay = () => {
+            setIsLoading(false);
+        };
+
+        audio.addEventListener('loadstart', handleLoadStart);
         audio.addEventListener('loadedmetadata', handleLoadedMetadata);
+        audio.addEventListener('progress', handleProgress);
         audio.addEventListener('error', handleError);
+        audio.addEventListener('canplay', handleCanPlay);
 
         return () => {
+            audio.removeEventListener('loadstart', handleLoadStart);
             audio.removeEventListener('loadedmetadata', handleLoadedMetadata);
+            audio.removeEventListener('progress', handleProgress);
             audio.removeEventListener('error', handleError);
+            audio.removeEventListener('canplay', handleCanPlay);
         };
-    }, [audioUrl, isValidAudio]);
+    }, [audioUrl, updateBufferedRanges]);
 
     // Синхронизация с HTML5 audio элементом для активного плеера
     useEffect(() => {
         if (!audioRef.current || !isThisPlayerActive) {
-            // Если этот плеер не активен, принудительно ставим на паузу
             if (audioRef.current && !audioRef.current.paused) {
                 audioRef.current.pause();
             }
@@ -107,60 +122,66 @@ const AudioBlock: React.FC<AudioBlockProps> = ({ block }) => {
 
         const audio = audioRef.current;
 
-        // Установка громкости
         audio.volume = state.muted ? 0 : state.volume;
-
-        // Установка скорости воспроизведения
         audio.playbackRate = state.playbackRate;
 
-        // Обработчики событий
         const handleTimeUpdate = () => {
-            // ВСЕГДА обновляем время, если не идет ручное перемещение
             if (!isTrackingProgress) {
                 seekTo(audio.currentTime);
             }
+            updateBufferedRanges();
         };
 
         const handleDurationChange = () => {
             if (audio.duration && !isNaN(audio.duration)) {
                 setDuration(audio.duration);
-                // НЕ сбрасываем время при загрузке
             }
         };
 
         const handleEnded = () => pause();
 
-        // Управление воспроизведением
+        const handleWaiting = () => {
+            console.log('Буферизация...');
+        };
+
+        const handlePlaying = () => {
+            console.log('Воспроизведение возобновлено');
+        };
+
         if (state.playing) {
+            // Начинаем загрузку только при воспроизведении
+            if (audio.src !== audioUrl) {
+                audio.src = audioUrl;
+            }
             audio.play().catch(error => console.error('Ошибка воспроизведения:', error));
         } else {
             audio.pause();
         }
 
-        // Добавление обработчиков
         audio.addEventListener('timeupdate', handleTimeUpdate);
         audio.addEventListener('durationchange', handleDurationChange);
         audio.addEventListener('ended', handleEnded);
+        audio.addEventListener('waiting', handleWaiting);
+        audio.addEventListener('playing', handlePlaying);
 
-        // Очистка обработчиков
         return () => {
             audio.removeEventListener('timeupdate', handleTimeUpdate);
             audio.removeEventListener('durationchange', handleDurationChange);
             audio.removeEventListener('ended', handleEnded);
+            audio.removeEventListener('waiting', handleWaiting);
+            audio.removeEventListener('playing', handlePlaying);
         };
-    }, [isThisPlayerActive, state.playing, state.volume, state.muted, state.playbackRate, seekTo, pause, isTrackingProgress]);
+    }, [isThisPlayerActive, state.playing, state.volume, state.muted, state.playbackRate, seekTo, pause, isTrackingProgress, audioUrl, updateBufferedRanges]);
 
-    // Изменение позиции воспроизведения
+    // Изменение позиции воспроизведения с умной загрузкой
     useEffect(() => {
         if (!audioRef.current || !isThisPlayerActive || isTrackingProgress) return;
 
-        // Уменьшаем чувствительность, чтобы избежать конфликта с ручной перемоткой
         if (Math.abs(audioRef.current.currentTime - state.currentTime) > 1.5) {
             audioRef.current.currentTime = state.currentTime;
         }
     }, [state.currentTime, isThisPlayerActive, isTrackingProgress]);
 
-    // Обработчик запуска воспроизведения
     const handlePlayRequest = () => {
         if (isThisPlayerActive) {
             togglePlay();
@@ -171,14 +192,12 @@ const AudioBlock: React.FC<AudioBlockProps> = ({ block }) => {
         }
     };
 
-    // Расчет ширины прогресс-бара (перемещаем определение до его использования)
     const progressWidth = (): string => {
         if (!duration || !isThisPlayerActive) return '0%';
         const percent = (state.currentTime / duration) * 100;
         return `${Math.min(100, Math.max(0, percent))}%`;
     };
 
-    // Обработчик клика по прогресс-бару (оставляем для кликов без перетаскивания)
     const handleProgressBarClick = (e: React.MouseEvent<HTMLDivElement>) => {
         if (!progressBarRef.current || !audioRef.current || !isThisPlayerActive || !duration || isTrackingProgress) return;
 
@@ -239,37 +258,7 @@ const AudioBlock: React.FC<AudioBlockProps> = ({ block }) => {
             document.removeEventListener('mousemove', handleDragMove);
             document.removeEventListener('mouseup', handleDragEnd);
         }
-        // Оставляем здесь возможный финальный seekTo, если понадобится более строгая синхронизация
-        // if (audioRef.current && state.playing) { // Только если плеер играет, чтобы не сбивать паузу
-        //     seekTo(audioRef.current.currentTime);
-        // }
     };
-
-    if (!isValidAudio) {
-        return (
-            <div style={{
-                marginBottom: '24px',
-                padding: '16px',
-                backgroundColor: '#ffffff',
-                borderRadius: '16px',
-                border: '1px solid #f0f0f0',
-                boxShadow: '0 2px 8px rgba(0,0,0,0.04)',
-            }}>
-                <div style={{
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    height: '120px',
-                    backgroundColor: '#f8f9fa',
-                    borderRadius: '12px',
-                    color: '#6d6d6d',
-                    fontSize: '16px',
-                }}>
-                    🎵 Аудио недоступно
-                </div>
-            </div>
-        );
-    }
 
     return (
         <React.Fragment>
@@ -278,8 +267,8 @@ const AudioBlock: React.FC<AudioBlockProps> = ({ block }) => {
                     -webkit-appearance: none;
                     appearance: none;
                     width: 100%;
-                    height: 4px; /* Высота трека */
-                    background: rgba(0, 0, 0, 0.12); /* Цвет трека как у прогресс-бара */
+                    height: 4px;
+                    background: rgba(0, 0, 0, 0.12);
                     border-radius: 4px;
                     outline: none;
                     cursor: pointer;
@@ -288,12 +277,12 @@ const AudioBlock: React.FC<AudioBlockProps> = ({ block }) => {
                 .volume-slider::-webkit-slider-thumb {
                     -webkit-appearance: none;
                     appearance: none;
-                    height: 12px; /* Размер ползунка */
+                    height: 12px;
                     width: 12px;
                     border-radius: 50%;
                     background: rgba(0, 0, 0, 0.8);
                     cursor: pointer;
-                    margin-top: -4px; /* Центрирование thumb относительно трека (4px трек - 12px ползунок) */
+                    margin-top: -4px;
                 }
 
                 .volume-slider::-moz-range-thumb {
@@ -305,52 +294,6 @@ const AudioBlock: React.FC<AudioBlockProps> = ({ block }) => {
                     border: none;
                 }
 
-                /* Стили для трека Firefox */
-                .volume-slider::-moz-range-track {
-                    width: 100%;
-                    height: 4px;
-                    background: rgba(0, 0, 0, 0.12); /* Трек */
-                    border-radius: 4px;
-                    cursor: pointer;
-                }
-
-                .volume-slider::-moz-range-progress {
-                     background: rgba(0, 0, 0, 0.8); /* Заполненная часть */
-                     border-radius: 4px;
-                     height: 4px;
-                }
-
-                /* Стили для IE / Edge */
-                .volume-slider::-ms-track {
-                    width: 100%;
-                    height: 4px;
-                    cursor: pointer;
-                    background: transparent; /* Прозрачный фон, чтобы цвет был виден через ms-fill-lower/upper */
-                    border-color: transparent;
-                    color: transparent;
-                }
-
-                .volume-slider::-ms-fill-lower {
-                    background: rgba(0, 0, 0, 0.8); /* Заполненная часть */
-                    border-radius: 4px;
-                }
-
-                .volume-slider::-ms-fill-upper {
-                    background: rgba(0, 0, 0, 0.12); /* Не заполненная часть */
-                    border-radius: 4px;
-                }
-
-                .volume-slider::-ms-thumb {
-                    height: 12px;
-                    width: 12px;
-                    border-radius: 50%;
-                    background: rgba(0, 0, 0, 0.8);
-                    cursor: pointer;
-                    border: none; /* Убираем стандартную рамку */
-                    margin-top: 0px; /* Центрирование thumb для IE/Edge */
-                }
-
-                /* Стили для Webkit */
                 .volume-slider::-webkit-slider-runnable-track {
                     width: 100%;
                     height: 4px;
@@ -358,19 +301,13 @@ const AudioBlock: React.FC<AudioBlockProps> = ({ block }) => {
                     border-radius: 4px;
                 }
 
-                .volume-slider::-webkit-slider-thumb {
-                    -webkit-appearance: none;
-                    appearance: none;
-                    height: 12px; /* Размер ползунка */
-                    width: 12px;
-                    border-radius: 50%;
-                    background: rgba(0, 0, 0, 0.8);
-                    cursor: pointer;
-                    margin-top: -4px; /* Центрирование thumb относительно трека (4px трек - 12px ползунок) */
+                @keyframes pulse {
+                    0% { opacity: 1; }
+                    50% { opacity: 0.5; }
+                    100% { opacity: 1; }
                 }
             `}</style>
             <div style={{ marginBottom: '24px' }}>
-                {/* Заголовок отдельно */}
                 {block.title && (
                     <div style={{
                         fontSize: '18px',
@@ -382,7 +319,6 @@ const AudioBlock: React.FC<AudioBlockProps> = ({ block }) => {
                     </div>
                 )}
 
-                {/* Аудио плеер в стиле Figma */}
                 <div style={{
                     backgroundColor: '#ffffff',
                     borderRadius: '24px',
@@ -391,23 +327,19 @@ const AudioBlock: React.FC<AudioBlockProps> = ({ block }) => {
                     position: 'relative',
                     border: '0.7px solid rgba(0, 0, 0, 0.12)',
                 }}>
-                    {/* Скрытый audio элемент с оптимизацией для стриминга */}
                     <audio
                         ref={audioRef}
-                        src={audioUrl}
                         preload="none"
                         crossOrigin="anonymous"
                         style={{ display: 'none' }}
                     />
 
-                    {/* Горизонтальный layout как в Figma */}
                     <div style={{
                         display: 'flex',
                         flexDirection: 'row',
                         alignItems: 'center',
                         gap: '8px',
                     }}>
-                        {/* Кнопка Play/Pause */}
                         <div style={{
                             backgroundColor: 'rgba(88, 88, 88, 0.08)',
                             borderRadius: '32px',
@@ -432,7 +364,11 @@ const AudioBlock: React.FC<AudioBlockProps> = ({ block }) => {
                                 }}
                             >
                                 {isLoading ? (
-                                    <div style={{ fontSize: '8px', color: '#000000' }}>...</div>
+                                    <div style={{ 
+                                        fontSize: '8px', 
+                                        color: '#000000',
+                                        animation: 'pulse 1s infinite'
+                                    }}>•••</div>
                                 ) : (
                                     isThisPlayerActive && state.playing ?
                                         <Pause size={14} color="#000000" fill="#000000" /> :
@@ -441,7 +377,6 @@ const AudioBlock: React.FC<AudioBlockProps> = ({ block }) => {
                             </button>
                         </div>
 
-                        {/* Прогресс-бар с ползунком */}
                         <div style={{
                             display: 'flex',
                             flexDirection: 'column',
@@ -449,7 +384,6 @@ const AudioBlock: React.FC<AudioBlockProps> = ({ block }) => {
                             gap: '4px',
                             flex: 1,
                         }}>
-                            {/* Простая линия прогресса с ползунком */}
                             <div
                                 ref={progressBarRef}
                                 onClick={handleProgressBarClick}
@@ -466,15 +400,30 @@ const AudioBlock: React.FC<AudioBlockProps> = ({ block }) => {
                                     position: 'relative',
                                 }}
                             >
-                                {/* Заполненная часть */}
+                                {/* Буферизированные области */}
+                                {bufferedRanges.map((range, index) => (
+                                    <div
+                                        key={index}
+                                        style={{
+                                            position: 'absolute',
+                                            left: `${(range.start / duration) * 100}%`,
+                                            width: `${((range.end - range.start) / duration) * 100}%`,
+                                            height: '100%',
+                                            backgroundColor: 'rgba(0, 0, 0, 0.2)',
+                                            borderRadius: '2px',
+                                        }}
+                                    />
+                                ))}
+                                
+                                {/* Прогресс воспроизведения */}
                                 <div style={{
                                     width: progressWidth(),
                                     height: '100%',
                                     backgroundColor: 'rgba(0, 0, 0, 0.8)',
                                     borderRadius: '2px',
                                     position: 'relative',
+                                    zIndex: 1,
                                 }}>
-                                    {/* Ползунок */}
                                     {isThisPlayerActive && (
                                         <div style={{
                                             position: 'absolute',
@@ -491,9 +440,20 @@ const AudioBlock: React.FC<AudioBlockProps> = ({ block }) => {
                                     )}
                                 </div>
                             </div>
+
+                            {/* Индикатор загрузки */}
+                            {isThisPlayerActive && downloadProgress < 100 && (
+                                <div style={{
+                                    fontSize: '10px',
+                                    color: 'rgba(0, 0, 0, 0.5)',
+                                    marginTop: '2px',
+                                }}>
+                                    <Download size={10} style={{ display: 'inline', marginRight: '4px' }} />
+                                    Загружено: {Math.round(downloadProgress)}%
+                                </div>
+                            )}
                         </div>
 
-                        {/* Время справа */}
                         <div style={{
                             display: 'flex',
                             justifyContent: 'flex-end',
@@ -517,7 +477,6 @@ const AudioBlock: React.FC<AudioBlockProps> = ({ block }) => {
                         </div>
                     </div>
 
-                    {/* Дополнительные контролы */}
                     {(isThisPlayerActive) && (
                         <div style={{
                             marginTop: '12px',
@@ -526,7 +485,6 @@ const AudioBlock: React.FC<AudioBlockProps> = ({ block }) => {
                             justifyContent: 'space-between',
                             gap: '16px',
                         }}>
-                            {/* Контрол скорости воспроизведения - только для активного плеера */}
                             {isThisPlayerActive && (
                                 <div style={{
                                     display: 'flex',
@@ -564,14 +522,13 @@ const AudioBlock: React.FC<AudioBlockProps> = ({ block }) => {
                                 </div>
                             )}
 
-                            {/* Регулятор громкости - отображаем, если плеер активен */}
                             {isThisPlayerActive && (
                                 <div style={{
                                     display: 'flex',
                                     alignItems: 'center',
                                     gap: '8px',
-                                    flex: 1, // Позволим ему занимать доступное место
-                                    maxWidth: '150px', // Немного увеличим, если нужно
+                                    flex: 1,
+                                    maxWidth: '150px',
                                 }}>
                                     <span style={{
                                         fontSize: '12px',
@@ -591,7 +548,7 @@ const AudioBlock: React.FC<AudioBlockProps> = ({ block }) => {
                                         }}
                                         style={{
                                             flex: 1,
-                                            height: '4px', // Высота инпута соответствует высоте трека
+                                            height: '4px',
                                             borderRadius: '4px',
                                             outline: 'none',
                                             cursor: 'pointer',
@@ -609,7 +566,6 @@ const AudioBlock: React.FC<AudioBlockProps> = ({ block }) => {
                     )}
                 </div>
 
-                {/* Описание отдельно под плеером */}
                 {block.content_text && (
                     <div style={{
                         fontSize: '16px',
@@ -625,4 +581,4 @@ const AudioBlock: React.FC<AudioBlockProps> = ({ block }) => {
     );
 };
 
-export default AudioBlock; 
+export default StreamingAudioBlock;

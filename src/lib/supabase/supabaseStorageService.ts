@@ -27,10 +27,15 @@ export const buildFileUrl = (filePath: string | null | undefined): string | null
   // Убираем возможные лишние слеши в начале пути
   const cleanedPath = filePath.startsWith('/') ? filePath.substring(1) : filePath;
 
-  const { data } = supabase.storage.from(BUCKET_NAME).getPublicUrl(cleanedPath);
+  // Определяем бакет на основе типа файла
+  // HLS файлы (.m3u8 и .ts) хранятся в бакете 'audio'
+  const isHLSFile = cleanedPath.endsWith('.m3u8') || cleanedPath.endsWith('.ts');
+  const bucketName = isHLSFile ? '' : BUCKET_NAME;
+
+  const { data } = supabase.storage.from(bucketName).getPublicUrl(cleanedPath);
 
   if (!data?.publicUrl) {
-    console.warn(`Не удалось получить publicUrl для файла: ${cleanedPath}`);
+    console.warn(`Не удалось получить publicUrl для файла: ${cleanedPath} из бакета: ${bucketName}`);
     return null;
   }
 

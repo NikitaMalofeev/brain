@@ -5,6 +5,7 @@ import { useBlocksAdmin } from '@/lib/supabase/hooks';
 import DraggableBlockRow from '../DraggableBlockRow';
 import { logger } from '@/lib/logger';
 import { supabase } from '@/lib/supabase/client';
+import ReactMarkdown from 'react-markdown';
 
 // Типы для блоков
 interface BlockModalData {
@@ -62,6 +63,9 @@ const BlocksManager: React.FC<BlocksManagerProps> = ({ courseId, stageId, lesson
     // Состояние для материалов
     const [materials, setMaterials] = useState<Material[]>([]);
     const [materialsLoading, setMaterialsLoading] = useState(false);
+    
+    // Состояние для предпросмотра markdown в модалке
+    const [showMarkdownPreview, setShowMarkdownPreview] = useState(false);
 
     // Обработчики для загрузки файлов
     const handleFileUploadComplete = (filePath: string, fileUrl: string) => {
@@ -584,15 +588,89 @@ const BlocksManager: React.FC<BlocksManagerProps> = ({ courseId, stageId, lesson
                         {modalData.block_type === 'text' ? (
                             // Для текстового блока - только текст
                             <div className="form-group">
-                                <label>Текстовое содержимое:</label>
-                                <textarea
-                                    className="admin-input"
-                                    value={modalData.content_text}
-                                    onChange={(e) => setModalData({ ...modalData, content_text: e.target.value })}
-                                    rows={6}
-                                    placeholder="Введите текстовое содержимое блока..."
-                                    style={{ resize: 'vertical' }}
-                                />
+                                <label>
+                                    Текстовое содержимое (Markdown):
+                                    <button
+                                        type="button"
+                                        onClick={() => setShowMarkdownPreview(!showMarkdownPreview)}
+                                        style={{
+                                            marginLeft: '10px',
+                                            background: 'none',
+                                            border: '1px solid #ddd',
+                                            borderRadius: '4px',
+                                            padding: '2px 8px',
+                                            fontSize: '12px',
+                                            cursor: 'pointer',
+                                            color: '#666'
+                                        }}
+                                    >
+                                        {showMarkdownPreview ? 'Скрыть предпросмотр' : 'Предпросмотр'}
+                                    </button>
+                                </label>
+                                
+                                <div style={{ display: 'flex', gap: '12px', alignItems: 'stretch' }}>
+                                    <textarea
+                                        className="admin-input"
+                                        value={modalData.content_text}
+                                        onChange={(e) => setModalData({ ...modalData, content_text: e.target.value })}
+                                        rows={10}
+                                        placeholder="Введите текст с поддержкой Markdown..."
+                                        style={{ 
+                                            resize: 'vertical',
+                                            flex: showMarkdownPreview ? '1' : '1 1 100%',
+                                            fontFamily: 'monospace',
+                                            fontSize: '14px'
+                                        }}
+                                    />
+                                    
+                                    {showMarkdownPreview && (
+                                        <div style={{
+                                            flex: '1',
+                                            background: '#f8f9fa',
+                                            padding: '12px',
+                                            borderRadius: '8px',
+                                            border: '1px solid #e9ecef',
+                                            overflowY: 'auto',
+                                            fontSize: '14px',
+                                            lineHeight: '1.6'
+                                        }}>
+                                            <ReactMarkdown
+                                                className="text-[#242424] leading-relaxed"
+                                                components={{
+                                                    h1: ({ node, ...props }) => <h1 className="text-3xl font-bold mt-6 mb-4" {...props} />,
+                                                    h2: ({ node, ...props }) => <h2 className="text-2xl font-semibold mt-5 mb-3" {...props} />,
+                                                    h3: ({ node, ...props }) => <h3 className="text-xl font-semibold mt-4 mb-2" {...props} />,
+                                                    p: ({ node, ...props }) => <p className="my-3" {...props} />,
+                                                    ul: ({ node, ...props }) => <ul className="list-disc list-inside my-3 space-y-1" {...props} />,
+                                                    ol: ({ node, ...props }) => <ol className="list-decimal list-inside my-3 space-y-1" {...props} />,
+                                                    li: ({ node, ...props }) => <li className="ml-2" {...props} />,
+                                                    code: ({ node, inline, ...props }) => 
+                                                        inline ? (
+                                                            <code className="bg-gray-100 px-1 py-0.5 rounded text-sm" {...props} />
+                                                        ) : (
+                                                            <code className="block bg-gray-100 p-4 rounded-lg overflow-x-auto my-3" {...props} />
+                                                        ),
+                                                    pre: ({ node, ...props }) => <pre className="bg-gray-100 p-4 rounded-lg overflow-x-auto my-3" {...props} />,
+                                                    blockquote: ({ node, ...props }) => (
+                                                        <blockquote className="border-l-4 border-gray-300 pl-4 my-4 text-gray-600 italic" {...props} />
+                                                    ),
+                                                    a: ({ node, ...props }) => (
+                                                        <a className="text-[#B862EA] underline hover:no-underline" {...props} target="_blank" rel="noopener noreferrer" />
+                                                    ),
+                                                    hr: ({ node, ...props }) => <hr className="border-t border-gray-300 my-8" {...props} />,
+                                                    strong: ({ node, ...props }) => <strong className="font-semibold" {...props} />,
+                                                    em: ({ node, ...props }) => <em className="italic" {...props} />,
+                                                    img: ({ node, ...props }) => <img className="max-w-full h-auto my-4 rounded-lg" {...props} />,
+                                                    table: ({ node, ...props }) => <table className="w-full border-collapse my-4" {...props} />,
+                                                    th: ({ node, ...props }) => <th className="border border-gray-300 px-4 py-2 bg-gray-100 font-semibold text-left" {...props} />,
+                                                    td: ({ node, ...props }) => <td className="border border-gray-300 px-4 py-2" {...props} />,
+                                                }}
+                                            >
+                                                {modalData.content_text || '*Начните вводить текст для предпросмотра...*'}
+                                            </ReactMarkdown>
+                                        </div>
+                                    )}
+                                </div>
                             </div>
                         ) : modalData.block_type === 'material' ? (
                             // Для material блока - выбор материала + описание

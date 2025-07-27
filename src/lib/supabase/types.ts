@@ -108,6 +108,19 @@ export type BlockType =
   | 'pdf'       // PDF файл
   | 'material'; // Ссылка на материал из библиотеки
 
+// Структура для данных аудио волны
+export interface AudioWaveformData {
+  peaks: number[]; // Массив пиков волны (0-1)
+  duration: number; // Длительность в секундах
+  sampleRate?: number; // Частота дискретизации
+}
+
+// Структура для audio_data в meta_json
+export interface AudioMetadata {
+  audio_data?: AudioWaveformData;
+  // Другие метаданные аудио при необходимости
+}
+
 export interface LessonBlock extends TimestampFields {
   id: number;
   lesson_id: number; // FK к Lesson
@@ -117,7 +130,7 @@ export interface LessonBlock extends TimestampFields {
   content_text?: string; // Для text-блоков и assignment_instruction
   content_url?: string; // Для файлов/медиа
   material_id?: string; // Для material-блоков - ссылка на материал
-  meta_json?: Record<string, any>; // Дополнительные поля
+  meta_json?: Record<string, any> & AudioMetadata; // Дополнительные поля с типизацией для аудио
 }
 
 // Сдачи заданий

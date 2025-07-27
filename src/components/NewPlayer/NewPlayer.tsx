@@ -1,6 +1,7 @@
-import { useEffect, useRef, useState } from 'react';
-import WaveSurfer from 'wavesurfer.js';
+import { useRef, useState } from 'react';
 import { Ripple } from '@/components/ui/Ripple/Ripple';
+import { AudioWaveform } from './AudioWaveform';
+import type { AudioWaveformData } from '@/lib/supabase/types';
 
 // SVG иконки для Play и Pause
 const PlayIcon = () => (
@@ -24,110 +25,107 @@ const PauseIcon = () => (
     </svg>
 );
 
-const NewPlayer = ({ audioUrl }: { audioUrl: string }) => {
-    const waveformRef = useRef<HTMLDivElement | null>(null);
-    const wavesurferRef = useRef<WaveSurfer | null>(null);
+interface NewPlayerProps {
+    audioUrl: string;
+    waveformData?: AudioWaveformData;
+}
+
+const NewPlayer = ({ audioUrl, waveformData }: NewPlayerProps) => {
+    console.log('NewPlayer render:', { audioUrl, waveformData });
+    const audioRef = useRef<HTMLAudioElement | null>(null);
     const [isPlaying, setIsPlaying] = useState(false);
+    const [progress, setProgress] = useState(0);
     const [duration, setDuration] = useState('0:00');
-    const [isLoading, setIsLoading] = useState(true);
 
     // Функция для форматирования времени из секунд в ММ:СС
     const formatTime = (seconds: number) => {
-        const date = new Date(seconds * 1000);
-        const minutes = date.getUTCMinutes();
-        const secs = `0${date.getUTCSeconds()}`.slice(-2);
-        return `${minutes}:${secs}`;
+        const minutes = Math.floor(seconds / 60);
+        const secs = Math.floor(seconds % 60);
+        return `${minutes}:${secs.toString().padStart(2, '0')}`;
     };
-
-
-
-    useEffect(() => {
-        // Сбрасываем состояние загрузки при смене аудио
-        setIsLoading(true);
-        
-        // Инициализация WaveSurfer
-        if (waveformRef.current) {
-            wavesurferRef.current = WaveSurfer.create({
-                container: waveformRef.current,
-                waveColor: '#B8B8B8',      // Цвет волны
-                progressColor: '#B862EA',   // Цвет прогресса неотличим
-                cursorWidth: 1,            // Убираем курсор
-                barWidth: 4,               // Ширина полосок
-                barGap: 4,                 // Расстояние между полосками
-                barRadius: 3,              // Скругление углов полосок
-                height: 32,                // Высота волны
-                normalize: true,           // Нормализация громкости для лучшей визуализации
-            });
-
-            wavesurferRef.current.load(audioUrl);
-
-            // Обработчики событий
-            wavesurferRef.current.on('ready', () => {
-                setDuration(formatTime(wavesurferRef.current?.getDuration() || 0));
-                setIsLoading(false);
-            });
-
-            wavesurferRef.current.on('play', () => setIsPlaying(true));
-            wavesurferRef.current.on('pause', () => setIsPlaying(false));
-            wavesurferRef.current.on('finish', () => setIsPlaying(false));
-            wavesurferRef.current.on('error', () => {
-                setIsLoading(false);
-                console.error('Ошибка загрузки аудио файла');
-            });
-
-            // Очистка при размонтировании компонента
-            return () => {
-                wavesurferRef.current?.destroy();
-            };
-        }
-    }, [audioUrl]);
-
-
 
     const handlePlayPause = () => {
-        if (isLoading) return; // Не выполняем действие если загружается
-        wavesurferRef.current?.playPause();
+        if (!audioRef.current) return;
+        
+        if (isPlaying) {
+            audioRef.current.pause();
+        } else {
+            audioRef.current.play();
+        }
     };
+
+    const handleSeek = (percent: number) => {
+        if (audioRef.current && audioRef.current.duration) {
+            audioRef.current.currentTime = percent * audioRef.current.duration;
+        }
+    };
+
+    // Если есть данные волны, сразу показываем длительность
+    if (waveformData?.duration && duration === '0:00') {
+        setDuration(formatTime(waveformData.duration));
+    }
 
     return (
         <div className={'border border-[#595959]/14 p-4 rounded-full flex items-center gap-3'}>
-            <style>{`
-                @keyframes pulse {
-                    0%, 100% { opacity: 0.3; }
-                    50% { opacity: 1; }
-                }
-            `}</style>
             <Ripple className="rounded-full overflow-hidden inline-block">
-                <button 
-                    onClick={handlePlayPause} 
-                    disabled={isLoading}
-                    className={`outline-none p-2 rounded-full bg-[linear-gradient(109.65deg,_#E1C1F4_13.64%,_#B862EA_124.92%)] transition-opacity ${
-                        isLoading ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'
-                    }`}
+                <button
+                    onClick={handlePlayPause}
+                    className="outline-none p-2 rounded-full bg-[linear-gradient(109.65deg,_#E1C1F4_13.64%,_#B862EA_124.92%)] cursor-pointer"
                 >
                     {isPlaying ? <PauseIcon /> : <PlayIcon />}
                 </button>
             </Ripple>
-            <div className={'h-8 flex-1 relative'}>
-                {isLoading && (
-                    <div className={'absolute inset-0 flex items-center'} style={{ gap: '4px' }}>
-                        {Array.from({ length: 60 }).map((_, i) => (
-                            <div
-                                key={i}
-                                className={'bg-[#B8B8B8] rounded-sm'}
-                                style={{
-                                    width: '4px',
-                                    height: `${Math.random() * 20 + 8}px`,
-                                    animationDelay: `${i * 0.05}s`,
-                                    animation: 'pulse 1.5s ease-in-out infinite'
-                                }}
-                            />
-                        ))}
+            
+            <div className={'h-8 flex-1 relative'} style={{ minWidth: 0 }}>
+                {waveformData ? (
+                    <>
+                        {console.log('Rendering AudioWaveform with:', waveformData)}
+                        <AudioWaveform
+                            waveformData={waveformData}
+                            progress={progress}
+                            onSeek={handleSeek}
+                            height={32}
+                        />
+                    </>
+                ) : (
+                    <div style={{ 
+                        width: '100%', 
+                        height: '100%', 
+                        backgroundColor: '#f0f0f0',
+                        borderRadius: '4px',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        fontSize: '12px',
+                        color: '#666'
+                    }}>
+                        No waveform data
                     </div>
                 )}
-                <div ref={waveformRef} className={'h-full'} />
             </div>
+            
             <span className={'text-xs text-[#9F9F9F]'}>{duration}</span>
+            
+            {/* Скрытый audio элемент */}
+            <audio
+                ref={audioRef}
+                preload="none"
+                style={{ display: 'none' }}
+                onPlay={() => setIsPlaying(true)}
+                onPause={() => setIsPlaying(false)}
+                onTimeUpdate={(e) => {
+                    const audio = e.currentTarget;
+                    if (audio.duration) {
+                        setProgress((audio.currentTime / audio.duration) * 100);
+                    }
+                }}
+                onLoadedMetadata={(e) => {
+                    const audio = e.currentTarget;
+                    setDuration(formatTime(audio.duration));
+                }}
+            >
+                <source src={audioUrl} type="audio/mpeg" />
+            </audio>
         </div>
     );
 };
