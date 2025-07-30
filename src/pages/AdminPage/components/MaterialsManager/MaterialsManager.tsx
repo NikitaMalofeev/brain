@@ -194,11 +194,6 @@ const MaterialsManager: React.FC = () => {
         filterMaterials();
     }, [materials, materialTypeFilter, courseFilter]);
 
-    // Применяем фильтры при изменении материалов или фильтров
-    useEffect(() => {
-        filterMaterials();
-    }, [materials, materialTypeFilter, courseFilter]);
-
     // Синхронизируем выбранные тарифы с данными из хука
     useEffect(() => {
         if (materialTariffAccess.accessibleTariffIds) {

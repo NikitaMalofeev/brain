@@ -193,43 +193,12 @@ const CoursesManager: React.FC<CoursesManagerProps> = ({ onCourseSelect }) => {
   const [updateLoading, setUpdateLoading] = useState<boolean>(false);
   const [updateError, setUpdateError] = useState<string | null>(null);
 
-  // Новый курс
-  const [newTitle, setNewTitle] = useState('');
-  const [newSubtitle, setNewSubtitle] = useState('');
-  const [addLoading, setAddLoading] = useState(false);
-
   // Редактируемый курс
   const [editingCourse, setEditingCourse] = useState<any | null>(null);
   const [editTitle, setEditTitle] = useState('');
   const [editSubtitle, setEditSubtitle] = useState('');
+  const [courseModalOpen, setCourseModalOpen] = useState(false);
 
-  // Добавление курса
-  const handleAddCourse = async () => {
-    if (!newTitle.trim()) {
-      alert('Введите название курса');
-      return;
-    }
-
-    try {
-      setAddLoading(true);
-      setUpdateError(null);
-
-      await createCourse({
-        title: newTitle.trim(),
-        subtitle: newSubtitle.trim() || undefined,
-      });
-
-      // Очищаем форму
-      setNewTitle('');
-      setNewSubtitle('');
-
-    } catch (error: any) {
-      console.error('Ошибка при добавлении курса:', error);
-      setUpdateError(error.message || 'Произошла ошибка при добавлении курса');
-    } finally {
-      setAddLoading(false);
-    }
-  };
 
   // Удаление курса
   const handleDeleteCourse = async (id: string, title: string) => {
@@ -256,6 +225,8 @@ const CoursesManager: React.FC<CoursesManagerProps> = ({ onCourseSelect }) => {
     setEditingCourse(course);
     setEditTitle(course.title);
     setEditSubtitle(course.subtitle || '');
+    setCourseModalOpen(true);
+    setUpdateError(null);
   };
 
   // Отмена редактирования
@@ -263,13 +234,23 @@ const CoursesManager: React.FC<CoursesManagerProps> = ({ onCourseSelect }) => {
     setEditingCourse(null);
     setEditTitle('');
     setEditSubtitle('');
+    setCourseModalOpen(false);
+    setUpdateError(null);
+  };
+
+  const closeCourseModal = () => {
+    setCourseModalOpen(false);
+    setEditingCourse(null);
+    setEditTitle('');
+    setEditSubtitle('');
+    setUpdateError(null);
   };
 
   // Сохранение отредактированного курса
-  const saveCourse = async () => {
-    if (!editingCourse) return;
+  const saveCourse = async (e?: React.FormEvent) => {
+    e?.preventDefault();
     if (!editTitle.trim()) {
-      alert('Название курса обязательно');
+      setUpdateError('Название курса обязательно');
       return;
     }
 
@@ -277,12 +258,21 @@ const CoursesManager: React.FC<CoursesManagerProps> = ({ onCourseSelect }) => {
       setUpdateLoading(true);
       setUpdateError(null);
 
-      await updateCourse(editingCourse.id, {
-        title: editTitle.trim(),
-        subtitle: editSubtitle.trim() || undefined,
-      });
+      if (editingCourse) {
+        // Редактирование существующего курса
+        await updateCourse(editingCourse.id, {
+          title: editTitle.trim(),
+          subtitle: editSubtitle.trim() || undefined,
+        });
+      } else {
+        // Добавление нового курса
+        await createCourse({
+          title: editTitle.trim(),
+          subtitle: editSubtitle.trim() || undefined,
+        });
+      }
 
-      cancelEditing();
+      closeCourseModal();
 
     } catch (error: any) {
       console.error('Ошибка при сохранении курса:', error);
@@ -305,30 +295,19 @@ const CoursesManager: React.FC<CoursesManagerProps> = ({ onCourseSelect }) => {
         </button>
       </div>
 
-      {/* Форма добавления курса */}
-      <div className="course-add-form">
-        <h3 className="text-lg sm:text-xl">Добавить курс</h3>
-        <div className="flex flex-col sm:flex-row gap-3 mb-4">
-          <input
-            className="admin-input w-full sm:flex-[2]"
-            placeholder="Название курса"
-            value={newTitle}
-            onChange={e => setNewTitle(e.target.value)}
-          />
-          <input
-            className="admin-input w-full sm:flex-[3]"
-            placeholder="Подзаголовок (опционально)"
-            value={newSubtitle}
-            onChange={e => setNewSubtitle(e.target.value)}
-          />
-          <button
-            className="admin-button w-full sm:w-auto"
-            onClick={handleAddCourse}
-            disabled={addLoading || !newTitle.trim()}
-          >
-            {addLoading ? 'Добавление...' : 'Добавить'}
-          </button>
-        </div>
+      {/* Кнопка добавления курса */}
+      <div className="mb-4">
+        <button
+          className="admin-button"
+          onClick={() => {
+            setEditingCourse(null);
+            setEditTitle('');
+            setEditSubtitle('');
+            setCourseModalOpen(true);
+          }}
+        >
+          + Добавить курс
+        </button>
       </div>
 
       {updateError && (
@@ -358,75 +337,34 @@ const CoursesManager: React.FC<CoursesManagerProps> = ({ onCourseSelect }) => {
             <tbody>
               {courses.map((course) => (
                 <tr key={course.id}>
+                  <td>{course.title}</td>
                   <td>
-                    {editingCourse?.id === course.id ? (
-                      <input
-                        className="admin-input"
-                        value={editTitle}
-                        onChange={e => setEditTitle(e.target.value)}
-                        style={{ width: '100%' }}
-                      />
-                    ) : (
-                      course.title
-                    )}
-                  </td>
-                  <td>
-                    {editingCourse?.id === course.id ? (
-                      <input
-                        className="admin-input"
-                        value={editSubtitle}
-                        onChange={e => setEditSubtitle(e.target.value)}
-                        style={{ width: '100%' }}
-                      />
-                    ) : (
-                      course.subtitle || '-'
-                    )}
-                  </td>
+                    <p className={'line-clamp-3'}>{course.subtitle || '-'}</p>
+                 </td>
                   <td>{new Date(course.created_at || '').toLocaleDateString()}</td>
                   <td className="actions-cell">
-                    {editingCourse?.id === course.id ? (
-                      <>
-                        <button
-                          className="action-btn edit-btn"
-                          onClick={saveCourse}
-                          disabled={updateLoading}
-                        >
-                          Сохранить
-                        </button>
-                        <button
-                          className="action-btn delete-btn"
-                          onClick={cancelEditing}
-                          disabled={updateLoading}
-                        >
-                          Отмена
-                        </button>
-                      </>
-                    ) : (
-                      <>
-                        <button
-                          className="action-btn edit-btn"
-                          onClick={() => onCourseSelect(course.id, course.title)}
-                          title="Управление ступенями"
-                        >
-                          Ступени
-                        </button>
-                        <button
-                          className="action-btn edit-btn"
-                          onClick={() => startEditing(course)}
-                          title="Редактировать курс"
-                        >
-                          Изменить
-                        </button>
-                        <button
-                          className="action-btn delete-btn"
-                          onClick={() => handleDeleteCourse(course.id, course.title)}
-                          disabled={updateLoading}
-                          title="Удалить курс"
-                        >
-                          Удалить
-                        </button>
-                      </>
-                    )}
+                    <button
+                      className="action-btn edit-btn"
+                      onClick={() => onCourseSelect(course.id, course.title)}
+                      title="Управление ступенями"
+                    >
+                      Ступени
+                    </button>
+                    <button
+                      className="action-btn edit-btn"
+                      onClick={() => startEditing(course)}
+                      title="Редактировать курс"
+                    >
+                      Изменить
+                    </button>
+                    <button
+                      className="action-btn delete-btn"
+                      onClick={() => handleDeleteCourse(course.id, course.title)}
+                      disabled={updateLoading}
+                      title="Удалить курс"
+                    >
+                      Удалить
+                    </button>
                   </td>
                 </tr>
               ))}
@@ -437,75 +375,98 @@ const CoursesManager: React.FC<CoursesManagerProps> = ({ onCourseSelect }) => {
           <div className="sm:hidden space-y-3">
             {courses.map((course) => (
               <div key={course.id} className="bg-white rounded-lg p-4 border border-gray-200 shadow-sm">
-                {editingCourse?.id === course.id ? (
-                  <div className="space-y-3">
-                    <input
-                      className="admin-input w-full text-sm"
-                      value={editTitle}
-                      onChange={e => setEditTitle(e.target.value)}
-                      placeholder="Название курса"
-                    />
-                    <input
-                      className="admin-input w-full text-sm"
-                      value={editSubtitle}
-                      onChange={e => setEditSubtitle(e.target.value)}
-                      placeholder="Подзаголовок"
-                    />
-                    <div className="flex gap-2">
-                      <button
-                        className="action-btn edit-btn flex-1 text-xs"
-                        onClick={saveCourse}
-                        disabled={updateLoading}
-                      >
-                        Сохранить
-                      </button>
-                      <button
-                        className="action-btn delete-btn flex-1 text-xs"
-                        onClick={cancelEditing}
-                        disabled={updateLoading}
-                      >
-                        Отмена
-                      </button>
-                    </div>
+                <div className="mb-3">
+                  <h4 className="font-semibold text-lg">{course.title}</h4>
+                  {course.subtitle && (
+                    <p className="text-gray-600 text-sm mt-1 description-cell">{course.subtitle}</p>
+                  )}
+                  <p className="text-gray-500 text-xs mt-2">
+                    Создан: {new Date(course.created_at || '').toLocaleDateString()}
+                  </p>
+                </div>
+                <div className="flex flex-col gap-2">
+                  <button
+                    className="action-btn edit-btn w-full text-sm justify-center"
+                    onClick={() => onCourseSelect(course.id, course.title)}
+                  >
+                    Управление ступенями
+                  </button>
+                  <div className="flex gap-2">
+                    <button
+                      className="action-btn edit-btn flex-1 text-xs justify-center"
+                      onClick={() => startEditing(course)}
+                    >
+                      Изменить
+                    </button>
+                    <button
+                      className="action-btn delete-btn flex-1 text-xs justify-center"
+                      onClick={() => handleDeleteCourse(course.id, course.title)}
+                      disabled={updateLoading}
+                    >
+                      Удалить
+                    </button>
                   </div>
-                ) : (
-                  <>
-                    <div className="mb-3">
-                      <h4 className="font-semibold text-lg">{course.title}</h4>
-                      {course.subtitle && (
-                        <p className="text-gray-600 text-sm mt-1">{course.subtitle}</p>
-                      )}
-                      <p className="text-gray-500 text-xs mt-2">
-                        Создан: {new Date(course.created_at || '').toLocaleDateString()}
-                      </p>
-                    </div>
-                    <div className="flex flex-col gap-2">
-                      <button
-                        className="action-btn edit-btn w-full text-sm justify-center"
-                        onClick={() => onCourseSelect(course.id, course.title)}
-                      >
-                        Управление ступенями
-                      </button>
-                      <div className="flex gap-2">
-                        <button
-                          className="action-btn edit-btn flex-1 text-xs justify-center"
-                          onClick={() => startEditing(course)}
-                        >
-                          Изменить
-                        </button>
-                        <button
-                          className="action-btn delete-btn flex-1 text-xs justify-center"
-                          onClick={() => handleDeleteCourse(course.id, course.title)}
-                          disabled={updateLoading}
-                        >
-                          Удалить
-                        </button>
-                      </div>
-                    </div>
-                  </>
-                )}
+                </div>
               </div>
             ))}
+          </div>
+        </div>
+      )}
+
+      {/* Модальное окно редактирования курса */}
+      {courseModalOpen && (
+        <div className="admin-modal-backdrop" onClick={closeCourseModal}>
+          <div className="admin-modal" onClick={(e) => e.stopPropagation()}>
+            <button className="admin-modal-close" onClick={closeCourseModal}>×</button>
+
+            <h3>{editingCourse ? 'Редактировать курс' : 'Добавить курс'}</h3>
+
+            <div className="form-group">
+              <label>Название курса:</label>
+              <input
+                className="admin-input"
+                value={editTitle}
+                onChange={(e) => setEditTitle(e.target.value)}
+                placeholder="Введите название курса..."
+                autoFocus
+              />
+            </div>
+
+            <div className="form-group">
+              <label>Подзаголовок (опционально):</label>
+              <input
+                className="admin-input"
+                value={editSubtitle}
+                onChange={(e) => setEditSubtitle(e.target.value)}
+                placeholder="Введите подзаголовок..."
+              />
+            </div>
+
+            <div className="form-actions">
+              <button
+                type="button"
+                className="admin-button"
+                onClick={saveCourse}
+                disabled={updateLoading || !editTitle.trim()}
+              >
+                {updateLoading ? 'Сохранение...' : (editingCourse ? 'Сохранить' : 'Добавить')}
+              </button>
+              <button
+                type="button"
+                className="admin-button"
+                onClick={closeCourseModal}
+                disabled={updateLoading}
+                style={{ background: 'var(--admin-secondary)' }}
+              >
+                Отмена
+              </button>
+            </div>
+
+            {updateError && (
+              <div className="admin-error" style={{ marginTop: '12px' }}>
+                {updateError}
+              </div>
+            )}
           </div>
         </div>
       )}
@@ -519,14 +480,6 @@ const StagesManager: React.FC<StagesManagerProps> = ({ courseId, onBack, onStage
   const [updateLoading, setUpdateLoading] = useState<boolean>(false);
   const [updateError, setUpdateError] = useState<string | null>(null);
 
-  // Новая ступень
-  const [newName, setNewName] = useState('');
-  const [newDescription, setNewDescription] = useState('');
-  const [newOrderNum, setNewOrderNum] = useState(1);
-  const [newIsUnlocked, setNewIsUnlocked] = useState(false);
-  const [newCoverImagePath, setNewCoverImagePath] = useState('');
-  const [addLoading, setAddLoading] = useState(false);
-
   // Редактируемая ступень
   const [editingStage, setEditingStage] = useState<any | null>(null);
   const [editName, setEditName] = useState('');
@@ -534,6 +487,7 @@ const StagesManager: React.FC<StagesManagerProps> = ({ courseId, onBack, onStage
   const [editOrderNum, setEditOrderNum] = useState(1);
   const [editIsUnlocked, setEditIsUnlocked] = useState(false);
   const [editCoverImagePath, setEditCoverImagePath] = useState('');
+  const [stageModalOpen, setStageModalOpen] = useState(false);
 
   // Состояние для загрузки файлов
   const [uploadError, setUploadError] = useState<string | null>(null);
@@ -545,15 +499,6 @@ const StagesManager: React.FC<StagesManagerProps> = ({ courseId, onBack, onStage
   // Ref для FileUploader
   const fileUploaderRef = useRef<FileUploaderRef>(null);
 
-  // Автоматически обновляем newOrderNum при изменении списка ступеней
-  useEffect(() => {
-    if (stages.length > 0) {
-      const maxOrderNum = Math.max(...stages.map(stage => stage.order_num));
-      setNewOrderNum(maxOrderNum + 1);
-    } else {
-      setNewOrderNum(1);
-    }
-  }, [stages]);
 
   // Обработчики для загрузки файлов
   const handleFileUploadComplete = (filePath: string, fileUrl: string) => {
@@ -654,39 +599,6 @@ const StagesManager: React.FC<StagesManagerProps> = ({ courseId, onBack, onStage
     }
   };
 
-  // Добавление ступени
-  const handleAddStage = async () => {
-    if (!newName.trim()) {
-      alert('Введите название ступени');
-      return;
-    }
-
-    try {
-      setAddLoading(true);
-      setUpdateError(null);
-
-      await createStage({
-        course_id: courseId,
-        name: newName.trim(),
-        description: newDescription.trim() || undefined,
-        order_num: newOrderNum,
-        is_unlocked: newIsUnlocked,
-        cover_image_path: newCoverImagePath || undefined,
-      });
-
-      // Очищаем форму
-      setNewName('');
-      setNewDescription('');
-      setNewIsUnlocked(false);
-      setNewCoverImagePath('');
-
-    } catch (error: any) {
-      console.error('Ошибка при добавлении ступени:', error);
-      setUpdateError(error.message || 'Произошла ошибка при добавлении ступени');
-    } finally {
-      setAddLoading(false);
-    }
-  };
 
   // Удаление ступени
   const handleDeleteStage = async (id: number, name: string) => {
@@ -717,6 +629,7 @@ const StagesManager: React.FC<StagesManagerProps> = ({ courseId, onBack, onStage
     setEditIsUnlocked(stage.is_unlocked || false);
     setEditCoverImagePath(stage.cover_image_path || '');
     setUploadError(null);
+    setStageModalOpen(true);
   };
 
   // Отмена редактирования
@@ -728,13 +641,24 @@ const StagesManager: React.FC<StagesManagerProps> = ({ courseId, onBack, onStage
     setEditIsUnlocked(false);
     setEditCoverImagePath('');
     setUploadError(null);
+    setStageModalOpen(false);
+  };
+
+  const closeStageModal = () => {
+    setStageModalOpen(false);
+    setEditingStage(null);
+    setEditName('');
+    setEditDescription('');
+    setEditOrderNum(1);
+    setEditIsUnlocked(false);
+    setEditCoverImagePath('');
+    setUploadError(null);
   };
 
   // Сохранение отредактированной ступени
   const saveStage = async () => {
-    if (!editingStage) return;
     if (!editName.trim()) {
-      alert('Название ступени обязательно');
+      setUpdateError('Название ступени обязательно');
       return;
     }
 
@@ -742,16 +666,28 @@ const StagesManager: React.FC<StagesManagerProps> = ({ courseId, onBack, onStage
       setUpdateLoading(true);
       setUpdateError(null);
 
-      await updateStage(editingStage.id, {
-        name: editName.trim(),
-        description: editDescription.trim() || undefined,
-        order_num: editOrderNum,
-        is_unlocked: editIsUnlocked,
-        cover_image_path: editCoverImagePath || undefined,
-      });
+      if (editingStage) {
+        // Редактирование существующей ступени
+        await updateStage(editingStage.id, {
+          name: editName.trim(),
+          description: editDescription.trim() || undefined,
+          order_num: editOrderNum,
+          is_unlocked: editIsUnlocked,
+          cover_image_path: editCoverImagePath || undefined,
+        });
+      } else {
+        // Добавление новой ступени
+        await createStage({
+          course_id: courseId,
+          name: editName.trim(),
+          description: editDescription.trim() || undefined,
+          order_num: editOrderNum,
+          is_unlocked: editIsUnlocked,
+          cover_image_path: editCoverImagePath || undefined,
+        });
+      }
 
-      // Очищаем форму редактирования
-      cancelEditing();
+      closeStageModal();
 
     } catch (error: any) {
       console.error('Ошибка при сохранении ступени:', error);
@@ -782,49 +718,21 @@ const StagesManager: React.FC<StagesManagerProps> = ({ courseId, onBack, onStage
         </div>
       </div>
 
-      {/* Форма добавления ступени */}
-      <div className="stage-add-form">
-        <h3>Добавить ступень</h3>
-        <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap', marginBottom: '16px' }}>
-          <input
-            className="admin-input"
-            placeholder="Название ступени"
-            value={newName}
-            onChange={e => setNewName(e.target.value)}
-            style={{ flex: '2 1 200px' }}
-          />
-          <input
-            className="admin-input"
-            placeholder="Описание (опционально)"
-            value={newDescription}
-            onChange={e => setNewDescription(e.target.value)}
-            style={{ flex: '3 1 300px' }}
-          />
-          <input
-            className="admin-input"
-            type="number"
-            placeholder="Порядок"
-            value={newOrderNum}
-            onChange={e => setNewOrderNum(parseInt(e.target.value) || 1)}
-            style={{ flex: '0 0 80px' }}
-          />
-          <label style={{ display: 'flex', alignItems: 'center', gap: '4px', flex: '0 0 120px' }}>
-            <input
-              type="checkbox"
-              checked={newIsUnlocked}
-              onChange={e => setNewIsUnlocked(e.target.checked)}
-            />
-            Разблокирована
-          </label>
-          <button
-            className="admin-button"
-            onClick={handleAddStage}
-            disabled={addLoading || !newName.trim()}
-            style={{ flex: '0 0 120px' }}
-          >
-            {addLoading ? 'Добавление...' : 'Добавить'}
-          </button>
-        </div>
+      {/* Кнопка добавления ступени */}
+      <div className="mb-4">
+        <button
+          className="admin-button"
+          onClick={() => {
+            setEditingStage(null);
+            setEditName('');
+            setEditDescription('');
+            setEditOrderNum(stages.length > 0 ? Math.max(...stages.map(s => s.order_num)) + 1 : 1);
+            setEditIsUnlocked(false);
+            setStageModalOpen(true);
+          }}
+        >
+          + Добавить ступень
+        </button>
       </div>
 
       {updateError && (
@@ -856,7 +764,7 @@ const StagesManager: React.FC<StagesManagerProps> = ({ courseId, onBack, onStage
               {stages.map((stage) => (
                 <Fragment key={stage.id}>
                   <tr>
-                  <td>
+                  <td className="stage-cover-cell">
                     <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                       {stage.cover_image_path ? (
                         <img
@@ -892,155 +800,47 @@ const StagesManager: React.FC<StagesManagerProps> = ({ courseId, onBack, onStage
                         className="action-btn edit-btn"
                         onClick={() => openCoverModal(stage)}
                         title="Редактировать обложку"
-                        style={{ fontSize: '12px' }}
+                        style={{ fontSize: '12px', padding: '4px 10px', minWidth: 'auto' }}
                       >
                         {stage.cover_image_path ? 'Изменить' : 'Добавить'}
                       </button>
                     </div>
                   </td>
+                  <td>{stage.name}</td>
                   <td>
-                    {editingStage?.id === stage.id ? (
-                        <div style={{ fontSize: '12px', color: '#666', fontStyle: 'italic' }}>
-                          Название редактируется ниже
-                        </div>
-                    ) : (
-                      stage.name
-                    )}
+                    <p className={'line-clamp-3'}>{stage.description || '-'}</p>
                   </td>
+                  <td>{stage.order_num}</td>
                   <td>
-                    {editingStage?.id === stage.id ? (
-                        <div style={{ fontSize: '12px', color: '#666', fontStyle: 'italic' }}>
-                          Описание редактируется ниже
-                        </div>
-                    ) : (
-                      stage.description || '-'
-                    )}
-                  </td>
-                  <td>
-                    {editingStage?.id === stage.id ? (
-                      <input
-                        className="admin-input"
-                        type="number"
-                        value={editOrderNum}
-                        onChange={e => setEditOrderNum(parseInt(e.target.value) || 1)}
-                        style={{ width: '80px' }}
-                      />
-                    ) : (
-                      stage.order_num
-                    )}
-                  </td>
-                  <td>
-                    {editingStage?.id === stage.id ? (
-                      <input
-                        type="checkbox"
-                        checked={editIsUnlocked}
-                        onChange={e => setEditIsUnlocked(e.target.checked)}
-                      />
-                    ) : (
-                      <span className={`admin-status ${stage.is_unlocked ? 'admin-yes' : 'admin-no'}`}>
-                        {stage.is_unlocked ? 'Да' : 'Нет'}
-                      </span>
-                    )}
+                    <span className={`admin-status ${stage.is_unlocked ? 'admin-yes' : 'admin-no'}`}>
+                      {stage.is_unlocked ? 'Да' : 'Нет'}
+                    </span>
                   </td>
                   <td className="actions-cell">
-                    {editingStage?.id === stage.id ? (
-                      <>
-                        <button
-                          className="action-btn edit-btn"
-                          onClick={saveStage}
-                          disabled={updateLoading}
-                        >
-                          Сохранить
-                        </button>
-                        <button
-                          className="action-btn delete-btn"
-                          onClick={cancelEditing}
-                          disabled={updateLoading}
-                        >
-                          Отмена
-                        </button>
-                      </>
-                    ) : (
-                      <>
-                        <button
-                          className="action-btn edit-btn"
-                          onClick={() => onStageSelect(stage.id, stage.name)}
-                          title="Управление уроками"
-                        >
-                          Уроки
-                        </button>
-                        <button
-                          className="action-btn edit-btn"
-                          onClick={() => startEditing(stage)}
-                          title="Редактировать ступень"
-                        >
-                          Изменить
-                        </button>
-                        <button
-                          className="action-btn delete-btn"
-                          onClick={() => handleDeleteStage(stage.id, stage.name)}
-                          disabled={updateLoading}
-                          title="Удалить ступень"
-                        >
-                          Удалить
-                        </button>
-                      </>
-                    )}
+                    <button
+                      className="action-btn edit-btn"
+                      onClick={() => onStageSelect(stage.id, stage.name)}
+                      title="Управление уроками"
+                    >
+                      Уроки
+                    </button>
+                    <button
+                      className="action-btn edit-btn"
+                      onClick={() => startEditing(stage)}
+                      title="Редактировать ступень"
+                    >
+                      Изменить
+                    </button>
+                    <button
+                      className="action-btn delete-btn"
+                      onClick={() => handleDeleteStage(stage.id, stage.name)}
+                      disabled={updateLoading}
+                      title="Удалить ступень"
+                    >
+                      Удалить
+                    </button>
                   </td>
                 </tr>
-                  
-                  {/* Дополнительная строка для редактирования названия и описания ступени */}
-                  {editingStage?.id === stage.id && (
-                    <tr style={{ backgroundColor: 'rgba(99, 171, 230, 0.05)' }}>
-                      <td colSpan={6}>
-                        <div style={{ padding: '16px', borderTop: '1px solid var(--admin-border)' }}>
-                          <div style={{ display: 'flex', gap: '24px' }}>
-                            {/* Название ступени */}
-                            <div style={{ flex: '1' }}>
-                              <div style={{ marginBottom: '8px', fontWeight: '500', color: 'var(--admin-text-primary)' }}>
-                                Название ступени:
-                              </div>
-                              <textarea
-                                className="admin-input"
-                                value={editName}
-                                onChange={e => setEditName(e.target.value)}
-                                placeholder="Введите название ступени..."
-                                style={{
-                                  width: '100%',
-                                  minHeight: '60px',
-                                  resize: 'vertical',
-                                  fontFamily: 'inherit',
-                                  fontSize: '14px',
-                                  lineHeight: '1.4'
-                                }}
-                              />
-                            </div>
-                            
-                            {/* Описание ступени */}
-                            <div style={{ flex: '1' }}>
-                              <div style={{ marginBottom: '8px', fontWeight: '500', color: 'var(--admin-text-primary)' }}>
-                                Описание ступени:
-                              </div>
-                              <textarea
-                                className="admin-input"
-                                value={editDescription}
-                                onChange={e => setEditDescription(e.target.value)}
-                                placeholder="Введите описание ступени..."
-                                style={{
-                                  width: '100%',
-                                  minHeight: '60px',
-                                  resize: 'vertical',
-                                  fontFamily: 'inherit',
-                                  fontSize: '14px',
-                                  lineHeight: '1.4'
-                                }}
-                              />
-                            </div>
-                          </div>
-                        </div>
-                      </td>
-                    </tr>
-                  )}
                 </Fragment>
               ))}
             </tbody>
@@ -1149,6 +949,89 @@ const StagesManager: React.FC<StagesManagerProps> = ({ courseId, onBack, onStage
                 Отмена
               </button>
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* Модальное окно редактирования ступени */}
+      {stageModalOpen && (
+        <div className="admin-modal-backdrop" onClick={closeStageModal}>
+          <div className="admin-modal" onClick={(e) => e.stopPropagation()}>
+            <button className="admin-modal-close" onClick={closeStageModal}>×</button>
+
+            <h3>{editingStage ? 'Редактировать ступень' : 'Добавить ступень'}</h3>
+
+            <div className="form-group">
+              <label>Название ступени:</label>
+              <input
+                className="admin-input"
+                value={editName}
+                onChange={(e) => setEditName(e.target.value)}
+                placeholder="Введите название ступени..."
+                autoFocus
+              />
+            </div>
+
+            <div className="form-group">
+              <label>Описание ступени (опционально):</label>
+              <textarea
+                className="admin-input"
+                value={editDescription}
+                onChange={(e) => setEditDescription(e.target.value)}
+                placeholder="Введите описание ступени..."
+                rows={3}
+                style={{ resize: 'vertical' }}
+              />
+            </div>
+
+            <div className="form-row">
+              <div className="form-group">
+                <label>Порядковый номер:</label>
+                <input
+                  className="admin-input"
+                  type="number"
+                  value={editOrderNum}
+                  onChange={(e) => setEditOrderNum(parseInt(e.target.value) || 1)}
+                  min="1"
+                />
+              </div>
+              <div className="form-group">
+                <label style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  <input
+                    type="checkbox"
+                    checked={editIsUnlocked}
+                    onChange={(e) => setEditIsUnlocked(e.target.checked)}
+                  />
+                  Разблокирована
+                </label>
+              </div>
+            </div>
+
+            <div className="form-actions">
+              <button
+                type="button"
+                className="admin-button"
+                onClick={saveStage}
+                disabled={updateLoading || !editName.trim()}
+              >
+                {updateLoading ? 'Сохранение...' : (editingStage ? 'Сохранить' : 'Добавить')}
+              </button>
+              <button
+                type="button"
+                className="admin-button"
+                onClick={closeStageModal}
+                disabled={updateLoading}
+                style={{ background: 'var(--admin-secondary)' }}
+              >
+                Отмена
+              </button>
+            </div>
+
+            {updateError && (
+              <div className="admin-error" style={{ marginTop: '12px' }}>
+                {updateError}
+              </div>
+            )}
           </div>
         </div>
       )}

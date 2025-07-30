@@ -110,7 +110,9 @@ const DraggableMaterialRow: React.FC<DraggableMaterialRowProps> = ({
                 )}
             </td>
             <td>{material.name}</td>
-            <td>{material.description || <span className="empty-value">Нет описания</span>}</td>
+            <td>
+                <p className={'line-clamp-3'}>{material.description || <span className="empty-value">Нет описания</span>}</p>
+            </td>
             <td>
                 {material.course_id ? (
                     courses.find(c => c.id === material.course_id)?.title || material.course_id
