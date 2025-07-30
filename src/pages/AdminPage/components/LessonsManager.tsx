@@ -236,7 +236,7 @@ const LessonsManager: React.FC<LessonsManagerProps> = ({ courseId, stageId, onBa
             await updateLesson(editingLesson.id, {
                 name: editName.trim(),
                 description: editDescription.trim() || '', // Всегда передаем строку, даже пустую
-                order_num: editOrderNum,
+                order_num: editOrderNum || 1, // Если 0 или пустое значение, используем 1
                 has_assignment: editHasAssignment,
                 open_at: localToUtc(editOpenAt),
                 deadline_at: localToUtc(editDeadlineAt),
