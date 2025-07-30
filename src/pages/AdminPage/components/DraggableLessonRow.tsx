@@ -128,15 +128,15 @@ const DraggableLessonRow: React.FC<DraggableLessonRowProps> = ({
                 {isEditing ? (
                     <input
                         className="admin-input"
-                        type="number"
-                        value={editOrderNum}
+                        type="text"
+                        value={editOrderNum === 0 ? '' : editOrderNum}
                         onChange={e => {
                             const value = e.target.value;
-                            // Если поле пустое, устанавливаем 0, чтобы можно было ввести новое число
-                            // Если введено число, используем его
-                            onEditOrderChange(value === '' ? 0 : parseInt(value) || 0);
+                            // Разрешаем только цифры
+                            if (value === '' || /^\d+$/.test(value)) {
+                                onEditOrderChange(value === '' ? 0 : parseInt(value));
+                            }
                         }}
-                        min="1"
                         style={{ width: '80px' }}
                     />
                 ) : (

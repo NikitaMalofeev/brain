@@ -576,10 +576,15 @@ const BlocksManager: React.FC<BlocksManagerProps> = ({ courseId, stageId, lesson
                                 <label>Порядковый номер:</label>
                                 <input
                                     className="admin-input"
-                                    type="number"
-                                    value={modalData.order_num}
-                                    onChange={(e) => setModalData({ ...modalData, order_num: parseInt(e.target.value) || 1 })}
-                                    min="1"
+                                    type="text"
+                                    value={modalData.order_num === 0 ? '' : modalData.order_num}
+                                    onChange={(e) => {
+                                        const value = e.target.value;
+                                        // Разрешаем только цифры
+                                        if (value === '' || /^\d+$/.test(value)) {
+                                            setModalData({ ...modalData, order_num: value === '' ? 0 : parseInt(value) });
+                                        }
+                                    }}
                                 />
                             </div>
                         </div>

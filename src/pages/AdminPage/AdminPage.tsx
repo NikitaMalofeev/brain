@@ -671,7 +671,7 @@ const StagesManager: React.FC<StagesManagerProps> = ({ courseId, onBack, onStage
         await updateStage(editingStage.id, {
           name: editName.trim(),
           description: editDescription.trim() || undefined,
-          order_num: editOrderNum,
+          order_num: editOrderNum || 1, // Если 0 или пустое значение, используем 1
           is_unlocked: editIsUnlocked,
           cover_image_path: editCoverImagePath || undefined,
         });
@@ -681,7 +681,7 @@ const StagesManager: React.FC<StagesManagerProps> = ({ courseId, onBack, onStage
           course_id: courseId,
           name: editName.trim(),
           description: editDescription.trim() || undefined,
-          order_num: editOrderNum,
+          order_num: editOrderNum || 1, // Если 0 или пустое значение, используем 1
           is_unlocked: editIsUnlocked,
           cover_image_path: editCoverImagePath || undefined,
         });
@@ -989,10 +989,15 @@ const StagesManager: React.FC<StagesManagerProps> = ({ courseId, onBack, onStage
                 <label>Порядковый номер:</label>
                 <input
                   className="admin-input"
-                  type="number"
-                  value={editOrderNum}
-                  onChange={(e) => setEditOrderNum(parseInt(e.target.value) || 1)}
-                  min="1"
+                  type="text"
+                  value={editOrderNum === 0 ? '' : editOrderNum}
+                  onChange={(e) => {
+                    const value = e.target.value;
+                    // Разрешаем только цифры
+                    if (value === '' || /^\d+$/.test(value)) {
+                      setEditOrderNum(value === '' ? 0 : parseInt(value));
+                    }
+                  }}
                 />
               </div>
               <div className="form-group">

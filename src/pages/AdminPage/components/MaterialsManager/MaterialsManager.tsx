@@ -313,7 +313,7 @@ const MaterialsManager: React.FC = () => {
                 name: materialForm.name.trim(),
                 description: materialForm.description.trim() || null,
                 material_type: materialForm.material_type,
-                order_num: materialForm.order_num,
+                order_num: materialForm.order_num || 1, // Если 0 или пустое значение, используем 1
                 course_id: materialForm.course_id || null,
                 release_date: materialForm.release_date ? new Date(materialForm.release_date).toISOString() : null
             };
@@ -1269,11 +1269,16 @@ const MaterialsManager: React.FC = () => {
                                 <div className="form-group">
                                     <label>Порядковый номер *</label>
                                     <input
-                                        type="number"
+                                        type="text"
                                         className="admin-input"
-                                        value={materialForm.order_num}
-                                        onChange={(e) => setMaterialForm({ ...materialForm, order_num: parseInt(e.target.value) || 1 })}
-                                        min="1"
+                                        value={materialForm.order_num === 0 ? '' : materialForm.order_num}
+                                        onChange={(e) => {
+                                            const value = e.target.value;
+                                            // Разрешаем только цифры
+                                            if (value === '' || /^\d+$/.test(value)) {
+                                                setMaterialForm({ ...materialForm, order_num: value === '' ? 0 : parseInt(value) });
+                                            }
+                                        }}
                                         required
                                     />
                                 </div>
@@ -1337,11 +1342,16 @@ const MaterialsManager: React.FC = () => {
                                 <div className="form-group">
                                     <label>Порядковый номер *</label>
                                     <input
-                                        type="number"
+                                        type="text"
                                         className="admin-input"
-                                        value={blockForm.order_num}
-                                        onChange={(e) => setBlockForm({ ...blockForm, order_num: parseInt(e.target.value) || 1 })}
-                                        min="1"
+                                        value={blockForm.order_num === 0 ? '' : blockForm.order_num}
+                                        onChange={(e) => {
+                                            const value = e.target.value;
+                                            // Разрешаем только цифры
+                                            if (value === '' || /^\d+$/.test(value)) {
+                                                setBlockForm({ ...blockForm, order_num: value === '' ? 0 : parseInt(value) });
+                                            }
+                                        }}
                                         required
                                     />
                                 </div>
