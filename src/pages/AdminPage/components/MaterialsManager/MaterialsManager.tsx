@@ -7,6 +7,7 @@ import { supabase } from '../../../../lib/supabase/client';
 import DraggableMaterialBlockRow from './DraggableMaterialBlockRow';
 import DraggableMaterialRow from './DraggableMaterialRow';
 import { useTariffsAdmin, useMaterialTariffAccess, useCoursesAdmin } from '@/lib/supabase/hooks';
+import { generateWaveformData } from '@/lib/audio/waveformGenerator';
 
 // TODO: Определить типы для Material и MaterialBlock на основе db_schema.md
 interface Material {
@@ -30,7 +31,7 @@ interface MaterialBlock {
     block_type: 'text' | 'video' | 'audio' | 'image' | 'pdf' | 'material';
     content_text?: string | null;
     content_url?: string | null;
-    // meta_json - убрали для MVP
+    meta_json?: any | null; // jsonb для метаданных (например, audio_data)
     created_at: string; // timestamptz
 }
 
@@ -590,7 +591,7 @@ const MaterialsManager: React.FC = () => {
                 }
             }
 
-            const blockData = {
+            let blockData: any = {
                 material_id: currentMaterialId,
                 title: blockForm.title.trim() || '',
                 block_type: blockForm.block_type,
@@ -599,8 +600,35 @@ const MaterialsManager: React.FC = () => {
                 order_num: blockForm.order_num
             };
 
+            // Если это аудио блок с URL, генерируем данные волны
+            if (blockForm.block_type === 'audio' && finalContentUrl) {
+                try {
+                    const audioUrl = buildFileUrl(finalContentUrl);
+                    if (audioUrl) {
+                        console.log('Генерируем волну для аудио материала:', audioUrl);
+                        const waveformData = await generateWaveformData(audioUrl);
+                        
+                        // Добавляем audio_data в meta_json
+                        blockData.meta_json = {
+                            audio_data: waveformData
+                        };
+                        console.log('Данные волны сгенерированы для материала:', waveformData);
+                    }
+                } catch (waveformError) {
+                    console.error('Не удалось сгенерировать волну для материала:', waveformError);
+                    // Продолжаем без волны
+                }
+            }
+
             if (editingBlock) {
-                // Обновление
+                // Обновление - проверяем, изменился ли URL
+                if (blockForm.block_type === 'audio' && finalContentUrl && editingBlock.content_url !== finalContentUrl) {
+                    // URL изменился, генерируем новую волну (уже сделано выше)
+                } else if (editingBlock.meta_json && !blockData.meta_json) {
+                    // Сохраняем существующие метаданные если не генерировали новые
+                    blockData.meta_json = editingBlock.meta_json;
+                }
+
                 const { error } = await supabase
                     .from('material_blocks')
                     .update(blockData)
