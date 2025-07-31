@@ -65,14 +65,9 @@ const DraggableBlockRow: React.FC<DraggableBlockRowProps> = ({
             className={isDraggedOver ? 'drag-over' : ''}
         >
             <td>
-                <input
-                    type="number"
-                    value={localOrderValues[block.id] ?? block.order_num}
-                    onChange={(e) => onOrderInputChange(block.id, parseInt(e.target.value) || 1)}
-                    style={{ width: '60px', textAlign: 'center' }}
-                    className="admin-input"
-                    min="1"
-                />
+                <span style={{ padding: '8px', display: 'inline-block' }}>
+                    {block.order_num}
+                </span>
             </td>
             <td>{block.title || <span className="empty-value">Без заголовка</span>}</td>
             <td>

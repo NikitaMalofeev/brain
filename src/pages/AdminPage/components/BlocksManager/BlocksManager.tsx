@@ -468,7 +468,7 @@ const BlocksManager: React.FC<BlocksManagerProps> = ({ courseId, stageId, lesson
         <div className="admin-section">
             <div className="section-header">
                 <h2>Блоки урока</h2>
-                <div style={{ display: 'flex', gap: '12px' }}>
+                <div className="blocks-header-buttons">
                     <button
                         className="admin-refresh-btn"
                         onClick={refetch}
@@ -481,7 +481,7 @@ const BlocksManager: React.FC<BlocksManagerProps> = ({ courseId, stageId, lesson
                         onClick={openAddModal}
                         disabled={loading}
                     >
-                        + Добавить блок
+                        Добавить блок
                     </button>
                     <button
                         className="admin-button"

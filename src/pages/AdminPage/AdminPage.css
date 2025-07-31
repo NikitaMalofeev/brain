@@ -625,6 +625,24 @@ body.admin-mode {
 
 
 
+/* Кнопки в заголовке блоков */
+.blocks-header-buttons {
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+@media (max-width: 768px) {
+  .blocks-header-buttons {
+    flex-direction: column;
+    width: 100%;
+  }
+  
+  .blocks-header-buttons button {
+    width: 100%;
+  }
+}
+
 /* Стиль для ячеек с обложками в таблице ступеней */
 .stage-cover-cell {
   width: auto; /* Позволяем ячейке подстроиться под контент */
