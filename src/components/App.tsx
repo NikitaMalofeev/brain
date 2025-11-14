@@ -12,6 +12,7 @@ import TokenErrorPage from '@/pages/TokenErrorPage/TokenErrorPage';
 import { AppMotionProvider } from '@/animations/motionConfig';
 import TabBar from '@/components/TabBar/TabBar';
 import IFrameSplash from '@/components/IFrameSplash';
+import { useOnboarding } from '@/lib/hooks/useOnboarding';
 
 function AppContent({ showSplash }: { showSplash: boolean }) {
     const lp = useMemo(() => retrieveLaunchParams(), []);
@@ -23,6 +24,7 @@ function AppContent({ showSplash }: { showSplash: boolean }) {
     const { data: activeTariff, isLoading: tariffLoading } = useActiveTariff(supabaseUser?.id);
     const { mutate: redeemToken, isPending: isRedeeming, isIdle } = useRedeemToken();
     const { mutate: findTokenByTgId, isPending: isFindingToken, isIdle: isFindIdle } = useFindTokenByTgId();
+    const { showOnboarding, completeOnboarding } = useOnboarding();
 
     // Извлекаем start parameter согласно документации Telegram Mini Apps
     // https://docs.telegram-mini-apps.com/platform/start-parameter
@@ -105,17 +107,18 @@ function AppContent({ showSplash }: { showSplash: boolean }) {
     }
 
     // Если нет активного тарифа И нет токенов для активации - блокируем доступ
-    if (supabaseUser && !activeTariff && !accessToken && !personalToken && hasSearchedPersonalToken) {
+    // НО разрешаем гостям (role === 'guest') войти в приложение
+    const isGuest = supabaseUser?.role === 'guest';
+    if (supabaseUser && !activeTariff && !accessToken && !personalToken && hasSearchedPersonalToken && !isGuest) {
         return <TokenErrorPage />;
     }
 
-    // Если есть доступ, но не завершен онбординг
-    const shouldShowOnboarding = supabaseUser && !supabaseUser.onboarding_completed;
+    // Если есть доступ, но не завершен онбординг (проверяем localStorage)
     const tabBatRoutes = ['/', '/library', '/profile', '/profile2', '/faq', '/help', '/chats'];
     const showTabBar = tabBatRoutes.includes(location.pathname);
 
-    if (shouldShowOnboarding) {
-        return <Onboarding onClose={() => { }} />;
+    if (showOnboarding && supabaseUser) {
+        return <Onboarding onClose={completeOnboarding} />;
     }
 
     return (

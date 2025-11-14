@@ -5,7 +5,8 @@
       "Bash(if [ -f .env ])",
       "Bash(then echo \"File exists\")",
       "Bash(else echo \"File does not exist\")",
-      "Bash(fi)"
+      "Bash(fi)",
+      "Bash(npm run build:*)"
     ],
     "deny": [],
     "ask": []
