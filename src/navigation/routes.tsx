@@ -17,6 +17,8 @@ import { MainPage } from "@/pages/MainPage/MainPage.tsx";
 import { InfoPoints } from "@/pages/InfoPoints.tsx";
 import { MaterialPage } from "@/pages/MaterialPage.tsx";
 import TokenErrorPage from '@/pages/TokenErrorPage/TokenErrorPage';
+import TechniquesPage from '@/pages/TechniquesPage/TechniquesPage';
+import TechniquePlayerPage from '@/pages/TechniquesPage/TechniquePlayerPage';
 
 export const routers = [
   {
@@ -38,6 +40,14 @@ export const routers = [
   {
     path: '/material/:id',
     Component: MaterialPage
+  },
+  {
+    path: '/techniques',
+    Component: TechniquesPage
+  },
+  {
+    path: '/techniques/:id',
+    Component: TechniquePlayerPage
   },
   {
     path: '/points',

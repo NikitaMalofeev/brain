@@ -1,0 +1,168 @@
+import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { Page } from '@/components/Page';
+import { useSupabaseUser } from '@/lib/supabase/hooks/useSupabaseUser';
+import { useGuestStatus } from '@/lib/supabase/hooks/useIsGuest';
+import { useTechniquesFiltered } from '@/lib/supabase/hooks/useTechniques';
+import { useSignal, initDataState } from '@telegram-apps/sdk-react';
+import { logger } from '@/lib/logger';
+import { TechniqueWithAccess } from '@/lib/supabase/types';
+import TechniqueCard from '@/components/TechniqueCard/TechniqueCard';
+
+// Типы табов
+type TabType = 'available' | 'locked' | 'mine';
+
+interface Tab {
+  id: TabType;
+  label: string;
+}
+
+const TABS: Tab[] = [
+  { id: 'available', label: 'Доступные' },
+  { id: 'locked', label: 'Заблокированные' },
+  { id: 'mine', label: 'Мои' },
+];
+
+/**
+ * Страница с техниками (аудиопрактиками)
+ * Отображает техники в трех табах: Доступные, Заблокированные, Мои
+ * Доступна как для гостей (показывает бесплатные техники), так и для учеников
+ */
+const TechniquesPage: React.FC = () => {
+  const navigate = useNavigate();
+  const [activeTab, setActiveTab] = useState<TabType>('available');
+
+  // Получаем данные пользователя
+  const initDataSignal = useSignal(initDataState);
+  const { supabaseUser, loading: userLoading } = useSupabaseUser(initDataSignal);
+
+  // Проверяем является ли пользователь гостем
+  const { isGuest, isLoading: guestCheckLoading } = useGuestStatus(supabaseUser?.id);
+
+  // Получаем техники с фильтрацией
+  const {
+    availableTechniques,
+    lockedTechniques,
+    myTechniques,
+    freeTechniques,
+    isLoading: techniquesLoading,
+    error,
+  } = useTechniquesFiltered(supabaseUser?.id);
+
+  // Логирование для отладки
+  useEffect(() => {
+    logger.debug('TechniquesPage state', {
+      userId: supabaseUser?.id,
+      isGuest,
+      availableCount: availableTechniques.length,
+      lockedCount: lockedTechniques.length,
+      myCount: myTechniques.length,
+      freeCount: freeTechniques.length,
+    });
+  }, [supabaseUser, isGuest, availableTechniques, lockedTechniques, myTechniques, freeTechniques]);
+
+  // Общее состояние загрузки
+  const loading = userLoading || guestCheckLoading || techniquesLoading;
+
+  // Функция для получения техник текущего таба
+  const getCurrentTabTechniques = (): TechniqueWithAccess[] => {
+    switch (activeTab) {
+      case 'available':
+        // Для гостей показываем бесплатные техники
+        // Для учеников - техники доступные к покупке
+        return isGuest ? freeTechniques : availableTechniques;
+      case 'locked':
+        return lockedTechniques;
+      case 'mine':
+        return myTechniques;
+      default:
+        return [];
+    }
+  };
+
+  const currentTechniques = getCurrentTabTechniques();
+
+  // Обработчик клика по технике
+  const handleTechniqueClick = (techniqueId: string) => {
+    logger.debug('Opening technique', { techniqueId });
+    navigate(`/techniques/${techniqueId}`);
+  };
+
+  return (
+    <Page back={false}>
+      <div className="flex flex-col h-full">
+        {/* Заголовок */}
+        <div className="px-4 pt-6 pb-4">
+          <h1 className="text-2xl font-bold text-black">Техники</h1>
+          <p className="text-sm text-[#666] mt-1">
+            {isGuest
+              ? 'Аудиопрактики для раскрытия потенциала'
+              : 'Ваши аудиопрактики'}
+          </p>
+        </div>
+
+        {/* Табы */}
+        <div className="flex gap-2 px-4 mb-4 overflow-x-auto">
+          {TABS.map((tab) => (
+            <button
+              key={tab.id}
+              onClick={() => setActiveTab(tab.id)}
+              className={`
+                px-4 py-2 rounded-xl font-medium text-sm whitespace-nowrap transition-all
+                ${
+                  activeTab === tab.id
+                    ? 'bg-gradient-to-r from-[#E1C1F4] to-[#B862EA] text-white'
+                    : 'bg-white text-[#242424] hover:bg-gray-50'
+                }
+              `}
+            >
+              {tab.label}
+            </button>
+          ))}
+        </div>
+
+        {/* Контент */}
+        <div className="flex-1 overflow-y-auto px-4 pb-20">
+          {loading ? (
+            <div className="flex items-center justify-center h-full">
+              <div className="text-center">
+                <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-[#B862EA] mb-2"></div>
+                <p className="text-sm text-[#666]">Загрузка...</p>
+              </div>
+            </div>
+          ) : error ? (
+            <div className="flex items-center justify-center h-full">
+              <div className="text-center">
+                <p className="text-sm text-red-500">Ошибка загрузки техник</p>
+                <p className="text-xs text-[#666] mt-1">{error.message}</p>
+              </div>
+            </div>
+          ) : currentTechniques.length === 0 ? (
+            <div className="flex items-center justify-center h-full">
+              <div className="text-center">
+                <p className="text-sm text-[#666]">
+                  {activeTab === 'available' && 'Нет доступных техник'}
+                  {activeTab === 'locked' && 'Нет заблокированных техник'}
+                  {activeTab === 'mine' && isGuest && 'Станьте учеником, чтобы получить доступ к техникам'}
+                  {activeTab === 'mine' && !isGuest && 'У вас пока нет техник'}
+                </p>
+              </div>
+            </div>
+          ) : (
+            <div className="flex flex-col gap-3">
+              {currentTechniques.map((technique) => (
+                <TechniqueCard
+                  key={technique.id}
+                  technique={technique}
+                  onClick={() => handleTechniqueClick(technique.id)}
+                />
+              ))}
+            </div>
+          )}
+        </div>
+      </div>
+    </Page>
+  );
+};
+
+export default TechniquesPage;

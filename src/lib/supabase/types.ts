@@ -11,7 +11,7 @@ export interface SupabaseUser {
   created_at?: string | null; // timestamptz, default now()
   updated_at?: string | null; // timestamptz, default now()
   last_login?: string | null; // timestamptz, default now()
-  role?: 'user' | 'curator' | 'admin'; // enum user_role, default 'user' - роль пользователя
+  role?: 'user' | 'curator' | 'admin' | 'guest'; // enum user_role, default 'user' - роль пользователя
   access_till?: string | null; // timestamptz, nullable - дата окончания доступа
   total_points?: number | null; // integer, default 0 - общее количество очков пользователя
   lives_remaining?: number | null; // integer, default 3 - количество оставшихся жизней
@@ -502,4 +502,79 @@ export type Database = {
       };
     };
   };
-}; 
+};
+
+// ============================================================================
+// Типы для системы техник (аудиопрактик)
+// ============================================================================
+
+// Статусы техники
+export type TechniqueStatus = 'free' | 'purchasable' | 'locked';
+
+// Типы условий разблокировки
+export type UnlockConditionType = 'after_technique' | 'after_duration' | null;
+
+// Источник доступа к технике
+export type TechniqueAccessSource = 'purchase' | 'tariff' | 'gift' | 'free';
+
+// Значение условия разблокировки
+export interface UnlockConditionValue {
+  technique_id?: string; // UUID предыдущей техники (для after_technique)
+  duration_days?: number; // Количество дней задержки
+}
+
+// Техника (аудиопрактика)
+export interface Technique extends TimestampFields {
+  id: string; // UUID
+  title: string;
+  description?: string;
+  audio_url: string;
+  cover_image?: string;
+  duration_seconds?: number;
+  status: TechniqueStatus;
+  purchase_url?: string;
+  upgrade_tariff_chat_url?: string;
+  available_from_module?: string;
+  unlock_condition_type?: UnlockConditionType;
+  unlock_condition_value?: UnlockConditionValue;
+  order_num: number;
+}
+
+// Доступ пользователя к технике
+export interface UserTechniqueAccess extends TimestampFields {
+  id: string; // UUID
+  user_id: string; // FK к User
+  technique_id: string; // FK к Technique
+  granted_at: string;
+  expires_at?: string | null;
+  access_source: TechniqueAccessSource;
+}
+
+// Результат функции can_user_purchase_technique
+export interface TechniquePurchaseInfo {
+  can_purchase: boolean;
+  reason: string;
+  unlock_date?: string | null;
+}
+
+// Техника с информацией о доступе (результат get_techniques_with_access)
+export interface TechniqueWithAccess extends Technique {
+  has_access: boolean;
+  can_purchase: boolean;
+  purchase_info: TechniquePurchaseInfo;
+  access_granted_at?: string | null;
+  access_expires_at?: string | null;
+  access_source?: TechniqueAccessSource | null;
+}
+
+// Типы для создания/обновления техник
+export type CreateTechnique = Omit<Technique, 'id' | 'created_at' | 'updated_at'>;
+export type UpdateTechnique = Partial<Technique> & { id: string };
+
+// Типы для предоставления доступа
+export interface GrantTechniqueAccessRequest {
+  user_id: string;
+  technique_id: string;
+  access_source?: TechniqueAccessSource;
+  expires_at?: string | null;
+}

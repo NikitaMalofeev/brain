@@ -20,6 +20,7 @@ export * from './useSupabaseUser';
 
 // Хуки для проверки тарифов и доступа
 export { useActiveTariff, useHasActiveTariff } from './useActiveTariff';
+export { useIsGuest, useGuestStatus } from './useIsGuest';
 
 // Новые хуки для управления учениками и кураторами
 export { useStudentsAdmin } from './useStudentsAdmin';
@@ -36,4 +37,7 @@ export { useBroadcastsAdmin } from './useBroadcastsAdmin';
 export { useTariffsAdmin } from './useTariffsAdmin';
 export { useTariffLimits } from './useTariffLimits';
 export { useChatAccess } from './useChatAccess';
-export { useMaterialTariffAccess, saveChatTariffAccess, saveMaterialTariffAccess } from './useTariffAccess'; 
+export { useMaterialTariffAccess, saveChatTariffAccess, saveMaterialTariffAccess } from './useTariffAccess';
+
+// Хуки для техник (аудиопрактик)
+export { useTechniques, useTechniquesFiltered } from './useTechniques';
