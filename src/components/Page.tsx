@@ -1,8 +1,8 @@
-import { useNavigate } from 'react-router-dom';
-import { hideBackButton, onBackButtonClick, showBackButton, postEvent } from '@telegram-apps/sdk-react';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { type PropsWithChildren, useEffect, useRef } from 'react';
 import { SafeAreaFade } from '@/components/SafeAreaFade/SafeAreaFade';
 import { motion } from 'framer-motion';
+import { backButton, miniApp } from '@telegram-apps/sdk-react';
 import './Page.css';
 
 // Стили для учета отступов safe area с дополнительным отступом для fullscreen режима
@@ -22,6 +22,7 @@ const safeAreaStyle = {
 interface PageProps {
   /**
    * True if it is allowed to go back from this page.
+   * If false, the back button will close the app instead.
    */
   back?: boolean;
   /**
@@ -41,17 +42,60 @@ export function Page({
   showSafeAreaFade = true,
 }: PropsWithChildren<PageProps>) {
   const navigate = useNavigate();
+  const location = useLocation();
   const containerRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    if (back) {
-      showBackButton();
-      return onBackButtonClick(() => {
-        navigate(-1);
-      });
+    try {
+      // Монтируем если не смонтирован
+      if (backButton.isSupported() && !backButton.isMounted()) {
+        backButton.mount();
+      }
+
+      // Всегда показываем кнопку назад
+      if (backButton.isMounted()) {
+        backButton.show();
+      } else {
+        console.error('Page: BackButton not mounted, cannot show');
+        return;
+      }
+
+      // Обработчик клика на кнопку назад
+      const handleBackButtonClick = () => {
+        if (back) {
+          // Обычная навигация назад
+          navigate(-1);
+        } else {
+          // На главных страницах (где back=false)
+          if (location.pathname === '/') {
+            // Если уже на главной - минимизируем приложение
+            try {
+              if (miniApp.isMounted()) {
+                miniApp.close();
+              } else if (window.Telegram?.WebApp) {
+                window.Telegram.WebApp.close();
+              }
+            } catch (e) {
+              console.error('Failed to close app:', e);
+            }
+          } else {
+            // Если не на главной - переходим на главную
+            navigate('/');
+          }
+        }
+      };
+
+      // Подписываемся на событие клика
+      const unsubscribe = backButton.onClick(handleBackButtonClick);
+
+      // Отписываемся при размонтировании
+      return () => {
+        unsubscribe();
+      };
+    } catch (error) {
+      console.error('Page: Error setting up back button', error);
     }
-    hideBackButton();
-  }, [back, navigate]);
+  }, [back, navigate, location.pathname]);
 
   // Повторно запрашиваем safe area при монтировании страницы
   useEffect(() => {
@@ -73,11 +117,11 @@ export function Page({
   return (
     <motion.main
       className={`max-w-[600px] mx-auto page-container  ${showTabBar ? 'with-tab-bar' : ''}`}
-      style={{ ...containerStyle, backgroundColor: '#ffffff', pointerEvents: 'auto' }}
+      style={{ ...containerStyle, backgroundColor: '#ffffff' }}
       ref={containerRef}
       initial={{ opacity: 0, y: 10 }}
       animate={{ opacity: 1, y: 0 }}
-      exit={{ opacity: 0, y: -10, pointerEvents: 'none' }}
+      exit={{ opacity: 0, y: -10 }}
       transition={{
         type: 'tween',
         ease: 'easeOut',

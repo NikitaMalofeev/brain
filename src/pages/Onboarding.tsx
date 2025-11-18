@@ -1,51 +1,33 @@
 import { useRef, useState } from 'react';
 import { Swiper, SwiperSlide } from 'swiper/react';
-import { Pagination, EffectCreative } from 'swiper/modules';
-import { motion, AnimatePresence } from 'framer-motion';
+import { Pagination } from 'swiper/modules';
 import 'swiper/css';
-import 'swiper/css/effect-creative';
+import { getKinescopeId } from "@/components/LessonContent/VideoBlock.tsx";
+import VideoPlayer from "@/components/Player/VideoPlayer.tsx";
+import { useSupabaseUser } from '@/lib/supabase/hooks';
+import { useSignal, initDataState } from '@telegram-apps/sdk-react';
 import { Ripple } from '@/components/ui/Ripple/Ripple';
-import { useOnboarding } from '@/lib/hooks/useOnboarding';
-
-// Импортируем изображения
-import onbordingMain from '@/shared/assets/images/onbordingMain.png';
-import onbordingFirstStep from '@/shared/assets/images/onbordingFirstStep.png';
-import onbordingLibrary from '@/shared/assets/images/onbordingLibrary.png';
-import onbordingLastStep from '@/shared/assets/images/onbordingLastStep.png';
 
 const slides = [
-    {
-        title: 'Добро пожаловать',
-        description: 'Это вводное видео поможет тебе быстро разобраться в приложении. Посмотри до конца, чтобы начать обучение с полной ясностью.',
-        img: onbordingMain
-    },
-    {
-        title: 'Главная',
-        description: 'Главная страница — это твой личный центр управления. Здесь ты видишь свой прогресс, баллы и путь по ступеням курса.',
-        img: onbordingFirstStep
-    },
-    {
-        title: 'Библиотека',
-        description: 'Библиотека — это центр твоего обучения. Здесь ты смотришь материалы, а после сразу выполняешь упражнения и домашние задания. Всё, что нужно для погружения и практики в одном месте.',
-        img: onbordingLibrary
-    },
-    {
-        title: 'Профиль',
-        description: 'Профиль — твоя личная страница. Здесь всё самое важное под рукой: чаты, помощь, FAQ и связь с отделом заботы, если вдруг нужен быстрый ответ или поддержка.',
-        img: onbordingLastStep
-    },
+    { title: 'Добро пожаловать 🤍', description: 'Просмотри это видео. Оно поможет разобраться, как устроено обучение, что тебя ждёт и какие секретные функции есть в приложении.', img: '' },
+    { title: 'Главная', description: 'Главная страница — это твой личный центр управления. Здесь ты видишь свой прогресс, баллы и путь по ступеням курса.', img: '/o1.jpg', icon: '/icon1-active.svg' },
+    { title: 'Библиотека', description: 'Библиотека — это центр обучения. Здесь ты найдёшь все материалы: видеоуроки, техники, практики и домашние задания. \n\nЯ уверена, это место станет одним из твоих любимых 🤍', img: '/o2.jpg', icon: '/icon2-active.svg' },
+    { title: 'Профиль', description: 'Профиль — твоя личная страница. Здесь я собрала для тебя все самое важное: чаты, твои Эдельштейны, FAQ и связь с отделом заботы, если появятся вопросы.', img: '/o3.jpg', icon: '/icon3-active.svg' },
 ];
 
 export const Onboarding = ({ onClose }: { onClose: () => void }) => {
     const swiperRef = useRef<any>(null);
     const [activeIndex, setActiveIndex] = useState(0);
-    const { completeOnboarding } = useOnboarding();
+
+    // Получаем доступ к функции отметки завершения онбординга
+    const initData = useSignal(initDataState);
+    const { markOnboardingCompleted } = useSupabaseUser(initData);
 
     const handleNext = () => {
         if (swiperRef.current && swiperRef.current.swiper) {
             if (swiperRef.current.swiper.isEnd) {
                 // На последнем слайде отмечаем онбординг как завершенный
-                completeOnboarding();
+                markOnboardingCompleted();
                 onClose();
             }
             swiperRef.current.swiper.slideNext();
@@ -59,64 +41,30 @@ export const Onboarding = ({ onClose }: { onClose: () => void }) => {
             {/* Слайдер */}
             <Swiper
                 ref={swiperRef}
-                modules={[Pagination, EffectCreative]}
-                effect="creative"
-                creativeEffect={{
-                    prev: {
-                        translate: ['-100%', 0, -400],
-                        opacity: 0,
-                    },
-                    next: {
-                        translate: ['100%', 0, 0],
-                        opacity: 0,
-                    },
-                }}
+                modules={[Pagination]}
                 spaceBetween={1}
                 slidesPerView={1}
-                speed={600}
                 onSlideChange={(swiper) => setActiveIndex(swiper.activeIndex)}
                 className="flex-1 w-full"
             >
                 {slides.map((slide, index) => (
-                    <SwiperSlide key={index}>
-                        <AnimatePresence mode="wait">
-                            {activeIndex === index && (
-                                <motion.div
-                                    initial={{ opacity: 0, y: 20 }}
-                                    animate={{ opacity: 1, y: 0 }}
-                                    exit={{ opacity: 0, y: -20 }}
-                                    transition={{ duration: 0.5 }}
-                                    className="flex flex-col items-center justify-center text-black gap-8 pb-4 px-4"
-                                >
-                                    {/* Изображение */}
-                                    <motion.div
-                                        initial={{ scale: 0.9, opacity: 0 }}
-                                        animate={{ scale: 1, opacity: 1 }}
-                                        transition={{ delay: 0.1, duration: 0.5 }}
-                                        className="w-full max-w-[375px] aspect-square rounded-2xl overflow-hidden"
-                                    >
-                                        <img
-                                            alt={slide.title}
-                                            className="w-full h-full object-cover"
-                                            src={slide.img}
-                                        />
-                                    </motion.div>
+                    <SwiperSlide key={index} >
+                        <div className="flex flex-col items-center justify-center text-black gap-12 pb-4">
+                            {index === 0 ? <div className={'h-[330px] w-full'}>
+                                <VideoPlayer
+                                    videoId={getKinescopeId('https://kinescope.io/oXiWoXBWQpcb3GQ9AARE3Q') || ''}
+                                />
+                            </div> : <img alt={''} className={'max-h-[375px] aspect-square w-full object-cover'} src={slide.img} />}
+                            <div className={'flex flex-col gap-1 items-center px-4 relative'}>
+                                {index > 0 && <div
+                                    className={'absolute -top-1/2 left-1/2 -translate-y-1/2 -translate-x-1/2 p-3 rounded-full bg-[linear-gradient(109.65deg,_#E1C1F4_13.64%,_#B862EA_124.92%)]'}>
+                                    <img className={'w-11 h-11'} src={slide.icon} alt={''} />
+                                </div>}
+                                <h2 className="w-max text-2xl font-bold">{slide.title}</h2>
+                                <p className="text-center text-sm text-[#242424] whitespace-pre-line">{slide.description}</p>
+                            </div>
+                        </div>
 
-                                    {/* Текстовый блок */}
-                                    <motion.div
-                                        initial={{ opacity: 0, y: 20 }}
-                                        animate={{ opacity: 1, y: 0 }}
-                                        transition={{ delay: 0.3, duration: 0.5 }}
-                                        className="flex flex-col gap-2 items-center px-4"
-                                    >
-                                        <h2 className="text-2xl font-bold text-center">{slide.title}</h2>
-                                        <p className="text-center text-sm text-[#242424] whitespace-pre-line max-w-[340px]">
-                                            {slide.description}
-                                        </p>
-                                    </motion.div>
-                                </motion.div>
-                            )}
-                        </AnimatePresence>
                     </SwiperSlide>
                 ))}
             </Swiper>

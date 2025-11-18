@@ -1,6 +1,5 @@
 import React from 'react';
 import { motion } from 'framer-motion';
-import { Ripple } from '@/components/ui/Ripple/Ripple';
 import { clsx } from 'clsx';
 import { TechniqueWithAccess } from '@/lib/supabase/types';
 
@@ -18,47 +17,15 @@ const TechniqueCard: React.FC<TechniqueCardProps> = ({ technique, onClick }) => 
     title,
     description,
     cover_image,
-    duration_seconds,
     available_from_module,
     has_access,
     can_purchase,
     status,
-    purchase_info,
   } = technique;
 
   // Определяем можно ли кликнуть на карточку
   const isClickable = has_access || status === 'free';
-
-  // Форматируем длительность в минуты
-  const durationMinutes = duration_seconds ? Math.floor(duration_seconds / 60) : null;
-
-  // Определяем цвет и текст бейджа статуса
-  const getStatusBadge = () => {
-    if (has_access) {
-      return {
-        text: 'Доступна',
-        className: 'bg-green-100 text-green-700',
-      };
-    }
-    if (status === 'free') {
-      return {
-        text: 'Бесплатно',
-        className: 'bg-blue-100 text-blue-700',
-      };
-    }
-    if (can_purchase) {
-      return {
-        text: 'Купить',
-        className: 'bg-purple-100 text-purple-700',
-      };
-    }
-    return {
-      text: 'Заблокировано',
-      className: 'bg-gray-100 text-gray-700',
-    };
-  };
-
-  const statusBadge = getStatusBadge();
+  const isLocked = !has_access && !can_purchase && status !== 'free';
 
   return (
     <motion.div
@@ -69,12 +36,14 @@ const TechniqueCard: React.FC<TechniqueCardProps> = ({ technique, onClick }) => 
     >
       <div
         className={clsx(
-          'flex items-center gap-3 bg-white rounded-2xl p-3 transition-all shadow-sm',
-          isClickable ? 'cursor-pointer hover:shadow-md' : 'opacity-80'
+          'flex items-center gap-3 rounded-2xl p-3 transition-all',
+          'bg-gradient-to-b from-[#9E9E9E] to-[#7E7E7E]',
+          isClickable && 'cursor-pointer active:scale-[0.98]'
         )}
+        onClick={isClickable ? onClick : undefined}
       >
-        {/* Обложка - уменьшенная слева */}
-        <div className="relative w-16 h-16 rounded-xl flex-shrink-0 overflow-hidden">
+        {/* Обложка */}
+        <div className="relative w-[60px] h-[60px] rounded-xl flex-shrink-0 overflow-hidden">
           {cover_image ? (
             <img
               src={cover_image}
@@ -84,61 +53,73 @@ const TechniqueCard: React.FC<TechniqueCardProps> = ({ technique, onClick }) => 
                 e.currentTarget.style.display = 'none';
                 if (e.currentTarget.parentElement) {
                   e.currentTarget.parentElement.style.background =
-                    'linear-gradient(135deg, #E1C1F4 0%, #B862EA 100%)';
+                    'linear-gradient(135deg, #A8C5E8 0%, #6B9BD1 100%)';
                 }
               }}
             />
           ) : (
-            <div className="w-full h-full bg-gradient-to-br from-[#E1C1F4] to-[#B862EA]" />
+            <div className="w-full h-full bg-gradient-to-br from-[#A8C5E8] to-[#6B9BD1]" />
           )}
         </div>
 
-        {/* Контент - название и описание */}
-        <div className="flex-1 min-w-0" onClick={isClickable ? onClick : undefined}>
-          <h3 className="text-base font-semibold text-black leading-tight truncate">{title}</h3>
+        {/* Контент - бейдж, название и описание */}
+        <div className="flex-1 min-w-0 flex flex-col gap-1">
+          {/* Бейдж модуля */}
+          {available_from_module && (
+            <span className="inline-block px-2.5 py-0.5 bg-[#6E6E73] text-white text-[10px] font-medium rounded-full w-fit">
+              {available_from_module}
+            </span>
+          )}
+
+          {/* Название */}
+          <h3 className="text-sm font-semibold text-white leading-tight line-clamp-1">
+            {title}
+          </h3>
+
+          {/* Описание */}
           {description && (
-            <p className="text-xs text-[#666] line-clamp-1 mt-0.5">{description}</p>
+            <p className="text-[11px] text-white/80 line-clamp-1">{description}</p>
           )}
         </div>
 
-        {/* Кнопки справа */}
-        <div className="flex items-center gap-2 flex-shrink-0">
-          {/* Кнопка "Подарок" */}
-          <button
-            className="px-3 py-1.5 bg-[#E5E5EA] text-[#242424] text-xs font-medium rounded-full hover:bg-[#D1D1D6] transition-colors"
-            onClick={(e) => {
-              e.stopPropagation();
-              // TODO: Логика подарка
-              alert('Подарить технику');
-            }}
-          >
-            Подарок
-          </button>
-
-          {/* Кнопка "Купить" или иконка замка */}
-          {has_access ? (
-            <div className="w-16 h-8 flex items-center justify-center">
-              <svg className="w-5 h-5 text-green-500" fill="currentColor" viewBox="0 0 20 20">
-                <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+        {/* Кнопка справа */}
+        <div className="flex items-center flex-shrink-0">
+          {has_access || status === 'free' ? (
+            /* Иконка Play для доступных и бесплатных */
+            <button
+              className="w-10 h-10 rounded-full bg-black/40 flex items-center justify-center hover:bg-black/50 transition-colors"
+              onClick={(e) => {
+                if (isClickable) {
+                  e.stopPropagation();
+                  onClick();
+                }
+              }}
+            >
+              <svg className="w-5 h-5 text-white ml-0.5" fill="currentColor" viewBox="0 0 20 20">
+                <path d="M6.3 2.841A1.5 1.5 0 004 4.11V15.89a1.5 1.5 0 002.3 1.269l9.344-5.89a1.5 1.5 0 000-2.538L6.3 2.84z" />
+              </svg>
+            </button>
+          ) : isLocked ? (
+            /* Иконка замка для заблокированных */
+            <div className="w-10 h-10 rounded-full bg-black/40 flex items-center justify-center">
+              <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
               </svg>
             </div>
-          ) : can_purchase ? (
+          ) : (
+            /* Кнопка "Купить" для доступных к покупке */
             <button
-              className="px-3 py-1.5 bg-[#007AFF] text-white text-xs font-medium rounded-full hover:bg-[#0051D5] transition-colors"
+              className="px-4 py-2 bg-[#5AC8FA] text-white text-xs font-semibold rounded-full hover:bg-[#32ADE6] transition-colors"
               onClick={(e) => {
                 e.stopPropagation();
                 // TODO: Логика покупки
-                alert('Купить технику');
+                if (technique.purchase_url) {
+                  window.open(technique.purchase_url, '_blank');
+                }
               }}
             >
               Купить
             </button>
-          ) : (
-            <div className="w-16 h-8 flex items-center justify-center">
-              <svg className="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
-              </svg>
-            </div>
           )}
         </div>
       </div>

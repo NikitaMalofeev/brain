@@ -18,8 +18,10 @@ const TabBar: FC<TabBarProps> = ({ className }) => {
 
     // Обработчик перехода на вкладку
     const handleTabClick = (path: string) => {
-        console.log('TabBar click:', path); // Добавляем логирование для отладки
+        console.log('🔵 TabBar: Clicked, navigating to:', path);
+        console.log('🔵 TabBar: Current path:', currentPath);
         navigate(path);
+        console.log('🔵 TabBar: Navigate called');
     };
     const buttons = [
         {

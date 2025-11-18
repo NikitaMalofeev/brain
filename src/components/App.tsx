@@ -12,7 +12,6 @@ import TokenErrorPage from '@/pages/TokenErrorPage/TokenErrorPage';
 import { AppMotionProvider } from '@/animations/motionConfig';
 import TabBar from '@/components/TabBar/TabBar';
 import IFrameSplash from '@/components/IFrameSplash';
-import { useOnboarding } from '@/lib/hooks/useOnboarding';
 
 function AppContent({ showSplash }: { showSplash: boolean }) {
     const lp = useMemo(() => retrieveLaunchParams(), []);
@@ -24,7 +23,6 @@ function AppContent({ showSplash }: { showSplash: boolean }) {
     const { data: activeTariff, isLoading: tariffLoading } = useActiveTariff(supabaseUser?.id);
     const { mutate: redeemToken, isPending: isRedeeming, isIdle } = useRedeemToken();
     const { mutate: findTokenByTgId, isPending: isFindingToken, isIdle: isFindIdle } = useFindTokenByTgId();
-    const { showOnboarding, completeOnboarding } = useOnboarding();
 
     // Извлекаем start parameter согласно документации Telegram Mini Apps
     // https://docs.telegram-mini-apps.com/platform/start-parameter
@@ -34,13 +32,6 @@ function AppContent({ showSplash }: { showSplash: boolean }) {
     const [personalToken, setPersonalToken] = useState<string | null>(null);
     const [hasSearchedPersonalToken, setHasSearchedPersonalToken] = useState(false);
 
-    // Debug Logs
-    console.log('%c--- Render AppContent ---', 'color: yellow; font-weight: bold;');
-    console.log(`User Loading: ${userLoading}, Tariff Loading: ${tariffLoading}, Token Redeeming: ${isRedeeming}`);
-    console.log('Supabase User:', supabaseUser ? `ID: ${supabaseUser.id}` : 'null');
-    console.log('Active Tariff:', activeTariff ? `Code: ${activeTariff.tariff_code}` : 'null');
-    console.log(`Access Token: ${accessToken || 'null'}`);
-    console.log(`Has Access: ${!!activeTariff}, Has Token: ${!!(accessToken || personalToken)}`);
 
     // Поиск персонального токена если нет startapp токена
     useEffect(() => {
@@ -53,7 +44,6 @@ function AppContent({ showSplash }: { showSplash: boolean }) {
             !isFindingToken; // Поиск не в процессе
 
         if (shouldSearchPersonalToken) {
-            console.log('🔍 Searching for personal token by tg_id...');
             setHasSearchedPersonalToken(true);
 
             findTokenByTgId(
@@ -61,7 +51,6 @@ function AppContent({ showSplash }: { showSplash: boolean }) {
                 {
                     onSuccess: (data) => {
                         if (data.found && data.token) {
-                            console.log('✅ Personal token found, setting for redemption');
                             setPersonalToken(data.token);
                         }
                     }
@@ -76,16 +65,7 @@ function AppContent({ showSplash }: { showSplash: boolean }) {
         const canRedeem = tokenToRedeem && supabaseUser && !userLoading && isIdle && !isRedeeming && !activeTariff && !tariffLoading;
 
         if (canRedeem) {
-            console.log('🚀 Triggering token redemption...', {
-                tokenType: accessToken ? 'startapp' : 'personal',
-                token: tokenToRedeem
-            });
             redeemToken({ accessToken: tokenToRedeem, userId: supabaseUser.id });
-        } else if (tokenToRedeem && activeTariff && !tariffLoading) {
-            console.log('✅ User already has active tariff, skipping token redemption', {
-                tokenType: accessToken ? 'startapp' : 'personal',
-                activeTariff: activeTariff.tariff_code
-            });
         }
     }, [accessToken, personalToken, supabaseUser, userLoading, isIdle, isRedeeming, redeemToken, activeTariff, tariffLoading]);
 
@@ -107,24 +87,24 @@ function AppContent({ showSplash }: { showSplash: boolean }) {
     }
 
     // Если нет активного тарифа И нет токенов для активации - блокируем доступ
-    // НО разрешаем гостям (role === 'guest') войти в приложение
-    const isGuest = supabaseUser?.role === 'guest';
-    if (supabaseUser && !activeTariff && !accessToken && !personalToken && hasSearchedPersonalToken && !isGuest) {
-        return <TokenErrorPage />;
-    }
+    // ЗАКОММЕНТИРОВАНО: Гости теперь имеют доступ к приложению
+    // if (supabaseUser && !activeTariff && !accessToken && !personalToken && hasSearchedPersonalToken) {
+    //     return <TokenErrorPage />;
+    // }
 
-    // Если есть доступ, но не завершен онбординг (проверяем localStorage)
-    const tabBatRoutes = ['/', '/library', '/profile', '/profile2', '/faq', '/help', '/chats'];
+    // Если есть доступ, но не завершен онбординг
+    const shouldShowOnboarding = supabaseUser && !supabaseUser.onboarding_completed;
+    const tabBatRoutes = ['/', '/library', '/profile', '/profile2', '/faq', '/help', '/chats', '/calendar', '/techniques'];
     const showTabBar = tabBatRoutes.includes(location.pathname);
 
-    if (showOnboarding && supabaseUser) {
-        return <Onboarding onClose={completeOnboarding} />;
+    if (shouldShowOnboarding) {
+        return <Onboarding onClose={() => { }} />;
     }
 
     return (
-        <>
+        <div style={{ display: 'flex', flexDirection: 'column', flex: 1, position: 'relative' }}>
             <ScrollToTop />
-            <div style={{ position: 'relative', flex: 1 }}>
+            <div style={{ flex: 1, position: 'relative' }}>
                 <AnimatePresence mode="wait" initial={false}>
                     <Routes location={location} key={location.pathname}>
                         {routers.map((router) => <Route key={router.path} {...router} />)}
@@ -132,12 +112,8 @@ function AppContent({ showSplash }: { showSplash: boolean }) {
                     </Routes>
                 </AnimatePresence>
             </div>
-            {showTabBar && !showSplash && (
-                <div style={{ position: 'relative', zIndex: 100 }}>
-                    <TabBar />
-                </div>
-            )}
-        </>
+            {showTabBar && !showSplash && <TabBar />}
+        </div>
     );
 }
 

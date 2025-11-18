@@ -86,14 +86,14 @@ const TechniquesPage: React.FC = () => {
 
   return (
     <Page back={false}>
-      <div className="flex flex-col h-full bg-[#F5F5F7]">
+      <div className="flex flex-col h-full bg-[#D1D1D6]">
         {/* Заголовок */}
-        <div className="px-4 pt-6 pb-4 bg-white">
+        <div className="px-4 pt-6 pb-4 bg-[#D1D1D6]">
           <h1 className="text-2xl font-bold text-black">Библиотека</h1>
         </div>
 
         {/* Табы */}
-        <div className="flex gap-2 px-4 py-4 overflow-x-auto bg-white border-b border-gray-200">
+        <div className="flex gap-2 px-4 py-4 overflow-x-auto bg-[#D1D1D6]">
           {TABS.map((tab) => (
             <button
               key={tab.id}
@@ -103,7 +103,7 @@ const TechniquesPage: React.FC = () => {
                 ${
                   activeTab === tab.id
                     ? 'bg-[#8E8E93] text-white'
-                    : 'bg-[#E5E5EA] text-[#242424] hover:bg-[#D1D1D6]'
+                    : 'bg-[#AEAEB2] text-white hover:bg-[#8E8E93]'
                 }
               `}
             >
@@ -117,24 +117,23 @@ const TechniquesPage: React.FC = () => {
           {loading ? (
             <div className="flex items-center justify-center h-full">
               <div className="text-center">
-                <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-[#B862EA] mb-2"></div>
-                <p className="text-sm text-[#666]">Загрузка...</p>
+                <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-[#8E8E93] mb-2"></div>
+                <p className="text-sm text-[#3C3C43]/60">Загрузка...</p>
               </div>
             </div>
           ) : error ? (
             <div className="flex items-center justify-center h-full">
               <div className="text-center">
                 <p className="text-sm text-red-500">Ошибка загрузки техник</p>
-                <p className="text-xs text-[#666] mt-1">{error.message}</p>
+                <p className="text-xs text-[#3C3C43]/60 mt-1">{error.message}</p>
               </div>
             </div>
-          ) : currentTechniques.length === 0 ? (
+          ) : currentTechniques.length === 0 && activeTab === 'mine' ? (
             <div className="flex items-center justify-center h-full">
               <div className="text-center">
-                <p className="text-sm text-[#666]">
-                  {activeTab === 'all' && 'Нет доступных техник'}
-                  {activeTab === 'mine' && isGuest && 'Станьте учеником, чтобы получить доступ к техникам'}
-                  {activeTab === 'mine' && !isGuest && 'У вас пока нет техник'}
+                <p className="text-sm text-[#3C3C43]/60">
+                  {isGuest && 'Станьте учеником, чтобы получить доступ к техникам'}
+                  {!isGuest && 'У вас пока нет техник'}
                 </p>
               </div>
             </div>
@@ -145,7 +144,7 @@ const TechniquesPage: React.FC = () => {
                   {/* Секция "К покупке" */}
                   {availableTechniques.length > 0 && (
                     <div>
-                      <h2 className="text-base font-semibold text-black mb-3 px-1">К покупке</h2>
+                      <h2 className="text-base font-semibold text-[#3C3C43] mb-3 px-1">К покупке</h2>
                       <div className="flex flex-col gap-2">
                         {availableTechniques.map((technique) => (
                           <TechniqueCard
@@ -158,12 +157,12 @@ const TechniquesPage: React.FC = () => {
                     </div>
                   )}
 
-                  {/* Секция "Мои техники" */}
-                  {myTechniques.length > 0 && (
+                  {/* Секция "Бесплатные" */}
+                  {freeTechniques.length > 0 && (
                     <div>
-                      <h2 className="text-base font-semibold text-black mb-3 px-1">Мои техники</h2>
+                      <h2 className="text-base font-semibold text-[#3C3C43] mb-3 px-1">Бесплатные</h2>
                       <div className="flex flex-col gap-2">
-                        {myTechniques.map((technique) => (
+                        {freeTechniques.map((technique) => (
                           <TechniqueCard
                             key={technique.id}
                             technique={technique}
@@ -171,6 +170,13 @@ const TechniquesPage: React.FC = () => {
                           />
                         ))}
                       </div>
+                    </div>
+                  )}
+
+                  {/* Если нет ни одной техники */}
+                  {availableTechniques.length === 0 && freeTechniques.length === 0 && (
+                    <div className="flex items-center justify-center h-full pt-20">
+                      <p className="text-sm text-[#3C3C43]/60">Нет доступных техник</p>
                     </div>
                   )}
                 </>
@@ -188,14 +194,16 @@ const TechniquesPage: React.FC = () => {
               )}
 
               {/* Кнопки внизу */}
-              <div className="flex flex-col gap-3 mt-6 mb-4">
-                <button className="w-full py-3 bg-[#007AFF] text-white text-sm font-medium rounded-2xl hover:bg-[#0051D5] transition-colors">
-                  Библиотека+
-                </button>
-                <button className="w-full py-3 bg-[#8E8E93] text-white text-sm font-medium rounded-2xl hover:bg-[#636366] transition-colors">
-                  Запустить биорегулирование
-                </button>
-              </div>
+              {(availableTechniques.length > 0 || freeTechniques.length > 0 || myTechniques.length > 0) && (
+                <div className="flex flex-col gap-3 mt-6 mb-4">
+                  <button className="w-full py-3.5 bg-[#5AC8FA] text-white text-sm font-semibold rounded-[20px] hover:bg-[#32ADE6] transition-colors active:scale-[0.98]">
+                    Библиотека
+                  </button>
+                  <button className="w-full py-3.5 bg-[#8E8E93] text-white text-sm font-semibold rounded-[20px] hover:bg-[#636366] transition-colors active:scale-[0.98]">
+                    Запустить биорегулирование
+                  </button>
+                </div>
+              )}
             </div>
           )}
         </div>
