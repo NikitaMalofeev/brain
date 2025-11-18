@@ -133,13 +133,41 @@ export interface LessonBlock extends TimestampFields {
   meta_json?: Record<string, any> & AudioMetadata; // Дополнительные поля с типизацией для аудио
 }
 
+// Задания внутри урока (новая система)
+export interface Assignment extends TimestampFields {
+  id: number;
+  lesson_id: number; // FK к Lesson
+  order_num: number;
+  title: string;
+  description?: string;
+}
+
+// Черновики заданий с автосохранением
+export interface AssignmentDraft {
+  id: string; // UUID
+  user_id: string; // FK к User
+  assignment_id: number; // FK к Assignment
+  draft_text?: string;
+  updated_at: string;
+}
+
+// Обратная связь по уроку в целом (от куратора)
+export interface LessonFeedback extends TimestampFields {
+  id: string; // UUID
+  user_id: string; // FK к User
+  lesson_id: number; // FK к Lesson
+  curator_id: string; // FK к User (куратор)
+  feedback_text: string;
+}
+
 // Сдачи заданий
 export type SubmissionStatus = 'submitted' | 'pending_review' | 'approved' | 'rejected';
 
 export interface Submission extends TimestampFields {
   id: number;
   user_id: string; // FK к User
-  lesson_id: number; // FK к Lesson
+  lesson_id: number; // FK к Lesson (устаревшее, для обратной совместимости)
+  assignment_id?: number; // FK к Assignment (новая логика)
   submitted_at?: string;
   first_submitted_at?: string; // Время первоначальной сдачи (для определения опоздания)
   content_text?: string;
@@ -192,6 +220,28 @@ export interface LessonProgress extends TimestampFields {
 // Урок с его блоками контента
 export interface LessonWithBlocks extends Lesson {
   blocks: LessonBlock[];
+}
+
+// Прогресс по заданиям урока (из функции get_lesson_assignment_progress)
+export interface LessonAssignmentProgress {
+  total_assignments: number;
+  submitted_assignments: number;
+  approved_assignments: number;
+}
+
+// Задание с данными о сдаче и черновике
+export interface AssignmentWithProgress extends Assignment {
+  submission?: Submission;
+  draft?: AssignmentDraft;
+  is_completed: boolean;
+  is_submitted: boolean;
+}
+
+// Урок с заданиями и прогрессом
+export interface LessonWithAssignments extends Lesson {
+  assignments: AssignmentWithProgress[];
+  progress: LessonAssignmentProgress;
+  feedback?: LessonFeedback;
 }
 
 // Прогресс пользователя по уроку с данными о сдаче

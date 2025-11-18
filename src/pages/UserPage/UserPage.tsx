@@ -1,5 +1,5 @@
 import {useSupabaseUser, useActiveCourse} from '@/lib/supabase/hooks';
-import {useMemo} from "react";
+import {useMemo, useState} from "react";
 import {
     initDataState as _initDataState,
     useSignal,
@@ -15,6 +15,8 @@ import HealingChartRecharts from "@/components/Chart.tsx";
 import {clsx} from "clsx";
 import useLibraryStages from '@/lib/supabase/hooks/useLibraryStages';
 import {motion} from "framer-motion";
+import { useGuestStatus } from '@/lib/supabase/hooks/useIsGuest';
+import GuestBlockedModal from '@/components/GuestBlockedModal';
 
 const links = [{
     link: '/chats',
@@ -87,9 +89,13 @@ const pageVariants = {
 export const UserPage = () => {
     const initDataState = useSignal(_initDataState);
     const {supabaseUser, loading, error} = useSupabaseUser(initDataState);
+    const [showGuestModal, setShowGuestModal] = useState(false);
     const user = useMemo(() =>
             initDataState && initDataState.user ? initDataState.user : undefined,
         [initDataState]);
+
+    // Проверяем является ли пользователь гостем
+    const { isGuest } = useGuestStatus(supabaseUser?.id);
 
     // Получаем активный курс пользователя
     const { activeCourse } = useActiveCourse(supabaseUser?.id);
@@ -229,17 +235,20 @@ export const UserPage = () => {
                                     current={Math.round(3 * ((currentStage?.completed_lessons ?? 0) / (currentStage?.total_lessons ?? 1)))}/>
                             </div>
                         </div>
-                        <Link to={currentStage ? `/library/stage/${currentStage.stage_id}` : '#'}>
-                            <div className={'p-3 rounded-2xl bg-white flex items-center flex-col'}>
-                                <p className={'text-sm font-medium text-[#9F9F9F]'}>Выполнено</p>
-                                <p className={'text-[20px] font-bold'}>{currentStage?.completed_lessons ?? 0} из {currentStage?.total_lessons ?? 10}</p>
-                                <p className={'text-sm font-bold'}>заданий</p>
-                            </div>
-                        </Link>
-                        <Link to={currentStage ? `/library/stage/${currentStage.stage_id}` : '#'}>
-                            <div className={'p-3 rounded-2xl bg-white flex items-center flex-col'}>
-                                <p className={'text-sm font-medium text-[#9F9F9F] flex items-center gap-1'}>
-                                    Просрочено
+                        <div onClick={isGuest ? (e) => { e.preventDefault(); setShowGuestModal(true); } : undefined}>
+                            <Link to={isGuest ? '#' : (currentStage ? `/library/stage/${currentStage.stage_id}` : '#')} className={clsx(isGuest && 'pointer-events-none opacity-60')}>
+                                <div className={'p-3 rounded-2xl bg-white flex items-center flex-col'}>
+                                    <p className={'text-sm font-medium text-[#9F9F9F]'}>Выполнено</p>
+                                    <p className={'text-[20px] font-bold'}>{isGuest ? '—' : `${currentStage?.completed_lessons ?? 0} из ${currentStage?.total_lessons ?? 10}`}</p>
+                                    <p className={'text-sm font-bold'}>заданий</p>
+                                </div>
+                            </Link>
+                        </div>
+                        <div onClick={isGuest ? (e) => { e.preventDefault(); setShowGuestModal(true); } : undefined}>
+                            <Link to={isGuest ? '#' : (currentStage ? `/library/stage/${currentStage.stage_id}` : '#')} className={clsx(isGuest && 'pointer-events-none opacity-60')}>
+                                <div className={'p-3 rounded-2xl bg-white flex items-center flex-col'}>
+                                    <p className={'text-sm font-medium text-[#9F9F9F] flex items-center gap-1'}>
+                                        Просрочено
                                     {overdueLessons > 0 && <svg width="16" height="16" viewBox="0 0 16 16" fill="none"
                                                                 xmlns="http://www.w3.org/2000/svg">
                                         <path fillRule="evenodd" clipRule="evenodd"
@@ -247,10 +256,11 @@ export const UserPage = () => {
                                               fill="#D2667D"/>
                                     </svg>}
                                 </p>
-                                <p className={'text-[20px] font-bold'}>{overdueLessons} из {totalLessons}</p>
+                                <p className={'text-[20px] font-bold'}>{isGuest ? '—' : `${overdueLessons} из ${totalLessons}`}</p>
                                 <p className={'text-sm font-bold'}>заданий</p>
-                            </div>
-                        </Link>
+                                </div>
+                            </Link>
+                        </div>
                         <div
                             className={'py-2 px-4 rounded-2xl bg-white flex items-center col-span-2 gap-2 justify-between'}>
                             <div className={'flex gap-2 items-center'}>
@@ -260,11 +270,11 @@ export const UserPage = () => {
                                 </div>
                                 <div className={'flex flex-col'}>
                                     <p className={'text-sm font-medium text-[#9F9F9F]'}>Вы заработали</p>
-                                    <p className={'text-sm font-bold'}>{supabaseUser?.total_points} эдельштейнов</p>
+                                    <p className={'text-sm font-bold'}>{isGuest ? '—' : `${supabaseUser?.total_points}`} эдельштейнов</p>
                                 </div>
                             </div>
                             <Ripple className="rounded-3xl overflow-hidden inline-block">
-                                <Link to={'/points'}
+                                <Link to={isGuest ? '#' : '/points'} onClick={isGuest ? (e) => { e.preventDefault(); setShowGuestModal(true); } : undefined}
                                       className={"text-sm font-bold w-max leading-5 text-white py-2 px-4 rounded-3xl text-center bg-[linear-gradient(135deg,rgba(141,197,241,0.4)_-48.61%,#63ABE6_105.56%),linear-gradient(91.99deg,#F3F3F3_0%,#EAEAEA_100%)] block"}>
                                     Подробнее
                                 </Link>
@@ -284,43 +294,54 @@ export const UserPage = () => {
                                         </Ripple>*/}
                                     </div>
                                     <p className="text-sm font-bold text-black">
-                                        {userTariff ? userTariff.name : 'Базовый'}
+                                        {isGuest ? 'Гость' : (userTariff ? userTariff.name : 'Базовый')}
                                     </p>
                                 </div>
-                                <a href={'https://t.me/katyaasta'} target={'_blank'}>
+                                <a href={isGuest ? '#' : 'https://t.me/katyaasta'} target={isGuest ? '_self' : '_blank'} onClick={isGuest ? (e) => { e.preventDefault(); window.open('https://brainprogramming.ru/enroll', '_blank'); } : undefined}>
                                     <Ripple className="rounded-3xl overflow-hidden inline-block">
                                         <button
                                             className="text-sm font-bold w-max leading-5 text-white py-2 px-4 rounded-3xl text-center bg-[linear-gradient(135deg,rgba(141,197,241,0.4)_-48.61%,#63ABE6_105.56%),linear-gradient(91.99deg,#F3F3F3_0%,#EAEAEA_100%)]">
-                                            Повысить тариф
+                                            {isGuest ? 'Стать учеником' : 'Повысить тариф'}
                                         </button>
                                     </Ripple>
                                 </a>
                             </div>
                             <p className="text-sm text-[#9F9F9F] leading-tight">
-                                {userTariff?.description || 'Базовый тарифный план с ограниченным доступом к материалам.'}
+                                {isGuest ? 'Зарегистрируйтесь, чтобы получить доступ к полному функционалу платформы.' : (userTariff?.description || 'Базовый тарифный план с ограниченным доступом к материалам.')}
                             </p>
                         </div>
                     </motion.div>
 
                     <motion.div variants={itemVariants} className={'bg-white rounded-t-3xl pt-5'}>
                         <div className={'px-4 flex flex-col gap-3 pb-8'}>
-                            {links.map((el, i) => (
+                            {links.map((el, i) => {
+                                // Для гостей активна только кнопка "Помощь" (третья кнопка)
+                                const isDisabled = isGuest && i !== 2;
+                                return (
                                 <Ripple key={el.link} className="rounded-2xl overflow-hidden">
                                     <Link
-                                        className={'relative bg-[linear-gradient(271.99deg,_#F1F8FE_0%,_#F1EFFF_100%)] py-4 px-6 rounded-2xl flex flex-col gap-2 items-start justify-between block'}
-                                        to={el.link}>
+                                        className={clsx('relative bg-[linear-gradient(271.99deg,_#F1F8FE_0%,_#F1EFFF_100%)] py-4 px-6 rounded-2xl flex flex-col gap-2 items-start justify-between block', isDisabled && 'opacity-60 pointer-events-none')}
+                                        to={isDisabled ? '#' : el.link}
+                                        onClick={isDisabled ? (e) => { e.preventDefault(); setShowGuestModal(true); } : undefined}>
                                         <p className={'font-semibold'}>{el.title}</p>
                                         <img src={'/arrow-icon.svg'} alt="" className={'w-[36px] h-[36px]'}/>
                                         <img src={el.image}
                                              className={clsx(`absolute mt-4 top-1/2 -right-[70px] -translate-y-1/2 bg-breathe-${i + 5}`, el.className)}/>
                                     </Link>
                                 </Ripple>
-                            ))}
+                            )})}
                         </div>
                     </motion.div>
                 </motion.div>
                 {/* end of stats grid */}
             </div>
+
+            {/* Модалка для гостей */}
+            <GuestBlockedModal
+                isOpen={showGuestModal}
+                onClose={() => setShowGuestModal(false)}
+                ctaUrl="https://brainprogramming.ru/enroll"
+            />
         </Page>
     )
 }

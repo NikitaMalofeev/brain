@@ -43,10 +43,36 @@ const StagePage: React.FC = () => {
 
     const { id: stageId } = useParams<{ id: string }>();
 
-    // Простой сброс скролла при монтировании
+    // Автоскролл к текущему уроку
     useEffect(() => {
-        window.scrollTo(0, 0);
-    }, []);
+        if (!stageDetails || !stageDetails.lessons || stageDetails.lessons.length === 0) {
+            return;
+        }
+
+        // Небольшая задержка чтобы дать время для рендера
+        const timeoutId = setTimeout(() => {
+            // Находим первый разблокированный незавершенный урок
+            const currentLesson = stageDetails.lessons.find(
+                (lesson) => lesson.is_unlocked && !lesson.is_completed
+            );
+
+            if (currentLesson) {
+                const element = document.getElementById(`lesson-${currentLesson.lesson_id}`);
+                if (element) {
+                    logger.debug('Auto-scrolling to current lesson', { lessonId: currentLesson.lesson_id });
+                    element.scrollIntoView({
+                        behavior: 'smooth',
+                        block: 'center',
+                    });
+                }
+            } else {
+                // Если все уроки завершены или все заблокированы, скроллим в начало
+                window.scrollTo({ top: 0, behavior: 'smooth' });
+            }
+        }, 300);
+
+        return () => clearTimeout(timeoutId);
+    }, [stageDetails]);
 
     const [isOpen, setIsOpen] = useState(false);
 
@@ -221,7 +247,11 @@ const StagePage: React.FC = () => {
                     animate="show"
                 >
                     {stageDetails.lessons.map((lesson) => (
-                        <motion.div key={lesson.lesson_id} variants={itemVariants}>
+                        <motion.div
+                            key={lesson.lesson_id}
+                            id={`lesson-${lesson.lesson_id}`}
+                            variants={itemVariants}
+                        >
                             <LessonCard
                                 lesson={lesson}
                                 onClick={handleLessonClick}

@@ -6,7 +6,9 @@
       "Bash(then echo \"File exists\")",
       "Bash(else echo \"File does not exist\")",
       "Bash(fi)",
-      "Bash(npm run build:*)"
+      "Bash(npm run build:*)",
+      "Bash(psql:*)",
+      "Bash(supabase db reset:*)"
     ],
     "deny": [],
     "ask": []

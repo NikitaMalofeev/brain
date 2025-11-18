@@ -1,15 +1,11 @@
 // Компонент карточки ступени
-import React from 'react';
+import React, { useState } from 'react';
 import { buildFileUrl } from '@/lib/supabase/supabaseStorageService';
 import { motion } from 'framer-motion';
 import { Ripple } from '@/components/ui/Ripple/Ripple';
 import { clsx } from 'clsx';
-import { Link } from 'react-router-dom';
-
-// Импортируем SVG как компонент React
-// Убедитесь, что у вас есть файл lock.svg в указанном пути
-// и настроен загрузчик SVG (например, svgr для Vite/Create React App)
-// import LockIcon from './lock.svg?react'; // Убираем импорт SVG
+import { Link, useNavigate } from 'react-router-dom';
+import GuestBlockedModal from '@/components/GuestBlockedModal';
 
 export interface StageCardProps {
     id: number;
@@ -17,6 +13,7 @@ export interface StageCardProps {
     isLocked: boolean;
     coverImagePath?: string;
     orderNum: number;
+    isGuest?: boolean;
 }
 
 const StageCard: React.FC<StageCardProps> = ({
@@ -25,24 +22,48 @@ const StageCard: React.FC<StageCardProps> = ({
     isLocked,
     coverImagePath,
     orderNum,
+    isGuest = false,
 }) => {
+    const navigate = useNavigate();
+    const [showGuestModal, setShowGuestModal] = useState(false);
     const isUnlocked = !isLocked;
 
+    // Для гостей доступна только первая ступень ("Исцеление")
+    const canAccess = isUnlocked && (!isGuest || orderNum === 1);
+
+    const handleClick = (e: React.MouseEvent) => {
+        if (!isUnlocked) {
+            e.preventDefault();
+            return;
+        }
+
+        // Если гость пытается открыть недоступный модуль
+        if (isGuest && orderNum !== 1) {
+            e.preventDefault();
+            setShowGuestModal(true);
+            return;
+        }
+
+        // Разрешаем переход
+    };
+
     return (
-        <motion.div
-            layout
-            whileTap={isUnlocked ? { scale: 0.97 } : {}}
-            style={{ touchAction: 'manipulation' }}
-            className="w-full"
-        >
-            <Ripple className="rounded-4xl overflow-hidden">
-                <Link
-                    to={`/library/stage/${id}`}
-                    className={clsx(
-                        'block w-full h-full relative bg-white/70',
-                        isUnlocked ? 'cursor-pointer' : 'pointer-events-none',
-                    )}
-                >
+        <>
+            <motion.div
+                layout
+                whileTap={canAccess ? { scale: 0.97 } : {}}
+                style={{ touchAction: 'manipulation' }}
+                className="w-full"
+            >
+                <Ripple className="rounded-4xl overflow-hidden">
+                    <Link
+                        to={`/library/stage/${id}`}
+                        onClick={handleClick}
+                        className={clsx(
+                            'block w-full h-full relative bg-white/70',
+                            canAccess ? 'cursor-pointer' : 'pointer-events-none',
+                        )}
+                    >
                     <img
                         src={buildFileUrl(coverImagePath) || `/step${orderNum}${orderNum}.png`}
                         className={clsx("w-full h-[140px] md:h-[200px] object-cover", `bg-breathe-${orderNum}`)}
@@ -55,12 +76,20 @@ const StageCard: React.FC<StageCardProps> = ({
                         <p className='font-bold uppercase text-black'>{name}</p>
                         <div className='text-xs text-white w-max font-medium bg-[linear-gradient(135deg,_rgba(141,197,241)_-48.61%,_#63ABE6_105.56%)] px-2 py-1 rounded-full flex items-center gap-1'>
                             LEVEL 0{orderNum}
-                            {!isUnlocked && <img src={'/lock.svg'} alt={''} />}
+                            {(!isUnlocked || (isGuest && orderNum !== 1)) && <img src={'/lock.svg'} alt={''} />}
                         </div>
                     </div>
                 </Link>
             </Ripple>
         </motion.div>
+
+        {/* Модалка для гостей */}
+        <GuestBlockedModal
+            isOpen={showGuestModal}
+            onClose={() => setShowGuestModal(false)}
+            ctaUrl="https://brainprogramming.ru/enroll"
+        />
+    </>
     );
 };
 

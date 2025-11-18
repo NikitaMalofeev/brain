@@ -10,7 +10,7 @@ import { TechniqueWithAccess } from '@/lib/supabase/types';
 import TechniqueCard from '@/components/TechniqueCard/TechniqueCard';
 
 // Типы табов
-type TabType = 'available' | 'locked' | 'mine';
+type TabType = 'all' | 'mine';
 
 interface Tab {
   id: TabType;
@@ -18,19 +18,18 @@ interface Tab {
 }
 
 const TABS: Tab[] = [
-  { id: 'available', label: 'Доступные' },
-  { id: 'locked', label: 'Заблокированные' },
-  { id: 'mine', label: 'Мои' },
+  { id: 'all', label: 'Все техники' },
+  { id: 'mine', label: 'Мои техники' },
 ];
 
 /**
  * Страница с техниками (аудиопрактиками)
- * Отображает техники в трех табах: Доступные, Заблокированные, Мои
+ * Отображает техники в двух табах: Все техники, Мои техники
  * Доступна как для гостей (показывает бесплатные техники), так и для учеников
  */
 const TechniquesPage: React.FC = () => {
   const navigate = useNavigate();
-  const [activeTab, setActiveTab] = useState<TabType>('available');
+  const [activeTab, setActiveTab] = useState<TabType>('all');
 
   // Получаем данные пользователя
   const initDataSignal = useSignal(initDataState);
@@ -67,12 +66,9 @@ const TechniquesPage: React.FC = () => {
   // Функция для получения техник текущего таба
   const getCurrentTabTechniques = (): TechniqueWithAccess[] => {
     switch (activeTab) {
-      case 'available':
-        // Для гостей показываем бесплатные техники
-        // Для учеников - техники доступные к покупке
-        return isGuest ? freeTechniques : availableTechniques;
-      case 'locked':
-        return lockedTechniques;
+      case 'all':
+        // Показываем все техники (доступные + заблокированные)
+        return [...availableTechniques, ...lockedTechniques];
       case 'mine':
         return myTechniques;
       default:
@@ -90,29 +86,24 @@ const TechniquesPage: React.FC = () => {
 
   return (
     <Page back={false}>
-      <div className="flex flex-col h-full">
+      <div className="flex flex-col h-full bg-[#F5F5F7]">
         {/* Заголовок */}
-        <div className="px-4 pt-6 pb-4">
-          <h1 className="text-2xl font-bold text-black">Техники</h1>
-          <p className="text-sm text-[#666] mt-1">
-            {isGuest
-              ? 'Аудиопрактики для раскрытия потенциала'
-              : 'Ваши аудиопрактики'}
-          </p>
+        <div className="px-4 pt-6 pb-4 bg-white">
+          <h1 className="text-2xl font-bold text-black">Библиотека</h1>
         </div>
 
         {/* Табы */}
-        <div className="flex gap-2 px-4 mb-4 overflow-x-auto">
+        <div className="flex gap-2 px-4 py-4 overflow-x-auto bg-white border-b border-gray-200">
           {TABS.map((tab) => (
             <button
               key={tab.id}
               onClick={() => setActiveTab(tab.id)}
               className={`
-                px-4 py-2 rounded-xl font-medium text-sm whitespace-nowrap transition-all
+                px-6 py-2.5 rounded-full font-medium text-sm whitespace-nowrap transition-all
                 ${
                   activeTab === tab.id
-                    ? 'bg-gradient-to-r from-[#E1C1F4] to-[#B862EA] text-white'
-                    : 'bg-white text-[#242424] hover:bg-gray-50'
+                    ? 'bg-[#8E8E93] text-white'
+                    : 'bg-[#E5E5EA] text-[#242424] hover:bg-[#D1D1D6]'
                 }
               `}
             >
@@ -141,22 +132,70 @@ const TechniquesPage: React.FC = () => {
             <div className="flex items-center justify-center h-full">
               <div className="text-center">
                 <p className="text-sm text-[#666]">
-                  {activeTab === 'available' && 'Нет доступных техник'}
-                  {activeTab === 'locked' && 'Нет заблокированных техник'}
+                  {activeTab === 'all' && 'Нет доступных техник'}
                   {activeTab === 'mine' && isGuest && 'Станьте учеником, чтобы получить доступ к техникам'}
                   {activeTab === 'mine' && !isGuest && 'У вас пока нет техник'}
                 </p>
               </div>
             </div>
           ) : (
-            <div className="flex flex-col gap-3">
-              {currentTechniques.map((technique) => (
-                <TechniqueCard
-                  key={technique.id}
-                  technique={technique}
-                  onClick={() => handleTechniqueClick(technique.id)}
-                />
-              ))}
+            <div className="flex flex-col gap-4 pt-4">
+              {activeTab === 'all' ? (
+                <>
+                  {/* Секция "К покупке" */}
+                  {availableTechniques.length > 0 && (
+                    <div>
+                      <h2 className="text-base font-semibold text-black mb-3 px-1">К покупке</h2>
+                      <div className="flex flex-col gap-2">
+                        {availableTechniques.map((technique) => (
+                          <TechniqueCard
+                            key={technique.id}
+                            technique={technique}
+                            onClick={() => handleTechniqueClick(technique.id)}
+                          />
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Секция "Мои техники" */}
+                  {myTechniques.length > 0 && (
+                    <div>
+                      <h2 className="text-base font-semibold text-black mb-3 px-1">Мои техники</h2>
+                      <div className="flex flex-col gap-2">
+                        {myTechniques.map((technique) => (
+                          <TechniqueCard
+                            key={technique.id}
+                            technique={technique}
+                            onClick={() => handleTechniqueClick(technique.id)}
+                          />
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                </>
+              ) : (
+                /* Таб "Мои техники" */
+                <div className="flex flex-col gap-2">
+                  {currentTechniques.map((technique) => (
+                    <TechniqueCard
+                      key={technique.id}
+                      technique={technique}
+                      onClick={() => handleTechniqueClick(technique.id)}
+                    />
+                  ))}
+                </div>
+              )}
+
+              {/* Кнопки внизу */}
+              <div className="flex flex-col gap-3 mt-6 mb-4">
+                <button className="w-full py-3 bg-[#007AFF] text-white text-sm font-medium rounded-2xl hover:bg-[#0051D5] transition-colors">
+                  Библиотека+
+                </button>
+                <button className="w-full py-3 bg-[#8E8E93] text-white text-sm font-medium rounded-2xl hover:bg-[#636366] transition-colors">
+                  Запустить биорегулирование
+                </button>
+              </div>
             </div>
           )}
         </div>

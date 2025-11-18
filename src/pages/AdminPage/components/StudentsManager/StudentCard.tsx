@@ -668,20 +668,54 @@ const StudentCard: React.FC<StudentCardProps> = ({ studentId, onBack, currentUse
                     <div className="form-group" style={{ marginTop: '20px' }}>
                         <label>Роль пользователя:</label>
                         <p>Текущая роль: <strong>{basicInfo.role}</strong></p>
-                        <div style={{ display: 'flex', justifyContent: 'flex-start' }}>
-                            <button
-                                className="admin-button"
-                                style={{ width: 'auto', minWidth: '180px', maxWidth: '250px' }}
-                                onClick={openPromoteModal}
-                                disabled={isPromoting || basicInfo.role === 'curator' || basicInfo.role === 'admin'}
-                                title={
-                                    basicInfo.role === 'curator' ? 'Пользователь уже является куратором' :
-                                        basicInfo.role === 'admin' ? 'Нельзя изменить роль администратора' :
-                                            'Назначить пользователя куратором'
-                                }
-                            >
-                                {isPromoting ? 'Назначение...' : 'Сделать куратором'}
-                            </button>
+                        <div style={{ display: 'flex', justifyContent: 'flex-start', gap: '12px' }}>
+                            {basicInfo.role === 'guest' && (
+                                <button
+                                    className="admin-button"
+                                    style={{ width: 'auto', minWidth: '180px', maxWidth: '250px' }}
+                                    onClick={async () => {
+                                        if (!window.confirm('Сделать пользователя учеником?')) return;
+                                        try {
+                                            const { error } = await supabase
+                                                .from('users')
+                                                .update({ role: 'user' })
+                                                .eq('id', studentId);
+
+                                            if (error) throw error;
+
+                                            alert('Пользователь успешно переведен в роль ученика');
+                                            await loadStudentDetails(studentId);
+                                        } catch (error: any) {
+                                            console.error('Ошибка при изменении роли:', error);
+                                            alert(`Ошибка: ${error.message || 'Не удалось изменить роль'}`);
+                                        }
+                                    }}
+                                    title="Перевести гостя в ученики"
+                                >
+                                    Сделать учеником
+                                </button>
+                            )}
+                            {basicInfo.role === 'user' && (
+                                <button
+                                    className="admin-button"
+                                    style={{ width: 'auto', minWidth: '180px', maxWidth: '250px' }}
+                                    onClick={openPromoteModal}
+                                    disabled={isPromoting}
+                                    title="Назначить пользователя куратором"
+                                >
+                                    {isPromoting ? 'Назначение...' : 'Сделать куратором'}
+                                </button>
+                            )}
+                            {basicInfo.role === 'curator' && (
+                                <span style={{ color: '#2196F3', fontWeight: 'bold' }}>
+                                    Пользователь уже является куратором
+                                </span>
+                            )}
+                            {basicInfo.role === 'admin' && (
+                                <span style={{ color: '#FF5722', fontWeight: 'bold' }}>
+                                    Нельзя изменить роль администратора
+                                </span>
+                            )}
                         </div>
                     </div>
                 )}

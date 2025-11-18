@@ -1,0 +1,141 @@
+.calendar-page {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  padding: 16px;
+  padding-bottom: 100px;
+  min-height: 100vh;
+  background: #F5F5F7;
+}
+
+.calendar-page-header {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.calendar-page-title {
+  font-size: 28px;
+  font-weight: 700;
+  color: #000;
+  margin: 0;
+}
+
+.calendar-page-guest-notice {
+  font-size: 14px;
+  color: #8E8E93;
+  margin: 0;
+}
+
+.calendar-loading,
+.calendar-error {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 60vh;
+  gap: 16px;
+}
+
+.calendar-loading-spinner {
+  width: 40px;
+  height: 40px;
+  border: 3px solid #E5E5EA;
+  border-top-color: #007AFF;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.calendar-loading p,
+.calendar-error p {
+  font-size: 16px;
+  color: #8E8E93;
+  margin: 0;
+}
+
+.calendar-error-message {
+  font-size: 14px !important;
+  color: #FF3B30 !important;
+}
+
+.calendar-events-section {
+  min-height: 300px;
+}
+
+.calendar-events-container {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.calendar-events-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.calendar-events-title {
+  font-size: 20px;
+  font-weight: 600;
+  color: #000;
+  margin: 0;
+}
+
+.calendar-events-list {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.calendar-events-empty,
+.calendar-events-placeholder {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 16px;
+  padding: 40px 20px;
+  text-align: center;
+}
+
+.calendar-events-empty p,
+.calendar-events-placeholder p {
+  font-size: 16px;
+  color: #8E8E93;
+  margin: 0;
+}
+
+.calendar-no-events {
+  text-align: center;
+  padding: 40px 20px;
+  background: white;
+  border-radius: 20px;
+}
+
+.calendar-no-events p {
+  font-size: 16px;
+  color: #8E8E93;
+  margin: 0;
+}
+
+/* Адаптив */
+@media (max-width: 360px) {
+  .calendar-page {
+    padding: 12px;
+    padding-bottom: 100px;
+  }
+
+  .calendar-page-title {
+    font-size: 24px;
+  }
+
+  .calendar-events-title {
+    font-size: 18px;
+  }
+}

@@ -63,134 +63,85 @@ const TechniqueCard: React.FC<TechniqueCardProps> = ({ technique, onClick }) => 
   return (
     <motion.div
       layout
-      whileTap={isClickable ? { scale: 0.97 } : {}}
+      whileTap={isClickable ? { scale: 0.98 } : {}}
       style={{ touchAction: 'manipulation' }}
       className="w-full"
     >
-      <Ripple className="rounded-2xl overflow-hidden">
-        <div
-          onClick={isClickable ? onClick : undefined}
-          className={clsx(
-            'block w-full bg-white rounded-2xl p-4 transition-all',
-            isClickable ? 'cursor-pointer hover:shadow-lg' : 'opacity-70 cursor-not-allowed'
+      <div
+        className={clsx(
+          'flex items-center gap-3 bg-white rounded-2xl p-3 transition-all shadow-sm',
+          isClickable ? 'cursor-pointer hover:shadow-md' : 'opacity-80'
+        )}
+      >
+        {/* Обложка - уменьшенная слева */}
+        <div className="relative w-16 h-16 rounded-xl flex-shrink-0 overflow-hidden">
+          {cover_image ? (
+            <img
+              src={cover_image}
+              alt={title}
+              className="w-full h-full object-cover"
+              onError={(e) => {
+                e.currentTarget.style.display = 'none';
+                if (e.currentTarget.parentElement) {
+                  e.currentTarget.parentElement.style.background =
+                    'linear-gradient(135deg, #E1C1F4 0%, #B862EA 100%)';
+                }
+              }}
+            />
+          ) : (
+            <div className="w-full h-full bg-gradient-to-br from-[#E1C1F4] to-[#B862EA]" />
           )}
-        >
-          {/* Обложка */}
-          <div className="relative w-full h-40 rounded-xl mb-3 overflow-hidden">
-            {cover_image ? (
-              <img
-                src={cover_image}
-                alt={title}
-                className="w-full h-full object-cover"
-                onError={(e) => {
-                  // Fallback на градиент если изображение не загрузилось
-                  e.currentTarget.style.display = 'none';
-                  if (e.currentTarget.parentElement) {
-                    e.currentTarget.parentElement.style.background =
-                      'linear-gradient(135deg, #E1C1F4 0%, #B862EA 100%)';
-                  }
-                }}
-              />
-            ) : (
-              <div className="w-full h-full bg-gradient-to-br from-[#E1C1F4] to-[#B862EA] flex items-center justify-center">
-                <svg
-                  className="w-12 h-12 text-white opacity-50"
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
-                  xmlns="http://www.w3.org/2000/svg"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M9 19V6l12-3v13M9 19c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zm12-3c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zM9 10l12-3"
-                  />
-                </svg>
-              </div>
-            )}
-
-            {/* Иконка замка для заблокированных техник */}
-            {!has_access && !can_purchase && status === 'locked' && (
-              <div className="absolute top-2 right-2 bg-black/50 backdrop-blur-sm rounded-full p-2">
-                <svg
-                  className="w-4 h-4 text-white"
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
-                  xmlns="http://www.w3.org/2000/svg"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"
-                  />
-                </svg>
-              </div>
-            )}
-          </div>
-
-          {/* Контент */}
-          <div className="flex flex-col gap-2">
-            {/* Заголовок */}
-            <h3 className="text-lg font-semibold text-black leading-tight">{title}</h3>
-
-            {/* Описание */}
-            {description && (
-              <p className="text-sm text-[#666] line-clamp-2 leading-snug">{description}</p>
-            )}
-
-            {/* Метаданные */}
-            <div className="flex items-center gap-2 flex-wrap">
-              {/* Длительность */}
-              {durationMinutes && (
-                <span className="text-xs text-[#666] flex items-center gap-1">
-                  <svg
-                    className="w-4 h-4"
-                    fill="none"
-                    stroke="currentColor"
-                    viewBox="0 0 24 24"
-                    xmlns="http://www.w3.org/2000/svg"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"
-                    />
-                  </svg>
-                  {durationMinutes} мин
-                </span>
-              )}
-
-              {/* Метка модуля */}
-              {available_from_module && (
-                <span className="text-xs text-[#B862EA] font-medium">{available_from_module}</span>
-              )}
-            </div>
-
-            {/* Статус доступа */}
-            <div className="flex items-center gap-2 mt-1">
-              <span className={clsx('text-xs px-2 py-1 rounded-full font-medium', statusBadge.className)}>
-                {statusBadge.text}
-              </span>
-            </div>
-
-            {/* Причина блокировки */}
-            {!can_purchase && purchase_info?.reason && (
-              <p className="text-xs text-[#999] mt-1">{purchase_info.reason}</p>
-            )}
-
-            {/* Дата разблокировки */}
-            {!can_purchase && purchase_info?.unlock_date && (
-              <p className="text-xs text-[#999]">
-                Откроется: {new Date(purchase_info.unlock_date).toLocaleDateString('ru-RU')}
-              </p>
-            )}
-          </div>
         </div>
-      </Ripple>
+
+        {/* Контент - название и описание */}
+        <div className="flex-1 min-w-0" onClick={isClickable ? onClick : undefined}>
+          <h3 className="text-base font-semibold text-black leading-tight truncate">{title}</h3>
+          {description && (
+            <p className="text-xs text-[#666] line-clamp-1 mt-0.5">{description}</p>
+          )}
+        </div>
+
+        {/* Кнопки справа */}
+        <div className="flex items-center gap-2 flex-shrink-0">
+          {/* Кнопка "Подарок" */}
+          <button
+            className="px-3 py-1.5 bg-[#E5E5EA] text-[#242424] text-xs font-medium rounded-full hover:bg-[#D1D1D6] transition-colors"
+            onClick={(e) => {
+              e.stopPropagation();
+              // TODO: Логика подарка
+              alert('Подарить технику');
+            }}
+          >
+            Подарок
+          </button>
+
+          {/* Кнопка "Купить" или иконка замка */}
+          {has_access ? (
+            <div className="w-16 h-8 flex items-center justify-center">
+              <svg className="w-5 h-5 text-green-500" fill="currentColor" viewBox="0 0 20 20">
+                <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+              </svg>
+            </div>
+          ) : can_purchase ? (
+            <button
+              className="px-3 py-1.5 bg-[#007AFF] text-white text-xs font-medium rounded-full hover:bg-[#0051D5] transition-colors"
+              onClick={(e) => {
+                e.stopPropagation();
+                // TODO: Логика покупки
+                alert('Купить технику');
+              }}
+            >
+              Купить
+            </button>
+          ) : (
+            <div className="w-16 h-8 flex items-center justify-center">
+              <svg className="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+              </svg>
+            </div>
+          )}
+        </div>
+      </div>
     </motion.div>
   );
 };

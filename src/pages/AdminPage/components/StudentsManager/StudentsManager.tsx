@@ -25,6 +25,7 @@ const StudentsManager: React.FC<StudentsManagerProps> = ({ currentUser }) => {
         field: 'created_at',
         order: 'DESC'
     });
+    const [roleFilter, setRoleFilter] = useState<'all' | 'guest' | 'user' | 'curator' | 'admin'>('all');
 
     // Фильтрованные ученики для кураторов
     const [filteredStudents, setFilteredStudents] = useState(students);
@@ -38,22 +39,26 @@ const StudentsManager: React.FC<StudentsManagerProps> = ({ currentUser }) => {
         });
     }, [currentSort]);
 
-    // Применяем фильтрацию для кураторов
+    // Применяем фильтрацию для кураторов и по роли
     useEffect(() => {
+        let filtered = students;
+
+        // Фильтрация для кураторов - показываем только их учеников
         if (currentUser?.role === 'curator') {
-            // Для кураторов фильтруем только их учеников
-            // Используем простую фильтрацию на основе curator_name
             const curatorFullName = `${currentUser.first_name || ''} ${currentUser.last_name || ''}`.trim();
-            const filtered = students.filter(student =>
+            filtered = filtered.filter(student =>
                 student.curator_name === curatorFullName ||
                 student.curator_name === currentUser.first_name
             );
-            setFilteredStudents(filtered);
-        } else {
-            // Для админов показываем всех
-            setFilteredStudents(students);
         }
-    }, [students, currentUser]);
+
+        // Фильтрация по роли
+        if (roleFilter !== 'all') {
+            filtered = filtered.filter(student => student.role === roleFilter);
+        }
+
+        setFilteredStudents(filtered);
+    }, [students, currentUser, roleFilter]);
 
     if (selectedStudentId) {
         return <StudentCard studentId={selectedStudentId} onBack={() => setSelectedStudentId(null)} currentUser={currentUser} />;
@@ -117,6 +122,26 @@ const StudentsManager: React.FC<StudentsManagerProps> = ({ currentUser }) => {
         setSelectedStudentId(studentId);
     };
 
+    const getRoleLabel = (role: 'user' | 'curator' | 'admin' | 'guest') => {
+        const labels = {
+            user: 'Ученик',
+            curator: 'Куратор',
+            admin: 'Админ',
+            guest: 'Гость'
+        };
+        return labels[role];
+    };
+
+    const getRoleColor = (role: 'user' | 'curator' | 'admin' | 'guest') => {
+        const colors = {
+            user: '#4CAF50',
+            curator: '#2196F3',
+            admin: '#FF5722',
+            guest: '#9E9E9E'
+        };
+        return colors[role];
+    };
+
     return (
         <div className="admin-section">
             <div className="section-header">
@@ -128,11 +153,27 @@ const StudentsManager: React.FC<StudentsManagerProps> = ({ currentUser }) => {
 
             {!loading && !error && (
                 <>
+                    <div className="admin-filters" style={{ marginBottom: '20px' }}>
+                        <label htmlFor="roleFilter">Фильтр по роли:</label>
+                        <select
+                            id="roleFilter"
+                            value={roleFilter}
+                            onChange={(e) => setRoleFilter(e.target.value as any)}
+                            style={{ marginLeft: '10px', padding: '5px 10px' }}
+                        >
+                            <option value="all">Все</option>
+                            <option value="guest">Гости</option>
+                            <option value="user">Ученики</option>
+                            <option value="curator">Кураторы</option>
+                            <option value="admin">Админы</option>
+                        </select>
+                    </div>
                     <div className="admin-table">
                         <table>
                             <thead>
                                 <tr>
                                     <th>ФИО</th>
+                                    <th>Роль</th>
                                     <th>Telegram-ID / Web-login</th>
                                     <th>Курс</th>
                                     <th
@@ -165,6 +206,21 @@ const StudentsManager: React.FC<StudentsManagerProps> = ({ currentUser }) => {
                                 {filteredStudents.map((student) => (
                                     <tr key={student.user_id}>
                                         <td>{student.full_name}</td>
+                                        <td>
+                                            <span
+                                                style={{
+                                                    display: 'inline-block',
+                                                    padding: '4px 8px',
+                                                    borderRadius: '4px',
+                                                    backgroundColor: getRoleColor(student.role),
+                                                    color: 'white',
+                                                    fontSize: '12px',
+                                                    fontWeight: 'bold'
+                                                }}
+                                            >
+                                                {getRoleLabel(student.role)}
+                                            </span>
+                                        </td>
                                         <td>
                                             {student.web_login ? (
                                                 <span title="Web-login">{student.web_login}</span>

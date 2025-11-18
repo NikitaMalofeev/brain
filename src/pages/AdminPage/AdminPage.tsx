@@ -30,6 +30,9 @@ import BroadcastsManager from './components/BroadcastsManager/BroadcastsManager'
 import TariffsManager from './components/TariffsManager/TariffsManager';
 import TokensManager from './components/TokensManager/TokensManager';
 import { BlocksManager as BlocksManagerComponent } from './components/BlocksManager';
+import TechniquesManager from './components/TechniquesManager/TechniquesManager';
+import StreamsManager from './components/StreamsManager/StreamsManager';
+import CalendarEventsManager from './components/CalendarEventsManager/CalendarEventsManager';
 
 type SupabaseUser = Database['public']['Tables']['users']['Row'];
 
@@ -1125,7 +1128,7 @@ const Breadcrumb: React.FC<BreadcrumbProps> = ({ navigation, onNavigate }) => {
   );
 };
 
-type AdminTab = 'students' | 'curators' | 'courses' | 'submissions' | 'materials' | 'tariffs' | 'chats' | 'faq' | 'broadcasts' | 'tokens';
+type AdminTab = 'students' | 'curators' | 'courses' | 'submissions' | 'materials' | 'tariffs' | 'chats' | 'faq' | 'broadcasts' | 'tokens' | 'techniques' | 'streams' | 'calendar';
 
 const AdminPage: React.FC = () => {
   const navigate = useNavigate();
@@ -1560,6 +1563,24 @@ const AdminPage: React.FC = () => {
               >
                 Доступы
               </button>
+              <button
+                className={`admin-tab ${currentTab === 'techniques' ? 'active' : ''}`}
+                onClick={() => handleTabChange('techniques')}
+              >
+                Техники
+              </button>
+              <button
+                className={`admin-tab ${currentTab === 'streams' ? 'active' : ''}`}
+                onClick={() => handleTabChange('streams')}
+              >
+                Потоки
+              </button>
+              <button
+                className={`admin-tab ${currentTab === 'calendar' ? 'active' : ''}`}
+                onClick={() => handleTabChange('calendar')}
+              >
+                События
+              </button>
             </>
           )}
         </div>
@@ -1625,6 +1646,9 @@ const AdminPage: React.FC = () => {
           {currentTab === 'faq' && <FaqManager />}
           {currentTab === 'broadcasts' && <BroadcastsManager />}
           {currentTab === 'tokens' && <TokensManager />}
+          {currentTab === 'techniques' && <TechniquesManager />}
+          {currentTab === 'streams' && <StreamsManager />}
+          {currentTab === 'calendar' && <CalendarEventsManager />}
         </div>
       </div>
     </PlayerProvider>

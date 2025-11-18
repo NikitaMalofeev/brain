@@ -6,6 +6,7 @@ export interface Student {
     user_id: string;
     full_name: string;
     telegram_id: string;
+    role: 'user' | 'curator' | 'admin' | 'guest';  // Роль пользователя
     web_login?: string | null;  // Может быть null
     course_title?: string | null;  // Может быть null
     created_at: string;

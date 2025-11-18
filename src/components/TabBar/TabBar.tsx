@@ -24,16 +24,21 @@ const TabBar: FC<TabBarProps> = ({ className }) => {
     const buttons = [
         {
             id: 1,
-            icon: 'icon1',
-            slug: '/library'
+            icon: 'icon4',
+            slug: '/techniques'
         },
         {
             id: 2,
+            icon: 'icon5',
+            slug: '/calendar'
+        },
+        {
+            id: 3,
             icon: 'icon2',
             slug: '/'
         },
         {
-            id: 3,
+            id: 4,
             icon: 'icon3',
             slug: '/profile2'
         }
