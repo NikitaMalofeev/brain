@@ -18,20 +18,17 @@ const TabBar: FC<TabBarProps> = ({ className }) => {
 
     // Обработчик перехода на вкладку
     const handleTabClick = (path: string) => {
-        console.log('🔵 TabBar: Clicked, navigating to:', path);
-        console.log('🔵 TabBar: Current path:', currentPath);
         navigate(path);
-        console.log('🔵 TabBar: Navigate called');
     };
     const buttons = [
         {
             id: 1,
-            icon: 'icon4',
+            icon: 'bottom-menu-library',
             slug: '/techniques'
         },
         {
             id: 2,
-            icon: 'icon5',
+            icon: 'bottom-menu-calendar',
             slug: '/calendar'
         },
         {
@@ -47,28 +44,41 @@ const TabBar: FC<TabBarProps> = ({ className }) => {
     ]
 
     return (
-        <nav className={`tab-bar ${className || ''}`} aria-label="Основная навигация">
+        <nav
+            className={`tab-bar ${className || ''}`}
+            aria-label="Основная навигация"
+            style={{
+                background: '#0000007A',
+                backdropFilter: 'blur(30px)',
+                paddingLeft: '12px',
+                paddingRight: '12px',
+                height: '60px',
+                display: 'flex',
+                alignItems: 'center',
+            }}
+        >
             {buttons.map((button) => {
                 const isActiveBtn = isActive(button.slug)
                 return (
                     <div key={button.id} className="flex-1 flex justify-center relative">
                         <motion.button
-                            className={'bg-white p-[6px] rounded-full relative'}
+                            className={'w-12 h-9 rounded-[18px] relative flex items-center justify-center'}
                             onClick={() => handleTabClick(button.slug)}
                             whileTap={{ scale: 0.9 }}
                             style={{
                                 touchAction: 'manipulation',
                                 pointerEvents: 'auto',
-                                zIndex: 'auto'
+                                zIndex: 'auto',
+                                background: isActiveBtn ? '#0000004D' : 'transparent',
                             }}
                         >
                             <AnimatePresence>
                                 {isActiveBtn && (
                                     <motion.div
-                                        className="absolute inset-0 rounded-full"
+                                        className="absolute inset-0 rounded-[18px]"
                                         style={{
-                                            background: 'linear-gradient(109.65deg,#E1C1F4 13.64%,#B862EA 124.92%)',
-                                            pointerEvents: 'none', // Важно! Не блокируем клики
+                                            background: '#0000004D',
+                                            pointerEvents: 'none',
                                         }}
                                         initial={{ scale: 0, opacity: 0 }}
                                         animate={{ scale: 1, opacity: 1 }}
@@ -77,24 +87,12 @@ const TabBar: FC<TabBarProps> = ({ className }) => {
                                     />
                                 )}
                             </AnimatePresence>
-                            {/* Обертка для иконок для плавного cross-fade */}
+                            {/* Иконка */}
                             <div className="relative w-6 h-6" style={{ pointerEvents: 'none' }}>
-                                {/* Неактивная иконка */}
-                                <motion.img
-                                    className="w-full h-full absolute top-0 left-0"
+                                <img
+                                    className="w-full h-full"
                                     src={`/${button.icon}.svg`}
                                     alt="иконка навигации"
-                                    animate={{ opacity: isActiveBtn ? 0 : 1 }}
-                                    transition={{ duration: 0.25 }}
-                                    style={{ pointerEvents: 'none' }}
-                                />
-                                {/* Активная иконка */}
-                                <motion.img
-                                    className="w-full h-full absolute top-0 left-0"
-                                    src={`/${button.icon}-active.svg`}
-                                    alt="активная иконка навигации"
-                                    animate={{ opacity: isActiveBtn ? 1 : 0 }}
-                                    transition={{ duration: 0.25 }}
                                     style={{ pointerEvents: 'none' }}
                                 />
                             </div>

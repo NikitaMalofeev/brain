@@ -45,6 +45,10 @@ const StudentCard: React.FC<StudentCardProps> = ({ studentId, onBack, currentUse
     // Состояние для выбранного курса
     const [selectedCourseId, setSelectedCourseId] = useState<string>('');
 
+    // Состояние для выбранной роли
+    const [selectedRole, setSelectedRole] = useState<string>('');
+    const [roleLoading, setRoleLoading] = useState<boolean>(false);
+
     // Локальный стейт для загрузки строк и bulk-операций
     const [rowLoading, setRowLoading] = useState<Record<number, boolean>>({});
     const [bulkLoading, setBulkLoading] = useState<boolean>(false);
@@ -79,6 +83,13 @@ const StudentCard: React.FC<StudentCardProps> = ({ studentId, onBack, currentUse
             setPersonalChatLink('');
         }
     }, [studentDetails?.basicInfo.personal_chat_link]);
+
+    // Синхронизируем выбранную роль с данными студента
+    useEffect(() => {
+        if (studentDetails?.basicInfo.role) {
+            setSelectedRole(studentDetails.basicInfo.role);
+        }
+    }, [studentDetails?.basicInfo.role]);
 
     const formatDate = (dateString?: string | null) => {
         if (!dateString) return '—';
@@ -309,6 +320,48 @@ const StudentCard: React.FC<StudentCardProps> = ({ studentId, onBack, currentUse
         });
     };
 
+    const handleChangeRole = async () => {
+        if (!selectedRole || selectedRole === basicInfo.role) {
+            alert('Выберите новую роль');
+            return;
+        }
+
+        // Если роль admin - запрещаем изменение
+        if (basicInfo.role === 'admin') {
+            alert('Нельзя изменить роль администратора');
+            return;
+        }
+
+        // Если меняем на curator - открываем модалку
+        if (selectedRole === 'curator') {
+            openPromoteModal();
+            return;
+        }
+
+        // Для остальных ролей - просто меняем
+        if (!window.confirm(`Изменить роль пользователя с "${basicInfo.role}" на "${selectedRole}"?`)) {
+            return;
+        }
+
+        setRoleLoading(true);
+        try {
+            const { error } = await supabase
+                .from('users')
+                .update({ role: selectedRole })
+                .eq('id', studentId);
+
+            if (error) throw error;
+
+            alert('Роль успешно изменена');
+            await loadStudentDetails(studentId);
+        } catch (error: any) {
+            console.error('Ошибка при изменении роли:', error);
+            alert(`Ошибка: ${error.message || 'Не удалось изменить роль'}`);
+        } finally {
+            setRoleLoading(false);
+        }
+    };
+
     const handlePromoteToCurator = async () => {
         // Валидация логина и пароля
         const loginError = validateLoginFormat(promoteFormData.webLogin);
@@ -344,6 +397,9 @@ const StudentCard: React.FC<StudentCardProps> = ({ studentId, onBack, currentUse
             });
             setIsPromoteModalOpen(false);
             setIsSuccessModalOpen(true);
+
+            // Обновляем данные студента после назначения куратором
+            await loadStudentDetails(studentId);
         } catch (error: any) {
             console.error('Ошибка при назначении куратора:', error);
             alert(`Ошибка: ${error.message || 'Не удалось назначить куратора'}`);
@@ -663,59 +719,53 @@ const StudentCard: React.FC<StudentCardProps> = ({ studentId, onBack, currentUse
                     </div>
                 </div>
 
-                {/* === НАШ НОВЫЙ БЛОК === */}
+                {/* Выбор роли пользователя */}
                 {currentUser?.role === 'admin' && (
-                    <div className="form-group" style={{ marginTop: '20px' }}>
-                        <label>Роль пользователя:</label>
-                        <p>Текущая роль: <strong>{basicInfo.role}</strong></p>
-                        <div style={{ display: 'flex', justifyContent: 'flex-start', gap: '12px' }}>
-                            {basicInfo.role === 'guest' && (
-                                <button
-                                    className="admin-button"
-                                    style={{ width: 'auto', minWidth: '180px', maxWidth: '250px' }}
-                                    onClick={async () => {
-                                        if (!window.confirm('Сделать пользователя учеником?')) return;
-                                        try {
-                                            const { error } = await supabase
-                                                .from('users')
-                                                .update({ role: 'user' })
-                                                .eq('id', studentId);
-
-                                            if (error) throw error;
-
-                                            alert('Пользователь успешно переведен в роль ученика');
-                                            await loadStudentDetails(studentId);
-                                        } catch (error: any) {
-                                            console.error('Ошибка при изменении роли:', error);
-                                            alert(`Ошибка: ${error.message || 'Не удалось изменить роль'}`);
-                                        }
+                    <div className="form-group">
+                        <label style={{ fontSize: '14px', fontWeight: '600', marginBottom: '8px', display: 'block' }}>Роль пользователя:</label>
+                        <div style={{ display: 'flex', gap: '12px', alignItems: 'flex-start' }}>
+                            <div style={{ flex: 1 }}>
+                                <select
+                                    className="admin-input"
+                                    style={{
+                                        fontSize: '14px',
+                                        padding: '8px 12px',
+                                        height: '36px',
+                                        minWidth: '200px'
                                     }}
-                                    title="Перевести гостя в ученики"
+                                    value={selectedRole}
+                                    onChange={(e) => setSelectedRole(e.target.value)}
+                                    disabled={roleLoading || basicInfo.role === 'admin'}
                                 >
-                                    Сделать учеником
-                                </button>
-                            )}
-                            {basicInfo.role === 'user' && (
-                                <button
-                                    className="admin-button"
-                                    style={{ width: 'auto', minWidth: '180px', maxWidth: '250px' }}
-                                    onClick={openPromoteModal}
-                                    disabled={isPromoting}
-                                    title="Назначить пользователя куратором"
-                                >
-                                    {isPromoting ? 'Назначение...' : 'Сделать куратором'}
-                                </button>
-                            )}
-                            {basicInfo.role === 'curator' && (
-                                <span style={{ color: '#2196F3', fontWeight: 'bold' }}>
-                                    Пользователь уже является куратором
-                                </span>
-                            )}
-                            {basicInfo.role === 'admin' && (
-                                <span style={{ color: '#FF5722', fontWeight: 'bold' }}>
-                                    Нельзя изменить роль администратора
-                                </span>
-                            )}
+                                    <option value="guest">Гость (guest)</option>
+                                    <option value="user">Ученик (user)</option>
+                                    <option value="curator">Куратор (curator)</option>
+                                    <option value="admin">Администратор (admin)</option>
+                                </select>
+                                <small style={{
+                                    display: 'block',
+                                    marginTop: '4px',
+                                    color: '#666',
+                                    fontSize: '12px'
+                                }}>
+                                    Текущая роль: <strong>{basicInfo.role}</strong>
+                                    {basicInfo.role === 'admin' && ' (нельзя изменить)'}
+                                </small>
+                            </div>
+                            <button
+                                className="admin-button"
+                                style={{
+                                    fontSize: '14px',
+                                    padding: '8px 16px',
+                                    height: '36px',
+                                    minWidth: '100px',
+                                    flexShrink: 0
+                                }}
+                                onClick={handleChangeRole}
+                                disabled={roleLoading || basicInfo.role === 'admin' || selectedRole === basicInfo.role}
+                            >
+                                {roleLoading ? 'Изменение...' : 'Изменить'}
+                            </button>
                         </div>
                     </div>
                 )}

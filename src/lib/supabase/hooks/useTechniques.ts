@@ -19,9 +19,29 @@ export function useTechniques(userId: string | null | undefined) {
         return [];
       }
 
-      logger.debug('Fetching techniques with access', { userId });
+      logger.debug('Fetching techniques with access and schedule', { userId });
 
-      // Вызываем RPC функцию get_techniques_with_access
+      // Сначала пробуем новую функцию с расписанием модулей
+      const { data: scheduleData, error: scheduleError } = await supabase.rpc(
+        'get_user_techniques_with_schedule',
+        { p_user_id: userId || null }
+      );
+
+      // Если новая функция работает - используем её
+      if (!scheduleError && scheduleData) {
+        logger.debug('Techniques with schedule fetched successfully', {
+          userId,
+          count: scheduleData?.length || 0
+        });
+        return (scheduleData as TechniqueWithAccess[]) || [];
+      }
+
+      // Fallback на старую функцию если новая не работает
+      logger.warn('New function not found, falling back to get_techniques_with_access', {
+        userId,
+        error: scheduleError
+      });
+
       const { data, error } = await supabase.rpc('get_techniques_with_access', {
         p_user_id: userId || null,
       });
@@ -31,7 +51,7 @@ export function useTechniques(userId: string | null | undefined) {
         throw error;
       }
 
-      logger.debug('Techniques fetched successfully', {
+      logger.debug('Techniques fetched successfully (fallback)', {
         userId,
         count: data?.length || 0
       });

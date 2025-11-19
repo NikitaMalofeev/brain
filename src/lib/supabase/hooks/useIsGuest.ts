@@ -33,8 +33,8 @@ export function useIsGuest(userId: string | null | undefined) {
     },
     enabled: !!userId,
     retry: 2,
-    staleTime: 2 * 60 * 1000, // 2 минуты
-    gcTime: 5 * 60 * 1000, // 5 минут в кэше
+    staleTime: 10 * 1000, // 10 секунд
+    gcTime: 30 * 1000, // 30 секунд в кэше
   });
 
   return query;

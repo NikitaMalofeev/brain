@@ -8,6 +8,7 @@ import { useSignal, initDataState } from '@telegram-apps/sdk-react';
 import { logger } from '@/lib/logger';
 import { TechniqueWithAccess } from '@/lib/supabase/types';
 import GuestBlockedModal from '@/components/GuestBlockedModal';
+import TechniqueBlockedModal from '@/components/TechniqueBlockedModal';
 import { Ripple } from '@/components/ui/Ripple/Ripple';
 import { motion } from 'framer-motion';
 
@@ -28,8 +29,11 @@ const TechniquePlayerPage: React.FC = () => {
   // Получаем техники
   const { data: techniques, isLoading: techniquesLoading } = useTechniques(supabaseUser?.id);
 
-  // Состояние модалки для гостей
+  // Состояние модалок
   const [showGuestModal, setShowGuestModal] = useState(false);
+  const [showStudentBlockedModal, setShowStudentBlockedModal] = useState(false);
+  const [modalTitle, setModalTitle] = useState('');
+  const [modalDescription, setModalDescription] = useState('');
 
   // Аудио плеер
   const audioRef = useRef<HTMLAudioElement>(null);
@@ -42,27 +46,71 @@ const TechniquePlayerPage: React.FC = () => {
 
   // Логирование для отладки
   useEffect(() => {
-    logger.debug('TechniquePlayerPage state', {
-      techniqueId: id,
-      userId: supabaseUser?.id,
-      isGuest,
-      hasTechnique: !!technique,
-      hasAccess: technique?.has_access,
-    });
+    console.log('=== TechniquePlayerPage DEBUG ===');
+    console.log('Technique ID:', id);
+    console.log('User ID:', supabaseUser?.id);
+    console.log('Is Guest:', isGuest);
+    console.log('Purchase URL:', technique?.purchase_url);
+    console.log('Upgrade Tariff Chat URL:', technique?.upgrade_tariff_chat_url);
+    console.log('Full Technique Data:', technique);
+    console.log('================================');
   }, [id, supabaseUser, isGuest, technique]);
 
   // Общее состояние загрузки
   const loading = userLoading || guestCheckLoading || techniquesLoading;
 
+  // Функция для формирования сообщений модалки
+  const getBlockedModalContent = () => {
+    if (!technique) return;
+
+    // Для учеников с заблокированными техниками
+    if (!isGuest && technique.status === 'locked' && !technique.has_access) {
+      setModalTitle(`Техника ${technique.title} не доступна`);
+
+      // Формируем описание на основе unlock_condition
+      if (technique.unlock_condition_type === 'after_technique' && technique.unlock_condition_value) {
+        const prerequisiteTechniqueId = technique.unlock_condition_value.technique_id;
+
+        // Находим предыдущую технику по ID
+        const prerequisiteTechnique = techniques?.find(t => t.id === prerequisiteTechniqueId);
+        const prerequisiteName = prerequisiteTechnique?.title || 'предыдущей техники';
+
+        // Проверяем название текущей техники для точной формулировки
+        if (technique.title === 'Верховная жрица') {
+          setModalDescription('Становится доступной к покупке через 1 месяц после получения доступа к «Императрице»');
+        } else if (technique.title === 'Богиня') {
+          setModalDescription('Становится доступна к покупке через 1 месяц после покупки «Верховной жрицы» (и при наличии «Императрицы»)');
+        } else {
+          // Для других техник с условием after_technique
+          setModalDescription(`Становится доступной к покупке через 1 месяц после получения доступа к «${prerequisiteName}»`);
+        }
+      } else if (technique.unlock_condition_type === 'after_duration' && technique.unlock_condition_value) {
+        const durationDays = technique.unlock_condition_value.duration_days || 0;
+        const durationText = durationDays === 30 ? '1 месяц' :
+                            durationDays === 60 ? '2 месяца' :
+                            durationDays === 90 ? '3 месяца' :
+                            `${durationDays} дней`;
+        setModalDescription(`Становится доступной к покупке через ${durationText} после регистрации в программе`);
+      } else {
+        // Используем reason из purchase_info как fallback
+        setModalDescription(technique.purchase_info?.reason || 'Техника временно недоступна');
+      }
+      return;
+    }
+  };
+
   // Проверка доступа
   useEffect(() => {
     if (!loading && technique && !technique.has_access && technique.status !== 'free') {
-      // Если гость пытается открыть платную технику без доступа
       if (isGuest) {
         setShowGuestModal(true);
+      } else if (technique.status === 'locked' && !technique.can_purchase) {
+        // Модалку показываем только для locked техник, которые нельзя купить
+        getBlockedModalContent();
+        setShowStudentBlockedModal(true);
       }
     }
-  }, [loading, technique, isGuest]);
+  }, [loading, technique, isGuest, techniques]);
 
   // Обработчики аудио плеера
   const handlePlayPause = () => {
@@ -155,9 +203,25 @@ const TechniquePlayerPage: React.FC = () => {
 
   const canPlay = technique.has_access || technique.status === 'free';
 
+  console.log('CAN PLAY CHECK:', {
+    canPlay,
+    hasAccess: technique?.has_access,
+    status: technique?.status,
+    isFree: technique?.status === 'free',
+  });
+
   return (
     <Page back>
-      <div className="flex flex-col h-full px-4 py-6">
+      <div
+        className="flex flex-col min-h-screen px-4 py-6"
+        style={{
+          backgroundImage: 'url(/library-page-background.png)',
+          backgroundSize: 'cover',
+          backgroundPosition: 'center',
+          backgroundAttachment: 'fixed',
+          backgroundRepeat: 'no-repeat',
+        }}
+      >
         {/* Обложка */}
         <div className="relative w-full aspect-square rounded-2xl overflow-hidden mb-6">
           {technique.cover_image ? (
@@ -273,26 +337,45 @@ const TechniquePlayerPage: React.FC = () => {
             </p>
 
             {/* Кнопки действия */}
-            <div className="flex flex-col gap-3">
-              {technique.can_purchase && technique.purchase_url && (
-                <Ripple className="rounded-xl overflow-hidden">
-                  <button
-                    onClick={handlePurchaseClick}
-                    className="w-full bg-gradient-to-r from-[#E1C1F4] to-[#B862EA] text-white font-semibold py-3 px-6 rounded-xl hover:opacity-90 transition-opacity"
-                  >
-                    Купить технику
-                  </button>
-                </Ripple>
+            <div className="flex flex-col gap-2">
+              {/* Для учеников показываем обе кнопки, если они есть */}
+              {!isGuest && technique.purchase_url && (
+                <button
+                  onClick={handlePurchaseClick}
+                  className="w-full py-3.5 text-white text-sm font-semibold rounded-[20px] hover:opacity-80 transition-opacity active:scale-[0.98]"
+                  style={{
+                    background: '#0000007A',
+                    backdropFilter: 'blur(30px)',
+                  }}
+                >
+                  Купить на сайте
+                </button>
               )}
-              {technique.upgrade_tariff_chat_url && (
-                <Ripple className="rounded-xl overflow-hidden">
-                  <button
-                    onClick={handleUpgradeTariffClick}
-                    className="w-full bg-white border-2 border-[#B862EA] text-[#B862EA] font-semibold py-3 px-6 rounded-xl hover:bg-purple-50 transition-colors"
-                  >
-                    Связаться с отделом продаж
-                  </button>
-                </Ripple>
+              {!isGuest && technique.upgrade_tariff_chat_url && (
+                <button
+                  onClick={handleUpgradeTariffClick}
+                  className="w-full py-3.5 text-white text-sm font-semibold rounded-[20px] hover:opacity-80 transition-opacity active:scale-[0.98]"
+                  style={{
+                    background: '#00000059',
+                    backdropFilter: 'blur(30px)',
+                  }}
+                >
+                  Повысить тариф
+                </button>
+              )}
+
+              {/* Для гостей показываем только кнопку покупки, если техника purchasable */}
+              {isGuest && technique.can_purchase && technique.purchase_url && (
+                <button
+                  onClick={handlePurchaseClick}
+                  className="w-full py-3.5 text-white text-sm font-semibold rounded-[20px] hover:opacity-80 transition-opacity active:scale-[0.98]"
+                  style={{
+                    background: '#0000007A',
+                    backdropFilter: 'blur(30px)',
+                  }}
+                >
+                  Купить на сайте
+                </button>
               )}
             </div>
           </div>
@@ -303,7 +386,16 @@ const TechniquePlayerPage: React.FC = () => {
       <GuestBlockedModal
         isOpen={showGuestModal}
         onClose={() => setShowGuestModal(false)}
-        ctaUrl={technique.purchase_url || 'https://brainprogramming.ru/enroll'}
+        ctaUrl={technique?.purchase_url || 'https://brainprogramming.ru/enroll'}
+      />
+
+      {/* Модалка для учеников с заблокированными техниками */}
+      <TechniqueBlockedModal
+        isOpen={showStudentBlockedModal}
+        onClose={() => setShowStudentBlockedModal(false)}
+        title={modalTitle}
+        description={modalDescription}
+        showButton={false}
       />
     </Page>
   );

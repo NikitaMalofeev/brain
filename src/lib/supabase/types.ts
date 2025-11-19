@@ -605,9 +605,11 @@ export interface TechniquePurchaseInfo {
   can_purchase: boolean;
   reason: string;
   unlock_date?: string | null;
+  module_name?: string | null; // Название модуля из которого техника
+  stream_name?: string | null; // Название потока
 }
 
-// Техника с информацией о доступе (результат get_techniques_with_access)
+// Техника с информацией о доступе (результат get_techniques_with_access и get_user_techniques_with_schedule)
 export interface TechniqueWithAccess extends Technique {
   has_access: boolean;
   can_purchase: boolean;
@@ -615,6 +617,9 @@ export interface TechniqueWithAccess extends Technique {
   access_granted_at?: string | null;
   access_expires_at?: string | null;
   access_source?: TechniqueAccessSource | null;
+  // Новые поля из get_user_techniques_with_schedule
+  unlock_date?: string | null; // Дата открытия в модуле потока
+  is_unlocked?: boolean; // Открыта ли техника на текущую дату
 }
 
 // Типы для создания/обновления техник
@@ -627,4 +632,66 @@ export interface GrantTechniqueAccessRequest {
   technique_id: string;
   access_source?: TechniqueAccessSource;
   expires_at?: string | null;
+}
+
+// =============================================
+// ТИПЫ ДЛЯ ПОТОКОВ И МОДУЛЕЙ
+// =============================================
+
+// Поток обучения
+export interface Stream extends TimestampFields {
+  id: string; // UUID
+  name: string;
+  course_id?: string | null;
+  start_date: string; // date
+  is_active: boolean;
+}
+
+// Модуль в потоке
+export interface StreamModule extends TimestampFields {
+  id: string; // UUID
+  stream_id: string; // FK к Stream
+  name: string;
+  color?: string;
+  order_num: number;
+}
+
+// Запись пользователя в поток
+export interface UserStreamEnrollment {
+  id: string; // UUID
+  user_id: string; // FK к User
+  stream_id: string; // FK к Stream
+  enrolled_at?: string;
+}
+
+// Связь техники с модулем потока и дата открытия
+export interface StreamModuleTechnique extends TimestampFields {
+  id: string; // UUID
+  stream_module_id: string; // FK к StreamModule
+  technique_id: string; // FK к Technique
+  unlock_date: string; // date
+  order_num: number;
+}
+
+// Расширенная информация о технике с расписанием
+export interface TechniqueWithSchedule extends Technique {
+  unlock_date?: string | null; // Дата открытия в модуле
+  is_unlocked: boolean; // Открыта ли техника на текущую дату
+  has_access: boolean; // Есть ли доступ у пользователя
+  can_purchase: boolean; // Может ли пользователь купить
+  purchase_info: TechniquePurchaseInfo;
+}
+
+// Типы для создания/обновления связи техник с модулями
+export interface CreateStreamModuleTechnique {
+  stream_module_id: string;
+  technique_id: string;
+  unlock_date: string; // YYYY-MM-DD
+  order_num?: number;
+}
+
+export interface UpdateStreamModuleTechnique {
+  id: string;
+  unlock_date?: string;
+  order_num?: number;
 }

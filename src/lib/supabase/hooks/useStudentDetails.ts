@@ -107,7 +107,6 @@ export function useStudentDetails(): StudentDetailsResult {
                     personal_chat_link
                 `)
                 .eq('id', studentId)
-                .eq('role', 'user')
                 .single();
 
             if (userError) throw userError;

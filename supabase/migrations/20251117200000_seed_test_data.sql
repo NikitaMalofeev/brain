@@ -115,6 +115,8 @@ INSERT INTO techniques (
   duration_seconds,
   status,
   purchase_url,
+  upgrade_tariff_chat_url,
+  available_from_module,
   created_at
 ) VALUES (
   'a0000000-0000-0000-0000-000000000000',
@@ -125,6 +127,8 @@ INSERT INTO techniques (
   600, -- 10 минут
   'free',
   NULL,
+  NULL,
+  'Базовый модуль',
   NOW()
 );
 

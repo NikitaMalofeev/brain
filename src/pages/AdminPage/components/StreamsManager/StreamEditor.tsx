@@ -3,7 +3,8 @@ import { supabase } from '@/lib/supabase/client';
 import { useQuery } from '@tanstack/react-query';
 import { logger } from '@/lib/logger';
 import { Button } from '@/components/ui/button';
-import { ArrowLeft, Save } from 'lucide-react';
+import { ArrowLeft, Save, ChevronDown, ChevronUp } from 'lucide-react';
+import ModuleTechniquesManager from './ModuleTechniquesManager';
 
 interface StreamEditorProps {
   streamId: string | null;
@@ -28,6 +29,7 @@ const initialFormData: StreamFormData = {
 const StreamEditor: React.FC<StreamEditorProps> = ({ streamId, onClose, onSave }) => {
   const [formData, setFormData] = useState<StreamFormData>(initialFormData);
   const [isSaving, setIsSaving] = useState(false);
+  const [expandedModules, setExpandedModules] = useState<Record<string, boolean>>({});
 
   // Загрузить поток для редактирования
   const { data: stream, isLoading } = useQuery({
@@ -50,6 +52,35 @@ const StreamEditor: React.FC<StreamEditorProps> = ({ streamId, onClose, onSave }
     },
     enabled: !!streamId,
   });
+
+  // Загрузить модули потока
+  const { data: modules } = useQuery({
+    queryKey: ['stream-modules', streamId],
+    queryFn: async () => {
+      if (!streamId || !supabase) return [];
+
+      const { data, error } = await supabase
+        .from('stream_modules')
+        .select('*')
+        .eq('stream_id', streamId)
+        .order('order_num');
+
+      if (error) {
+        logger.error('Error fetching stream modules', { error });
+        throw error;
+      }
+
+      return data || [];
+    },
+    enabled: !!streamId,
+  });
+
+  const toggleModule = (moduleId: string) => {
+    setExpandedModules((prev) => ({
+      ...prev,
+      [moduleId]: !prev[moduleId],
+    }));
+  };
 
   useEffect(() => {
     if (stream) {
@@ -195,6 +226,55 @@ const StreamEditor: React.FC<StreamEditorProps> = ({ streamId, onClose, onSave }
           </Button>
         </div>
       </form>
+
+      {/* Модули и расписание техник */}
+      {streamId && modules && modules.length > 0 && (
+        <div className="mt-8 bg-white rounded-xl shadow-sm p-6 space-y-4">
+          <h3 className="text-xl font-bold mb-4">Модули потока и расписание техник</h3>
+
+          {modules.map((module: any) => (
+            <div key={module.id} className="border rounded-lg overflow-hidden">
+              {/* Заголовок модуля */}
+              <button
+                onClick={() => toggleModule(module.id)}
+                className="w-full flex items-center justify-between p-4 bg-gray-50 hover:bg-gray-100 transition-colors"
+              >
+                <div className="flex items-center gap-3">
+                  <div
+                    className="w-4 h-4 rounded-full"
+                    style={{ backgroundColor: module.color }}
+                  />
+                  <h4 className="font-semibold text-lg">{module.name}</h4>
+                  <span className="text-sm text-gray-500">#{module.order_num}</span>
+                </div>
+                {expandedModules[module.id] ? (
+                  <ChevronUp className="w-5 h-5 text-gray-500" />
+                ) : (
+                  <ChevronDown className="w-5 h-5 text-gray-500" />
+                )}
+              </button>
+
+              {/* Расписание техник модуля */}
+              {expandedModules[module.id] && (
+                <div className="p-4 border-t">
+                  <ModuleTechniquesManager
+                    streamModuleId={module.id}
+                    moduleName={module.name}
+                  />
+                </div>
+              )}
+            </div>
+          ))}
+        </div>
+      )}
+
+      {streamId && modules && modules.length === 0 && (
+        <div className="mt-8 bg-white rounded-xl shadow-sm p-6">
+          <p className="text-center text-gray-500">
+            В этом потоке пока нет модулей. Создайте модули, чтобы добавить техники в расписание.
+          </p>
+        </div>
+      )}
     </div>
   );
 };

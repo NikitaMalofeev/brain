@@ -6,15 +6,22 @@ interface GuestBlockedModalProps {
   isOpen: boolean;
   onClose: () => void;
   ctaUrl?: string; // URL для кнопки "Оставить заявку"
+  title?: string; // Заголовок модалки
+  description?: string; // Описание
+  ctaText?: string; // Текст кнопки
 }
 
 /**
- * Модальное окно для гостей, показывающее что контент доступен только ученикам
+ * Модальное окно для блокированных техник
+ * Может показывать разные сообщения в зависимости от причины блокировки
  */
 export default function GuestBlockedModal({
   isOpen,
   onClose,
   ctaUrl = 'https://brainprogramming.ru/enroll', // Дефолтный URL, заменить на реальный
+  title = 'Доступно только ученикам',
+  description = 'Этот контент доступен только ученикам программы Brain Programming. Оставьте заявку, чтобы получить доступ.',
+  ctaText = 'Оставить заявку',
 }: GuestBlockedModalProps) {
   const handleCtaClick = () => {
     // Открываем внешнюю ссылку в новой вкладке
@@ -60,23 +67,24 @@ export default function GuestBlockedModal({
                 {/* Текст */}
                 <div className="flex flex-col gap-2 items-center text-center">
                   <h2 className="text-xl font-semibold text-black">
-                    Доступно только ученикам
+                    {title}
                   </h2>
                   <p className="text-[#242424] text-sm">
-                    Этот контент доступен только ученикам программы Brain Programming.
-                    Оставьте заявку, чтобы получить доступ.
+                    {description}
                   </p>
                 </div>
 
                 {/* Кнопка CTA */}
-                <Ripple className="rounded-xl overflow-hidden w-full">
-                  <button
-                    onClick={handleCtaClick}
-                    className="w-full bg-gradient-to-r from-[#E1C1F4] to-[#B862EA] text-white font-semibold py-3 px-6 rounded-xl hover:opacity-90 transition-opacity"
-                  >
-                    Оставить заявку
-                  </button>
-                </Ripple>
+                {ctaUrl && ctaText && (
+                  <Ripple className="rounded-xl overflow-hidden w-full">
+                    <button
+                      onClick={handleCtaClick}
+                      className="w-full bg-gradient-to-r from-[#E1C1F4] to-[#B862EA] text-white font-semibold py-3 px-6 rounded-xl hover:opacity-90 transition-opacity"
+                    >
+                      {ctaText}
+                    </button>
+                  </Ripple>
+                )}
               </div>
 
               {/* Кнопка закрытия */}

@@ -83,7 +83,11 @@ const NotificationPopup: React.FC<NotificationPopupProps> = ({
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             transition={{ duration: 0.2 }}
-            className="fixed inset-0 bg-black/40 z-[9998] backdrop-blur-sm"
+            className="fixed inset-0 z-[9998]"
+            style={{
+              background: '#0000004D',
+              backdropFilter: 'blur(30px)',
+            }}
             onClick={handleOverlayClick}
           />
 
@@ -97,7 +101,8 @@ const NotificationPopup: React.FC<NotificationPopupProps> = ({
               damping: 25,
               stiffness: 300,
             }}
-            className="fixed bottom-0 left-0 right-0 z-[9999] flex items-center justify-center px-4 pb-4"
+            className="fixed bottom-0 left-0 right-0 z-[10000] flex items-center justify-center px-4"
+            style={{ paddingBottom: '80px' }}
           >
             <div className="w-full max-w-[400px] bg-white rounded-3xl p-6 shadow-2xl relative">
               {/* Кнопка закрытия */}
@@ -155,7 +160,10 @@ const NotificationPopup: React.FC<NotificationPopupProps> = ({
                     onClose();
                   }}
                   className="w-full py-3.5 text-white text-sm font-semibold rounded-[20px] hover:opacity-90 transition-all active:scale-[0.98]"
-                  style={{ backgroundColor: buttonColor }}
+                  style={{
+                    background: '#0000007A',
+                    backdropFilter: 'blur(30px)',
+                  }}
                 >
                   {buttonText}
                 </button>

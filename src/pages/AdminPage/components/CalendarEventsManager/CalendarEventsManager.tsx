@@ -1,7 +1,6 @@
 import React, { useState } from 'react';
 import { supabase } from '@/lib/supabase/client';
-import { useQuery, useMutation, useQueryClient } from '@tantml:invoke>
-<parameter name="@tanstack/react-query';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { logger } from '@/lib/logger';
 import { Plus, Edit2, Trash2, Calendar } from 'lucide-react';
 import { Button } from '@/components/ui/button';

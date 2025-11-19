@@ -8,7 +8,9 @@
       "Bash(fi)",
       "Bash(npm run build:*)",
       "Bash(psql:*)",
-      "Bash(supabase db reset:*)"
+      "Bash(supabase db reset:*)",
+      "Bash(npx supabase db reset)",
+      "Bash(npm run dev:*)"
     ],
     "deny": [],
     "ask": []

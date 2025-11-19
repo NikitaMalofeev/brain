@@ -194,7 +194,7 @@ INSERT INTO public.techniques (
   '/techniques/intro.jpg',
   900,
   'free',
-  NULL,
+  'Вводный модуль',
   0
 ),
 (
@@ -204,6 +204,6 @@ INSERT INTO public.techniques (
   '/techniques/breathing.jpg',
   600,
   'free',
-  NULL,
+  'Вводный модуль',
   0
 );
