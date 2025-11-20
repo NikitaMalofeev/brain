@@ -1,139 +1,14 @@
 -- ================================================
 -- SEED-ДАННЫЕ ДЛЯ ТЕСТИРОВАНИЯ РЕЛИЗА 2.0
 -- ================================================
+--
+-- ПРИМЕЧАНИЕ: Тестовые техники теперь создаются в миграции 20251119220000_seed_test_tariff_data.sql
+-- Эта миграция создает только потоки, календарь и домашние задания для совместимости со старой системой
+--
+-- ================================================
 
 -- =====================
--- 1. ТЕХНИКИ (Techniques)
--- =====================
-
--- Удаляем старые тестовые данные если есть
-DELETE FROM user_technique_access WHERE technique_id IN (
-  SELECT id FROM techniques WHERE title IN ('Императрица', 'Верховная жрица', 'Богиня', 'Базовая медитация')
-);
-DELETE FROM techniques WHERE title IN ('Императрица', 'Верховная жрица', 'Богиня', 'Базовая медитация');
-
--- 1.1 Императрица (доступна для покупки сразу)
-INSERT INTO techniques (
-  id,
-  title,
-  description,
-  audio_url,
-  cover_image,
-  duration_seconds,
-  status,
-  purchase_url,
-  upgrade_tariff_chat_url,
-  available_from_module,
-  unlock_condition_type,
-  unlock_condition_value,
-  created_at
-) VALUES (
-  'a1111111-1111-1111-1111-111111111111',
-  'Императрица',
-  'Первая практика из серии женских архетипов. Помогает раскрыть внутреннюю силу и уверенность.',
-  'https://example.com/empress.mp3',
-  'https://example.com/empress.jpg',
-  1200, -- 20 минут
-  'purchasable',
-  'https://brainprogramming.ru/buy/empress',
-  'https://t.me/brainprogramming_sales',
-  'Исцеление',
-  NULL,
-  NULL,
-  NOW()
-);
-
--- 1.2 Верховная жрица (через 30 дней после Императрицы)
-INSERT INTO techniques (
-  id,
-  title,
-  description,
-  audio_url,
-  cover_image,
-  duration_seconds,
-  status,
-  purchase_url,
-  upgrade_tariff_chat_url,
-  available_from_module,
-  unlock_condition_type,
-  unlock_condition_value,
-  created_at
-) VALUES (
-  'a2222222-2222-2222-2222-222222222222',
-  'Верховная жрица',
-  'Вторая практика. Развивает интуицию и связь с внутренней мудростью. Доступна через 30 дней после получения Императрицы.',
-  'https://example.com/priestess.mp3',
-  'https://example.com/priestess.jpg',
-  1500, -- 25 минут
-  'locked',
-  'https://brainprogramming.ru/buy/priestess',
-  'https://t.me/brainprogramming_sales',
-  'Психолог',
-  'after_technique',
-  '{"technique_id": "a1111111-1111-1111-1111-111111111111", "duration_days": 30}'::jsonb,
-  NOW()
-);
-
--- 1.3 Богиня (через 30 дней после Верховной жрицы)
-INSERT INTO techniques (
-  id,
-  title,
-  description,
-  audio_url,
-  cover_image,
-  duration_seconds,
-  status,
-  purchase_url,
-  upgrade_tariff_chat_url,
-  available_from_module,
-  unlock_condition_type,
-  unlock_condition_value,
-  created_at
-) VALUES (
-  'a3333333-3333-3333-3333-333333333333',
-  'Богиня',
-  'Третья, финальная практика. Полная интеграция женских архетипов. Доступна через 30 дней после получения Верховной жрицы.',
-  'https://example.com/goddess.mp3',
-  'https://example.com/goddess.jpg',
-  1800, -- 30 минут
-  'locked',
-  'https://brainprogramming.ru/buy/goddess',
-  'https://t.me/brainprogramming_sales',
-  'Доктор наук',
-  'after_technique',
-  '{"technique_id": "a2222222-2222-2222-2222-222222222222", "duration_days": 30}'::jsonb,
-  NOW()
-);
-
--- 1.4 Бесплатная техника для тестирования гостей
-INSERT INTO techniques (
-  id,
-  title,
-  description,
-  audio_url,
-  cover_image,
-  duration_seconds,
-  status,
-  purchase_url,
-  upgrade_tariff_chat_url,
-  available_from_module,
-  created_at
-) VALUES (
-  'a0000000-0000-0000-0000-000000000000',
-  'Базовая медитация',
-  'Бесплатная практика для всех пользователей. Подходит для начинающих.',
-  'https://example.com/basic.mp3',
-  'https://example.com/basic.jpg',
-  600, -- 10 минут
-  'free',
-  NULL,
-  NULL,
-  'Базовый модуль',
-  NOW()
-);
-
--- =====================
--- 2. ПОТОКИ И КАЛЕНДАРЬ
+-- 1. ПОТОКИ И КАЛЕНДАРЬ
 -- =====================
 
 -- Получаем ID первого курса (предполагаем что курс уже создан)
@@ -277,7 +152,7 @@ BEGIN
     );
   END IF;
 
-  -- Событие 4: Открытие техники
+  -- Событие 4: Общее событие (техники теперь управляются через новую систему тарифов)
   INSERT INTO calendar_events (
     stream_id,
     module_id,
@@ -286,17 +161,17 @@ BEGIN
     event_date,
     event_time,
     event_type,
-    technique_id,
+    external_url,
     cover_image
   ) VALUES (
     v_stream_id,
     v_module3_id,
-    'Открытие техники "Императрица"',
-    'Сегодня для вас откроется доступ к практике Императрица',
+    'Групповая медитация',
+    'Совместная практика с группой. Подключайтесь к Zoom.',
     CURRENT_DATE + INTERVAL '7 days',
     '12:00:00',
-    'technique_unlock',
-    'a1111111-1111-1111-1111-111111111111',
+    'zoom',
+    'https://zoom.us/j/987654321',
     NULL
   );
 
@@ -357,44 +232,22 @@ BEGIN
 END $$;
 
 -- =====================
--- 4. ВСПОМОГАТЕЛЬНЫЕ ФУНКЦИИ
--- =====================
-
--- Функция для быстрой выдачи техники пользователю (для тестирования)
-CREATE OR REPLACE FUNCTION grant_technique_to_user(
-  p_user_id UUID,
-  p_technique_id UUID
-)
-RETURNS VOID AS $$
-BEGIN
-  INSERT INTO user_technique_access (user_id, technique_id, access_source)
-  VALUES (p_user_id, p_technique_id, 'gift')
-  ON CONFLICT (user_id, technique_id) DO NOTHING;
-END;
-$$ LANGUAGE plpgsql;
-
-COMMENT ON FUNCTION grant_technique_to_user IS 'Выдает доступ к технике пользователю (для тестирования)';
-
--- =====================
--- 5. ИТОГОВОЕ СООБЩЕНИЕ
+-- 4. ИТОГОВОЕ СООБЩЕНИЕ
 -- =====================
 
 DO $$
 BEGIN
   RAISE NOTICE '';
   RAISE NOTICE '==============================================';
-  RAISE NOTICE 'SEED-ДАННЫЕ УСПЕШНО УСТАНОВЛЕНЫ';
+  RAISE NOTICE 'SEED-ДАННЫЕ (СТАРАЯ СИСТЕМА) УСТАНОВЛЕНЫ';
   RAISE NOTICE '==============================================';
   RAISE NOTICE '';
   RAISE NOTICE 'Созданы:';
-  RAISE NOTICE '✅ 4 техники (3 платные + 1 бесплатная)';
-  RAISE NOTICE '✅ 1 поток с 3 модулями';
+  RAISE NOTICE '✅ 1 поток с 3 модулями (для совместимости)';
   RAISE NOTICE '✅ 4 события календаря';
   RAISE NOTICE '✅ Задания для первых 3 уроков (по 3 задания на урок)';
   RAISE NOTICE '';
-  RAISE NOTICE 'Следующие шаги:';
-  RAISE NOTICE '1. Создайте тестовых пользователей (гость, ученик, куратор)';
-  RAISE NOTICE '2. Назначьте ученика на поток (user_stream_enrollments)';
-  RAISE NOTICE '3. Начните тестирование по инструкции в TESTING_GUIDE.md';
+  RAISE NOTICE 'ВАЖНО: Тестовые техники и тарифы создаются в миграции';
+  RAISE NOTICE '       20251119220000_seed_test_tariff_data.sql';
   RAISE NOTICE '';
 END $$;

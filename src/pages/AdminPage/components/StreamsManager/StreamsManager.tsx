@@ -4,7 +4,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { logger } from '@/lib/logger';
 import { Plus, Edit2, Trash2, Copy, Users } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import StreamEditor from './StreamEditor';
+import StreamEditorNew from './StreamEditorNew';
 import CopyStreamModal from './CopyStreamModal';
 
 interface Stream {
@@ -137,7 +137,7 @@ const StreamsManager: React.FC = () => {
   // Если открыт редактор
   if (isCreating || selectedStreamId) {
     return (
-      <StreamEditor
+      <StreamEditorNew
         streamId={selectedStreamId}
         onClose={handleCloseEditor}
         onSave={() => {

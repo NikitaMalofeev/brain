@@ -1,0 +1,751 @@
+-- Migration: Seed test data for tariffs testing
+-- Date: 2025-11-19
+-- Description: Создание тестовых данных для проверки системы тарифов
+
+-- =============================================
+-- 1. СОЗДАНИЕ ТЕСТОВОГО ПОТОКА
+-- =============================================
+DO $$
+DECLARE
+  v_course_id UUID;
+BEGIN
+  -- Получаем первый курс (или создаем если нет)
+  SELECT id INTO v_course_id FROM courses LIMIT 1;
+
+  IF v_course_id IS NULL THEN
+    -- Если нет курсов, создаем тестовый
+    INSERT INTO courses (name, description, is_active)
+    VALUES ('Тестовый курс', 'Курс для тестирования тарифов', TRUE)
+    RETURNING id INTO v_course_id;
+  END IF;
+
+  INSERT INTO streams (id, name, course_id, start_date, is_active)
+  VALUES (
+    'f47ac10b-58cc-4372-a567-0e02b2c3d479',
+    'Тестовый поток 2025',
+    v_course_id,
+    '2025-01-15',
+    TRUE
+  )
+  ON CONFLICT (id) DO NOTHING;
+END $$;
+
+-- =============================================
+-- 2. СОЗДАНИЕ МОДУЛЕЙ ДЛЯ ПОТОКА
+-- =============================================
+INSERT INTO stream_modules (id, stream_id, name, order_num, color)
+VALUES
+  -- Модуль 1: Основы
+  (
+    '11111111-1111-1111-1111-111111111111',
+    'f47ac10b-58cc-4372-a567-0e02b2c3d479',
+    'Модуль 1: Основы',
+    FALSE
+    1,
+    '#4CAF50'
+  ),
+  -- Модуль 2: Продвинутый
+  (
+    '22222222-2222-2222-2222-222222222222',
+    'f47ac10b-58cc-4372-a567-0e02b2c3d479',
+    'Модуль 2: Продвинутый уровень',
+    FALSE
+    2,
+    '#2196F3'
+  ),
+  -- Модуль 3: Мастерство
+  (
+    '33333333-3333-3333-3333-333333333333',
+    'f47ac10b-58cc-4372-a567-0e02b2c3d479',
+    'Модуль 3: Мастерство',
+    FALSE
+    3,
+    '#9C27B0'
+  ),
+  -- Модуль 4: Женские архетипы (доступен для всех тарифов)
+  (
+    '44444444-aaaa-aaaa-aaaa-444444444444',
+    'f47ac10b-58cc-4372-a567-0e02b2c3d479',
+    'Модуль 4: Женские архетипы',
+    FALSE
+    4,
+    '#E91E63'
+  )
+ON CONFLICT (id) DO NOTHING;
+
+-- =============================================
+-- 3. СОЗДАНИЕ ТЕХНИК
+-- =============================================
+INSERT INTO techniques (id, title, description, audio_url, cover_image, duration_seconds, status, order_num, available_from_module, purchase_url, is_standalone)
+VALUES
+  -- Техники для Модуля 1
+  (
+    '11111111-1111-1111-1111-111111111111',
+    'Дыхательная практика',
+    'Базовая техника осознанного дыхания для расслабления',
+    '/audio/breathing.mp3',
+    '/mock-library-card-image.png',
+    600,
+    'locked',
+    1,
+    'Модуль 1: Основы',
+    FALSE
+    NULL,
+    FALSE
+  ),
+  (
+    '22222222-2222-2222-2222-222222222222',
+    'Сканирование тела',
+    'Практика осознанного сканирования ощущений в теле',
+    '/audio/bodyscan.mp3',
+    '/mock-library-card-image.png',
+    900,
+    'locked',
+    2,
+    'Модуль 1: Основы',
+    FALSE
+    NULL
+  ),
+  (
+    '33333333-3333-3333-3333-333333333333',
+    'Заземление',
+    'Техника для возвращения в настоящий момент',
+    '/audio/grounding.mp3',
+    '/mock-library-card-image.png',
+    480,
+    'locked',
+    3,
+    'Модуль 1: Основы',
+    FALSE
+    NULL
+  ),
+  (
+    '44444444-4444-4444-4444-444444444444',
+    'Базовая осознанность',
+    'Введение в практику осознанности',
+    '/audio/awareness.mp3',
+    '/mock-library-card-image.png',
+    720,
+    'locked',
+    4,
+    'Модуль 1: Основы',
+    FALSE
+    NULL
+  ),
+
+  -- Техники для Модуля 2
+  (
+    '55555555-5555-5555-5555-555555555555',
+    'Медитация на дыхании',
+    'Углубленная практика медитации',
+    '/audio/meditation.mp3',
+    '/mock-library-card-image.png',
+    1200,
+    'locked',
+    5,
+    'Модуль 2: Продвинутый уровень',
+    FALSE
+    NULL
+  ),
+  (
+    '66666666-6666-6666-6666-666666666666',
+    'Визуализация',
+    'Практика управляемой визуализации',
+    '/audio/visualization.mp3',
+    '/mock-library-card-image.png',
+    1080,
+    'locked',
+    6,
+    'Модуль 2: Продвинутый уровень',
+    FALSE
+    NULL
+  ),
+  (
+    '77777777-7777-7777-7777-777777777777',
+    'Работа с эмоциями',
+    'Техника распознавания и принятия эмоций',
+    '/audio/emotions.mp3',
+    '/mock-library-card-image.png',
+    960,
+    'locked',
+    7,
+    'Модуль 2: Продвинутый уровень',
+    FALSE
+    NULL
+  ),
+  (
+    '88888888-8888-8888-8888-888888888888',
+    'Осознанная ходьба',
+    'Практика осознанности в движении',
+    '/audio/mindfulness.mp3',
+    '/mock-library-card-image.png',
+    840,
+    'locked',
+    8,
+    'Модуль 2: Продвинутый уровень',
+    FALSE
+    NULL
+  ),
+
+  -- Техники для Модуля 3
+  (
+    '99999999-9999-9999-9999-999999999999',
+    'Глубокая релаксация',
+    'Продвинутая техника полного расслабления',
+    '/audio/deeprelax.mp3',
+    '/mock-library-card-image.png',
+    1500,
+    'locked',
+    9,
+    'Модуль 3: Мастерство',
+    FALSE
+    NULL
+  ),
+  (
+    'aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa',
+    'Метапознание',
+    'Наблюдение за процессом мышления',
+    '/audio/metacognition.mp3',
+    '/mock-library-card-image.png',
+    1320,
+    'locked',
+    10,
+    'Модуль 3: Мастерство',
+    FALSE
+    NULL
+  ),
+  (
+    'bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb',
+    'Интеграция практики',
+    'Объединение всех освоенных техник',
+    '/audio/integration.mp3',
+    '/mock-library-card-image.png',
+    1800,
+    'locked',
+    11,
+    'Модуль 3: Мастерство',
+    FALSE
+    NULL
+  ),
+  (
+    'cccccccc-cccc-cccc-cccc-cccccccccccc',
+    'Мастерская практика',
+    'Самостоятельная практика для мастеров',
+    '/audio/mastery.mp3',
+    '/mock-library-card-image.png',
+    2400,
+    'locked',
+    12,
+    'Модуль 3: Мастерство',
+    FALSE
+    NULL
+  ),
+
+  -- Техники для Модуля 4: Женские архетипы (доступны всем купившим любой тариф)
+  (
+    'ffffffff-ffff-ffff-ffff-ffffffffffff',
+    'Императрица',
+    'Первая практика из серии женских архетипов. Помогает раскрыть внутреннюю силу и уверенность.',
+    '/audio/empress.mp3',
+    '/mock-library-card-image.png',
+    1200,
+    'locked',
+    13,
+    'Модуль 4: Женские архетипы',
+    FALSE
+    NULL
+  ),
+  (
+    'aaaaffff-ffff-ffff-ffff-ffffffffffff',
+    'Верховная жрица',
+    'Вторая практика. Развивает интуицию и связь с внутренней мудростью.',
+    '/audio/priestess.mp3',
+    '/mock-library-card-image.png',
+    1500,
+    'locked',
+    14,
+    'Модуль 4: Женские архетипы',
+    FALSE
+    NULL
+  ),
+  (
+    'bbbbffff-ffff-ffff-ffff-ffffffffffff',
+    'Богиня',
+    'Третья, финальная практика. Полная интеграция женских архетипов.',
+    '/audio/goddess.mp3',
+    '/mock-library-card-image.png',
+    1800,
+    'locked',
+    15,
+    'Модуль 4: Женские архетипы',
+    FALSE
+    NULL
+  ),
+
+  -- Бесплатные практики (доступны всем пользователям без покупки)
+  (
+    'dddddddd-dddd-dddd-dddd-dddddddddddd',
+    'Практика для сна',
+    'Бесплатная практика для улучшения качества сна. Доступна всем пользователям.',
+    '/audio/sleep.mp3',
+    '/mock-library-card-image.png',
+    1800,
+    'free',
+    100,
+    NULL,
+    NULL
+  ),
+  (
+    'eeeeeeee-eeee-eeee-eeee-eeeeeeeeeeee',
+    'Антистресс экспресс',
+    'Бесплатная быстрая техника снятия стресса. Доступна всем пользователям.',
+    '/audio/stress.mp3',
+    '/mock-library-card-image.png',
+    600,
+    'free',
+    101,
+    NULL,
+    NULL
+  )
+ON CONFLICT (id) DO NOTHING;
+
+-- =============================================
+-- 4. НАСТРОЙКА ТАРИФА T1 (Базовый)
+-- =============================================
+-- Тариф T1: только Модуль 1, доступ 30 дней
+DO $$
+DECLARE
+  v_stream_tariff_id UUID;
+  v_tariff_stream_module_id UUID;
+  v_tariff_id UUID;
+BEGIN
+  -- Найти тариф T1
+  SELECT id INTO v_tariff_id FROM tariffs WHERE code = 'T1' LIMIT 1;
+
+  IF v_tariff_id IS NOT NULL THEN
+    -- Получить или создать stream_tariff
+    SELECT id INTO v_stream_tariff_id
+    FROM stream_tariffs
+    WHERE stream_id = 'f47ac10b-58cc-4372-a567-0e02b2c3d479'
+      AND tariff_id = v_tariff_id;
+
+    IF v_stream_tariff_id IS NULL THEN
+      INSERT INTO stream_tariffs (stream_id, tariff_id)
+      VALUES ('f47ac10b-58cc-4372-a567-0e02b2c3d479', v_tariff_id)
+      RETURNING id INTO v_stream_tariff_id;
+    END IF;
+
+    -- Добавить Модуль 1 (Основы) с доступом на 30 дней
+    INSERT INTO tariff_stream_modules (stream_tariff_id, stream_module_id, access_duration_days, order_num)
+    VALUES (v_stream_tariff_id, '11111111-1111-1111-1111-111111111111', 30, 1)
+    ON CONFLICT DO NOTHING
+    RETURNING id INTO v_tariff_stream_module_id;
+
+    -- Если модуль уже был добавлен, получить его ID
+    IF v_tariff_stream_module_id IS NULL THEN
+      SELECT id INTO v_tariff_stream_module_id
+      FROM tariff_stream_modules
+      WHERE stream_tariff_id = v_stream_tariff_id
+        AND stream_module_id = '11111111-1111-1111-1111-111111111111';
+    END IF;
+
+    -- Добавить техники в модуль (только первые 2 техники, доступны сразу)
+    INSERT INTO tariff_module_techniques (tariff_stream_module_id, technique_id, unlock_offset_days, order_num)
+    VALUES
+      (v_tariff_stream_module_id, '11111111-1111-1111-1111-111111111111', 0, 1),
+      (v_tariff_stream_module_id, '22222222-2222-2222-2222-222222222222', 0, 2)
+    ON CONFLICT DO NOTHING;
+
+    -- Добавить Модуль 4 (Женские архетипы) - бессрочный доступ, доступен для всех тарифов
+    INSERT INTO tariff_stream_modules (stream_tariff_id, stream_module_id, access_duration_days, order_num)
+    VALUES (v_stream_tariff_id, '44444444-aaaa-aaaa-aaaa-444444444444', NULL, 2)
+    ON CONFLICT DO NOTHING
+    RETURNING id INTO v_tariff_stream_module_id;
+
+    IF v_tariff_stream_module_id IS NULL THEN
+      SELECT id INTO v_tariff_stream_module_id
+      FROM tariff_stream_modules
+      WHERE stream_tariff_id = v_stream_tariff_id
+        AND stream_module_id = '44444444-aaaa-aaaa-aaaa-444444444444';
+    END IF;
+
+    -- Добавить техники Женских архетипов (все 3 техники, открываются постепенно)
+    INSERT INTO tariff_module_techniques (tariff_stream_module_id, technique_id, unlock_offset_days, order_num)
+    VALUES
+      (v_tariff_stream_module_id, 'ffffffff-ffff-ffff-ffff-ffffffffffff', 0, 1),   -- Императрица - сразу
+      (v_tariff_stream_module_id, 'aaaaffff-ffff-ffff-ffff-ffffffffffff', 30, 2),  -- Жрица - через 30 дней
+      (v_tariff_stream_module_id, 'bbbbffff-ffff-ffff-ffff-ffffffffffff', 60, 3)   -- Богиня - через 60 дней
+    ON CONFLICT DO NOTHING;
+  END IF;
+END $$;
+
+-- =============================================
+-- 5. НАСТРОЙКА ТАРИФА T2 (Стандарт)
+-- =============================================
+-- Тариф T2: Модуль 1 (бессрочно) + Модуль 2 (60 дней)
+DO $$
+DECLARE
+  v_stream_tariff_id UUID;
+  v_module1_id UUID;
+  v_module2_id UUID;
+  v_tariff_id UUID;
+BEGIN
+  SELECT id INTO v_tariff_id FROM tariffs WHERE code = 'T2' LIMIT 1;
+
+  IF v_tariff_id IS NOT NULL THEN
+    SELECT id INTO v_stream_tariff_id
+    FROM stream_tariffs
+    WHERE stream_id = 'f47ac10b-58cc-4372-a567-0e02b2c3d479'
+      AND tariff_id = v_tariff_id;
+
+    IF v_stream_tariff_id IS NULL THEN
+      INSERT INTO stream_tariffs (stream_id, tariff_id)
+      VALUES ('f47ac10b-58cc-4372-a567-0e02b2c3d479', v_tariff_id)
+      RETURNING id INTO v_stream_tariff_id;
+    END IF;
+
+    -- Модуль 1: бессрочный доступ
+    INSERT INTO tariff_stream_modules (stream_tariff_id, stream_module_id, access_duration_days, order_num)
+    VALUES (v_stream_tariff_id, '11111111-1111-1111-1111-111111111111', NULL, 1)
+    ON CONFLICT DO NOTHING
+    RETURNING id INTO v_module1_id;
+
+    IF v_module1_id IS NULL THEN
+      SELECT id INTO v_module1_id
+      FROM tariff_stream_modules
+      WHERE stream_tariff_id = v_stream_tariff_id
+        AND stream_module_id = '11111111-1111-1111-1111-111111111111';
+    END IF;
+
+    -- Техники модуля 1 (все 4 техники)
+    INSERT INTO tariff_module_techniques (tariff_stream_module_id, technique_id, unlock_offset_days, order_num)
+    VALUES
+      (v_module1_id, '11111111-1111-1111-1111-111111111111', 0, 1),
+      (v_module1_id, '22222222-2222-2222-2222-222222222222', 0, 2),
+      (v_module1_id, '33333333-3333-3333-3333-333333333333', 7, 3),  -- Открывается через 7 дней
+      (v_module1_id, '44444444-4444-4444-4444-444444444444', 14, 4)  -- Открывается через 14 дней
+    ON CONFLICT DO NOTHING;
+
+    -- Модуль 2: доступ на 60 дней
+    INSERT INTO tariff_stream_modules (stream_tariff_id, stream_module_id, access_duration_days, order_num)
+    VALUES (v_stream_tariff_id, '22222222-2222-2222-2222-222222222222', 60, 2)
+    ON CONFLICT DO NOTHING
+    RETURNING id INTO v_module2_id;
+
+    IF v_module2_id IS NULL THEN
+      SELECT id INTO v_module2_id
+      FROM tariff_stream_modules
+      WHERE stream_tariff_id = v_stream_tariff_id
+        AND stream_module_id = '22222222-2222-2222-2222-222222222222';
+    END IF;
+
+    -- Техники модуля 2 (только первые 2)
+    INSERT INTO tariff_module_techniques (tariff_stream_module_id, technique_id, unlock_offset_days, order_num)
+    VALUES
+      (v_module2_id, '55555555-5555-5555-5555-555555555555', 0, 1),
+      (v_module2_id, '66666666-6666-6666-6666-666666666666', 7, 2)
+    ON CONFLICT DO NOTHING;
+
+    -- Добавить Модуль 4 (Женские архетипы) - бессрочный доступ
+    DECLARE v_module4_id UUID;
+    BEGIN
+      INSERT INTO tariff_stream_modules (stream_tariff_id, stream_module_id, access_duration_days, order_num)
+      VALUES (v_stream_tariff_id, '44444444-aaaa-aaaa-aaaa-444444444444', NULL, 3)
+      ON CONFLICT DO NOTHING
+      RETURNING id INTO v_module4_id;
+
+      IF v_module4_id IS NULL THEN
+        SELECT id INTO v_module4_id
+        FROM tariff_stream_modules
+        WHERE stream_tariff_id = v_stream_tariff_id
+          AND stream_module_id = '44444444-aaaa-aaaa-aaaa-444444444444';
+      END IF;
+
+      -- Добавить техники Женских архетипов
+      INSERT INTO tariff_module_techniques (tariff_stream_module_id, technique_id, unlock_offset_days, order_num)
+      VALUES
+        (v_module4_id, 'ffffffff-ffff-ffff-ffff-ffffffffffff', 0, 1),   -- Императрица - сразу
+        (v_module4_id, 'aaaaffff-ffff-ffff-ffff-ffffffffffff', 30, 2),  -- Жрица - через 30 дней
+        (v_module4_id, 'bbbbffff-ffff-ffff-ffff-ffffffffffff', 60, 3)   -- Богиня - через 60 дней
+      ON CONFLICT DO NOTHING;
+    END;
+  END IF;
+END $$;
+
+-- =============================================
+-- 6. НАСТРОЙКА ТАРИФА T3 (Премиум)
+-- =============================================
+-- Тариф T3: Все 3 модуля, Модуль 1 и 2 бессрочно, Модуль 3 на 90 дней
+DO $$
+DECLARE
+  v_stream_tariff_id UUID;
+  v_module1_id UUID;
+  v_module2_id UUID;
+  v_module3_id UUID;
+  v_tariff_id UUID;
+BEGIN
+  SELECT id INTO v_tariff_id FROM tariffs WHERE code = 'T3' LIMIT 1;
+
+  IF v_tariff_id IS NOT NULL THEN
+    SELECT id INTO v_stream_tariff_id
+    FROM stream_tariffs
+    WHERE stream_id = 'f47ac10b-58cc-4372-a567-0e02b2c3d479'
+      AND tariff_id = v_tariff_id;
+
+    IF v_stream_tariff_id IS NULL THEN
+      INSERT INTO stream_tariffs (stream_id, tariff_id)
+      VALUES ('f47ac10b-58cc-4372-a567-0e02b2c3d479', v_tariff_id)
+      RETURNING id INTO v_stream_tariff_id;
+    END IF;
+
+    -- Модуль 1: бессрочно
+    INSERT INTO tariff_stream_modules (stream_tariff_id, stream_module_id, access_duration_days, order_num)
+    VALUES (v_stream_tariff_id, '11111111-1111-1111-1111-111111111111', NULL, 1)
+    ON CONFLICT DO NOTHING
+    RETURNING id INTO v_module1_id;
+
+    IF v_module1_id IS NULL THEN
+      SELECT id INTO v_module1_id
+      FROM tariff_stream_modules
+      WHERE stream_tariff_id = v_stream_tariff_id
+        AND stream_module_id = '11111111-1111-1111-1111-111111111111';
+    END IF;
+
+    INSERT INTO tariff_module_techniques (tariff_stream_module_id, technique_id, unlock_offset_days, order_num)
+    VALUES
+      (v_module1_id, '11111111-1111-1111-1111-111111111111', 0, 1),
+      (v_module1_id, '22222222-2222-2222-2222-222222222222', 0, 2),
+      (v_module1_id, '33333333-3333-3333-3333-333333333333', 0, 3),
+      (v_module1_id, '44444444-4444-4444-4444-444444444444', 7, 4)
+    ON CONFLICT DO NOTHING;
+
+    -- Модуль 2: бессрочно
+    INSERT INTO tariff_stream_modules (stream_tariff_id, stream_module_id, access_duration_days, order_num)
+    VALUES (v_stream_tariff_id, '22222222-2222-2222-2222-222222222222', NULL, 2)
+    ON CONFLICT DO NOTHING
+    RETURNING id INTO v_module2_id;
+
+    IF v_module2_id IS NULL THEN
+      SELECT id INTO v_module2_id
+      FROM tariff_stream_modules
+      WHERE stream_tariff_id = v_stream_tariff_id
+        AND stream_module_id = '22222222-2222-2222-2222-222222222222';
+    END IF;
+
+    INSERT INTO tariff_module_techniques (tariff_stream_module_id, technique_id, unlock_offset_days, order_num)
+    VALUES
+      (v_module2_id, '55555555-5555-5555-5555-555555555555', 0, 1),
+      (v_module2_id, '66666666-6666-6666-6666-666666666666', 0, 2),
+      (v_module2_id, '77777777-7777-7777-7777-777777777777', 7, 3),
+      (v_module2_id, '88888888-8888-8888-8888-888888888888', 14, 4)
+    ON CONFLICT DO NOTHING;
+
+    -- Модуль 3: доступ на 90 дней
+    INSERT INTO tariff_stream_modules (stream_tariff_id, stream_module_id, access_duration_days, order_num)
+    VALUES (v_stream_tariff_id, '33333333-3333-3333-3333-333333333333', 90, 3)
+    ON CONFLICT DO NOTHING
+    RETURNING id INTO v_module3_id;
+
+    IF v_module3_id IS NULL THEN
+      SELECT id INTO v_module3_id
+      FROM tariff_stream_modules
+      WHERE stream_tariff_id = v_stream_tariff_id
+        AND stream_module_id = '33333333-3333-3333-3333-333333333333';
+    END IF;
+
+    INSERT INTO tariff_module_techniques (tariff_stream_module_id, technique_id, unlock_offset_days, order_num)
+    VALUES
+      (v_module3_id, '99999999-9999-9999-9999-999999999999', 0, 1),
+      (v_module3_id, 'aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa', 7, 2)
+    ON CONFLICT DO NOTHING;
+
+    -- Добавить Модуль 4 (Женские архетипы) - бессрочный доступ
+    DECLARE v_module4_id UUID;
+    BEGIN
+      INSERT INTO tariff_stream_modules (stream_tariff_id, stream_module_id, access_duration_days, order_num)
+      VALUES (v_stream_tariff_id, '44444444-aaaa-aaaa-aaaa-444444444444', NULL, 4)
+      ON CONFLICT DO NOTHING
+      RETURNING id INTO v_module4_id;
+
+      IF v_module4_id IS NULL THEN
+        SELECT id INTO v_module4_id
+        FROM tariff_stream_modules
+        WHERE stream_tariff_id = v_stream_tariff_id
+          AND stream_module_id = '44444444-aaaa-aaaa-aaaa-444444444444';
+      END IF;
+
+      INSERT INTO tariff_module_techniques (tariff_stream_module_id, technique_id, unlock_offset_days, order_num)
+      VALUES
+        (v_module4_id, 'ffffffff-ffff-ffff-ffff-ffffffffffff', 0, 1),   -- Императрица - сразу
+        (v_module4_id, 'aaaaffff-ffff-ffff-ffff-ffffffffffff', 30, 2),  -- Жрица - через 30 дней
+        (v_module4_id, 'bbbbffff-ffff-ffff-ffff-ffffffffffff', 60, 3)   -- Богиня - через 60 дней
+      ON CONFLICT DO NOTHING;
+    END;
+  END IF;
+END $$;
+
+-- =============================================
+-- 7. НАСТРОЙКА ТАРИФА T4 (VIP)
+-- =============================================
+-- Тариф T4: Все 3 модуля бессрочно, все техники доступны сразу
+DO $$
+DECLARE
+  v_stream_tariff_id UUID;
+  v_module1_id UUID;
+  v_module2_id UUID;
+  v_module3_id UUID;
+  v_tariff_id UUID;
+BEGIN
+  SELECT id INTO v_tariff_id FROM tariffs WHERE code = 'T4' LIMIT 1;
+
+  IF v_tariff_id IS NOT NULL THEN
+    SELECT id INTO v_stream_tariff_id
+    FROM stream_tariffs
+    WHERE stream_id = 'f47ac10b-58cc-4372-a567-0e02b2c3d479'
+      AND tariff_id = v_tariff_id;
+
+    IF v_stream_tariff_id IS NULL THEN
+      INSERT INTO stream_tariffs (stream_id, tariff_id)
+      VALUES ('f47ac10b-58cc-4372-a567-0e02b2c3d479', v_tariff_id)
+      RETURNING id INTO v_stream_tariff_id;
+    END IF;
+
+    -- Модуль 1: бессрочно
+    INSERT INTO tariff_stream_modules (stream_tariff_id, stream_module_id, access_duration_days, order_num)
+    VALUES (v_stream_tariff_id, '11111111-1111-1111-1111-111111111111', NULL, 1)
+    ON CONFLICT DO NOTHING
+    RETURNING id INTO v_module1_id;
+
+    IF v_module1_id IS NULL THEN
+      SELECT id INTO v_module1_id
+      FROM tariff_stream_modules
+      WHERE stream_tariff_id = v_stream_tariff_id
+        AND stream_module_id = '11111111-1111-1111-1111-111111111111';
+    END IF;
+
+    INSERT INTO tariff_module_techniques (tariff_stream_module_id, technique_id, unlock_offset_days, order_num)
+    VALUES
+      (v_module1_id, '11111111-1111-1111-1111-111111111111', 0, 1),
+      (v_module1_id, '22222222-2222-2222-2222-222222222222', 0, 2),
+      (v_module1_id, '33333333-3333-3333-3333-333333333333', 0, 3),
+      (v_module1_id, '44444444-4444-4444-4444-444444444444', 0, 4)
+    ON CONFLICT DO NOTHING;
+
+    -- Модуль 2: бессрочно
+    INSERT INTO tariff_stream_modules (stream_tariff_id, stream_module_id, access_duration_days, order_num)
+    VALUES (v_stream_tariff_id, '22222222-2222-2222-2222-222222222222', NULL, 2)
+    ON CONFLICT DO NOTHING
+    RETURNING id INTO v_module2_id;
+
+    IF v_module2_id IS NULL THEN
+      SELECT id INTO v_module2_id
+      FROM tariff_stream_modules
+      WHERE stream_tariff_id = v_stream_tariff_id
+        AND stream_module_id = '22222222-2222-2222-2222-222222222222';
+    END IF;
+
+    INSERT INTO tariff_module_techniques (tariff_stream_module_id, technique_id, unlock_offset_days, order_num)
+    VALUES
+      (v_module2_id, '55555555-5555-5555-5555-555555555555', 0, 1),
+      (v_module2_id, '66666666-6666-6666-6666-666666666666', 0, 2),
+      (v_module2_id, '77777777-7777-7777-7777-777777777777', 0, 3),
+      (v_module2_id, '88888888-8888-8888-8888-888888888888', 0, 4)
+    ON CONFLICT DO NOTHING;
+
+    -- Модуль 3: бессрочно
+    INSERT INTO tariff_stream_modules (stream_tariff_id, stream_module_id, access_duration_days, order_num)
+    VALUES (v_stream_tariff_id, '33333333-3333-3333-3333-333333333333', NULL, 3)
+    ON CONFLICT DO NOTHING
+    RETURNING id INTO v_module3_id;
+
+    IF v_module3_id IS NULL THEN
+      SELECT id INTO v_module3_id
+      FROM tariff_stream_modules
+      WHERE stream_tariff_id = v_stream_tariff_id
+        AND stream_module_id = '33333333-3333-3333-3333-333333333333';
+    END IF;
+
+    INSERT INTO tariff_module_techniques (tariff_stream_module_id, technique_id, unlock_offset_days, order_num)
+    VALUES
+      (v_module3_id, '99999999-9999-9999-9999-999999999999', 0, 1),
+      (v_module3_id, 'aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa', 0, 2),
+      (v_module3_id, 'bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb', 0, 3),
+      (v_module3_id, 'cccccccc-cccc-cccc-cccc-cccccccccccc', 0, 4)
+    ON CONFLICT DO NOTHING;
+
+    -- Добавить Модуль 4 (Женские архетипы) - бессрочный доступ, все техники сразу
+    DECLARE v_module4_id UUID;
+    BEGIN
+      INSERT INTO tariff_stream_modules (stream_tariff_id, stream_module_id, access_duration_days, order_num)
+      VALUES (v_stream_tariff_id, '44444444-aaaa-aaaa-aaaa-444444444444', NULL, 4)
+      ON CONFLICT DO NOTHING
+      RETURNING id INTO v_module4_id;
+
+      IF v_module4_id IS NULL THEN
+        SELECT id INTO v_module4_id
+        FROM tariff_stream_modules
+        WHERE stream_tariff_id = v_stream_tariff_id
+          AND stream_module_id = '44444444-aaaa-aaaa-aaaa-444444444444';
+      END IF;
+
+      -- Для VIP тарифа все техники Женских архетипов доступны сразу
+      INSERT INTO tariff_module_techniques (tariff_stream_module_id, technique_id, unlock_offset_days, order_num)
+      VALUES
+        (v_module4_id, 'ffffffff-ffff-ffff-ffff-ffffffffffff', 0, 1),  -- Императрица - сразу
+        (v_module4_id, 'aaaaffff-ffff-ffff-ffff-ffffffffffff', 0, 2),  -- Жрица - сразу
+        (v_module4_id, 'bbbbffff-ffff-ffff-ffff-ffffffffffff', 0, 3)   -- Богиня - сразу
+      ON CONFLICT DO NOTHING;
+    END;
+  END IF;
+END $$;
+
+-- =============================================
+-- ИТОГОВАЯ КОНФИГУРАЦИЯ:
+-- =============================================
+--
+-- ТАРИФ T1 (Базовый):
+--   • Модуль 1 (30 дней)
+--     - Дыхательная практика (сразу)
+--     - Сканирование тела (сразу)
+--   • Модуль 4: Женские архетипы (бессрочно)
+--     - Императрица (сразу)
+--     - Верховная жрица (через 30 дней)
+--     - Богиня (через 60 дней)
+--
+-- ТАРИФ T2 (Стандарт):
+--   • Модуль 1 (бессрочно)
+--     - Дыхательная практика (сразу)
+--     - Сканирование тела (сразу)
+--     - Заземление (через 7 дней)
+--     - Базовая осознанность (через 14 дней)
+--   • Модуль 2 (60 дней)
+--     - Медитация на дыхании (сразу)
+--     - Визуализация (через 7 дней)
+--   • Модуль 4: Женские архетипы (бессрочно)
+--     - Императрица (сразу)
+--     - Верховная жрица (через 30 дней)
+--     - Богиня (через 60 дней)
+--
+-- ТАРИФ T3 (Премиум):
+--   • Модуль 1 (бессрочно)
+--     - Все 4 техники (3 сразу, 1 через 7 дней)
+--   • Модуль 2 (бессрочно)
+--     - Все 4 техники (2 сразу, через 7 и 14 дней)
+--   • Модуль 3 (90 дней)
+--     - Глубокая релаксация (сразу)
+--     - Метапознание (через 7 дней)
+--   • Модуль 4: Женские архетипы (бессрочно)
+--     - Императрица (сразу)
+--     - Верховная жрица (через 30 дней)
+--     - Богиня (через 60 дней)
+--
+-- ТАРИФ T4 (VIP):
+--   • Модуль 1 (бессрочно) - все 4 техники сразу
+--   • Модуль 2 (бессрочно) - все 4 техники сразу
+--   • Модуль 3 (бессрочно) - все 4 техники сразу
+--   • Модуль 4: Женские архетипы (бессрочно) - все 3 техники сразу
+--
+-- БЕСПЛАТНЫЕ ТЕХНИКИ (доступны ВСЕМ пользователям):
+--   • Практика для сна
+--   • Антистресс экспресс
+-- =============================================

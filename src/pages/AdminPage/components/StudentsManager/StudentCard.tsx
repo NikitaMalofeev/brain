@@ -7,6 +7,15 @@ import { useCuratorsAdmin } from '@/lib/supabase/hooks/useCuratorsAdmin';
 import { validateCuratorPassword, validateLoginFormat } from '@/helpers/validationHelpers';
 import { CURATOR_PASSWORD_CONFIG } from '@/lib/config/constants';
 import { supabase } from '@/lib/supabase/client';
+import { useStreams } from '@/lib/supabase/hooks/useTariffConfiguration';
+import {
+    useStudentStream,
+    useStudentTariff,
+    useAssignStudentToStream,
+    useAssignStudentTariff,
+    useRemoveStudentFromStream,
+    useRemoveStudentTariff
+} from '@/lib/supabase/hooks/useStudentStreamAndTariff';
 
 interface StudentCardProps {
     studentId: string;
@@ -23,6 +32,15 @@ const StudentCard: React.FC<StudentCardProps> = ({ studentId, onBack, currentUse
     const { tariffs, loading: tariffsLoading } = useTariffsAdmin();
     const { courses, loading: coursesLoading } = useCoursesAdmin();
     const { promoteToCurator, isPromoting } = useCuratorsAdmin();
+
+    // Новая система: потоки и тарифы
+    const { data: streams, isLoading: streamsLoading } = useStreams();
+    const { data: studentStream } = useStudentStream(studentId);
+    const { data: studentTariff } = useStudentTariff(studentId);
+    const assignToStreamMutation = useAssignStudentToStream();
+    const assignTariffMutation = useAssignStudentTariff();
+    const removeFromStreamMutation = useRemoveStudentFromStream();
+    const removeTariffMutation = useRemoveStudentTariff();
 
     // Cостояние для модального окна назначения куратором
     const [isPromoteModalOpen, setIsPromoteModalOpen] = useState(false);
@@ -42,8 +60,11 @@ const StudentCard: React.FC<StudentCardProps> = ({ studentId, onBack, currentUse
     // Состояние для выбранного тарифа
     const [selectedTariffId, setSelectedTariffId] = useState<string>('');
 
-    // Состояние для выбранного курса
+    // Состояние для выбранного курса (старая система, оставляем для совместимости)
     const [selectedCourseId, setSelectedCourseId] = useState<string>('');
+
+    // Состояние для выбранного потока (новая система)
+    const [selectedStreamId, setSelectedStreamId] = useState<string>('');
 
     // Состояние для выбранной роли
     const [selectedRole, setSelectedRole] = useState<string>('');
@@ -90,6 +111,15 @@ const StudentCard: React.FC<StudentCardProps> = ({ studentId, onBack, currentUse
             setSelectedRole(studentDetails.basicInfo.role);
         }
     }, [studentDetails?.basicInfo.role]);
+
+    // Синхронизируем выбранный поток с данными студента (новая система)
+    useEffect(() => {
+        if (studentStream?.stream_id) {
+            setSelectedStreamId(studentStream.stream_id);
+        } else {
+            setSelectedStreamId('');
+        }
+    }, [studentStream]);
 
     const formatDate = (dateString?: string | null) => {
         if (!dateString) return '—';
@@ -144,6 +174,40 @@ const StudentCard: React.FC<StudentCardProps> = ({ studentId, onBack, currentUse
         } catch (error) {
             console.error('Ошибка при назначении курса:', error);
             alert('Ошибка при назначении курса');
+        }
+    };
+
+    // Новая система: назначить студента в поток
+    const handleAssignStream = async () => {
+        if (!selectedStreamId) {
+            alert('Выберите поток');
+            return;
+        }
+
+        try {
+            await assignToStreamMutation.mutateAsync({
+                userId: studentId,
+                streamId: selectedStreamId,
+            });
+            alert('Поток успешно назначен');
+        } catch (error) {
+            console.error('Ошибка при назначении потока:', error);
+            alert('Ошибка при назначении потока');
+        }
+    };
+
+    // Новая система: удалить студента из потока
+    const handleRemoveStream = async () => {
+        if (!window.confirm('Вы уверены, что хотите удалить студента из потока?')) {
+            return;
+        }
+
+        try {
+            await removeFromStreamMutation.mutateAsync(studentId);
+            alert('Студент удален из потока');
+        } catch (error) {
+            console.error('Ошибка при удалении из потока:', error);
+            alert('Ошибка при удалении из потока');
         }
     };
 
@@ -615,38 +679,38 @@ const StudentCard: React.FC<StudentCardProps> = ({ studentId, onBack, currentUse
                         </button>
                     </div>
                 </div>
-                {/* Выбор курса пользователя */}
+                {/* НОВАЯ СИСТЕМА: Выбор потока */}
                 <div className="form-group">
-                    <label style={{ fontSize: '14px', fontWeight: '600', marginBottom: '8px', display: 'block' }}>Доступ к курсу:</label>
+                    <label style={{ fontSize: '14px', fontWeight: '600', marginBottom: '8px', display: 'block' }}>Поток обучения:</label>
                     <div style={{ display: 'flex', gap: '12px', alignItems: 'flex-start' }}>
                         <div style={{ flex: 1 }}>
                             <select
                                 className="admin-input"
-                                style={{ 
-                                    fontSize: '14px', 
-                                    padding: '8px 12px', 
+                                style={{
+                                    fontSize: '14px',
+                                    padding: '8px 12px',
                                     height: '36px',
                                     minWidth: '200px'
                                 }}
-                                value={selectedCourseId}
-                                onChange={(e) => setSelectedCourseId(e.target.value)}
-                                disabled={coursesLoading || loading}
+                                value={selectedStreamId}
+                                onChange={(e) => setSelectedStreamId(e.target.value)}
+                                disabled={streamsLoading || assignToStreamMutation.isPending}
                             >
-                                <option value="">-- Выберите курс --</option>
-                                {courses.map(course => (
-                                    <option key={course.id} value={course.id}>
-                                        {course.title}
+                                <option value="">-- Выберите поток --</option>
+                                {streams?.map(stream => (
+                                    <option key={stream.id} value={stream.id}>
+                                        {stream.name}
                                     </option>
                                 ))}
                             </select>
-                            {studentDetails.courses?.find(c => c.is_active) && (
-                                <small style={{ 
-                                    display: 'block', 
-                                    marginTop: '4px', 
+                            {studentStream?.streams && (
+                                <small style={{
+                                    display: 'block',
+                                    marginTop: '4px',
                                     color: '#666',
                                     fontSize: '12px'
                                 }}>
-                                    Активный курс: {studentDetails.courses.find(c => c.is_active)?.course_title}
+                                    Текущий поток: {(studentStream.streams as any).name}
                                 </small>
                             )}
                         </div>
@@ -659,11 +723,28 @@ const StudentCard: React.FC<StudentCardProps> = ({ studentId, onBack, currentUse
                                 minWidth: '100px',
                                 flexShrink: 0
                             }}
-                            onClick={handleAssignCourse}
-                            disabled={loading || !selectedCourseId}
+                            onClick={handleAssignStream}
+                            disabled={assignToStreamMutation.isPending || !selectedStreamId}
                         >
-                            {loading ? 'Назначение...' : 'Назначить'}
+                            {assignToStreamMutation.isPending ? 'Назначение...' : 'Назначить'}
                         </button>
+                        {studentStream && (
+                            <button
+                                className="admin-button"
+                                style={{
+                                    fontSize: '14px',
+                                    padding: '8px 16px',
+                                    height: '36px',
+                                    minWidth: '100px',
+                                    flexShrink: 0,
+                                    backgroundColor: '#dc3545'
+                                }}
+                                onClick={handleRemoveStream}
+                                disabled={removeFromStreamMutation.isPending}
+                            >
+                                {removeFromStreamMutation.isPending ? 'Удаление...' : 'Удалить'}
+                            </button>
+                        )}
                     </div>
                 </div>
 

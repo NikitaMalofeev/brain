@@ -25,6 +25,7 @@ interface TechniqueFormData {
   unlock_condition_technique_id: string;
   unlock_condition_duration_days: number;
   order_num: number;
+  is_standalone: boolean; // НОВОЕ ПОЛЕ
 }
 
 const initialFormData: TechniqueFormData = {
@@ -41,6 +42,7 @@ const initialFormData: TechniqueFormData = {
   unlock_condition_technique_id: '',
   unlock_condition_duration_days: 30,
   order_num: 0,
+  is_standalone: false, // По умолчанию не standalone
 };
 
 const TechniqueEditor: React.FC<TechniqueEditorProps> = ({
@@ -112,6 +114,7 @@ const TechniqueEditor: React.FC<TechniqueEditorProps> = ({
         unlock_condition_duration_days:
           technique.unlock_condition_value?.duration_days || 30,
         order_num: technique.order_num || 0,
+        is_standalone: technique.is_standalone || false, // Загрузить is_standalone
       });
     }
   }, [technique]);
@@ -153,6 +156,7 @@ const TechniqueEditor: React.FC<TechniqueEditorProps> = ({
                 duration_days: formData.unlock_condition_duration_days,
               }
             : null,
+        is_standalone: formData.is_standalone, // Сохранить is_standalone
       };
 
       if (techniqueId) {
@@ -321,6 +325,20 @@ const TechniqueEditor: React.FC<TechniqueEditorProps> = ({
             <option value="purchasable">К покупке</option>
             <option value="locked">Заблокирована (по условию)</option>
           </select>
+        </div>
+
+        {/* Standalone техника */}
+        <div className="flex items-center gap-3 p-4 bg-blue-50 rounded-lg border border-blue-200">
+          <input
+            type="checkbox"
+            id="is_standalone"
+            checked={formData.is_standalone}
+            onChange={(e) => handleChange('is_standalone', e.target.checked)}
+            className="w-5 h-5 text-[#B862EA] border-gray-300 rounded focus:ring-[#B862EA]"
+          />
+          <label htmlFor="is_standalone" className="text-sm font-medium text-gray-700 cursor-pointer">
+            Standalone техника (доступна к покупке отдельно, не привязана к модулям тарифов)
+          </label>
         </div>
 
         {/* URL покупки и чата */}

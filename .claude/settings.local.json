@@ -10,7 +10,8 @@
       "Bash(psql:*)",
       "Bash(supabase db reset:*)",
       "Bash(npx supabase db reset)",
-      "Bash(npm run dev:*)"
+      "Bash(npm run dev:*)",
+      "Bash(git checkout:*)"
     ],
     "deny": [],
     "ask": []

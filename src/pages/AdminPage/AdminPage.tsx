@@ -27,7 +27,7 @@ import CuratorsManager from './components/CuratorsManager/CuratorsManager';
 import ChatsManager from './components/ChatsManager/ChatsManager';
 import FaqManager from './components/FaqManager/FaqManager';
 import BroadcastsManager from './components/BroadcastsManager/BroadcastsManager';
-import TariffsManager from './components/TariffsManager/TariffsManager';
+import UnifiedTariffsManager from './components/TariffsManager/UnifiedTariffsManager';
 import TokensManager from './components/TokensManager/TokensManager';
 import { BlocksManager as BlocksManagerComponent } from './components/BlocksManager';
 import TechniquesManager from './components/TechniquesManager/TechniquesManager';
@@ -1586,7 +1586,7 @@ const AdminPage: React.FC = () => {
         </div>
 
         <div className="admin-main-content">
-          {currentTab === 'tariffs' && <TariffsManager />}
+          {currentTab === 'tariffs' && <UnifiedTariffsManager />}
           {currentTab === 'students' && <StudentsManager currentUser={adminUser} />}
           {currentTab === 'curators' && <CuratorsManager />}
           {currentTab === 'courses' && (
