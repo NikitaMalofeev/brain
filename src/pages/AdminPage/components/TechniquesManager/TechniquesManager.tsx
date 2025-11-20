@@ -2,9 +2,10 @@ import React, { useState } from 'react';
 import { supabase } from '@/lib/supabase/client';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { logger } from '@/lib/logger';
-import { Plus, Edit2, Trash2, Lock, Unlock } from 'lucide-react';
+import { Plus, Edit2, Trash2, Lock, Unlock, Layers } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import TechniqueEditor from './TechniqueEditor';
+import TechniqueBlocksManager from './TechniqueBlocksManager';
 
 interface Technique {
   id: string;
@@ -30,6 +31,7 @@ interface Technique {
 const TechniquesManager: React.FC = () => {
   const [selectedTechniqueId, setSelectedTechniqueId] = useState<string | null>(null);
   const [isCreating, setIsCreating] = useState(false);
+  const [blocksView, setBlocksView] = useState<{ techniqueId: string; title: string } | null>(null);
   const queryClient = useQueryClient();
 
   // Получить все техники
@@ -108,6 +110,14 @@ const TechniquesManager: React.FC = () => {
     setIsCreating(false);
   };
 
+  const handleManageBlocks = (techniqueId: string, title: string) => {
+    setBlocksView({ techniqueId, title });
+  };
+
+  const handleCloseBlocks = () => {
+    setBlocksView(null);
+  };
+
   const renderStatusBadge = (status: Technique['status']) => {
     const badges = {
       free: { label: 'Бесплатная', color: 'bg-green-100 text-green-800' },
@@ -132,6 +142,17 @@ const TechniquesManager: React.FC = () => {
           <p className="text-sm text-[#666]">Загрузка техник...</p>
         </div>
       </div>
+    );
+  }
+
+  // Если открыт редактор блоков
+  if (blocksView) {
+    return (
+      <TechniqueBlocksManager
+        techniqueId={blocksView.techniqueId}
+        techniqueTitle={blocksView.title}
+        onBack={handleCloseBlocks}
+      />
     );
   }
 
@@ -234,6 +255,13 @@ const TechniquesManager: React.FC = () => {
                   </td>
                   <td className="px-4 py-3 text-right">
                     <div className="flex items-center justify-end gap-2">
+                      <button
+                        onClick={() => handleManageBlocks(technique.id, technique.title)}
+                        className="p-2 text-purple-600 hover:bg-purple-50 rounded-lg transition-colors"
+                        title="Управление блоками"
+                      >
+                        <Layers className="w-4 h-4" />
+                      </button>
                       <button
                         onClick={() => handleEdit(technique.id)}
                         className="p-2 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
