@@ -2,10 +2,30 @@ import React, { useState } from 'react';
 import { supabase } from '@/lib/supabase/client';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { logger } from '@/lib/logger';
-import { Plus, Edit2, Trash2, Lock, Unlock, Layers } from 'lucide-react';
-import { Button } from '@/components/ui/button';
+import {
+  Card,
+  Button,
+  Table,
+  Space,
+  Typography,
+  Tag,
+  message,
+  Popconfirm,
+  Avatar,
+  Spin,
+} from 'antd';
+import {
+  PlusOutlined,
+  EditOutlined,
+  DeleteOutlined,
+  AppstoreOutlined,
+  LockOutlined,
+  UnlockOutlined,
+} from '@ant-design/icons';
 import TechniqueEditor from './TechniqueEditor';
 import TechniqueBlocksManager from './TechniqueBlocksManager';
+
+const { Title, Text } = Typography;
 
 interface Technique {
   id: string;
@@ -23,75 +43,44 @@ interface Technique {
   order_num: number;
 }
 
-/**
- * Админка для управления техниками (аудиопрактиками)
- * Позволяет создавать, редактировать, удалять техники
- * Настраивать условия доступа и цены
- */
 const TechniquesManager: React.FC = () => {
   const [selectedTechniqueId, setSelectedTechniqueId] = useState<string | null>(null);
   const [isCreating, setIsCreating] = useState(false);
   const [blocksView, setBlocksView] = useState<{ techniqueId: string; title: string } | null>(null);
   const queryClient = useQueryClient();
 
-  // Получить все техники
+  // Fetch techniques
   const { data: techniques, isLoading } = useQuery({
     queryKey: ['admin-techniques'],
     queryFn: async (): Promise<Technique[]> => {
-      if (!supabase) {
-        throw new Error('Supabase client not initialized');
-      }
-
-      logger.debug('Fetching techniques for admin');
-
+      if (!supabase) throw new Error('Supabase client not initialized');
       const { data, error } = await supabase
         .from('techniques')
         .select('*')
         .order('order_num', { ascending: true });
-
-      if (error) {
-        logger.error('Error fetching techniques', { error });
-        throw error;
-      }
-
-      logger.debug('Techniques fetched', { count: data?.length });
+      if (error) throw error;
       return data || [];
     },
   });
 
-  // Удалить технику
+  // Delete mutation
   const deleteTechniqueMutation = useMutation({
     mutationFn: async (techniqueId: string) => {
-      if (!supabase) {
-        throw new Error('Supabase client not initialized');
-      }
-
-      logger.debug('Deleting technique', { techniqueId });
-
+      if (!supabase) throw new Error('Supabase client not initialized');
       const { error } = await supabase.from('techniques').delete().eq('id', techniqueId);
-
-      if (error) {
-        logger.error('Error deleting technique', { techniqueId, error });
-        throw error;
-      }
-
-      logger.debug('Technique deleted', { techniqueId });
+      if (error) throw error;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['admin-techniques'] });
     },
   });
 
-  const handleDelete = async (techniqueId: string, title: string) => {
-    if (!confirm(`Вы уверены, что хотите удалить технику "${title}"?`)) {
-      return;
-    }
-
+  const handleDelete = async (techniqueId: string) => {
     try {
       await deleteTechniqueMutation.mutateAsync(techniqueId);
-      alert('Техника удалена');
-    } catch (error) {
-      alert('Ошибка при удалении техники');
+      message.success('Техника удалена');
+    } catch (error: any) {
+      message.error(error?.message || 'Ошибка при удалении');
     }
   };
 
@@ -118,34 +107,30 @@ const TechniquesManager: React.FC = () => {
     setBlocksView(null);
   };
 
-  const renderStatusBadge = (status: Technique['status']) => {
-    const badges = {
-      free: { label: 'Бесплатная', color: 'bg-green-100 text-green-800' },
-      purchasable: { label: 'К покупке', color: 'bg-blue-100 text-blue-800' },
-      locked: { label: 'Заблокирована', color: 'bg-gray-100 text-gray-800' },
+  const getStatusTag = (status: Technique['status']) => {
+    const config = {
+      free: { color: 'success', text: 'Бесплатная' },
+      purchasable: { color: 'processing', text: 'К покупке' },
+      locked: { color: 'default', text: 'Заблокирована' },
     };
-
-    const badge = badges[status];
-
-    return (
-      <span className={`px-2 py-1 rounded-full text-xs font-medium ${badge.color}`}>
-        {badge.label}
-      </span>
-    );
+    const { color, text } = config[status];
+    return <Tag color={color}>{text}</Tag>;
   };
 
   if (isLoading) {
     return (
-      <div className="flex items-center justify-center py-8">
-        <div className="text-center">
-          <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-[#B862EA] mb-2"></div>
-          <p className="text-sm text-[#666]">Загрузка техник...</p>
+      <Card>
+        <div style={{ textAlign: 'center', padding: 48 }}>
+          <Spin size="large" />
+          <div style={{ marginTop: 16 }}>
+            <Text type="secondary">Загрузка техник...</Text>
+          </div>
         </div>
-      </div>
+      </Card>
     );
   }
 
-  // Если открыт редактор блоков
+  // Blocks view
   if (blocksView) {
     return (
       <TechniqueBlocksManager
@@ -156,7 +141,7 @@ const TechniquesManager: React.FC = () => {
     );
   }
 
-  // Если открыт редактор
+  // Editor view
   if (isCreating || selectedTechniqueId) {
     return (
       <TechniqueEditor
@@ -170,131 +155,123 @@ const TechniquesManager: React.FC = () => {
     );
   }
 
+  // Table columns
+  const columns = [
+    {
+      title: '#',
+      dataIndex: 'order_num',
+      width: 60,
+      render: (num: number) => <Text type="secondary">{num}</Text>,
+    },
+    {
+      title: 'Название',
+      dataIndex: 'title',
+      render: (title: string, record: Technique) => (
+        <Space>
+          {record.cover_image && (
+            <Avatar shape="square" size={40} src={record.cover_image} />
+          )}
+          <div>
+            <Text strong>{title}</Text>
+            {record.available_from_module && (
+              <div>
+                <Text type="secondary" style={{ fontSize: 12 }}>
+                  С модуля: {record.available_from_module}
+                </Text>
+              </div>
+            )}
+          </div>
+        </Space>
+      ),
+    },
+    {
+      title: 'Статус',
+      dataIndex: 'status',
+      width: 120,
+      render: (status: Technique['status']) => getStatusTag(status),
+    },
+    {
+      title: 'Длительность',
+      dataIndex: 'duration_seconds',
+      width: 120,
+      render: (seconds: number | null) =>
+        seconds ? `${Math.floor(seconds / 60)} мин` : '—',
+    },
+    {
+      title: 'Условие доступа',
+      dataIndex: 'unlock_condition_type',
+      width: 150,
+      render: (type: string | null, record: Technique) =>
+        type === 'after_technique' ? (
+          <Space>
+            <LockOutlined />
+            <Text>Через {record.unlock_condition_value?.duration_days || 0} дней</Text>
+          </Space>
+        ) : (
+          <Space>
+            <UnlockOutlined />
+            <Text type="secondary">Без условий</Text>
+          </Space>
+        ),
+    },
+    {
+      title: 'Действия',
+      width: 180,
+      render: (_: any, record: Technique) => (
+        <Space>
+          <Button
+            size="small"
+            icon={<AppstoreOutlined />}
+            onClick={() => handleManageBlocks(record.id, record.title)}
+          >
+            Блоки
+          </Button>
+          <Button
+            size="small"
+            icon={<EditOutlined />}
+            onClick={() => handleEdit(record.id)}
+          />
+          <Popconfirm
+            title="Удалить технику?"
+            description={`Вы уверены, что хотите удалить "${record.title}"?`}
+            onConfirm={() => handleDelete(record.id)}
+            okText="Да"
+            cancelText="Нет"
+          >
+            <Button size="small" danger icon={<DeleteOutlined />} />
+          </Popconfirm>
+        </Space>
+      ),
+    },
+  ];
+
   return (
-    <div className="p-6">
-      {/* Заголовок и кнопка создания */}
-      <div className="flex items-center justify-between mb-6">
-        <h2 className="text-2xl font-bold text-[#242424]">Управление техниками</h2>
-        <Button
-          onClick={handleCreate}
-          className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-[#B862EA] to-[#8E44AD] text-white rounded-lg hover:opacity-90"
-        >
-          <Plus className="w-5 h-5" />
+    <Card
+      title={<Title level={4} style={{ margin: 0 }}>Управление техниками</Title>}
+      extra={
+        <Button type="primary" icon={<PlusOutlined />} onClick={handleCreate}>
           Создать технику
         </Button>
-      </div>
-
-      {/* Таблица техник */}
+      }
+    >
       {techniques && techniques.length > 0 ? (
-        <div className="bg-white rounded-xl shadow-sm overflow-hidden">
-          <table className="w-full">
-            <thead className="bg-gray-50 border-b border-gray-200">
-              <tr>
-                <th className="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase">
-                  #
-                </th>
-                <th className="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase">
-                  Название
-                </th>
-                <th className="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase">
-                  Статус
-                </th>
-                <th className="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase">
-                  Длительность
-                </th>
-                <th className="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase">
-                  Условие доступа
-                </th>
-                <th className="px-4 py-3 text-right text-xs font-semibold text-gray-700 uppercase">
-                  Действия
-                </th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-gray-200">
-              {techniques.map((technique) => (
-                <tr key={technique.id} className="hover:bg-gray-50">
-                  <td className="px-4 py-3 text-sm text-gray-600">{technique.order_num}</td>
-                  <td className="px-4 py-3">
-                    <div className="flex items-center gap-3">
-                      {technique.cover_image && (
-                        <img
-                          src={technique.cover_image}
-                          alt={technique.title}
-                          className="w-10 h-10 rounded-lg object-cover"
-                        />
-                      )}
-                      <div>
-                        <p className="text-sm font-medium text-gray-900">{technique.title}</p>
-                        {technique.available_from_module && (
-                          <p className="text-xs text-gray-500">
-                            С модуля: {technique.available_from_module}
-                          </p>
-                        )}
-                      </div>
-                    </div>
-                  </td>
-                  <td className="px-4 py-3">{renderStatusBadge(technique.status)}</td>
-                  <td className="px-4 py-3 text-sm text-gray-600">
-                    {technique.duration_seconds
-                      ? `${Math.floor(technique.duration_seconds / 60)} мин`
-                      : '—'}
-                  </td>
-                  <td className="px-4 py-3 text-sm text-gray-600">
-                    {technique.unlock_condition_type === 'after_technique' ? (
-                      <span className="flex items-center gap-1">
-                        <Lock className="w-3 h-3" />
-                        Через{' '}
-                        {technique.unlock_condition_value?.duration_days || 0} дней
-                      </span>
-                    ) : (
-                      <span className="flex items-center gap-1">
-                        <Unlock className="w-3 h-3" />
-                        Без условий
-                      </span>
-                    )}
-                  </td>
-                  <td className="px-4 py-3 text-right">
-                    <div className="flex items-center justify-end gap-2">
-                      <button
-                        onClick={() => handleManageBlocks(technique.id, technique.title)}
-                        className="p-2 text-purple-600 hover:bg-purple-50 rounded-lg transition-colors"
-                        title="Управление блоками"
-                      >
-                        <Layers className="w-4 h-4" />
-                      </button>
-                      <button
-                        onClick={() => handleEdit(technique.id)}
-                        className="p-2 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
-                        title="Редактировать"
-                      >
-                        <Edit2 className="w-4 h-4" />
-                      </button>
-                      <button
-                        onClick={() => handleDelete(technique.id, technique.title)}
-                        className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors"
-                        title="Удалить"
-                      >
-                        <Trash2 className="w-4 h-4" />
-                      </button>
-                    </div>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
+        <Table
+          dataSource={techniques}
+          columns={columns}
+          rowKey="id"
+          pagination={false}
+        />
       ) : (
-        <div className="text-center py-12 bg-white rounded-xl shadow-sm">
-          <p className="text-sm text-gray-500">Нет созданных техник</p>
-          <Button
-            onClick={handleCreate}
-            className="mt-4 px-4 py-2 bg-gradient-to-r from-[#B862EA] to-[#8E44AD] text-white rounded-lg"
-          >
-            Создать первую технику
-          </Button>
+        <div style={{ textAlign: 'center', padding: 48 }}>
+          <Text type="secondary">Нет созданных техник</Text>
+          <div style={{ marginTop: 16 }}>
+            <Button type="primary" onClick={handleCreate}>
+              Создать первую технику
+            </Button>
+          </div>
         </div>
       )}
-    </div>
+    </Card>
   );
 };
 

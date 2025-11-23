@@ -2,10 +2,30 @@ import React, { useState } from 'react';
 import { supabase } from '@/lib/supabase/client';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { logger } from '@/lib/logger';
-import { Plus, Edit2, Trash2, Copy, Users } from 'lucide-react';
-import { Button } from '@/components/ui/button';
+import {
+  Card,
+  Button,
+  Row,
+  Col,
+  Typography,
+  Space,
+  Spin,
+  Empty,
+  Popconfirm,
+  message,
+} from 'antd';
+import {
+  PlusOutlined,
+  EditOutlined,
+  DeleteOutlined,
+  CopyOutlined,
+  TeamOutlined,
+  CalendarOutlined,
+} from '@ant-design/icons';
 import StreamEditorNew from './StreamEditorNew';
 import CopyStreamModal from './CopyStreamModal';
+
+const { Title, Text, Paragraph } = Typography;
 
 interface Stream {
   id: string;
@@ -16,25 +36,16 @@ interface Stream {
   created_at: string;
 }
 
-/**
- * Админка для управления потоками обучения
- * Позволяет создавать, редактировать, удалять и копировать потоки
- */
 const StreamsManager: React.FC = () => {
   const [selectedStreamId, setSelectedStreamId] = useState<string | null>(null);
   const [isCreating, setIsCreating] = useState(false);
   const [copyingStreamId, setCopyingStreamId] = useState<string | null>(null);
   const queryClient = useQueryClient();
 
-  // Получить все потоки
   const { data: streams, isLoading } = useQuery({
     queryKey: ['admin-streams'],
     queryFn: async (): Promise<Stream[]> => {
-      if (!supabase) {
-        throw new Error('Supabase client not initialized');
-      }
-
-      logger.debug('Fetching streams for admin');
+      if (!supabase) throw new Error('Supabase client not initialized');
 
       const { data, error } = await supabase
         .from('streams')
@@ -46,19 +57,13 @@ const StreamsManager: React.FC = () => {
         throw error;
       }
 
-      logger.debug('Streams fetched', { count: data?.length });
       return data || [];
     },
   });
 
-  // Удалить поток
   const deleteStreamMutation = useMutation({
     mutationFn: async (streamId: string) => {
-      if (!supabase) {
-        throw new Error('Supabase client not initialized');
-      }
-
-      logger.debug('Deleting stream', { streamId });
+      if (!supabase) throw new Error('Supabase client not initialized');
 
       const { error } = await supabase.from('streams').delete().eq('id', streamId);
 
@@ -66,28 +71,18 @@ const StreamsManager: React.FC = () => {
         logger.error('Error deleting stream', { streamId, error });
         throw error;
       }
-
-      logger.debug('Stream deleted', { streamId });
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['admin-streams'] });
     },
   });
 
-  const handleDelete = async (streamId: string, name: string) => {
-    if (
-      !confirm(
-        `Вы уверены, что хотите удалить поток "${name}"?\n\nВСЕ модули и события этого потока также будут удалены!`
-      )
-    ) {
-      return;
-    }
-
+  const handleDelete = async (streamId: string) => {
     try {
       await deleteStreamMutation.mutateAsync(streamId);
-      alert('Поток удален');
+      message.success('Поток удалён');
     } catch (error) {
-      alert('Ошибка при удалении потока');
+      message.error('Ошибка при удалении потока');
     }
   };
 
@@ -125,16 +120,17 @@ const StreamsManager: React.FC = () => {
 
   if (isLoading) {
     return (
-      <div className="flex items-center justify-center py-8">
-        <div className="text-center">
-          <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-[#B862EA] mb-2"></div>
-          <p className="text-sm text-[#666]">Загрузка потоков...</p>
+      <Card>
+        <div style={{ textAlign: 'center', padding: 48 }}>
+          <Spin size="large" />
+          <div style={{ marginTop: 16 }}>
+            <Text type="secondary">Загрузка потоков...</Text>
+          </div>
         </div>
-      </div>
+      </Card>
     );
   }
 
-  // Если открыт редактор
   if (isCreating || selectedStreamId) {
     return (
       <StreamEditorNew
@@ -148,7 +144,6 @@ const StreamsManager: React.FC = () => {
     );
   }
 
-  // Если открыто модальное окно копирования
   if (copyingStreamId) {
     const streamToCopy = streams?.find((s) => s.id === copyingStreamId);
     return (
@@ -164,103 +159,112 @@ const StreamsManager: React.FC = () => {
   }
 
   return (
-    <div className="p-6">
-      {/* Заголовок и кнопка создания */}
-      <div className="flex items-center justify-between mb-6">
+    <Card
+      title={
         <div>
-          <h2 className="text-2xl font-bold text-[#242424]">Управление потоками</h2>
-          <p className="text-sm text-gray-500 mt-1">
+          <Title level={4} style={{ margin: 0 }}>Управление потоками</Title>
+          <Text type="secondary" style={{ fontSize: 13 }}>
             Потоки — это группы учеников с общим графиком обучения
-          </p>
+          </Text>
         </div>
-        <Button
-          onClick={handleCreate}
-          className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-[#B862EA] to-[#8E44AD] text-white rounded-lg hover:opacity-90"
-        >
-          <Plus className="w-5 h-5" />
+      }
+      extra={
+        <Button type="primary" icon={<PlusOutlined />} onClick={handleCreate}>
           Создать поток
         </Button>
-      </div>
-
-      {/* Список потоков */}
+      }
+    >
       {streams && streams.length > 0 ? (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+        <Row gutter={[16, 16]}>
           {streams.map((stream) => (
-            <div
-              key={stream.id}
-              className="bg-white rounded-xl shadow-sm p-6 hover:shadow-md transition-shadow"
-            >
-              {/* Заголовок */}
-              <div className="flex items-start justify-between mb-4">
-                <div>
-                  <h3 className="text-lg font-semibold text-gray-900">{stream.name}</h3>
-                  {stream.description && (
-                    <p className="text-sm text-gray-500 mt-1">{stream.description}</p>
-                  )}
-                </div>
-                <Users className="w-5 h-5 text-gray-400" />
-              </div>
-
-              {/* Даты */}
-              <div className="space-y-2 mb-4">
-                <div className="flex items-center gap-2 text-sm">
-                  <span className="text-gray-500">Начало:</span>
-                  <span className="font-medium text-gray-900">
-                    {formatDate(stream.start_date)}
-                  </span>
-                </div>
-                {stream.end_date && (
-                  <div className="flex items-center gap-2 text-sm">
-                    <span className="text-gray-500">Конец:</span>
-                    <span className="font-medium text-gray-900">
-                      {formatDate(stream.end_date)}
-                    </span>
+            <Col key={stream.id} xs={24} md={12} lg={8}>
+              <Card
+                size="small"
+                hoverable
+                actions={[
+                  <Button
+                    key="edit"
+                    type="link"
+                    icon={<EditOutlined />}
+                    onClick={() => handleEdit(stream.id)}
+                  >
+                    Редактировать
+                  </Button>,
+                  <Button
+                    key="copy"
+                    type="link"
+                    icon={<CopyOutlined />}
+                    onClick={() => handleCopy(stream.id)}
+                    style={{ color: '#52c41a' }}
+                  >
+                    Копировать
+                  </Button>,
+                  <Popconfirm
+                    key="delete"
+                    title="Удалить поток?"
+                    description={
+                      <span>
+                        Вы уверены, что хотите удалить поток <strong>"{stream.name}"</strong>?
+                        <br />
+                        <Text type="danger">ВСЕ модули и события также будут удалены!</Text>
+                      </span>
+                    }
+                    onConfirm={() => handleDelete(stream.id)}
+                    okText="Удалить"
+                    cancelText="Отмена"
+                    okButtonProps={{ danger: true }}
+                  >
+                    <Button type="link" danger icon={<DeleteOutlined />} />
+                  </Popconfirm>,
+                ]}
+              >
+                <div style={{ minHeight: 100 }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 12 }}>
+                    <div>
+                      <Text strong style={{ fontSize: 16 }}>{stream.name}</Text>
+                      {stream.description && (
+                        <Paragraph
+                          type="secondary"
+                          style={{ marginTop: 4, marginBottom: 0, fontSize: 13 }}
+                          ellipsis={{ rows: 2 }}
+                        >
+                          {stream.description}
+                        </Paragraph>
+                      )}
+                    </div>
+                    <TeamOutlined style={{ fontSize: 18, color: '#bfbfbf' }} />
                   </div>
-                )}
-              </div>
 
-              {/* Действия */}
-              <div className="flex items-center gap-2 pt-4 border-t border-gray-100">
-                <button
-                  onClick={() => handleEdit(stream.id)}
-                  className="flex-1 flex items-center justify-center gap-2 px-3 py-2 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
-                  title="Редактировать"
-                >
-                  <Edit2 className="w-4 h-4" />
-                  <span className="text-sm font-medium">Редактировать</span>
-                </button>
-                <button
-                  onClick={() => handleCopy(stream.id)}
-                  className="flex-1 flex items-center justify-center gap-2 px-3 py-2 text-green-600 hover:bg-green-50 rounded-lg transition-colors"
-                  title="Копировать"
-                >
-                  <Copy className="w-4 h-4" />
-                  <span className="text-sm font-medium">Копировать</span>
-                </button>
-                <button
-                  onClick={() => handleDelete(stream.id, stream.name)}
-                  className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors"
-                  title="Удалить"
-                >
-                  <Trash2 className="w-4 h-4" />
-                </button>
-              </div>
-            </div>
+                  <Space direction="vertical" size={4}>
+                    <div>
+                      <CalendarOutlined style={{ marginRight: 8, color: '#8c8c8c' }} />
+                      <Text type="secondary">Начало: </Text>
+                      <Text>{formatDate(stream.start_date)}</Text>
+                    </div>
+                    {stream.end_date && (
+                      <div>
+                        <CalendarOutlined style={{ marginRight: 8, color: '#8c8c8c' }} />
+                        <Text type="secondary">Конец: </Text>
+                        <Text>{formatDate(stream.end_date)}</Text>
+                      </div>
+                    )}
+                  </Space>
+                </div>
+              </Card>
+            </Col>
           ))}
-        </div>
+        </Row>
       ) : (
-        <div className="text-center py-12 bg-white rounded-xl shadow-sm">
-          <Users className="w-12 h-12 text-gray-400 mx-auto mb-4" />
-          <p className="text-sm text-gray-500 mb-4">Нет созданных потоков</p>
-          <Button
-            onClick={handleCreate}
-            className="px-4 py-2 bg-gradient-to-r from-[#B862EA] to-[#8E44AD] text-white rounded-lg"
-          >
+        <Empty
+          image={<TeamOutlined style={{ fontSize: 48, color: '#d9d9d9' }} />}
+          description="Нет созданных потоков"
+        >
+          <Button type="primary" onClick={handleCreate}>
             Создать первый поток
           </Button>
-        </div>
+        </Empty>
       )}
-    </div>
+    </Card>
   );
 };
 

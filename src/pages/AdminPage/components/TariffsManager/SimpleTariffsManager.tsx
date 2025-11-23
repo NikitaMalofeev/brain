@@ -1,22 +1,36 @@
 import React, { useState, useMemo } from 'react';
 import { useTariffsAdmin, type Tariff, type TariffFormData } from '@/lib/supabase/hooks/useTariffsAdmin';
+import {
+  Card,
+  Button,
+  Table,
+  Modal,
+  Form,
+  Input,
+  Space,
+  Typography,
+  Tag,
+  message,
+  Popconfirm,
+  Empty,
+  Spin,
+  Alert,
+} from 'antd';
+import {
+  PlusOutlined,
+  EditOutlined,
+  DeleteOutlined,
+} from '@ant-design/icons';
 
-/**
- * Простой компонент управления тарифами (только CRUD)
- * Без настройки связей с потоками/модулями/техниками
- */
+const { Title, Text } = Typography;
+const { TextArea } = Input;
+
 const SimpleTariffsManager: React.FC = () => {
-  // ========== СОСТОЯНИЯ ==========
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [modalMode, setModalMode] = useState<'add' | 'edit'>('add');
   const [currentTariff, setCurrentTariff] = useState<Tariff | null>(null);
-  const [formData, setFormData] = useState<TariffFormData>({
-    name: '',
-    code: '',
-    description: '',
-  });
+  const [form] = Form.useForm();
 
-  // ========== ХУКИ ==========
   const {
     tariffs,
     loading,
@@ -29,22 +43,20 @@ const SimpleTariffsManager: React.FC = () => {
     isMutating,
   } = useTariffsAdmin();
 
-  // ========== ВЫЧИСЛЯЕМЫЕ ЗНАЧЕНИЯ ==========
   const sortedTariffs = useMemo(() => {
     if (!tariffs || tariffs.length === 0) return [];
     return [...tariffs].sort((a, b) => a.code.localeCompare(b.code));
   }, [tariffs]);
 
-  // ========== ОБРАБОТЧИКИ ==========
   const openCreateModal = () => {
-    setFormData({ name: '', code: '', description: '' });
+    form.setFieldsValue({ name: '', code: '', description: '' });
     setModalMode('add');
     setCurrentTariff(null);
     setIsModalOpen(true);
   };
 
   const openEditModal = (tariff: Tariff) => {
-    setFormData({
+    form.setFieldsValue({
       name: tariff.name,
       code: tariff.code,
       description: tariff.description || '',
@@ -57,205 +69,160 @@ const SimpleTariffsManager: React.FC = () => {
   const closeModal = () => {
     setIsModalOpen(false);
     setCurrentTariff(null);
-    setFormData({ name: '', code: '', description: '' });
+    form.resetFields();
   };
 
   const handleSave = async () => {
-    if (!formData.name.trim() || !formData.code.trim()) return;
-
     try {
+      const values = await form.validateFields();
+
       if (modalMode === 'add') {
-        await createTariff(formData);
+        await createTariff(values);
+        message.success('Тариф создан');
       } else if (currentTariff) {
-        await updateTariff(currentTariff.id, formData);
+        await updateTariff(currentTariff.id, values);
+        message.success('Тариф обновлён');
       }
       closeModal();
-    } catch (err) {
-      alert('Ошибка при сохранении тарифа: ' + (err as any)?.message);
+    } catch (err: any) {
+      if (err?.errorFields) return; // Form validation error
+      message.error(err?.message || 'Ошибка при сохранении');
     }
   };
 
   const handleDelete = async (tariff: Tariff) => {
-    if (!confirm(`Удалить тариф "${tariff.name}"? Это удалит все связи с потоками.`)) return;
-
     try {
       await deleteTariff(tariff.id);
-    } catch (err) {
-      alert('Ошибка при удалении тарифа: ' + (err as any)?.message);
+      message.success('Тариф удалён');
+    } catch (err: any) {
+      message.error(err?.message || 'Ошибка при удалении');
     }
   };
 
-  // ========== РЕНДЕР ==========
-  return (
-    <div className="p-6 bg-white rounded-lg shadow-sm" style={{ minHeight: '600px' }}>
-      <div className="flex items-center justify-between mb-6">
-        <div>
-          <h2 className="text-2xl font-bold text-gray-900">Тарифы</h2>
-          <p className="text-sm text-gray-600 mt-1">
-            Управление базовыми тарифами. Настройка контента в разделе "Курсы".
-          </p>
-        </div>
-        <button
-          onClick={openCreateModal}
-          className="px-4 py-2 text-sm bg-blue-600 text-white rounded hover:bg-blue-700"
-          disabled={isMutating}
-        >
-          + Создать тариф
-        </button>
-      </div>
+  const columns = [
+    {
+      title: 'Название',
+      dataIndex: 'name',
+      render: (name: string) => <Text strong>{name}</Text>,
+    },
+    {
+      title: 'Код',
+      dataIndex: 'code',
+      width: 100,
+      render: (code: string) => <Tag color="blue">{code}</Tag>,
+    },
+    {
+      title: 'Описание',
+      dataIndex: 'description',
+      render: (desc: string | null) => (
+        <Text type="secondary" ellipsis style={{ maxWidth: 300 }}>
+          {desc || '—'}
+        </Text>
+      ),
+    },
+    {
+      title: 'Действия',
+      width: 150,
+      render: (_: any, record: Tariff) => (
+        <Space>
+          <Button
+            size="small"
+            icon={<EditOutlined />}
+            onClick={() => openEditModal(record)}
+          >
+            Изменить
+          </Button>
+          <Popconfirm
+            title="Удалить тариф?"
+            description="Это удалит все связи с потоками"
+            onConfirm={() => handleDelete(record)}
+            okText="Да"
+            cancelText="Нет"
+          >
+            <Button size="small" danger icon={<DeleteOutlined />} />
+          </Popconfirm>
+        </Space>
+      ),
+    },
+  ];
 
-      {error && (
-        <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded text-red-700 text-sm">
-          {error.message}
+  return (
+    <Card
+      title={
+        <div>
+          <Title level={4} style={{ margin: 0 }}>Тарифы</Title>
+          <Text type="secondary" style={{ fontSize: 13 }}>
+            Управление базовыми тарифами. Настройка контента в разделе "Курсы".
+          </Text>
         </div>
+      }
+      extra={
+        <Button type="primary" icon={<PlusOutlined />} onClick={openCreateModal} disabled={isMutating}>
+          Создать тариф
+        </Button>
+      }
+    >
+      {error && (
+        <Alert
+          message={error.message}
+          type="error"
+          showIcon
+          style={{ marginBottom: 16 }}
+        />
       )}
 
       {loading ? (
-        <div className="text-gray-600">Загрузка тарифов...</div>
+        <div style={{ textAlign: 'center', padding: 48 }}>
+          <Spin />
+        </div>
       ) : sortedTariffs.length === 0 ? (
-        <div className="text-gray-500">Нет тарифов. Создайте первый.</div>
+        <Empty description="Нет тарифов" />
       ) : (
-        <div className="space-y-3">
-          {sortedTariffs.map((tariff) => (
-            <div
-              key={tariff.id}
-              className="p-4 bg-gray-50 rounded-lg border border-gray-200"
-            >
-              <div className="flex items-start justify-between">
-                <div className="flex-1">
-                  <div className="flex items-center gap-3">
-                    <h3 className="text-lg font-medium text-gray-900">{tariff.name}</h3>
-                    <span className="px-2 py-0.5 text-xs bg-blue-100 text-blue-700 rounded">
-                      {tariff.code}
-                    </span>
-                  </div>
-                  {tariff.description && (
-                    <p className="text-sm text-gray-600 mt-1">{tariff.description}</p>
-                  )}
-                </div>
-                <div className="flex gap-2">
-                  <button
-                    onClick={() => openEditModal(tariff)}
-                    className="px-3 py-1 text-sm text-blue-600 hover:text-blue-700 border border-blue-300 rounded hover:bg-blue-50"
-                    disabled={isMutating}
-                  >
-                    Изменить
-                  </button>
-                  <button
-                    onClick={() => handleDelete(tariff)}
-                    className="px-3 py-1 text-sm text-red-600 hover:text-red-700 border border-red-300 rounded hover:bg-red-50"
-                    disabled={isMutating}
-                  >
-                    Удалить
-                  </button>
-                </div>
-              </div>
-            </div>
-          ))}
-        </div>
+        <Table
+          dataSource={sortedTariffs}
+          columns={columns}
+          rowKey="id"
+          pagination={false}
+        />
       )}
 
-      {/* МОДАЛЬНОЕ ОКНО */}
-      {isModalOpen && (
-        <div
-          className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50"
-          onClick={closeModal}
-        >
-          <div
-            className="bg-white rounded-lg p-6 w-full max-w-md shadow-xl"
-            onClick={(e) => e.stopPropagation()}
+      <Modal
+        title={modalMode === 'add' ? 'Создать тариф' : 'Редактировать тариф'}
+        open={isModalOpen}
+        onOk={handleSave}
+        onCancel={closeModal}
+        confirmLoading={createTariffLoading || updateTariffLoading}
+        okText={modalMode === 'add' ? 'Создать' : 'Сохранить'}
+        cancelText="Отмена"
+      >
+        <Form form={form} layout="vertical">
+          <Form.Item
+            name="name"
+            label="Название тарифа"
+            rules={[{ required: true, message: 'Введите название' }]}
           >
-            <div className="flex items-center justify-between mb-4">
-              <h3 className="text-xl font-bold text-gray-900">
-                {modalMode === 'add' ? 'Создать тариф' : 'Редактировать тариф'}
-              </h3>
-              <button
-                onClick={closeModal}
-                className="text-gray-400 hover:text-gray-600 text-2xl"
-              >
-                ×
-              </button>
-            </div>
+            <Input placeholder="Название тарифа..." />
+          </Form.Item>
 
-            <div className="space-y-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Название тарифа *
-                </label>
-                <input
-                  type="text"
-                  value={formData.name}
-                  onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                  placeholder="Название тарифа..."
-                  className="w-full px-3 py-2 rounded bg-white text-gray-900 border border-gray-300 focus:ring-2 focus:ring-blue-500"
-                  disabled={createTariffLoading || updateTariffLoading}
-                />
-              </div>
+          <Form.Item
+            name="code"
+            label="Код тарифа"
+            rules={[{ required: true, message: 'Введите код' }]}
+            help="Краткий код для идентификации (например: T1, T2, T3)"
+          >
+            <Input
+              placeholder="T1, T2, T3..."
+              maxLength={10}
+              onChange={(e) => form.setFieldValue('code', e.target.value.toUpperCase())}
+            />
+          </Form.Item>
 
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Код тарифа *
-                </label>
-                <input
-                  type="text"
-                  value={formData.code}
-                  onChange={(e) =>
-                    setFormData({ ...formData, code: e.target.value.toUpperCase() })
-                  }
-                  placeholder="T1, T2, T3..."
-                  maxLength={10}
-                  className="w-full px-3 py-2 rounded bg-white text-gray-900 border border-gray-300 focus:ring-2 focus:ring-blue-500"
-                  disabled={createTariffLoading || updateTariffLoading}
-                />
-                <p className="text-xs text-gray-500 mt-1">
-                  Краткий код для идентификации (например: T1, T2, T3)
-                </p>
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Описание
-                </label>
-                <textarea
-                  value={formData.description}
-                  onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-                  placeholder="Описание тарифа..."
-                  rows={4}
-                  className="w-full px-3 py-2 rounded bg-white text-gray-900 border border-gray-300 focus:ring-2 focus:ring-blue-500 resize-vertical"
-                  disabled={createTariffLoading || updateTariffLoading}
-                />
-              </div>
-
-              <div className="flex gap-3 pt-2">
-                <button
-                  onClick={handleSave}
-                  disabled={
-                    createTariffLoading ||
-                    updateTariffLoading ||
-                    !formData.name.trim() ||
-                    !formData.code.trim()
-                  }
-                  className="flex-1 px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
-                >
-                  {createTariffLoading || updateTariffLoading
-                    ? 'Сохранение...'
-                    : modalMode === 'add'
-                      ? 'Создать'
-                      : 'Сохранить'}
-                </button>
-                <button
-                  onClick={closeModal}
-                  disabled={createTariffLoading || updateTariffLoading}
-                  className="flex-1 px-4 py-2 bg-gray-200 text-gray-700 rounded hover:bg-gray-300 disabled:opacity-50 disabled:cursor-not-allowed"
-                >
-                  Отмена
-                </button>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
-    </div>
+          <Form.Item name="description" label="Описание">
+            <TextArea placeholder="Описание тарифа..." rows={4} />
+          </Form.Item>
+        </Form>
+      </Modal>
+    </Card>
   );
 };
 

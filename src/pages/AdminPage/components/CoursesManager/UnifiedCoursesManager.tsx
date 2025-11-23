@@ -1,9 +1,7 @@
 import React, { useState, useMemo } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
 import { useCoursesAdmin } from '@/lib/supabase/hooks/useCoursesAdmin';
 import {
   useTariffConfiguration,
-  useStreams,
   useTariffs,
   useStreamTariffId,
   useAddModuleToTariff,
@@ -19,6 +17,45 @@ import { useTechniques } from '@/lib/supabase/hooks/useTechniques';
 import { supabase } from '@/lib/supabase/client';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { logger } from '@/lib/logger';
+import {
+  Card,
+  Button,
+  Typography,
+  Space,
+  Tag,
+  Spin,
+  Alert,
+  Empty,
+  Breadcrumb,
+  List,
+  Select,
+  Modal,
+  Form,
+  Input,
+  DatePicker,
+  Collapse,
+  Popconfirm,
+  message,
+  InputNumber,
+} from 'antd';
+import {
+  ArrowLeftOutlined,
+  ReloadOutlined,
+  CopyOutlined,
+  DeleteOutlined,
+  EditOutlined,
+  PlusOutlined,
+  RightOutlined,
+  CheckOutlined,
+  CloseOutlined,
+  CaretRightOutlined,
+  SoundOutlined,
+  VideoCameraOutlined,
+} from '@ant-design/icons';
+import dayjs from 'dayjs';
+
+const { Title, Text } = Typography;
+const { Panel } = Collapse;
 
 // Тип навигации
 type NavigationView = 'courses' | 'streams' | 'tariffs' | 'configuration';
@@ -204,7 +241,6 @@ function useStreamModuleMaterials(streamId: string | null) {
     queryFn: async (): Promise<Record<string, ModuleMaterialInfo[]>> => {
       if (!streamId || !supabase) return {};
 
-      // Сначала получаем модули потока
       const { data: modules, error: modulesError } = await supabase
         .from('stream_modules')
         .select('id')
@@ -219,7 +255,6 @@ function useStreamModuleMaterials(streamId: string | null) {
 
       const moduleIds = modules.map(m => m.id);
 
-      // Получаем материалы для всех модулей
       const { data: materials, error: materialsError } = await supabase
         .from('module_materials')
         .select(`
@@ -239,7 +274,6 @@ function useStreamModuleMaterials(streamId: string | null) {
         throw materialsError;
       }
 
-      // Группируем материалы по module_id
       const result: Record<string, ModuleMaterialInfo[]> = {};
       for (const item of materials || []) {
         if (!result[item.module_id]) {
@@ -260,22 +294,19 @@ function useStreamModuleMaterials(streamId: string | null) {
 
 /**
  * Объединенная страница управления курсами
- * Навигация: Курсы → Потоки → Тарифы → Модули/Техники
  */
 const UnifiedCoursesManager: React.FC = () => {
-  // ========== СОСТОЯНИЯ ==========
+  // Состояния
   const [navigation, setNavigation] = useState<NavigationState>({ view: 'courses' });
-  const [expandedModules, setExpandedModules] = useState<Set<string>>(new Set());
+  const [expandedModules, setExpandedModules] = useState<string[]>([]);
   const [editingModule, setEditingModule] = useState<string | null>(null);
+  const [editingModuleData, setEditingModuleData] = useState<{ days: number | null }>({ days: null });
   const [editingTechnique, setEditingTechnique] = useState<string | null>(null);
+  const [editingTechniqueData, setEditingTechniqueData] = useState<{ days: number }>({ days: 0 });
   const [showCopyModal, setShowCopyModal] = useState(false);
-  const [copyStreamData, setCopyStreamData] = useState({
-    streamId: '',
-    newName: '',
-    newStartDate: ''
-  });
+  const [copyForm] = Form.useForm();
 
-  // ========== ХУКИ ДЛЯ КУРСОВ ==========
+  // Хуки для курсов
   const {
     courses,
     loading: coursesLoading,
@@ -283,14 +314,14 @@ const UnifiedCoursesManager: React.FC = () => {
     refetch: refetchCourses,
   } = useCoursesAdmin();
 
-  // ========== ХУКИ ДЛЯ ПОТОКОВ ==========
+  // Хуки для потоков
   const { data: courseStreams, isLoading: streamsLoading } = useCourseStreams(navigation.courseId || null);
 
-  // ========== ХУКИ ДЛЯ ТАРИФОВ ==========
+  // Хуки для тарифов
   const { data: streamTariffs, isLoading: tariffsLoading } = useStreamTariffs(navigation.streamId || null);
   const { data: allTariffs } = useTariffs();
 
-  // ========== ХУКИ ДЛЯ КОНФИГУРАЦИИ ==========
+  // Хуки для конфигурации
   const { data: streamModules } = useStreamModules(navigation.streamId || null);
   const { data: allTechniques } = useTechniques(null);
   const { data: streamTariffId } = useStreamTariffId(navigation.streamId || null, navigation.tariffId || null);
@@ -311,7 +342,7 @@ const UnifiedCoursesManager: React.FC = () => {
   const updateTechniqueMutation = useUpdateTechniqueInTariffModule();
   const removeTechniqueMutation = useRemoveTechniqueFromTariffModule();
 
-  // ========== ВЫЧИСЛЯЕМЫЕ ЗНАЧЕНИЯ ==========
+  // Вычисляемые значения
   const sortedCourses = useMemo(() => {
     if (!courses || courses.length === 0) return [];
     return [...courses].sort((a, b) =>
@@ -335,7 +366,7 @@ const UnifiedCoursesManager: React.FC = () => {
     );
   };
 
-  // ========== ОБРАБОТЧИКИ НАВИГАЦИИ ==========
+  // Обработчики навигации
   const handleCourseSelect = (courseId: string, courseName: string) => {
     setNavigation({ view: 'streams', courseId, courseName });
   };
@@ -382,7 +413,7 @@ const UnifiedCoursesManager: React.FC = () => {
     }
   };
 
-  // ========== ОБРАБОТЧИКИ ДЛЯ ТАРИФОВ ==========
+  // Обработчики для тарифов
   const handleAddTariffToStream = async (tariffId: string) => {
     if (!navigation.streamId) return;
 
@@ -391,65 +422,49 @@ const UnifiedCoursesManager: React.FC = () => {
         stream_id: navigation.streamId,
         tariff_id: tariffId,
       });
+      message.success('Тариф добавлен в поток');
     } catch (error) {
-      alert('Ошибка при добавлении тарифа: ' + (error as any)?.message);
+      message.error('Ошибка при добавлении тарифа: ' + (error as any)?.message);
     }
   };
 
   const handleRemoveTariffFromStream = async (streamTariffId: string) => {
-    if (!confirm('Удалить тариф из потока? Вся конфигурация модулей и техник будет удалена.')) return;
-
     try {
       await removeTariffFromStreamMutation.mutateAsync(streamTariffId);
+      message.success('Тариф удалён из потока');
     } catch (error) {
-      alert('Ошибка при удалении тарифа: ' + (error as any)?.message);
+      message.error('Ошибка при удалении тарифа: ' + (error as any)?.message);
     }
   };
 
-  // ========== ОБРАБОТЧИКИ ДЛЯ КОПИРОВАНИЯ ==========
+  // Обработчики для копирования
   const openCopyModal = (streamId: string, streamName: string) => {
-    setCopyStreamData({
+    copyForm.setFieldsValue({
       streamId,
       newName: `${streamName} (копия)`,
-      newStartDate: ''
+      newStartDate: null,
     });
     setShowCopyModal(true);
   };
 
-  const closeCopyModal = () => {
-    setShowCopyModal(false);
-    setCopyStreamData({ streamId: '', newName: '', newStartDate: '' });
-  };
-
   const handleCopyStream = async () => {
-    if (!copyStreamData.streamId || !copyStreamData.newName || !copyStreamData.newStartDate) return;
-
     try {
+      const values = await copyForm.validateFields();
       await copyStreamMutation.mutateAsync({
-        source_stream_id: copyStreamData.streamId,
-        new_name: copyStreamData.newName,
-        new_start_date: copyStreamData.newStartDate,
+        source_stream_id: values.streamId,
+        new_name: values.newName,
+        new_start_date: values.newStartDate.format('YYYY-MM-DD'),
       });
-      closeCopyModal();
-      alert('Поток успешно скопирован!');
-    } catch (error) {
-      alert('Ошибка при копировании потока: ' + (error as any)?.message);
+      setShowCopyModal(false);
+      copyForm.resetFields();
+      message.success('Поток успешно скопирован!');
+    } catch (error: any) {
+      if (error?.errorFields) return;
+      message.error('Ошибка при копировании потока: ' + error?.message);
     }
   };
 
-  // ========== ОБРАБОТЧИКИ ДЛЯ МОДУЛЕЙ И ТЕХНИК ==========
-  const toggleModule = (moduleId: string) => {
-    setExpandedModules((prev) => {
-      const newSet = new Set(prev);
-      if (newSet.has(moduleId)) {
-        newSet.delete(moduleId);
-      } else {
-        newSet.add(moduleId);
-      }
-      return newSet;
-    });
-  };
-
+  // Обработчики для модулей и техник
   const handleAddModule = async (moduleId: string) => {
     if (!streamTariffId) return;
 
@@ -460,8 +475,9 @@ const UnifiedCoursesManager: React.FC = () => {
         access_duration_days: null,
         order_num: (configuration?.modules.length || 0) + 1,
       });
+      message.success('Модуль добавлен');
     } catch (error) {
-      alert('Ошибка при добавлении модуля: ' + (error as any)?.message);
+      message.error('Ошибка при добавлении модуля: ' + (error as any)?.message);
     }
   };
 
@@ -477,18 +493,18 @@ const UnifiedCoursesManager: React.FC = () => {
         order_num: orderNum,
       });
       setEditingModule(null);
+      message.success('Модуль обновлён');
     } catch (error) {
-      alert('Ошибка при обновлении модуля: ' + (error as any)?.message);
+      message.error('Ошибка при обновлении модуля: ' + (error as any)?.message);
     }
   };
 
   const handleRemoveModule = async (tariffStreamModuleId: string) => {
-    if (!confirm('Удалить модуль из тарифа?')) return;
-
     try {
       await removeModuleMutation.mutateAsync(tariffStreamModuleId);
+      message.success('Модуль удалён');
     } catch (error) {
-      alert('Ошибка при удалении модуля: ' + (error as any)?.message);
+      message.error('Ошибка при удалении модуля: ' + (error as any)?.message);
     }
   };
 
@@ -500,8 +516,9 @@ const UnifiedCoursesManager: React.FC = () => {
         unlock_offset_days: 0,
         order_num: 0,
       });
+      message.success('Техника добавлена');
     } catch (error) {
-      alert('Ошибка при добавлении техники: ' + (error as any)?.message);
+      message.error('Ошибка при добавлении техники: ' + (error as any)?.message);
     }
   };
 
@@ -517,625 +534,542 @@ const UnifiedCoursesManager: React.FC = () => {
         order_num: orderNum,
       });
       setEditingTechnique(null);
+      message.success('Техника обновлена');
     } catch (error) {
-      alert('Ошибка при обновлении техники: ' + (error as any)?.message);
+      message.error('Ошибка при обновлении техники: ' + (error as any)?.message);
     }
   };
 
   const handleRemoveTechnique = async (tariffModuleTechniqueId: string) => {
-    if (!confirm('Удалить технику из модуля?')) return;
-
     try {
       await removeTechniqueMutation.mutateAsync(tariffModuleTechniqueId);
+      message.success('Техника удалена');
     } catch (error) {
-      alert('Ошибка при удалении техники: ' + (error as any)?.message);
+      message.error('Ошибка при удалении техники: ' + (error as any)?.message);
     }
   };
 
-  // ========== РЕНДЕР BREADCRUMB ==========
-  const renderBreadcrumb = () => {
-    const items = [{ label: 'Курсы', view: 'courses' as NavigationView }];
+  // Breadcrumb
+  const breadcrumbItems = [
+    {
+      title: <a onClick={() => setNavigation({ view: 'courses' })}>Курсы</a>,
+    },
+  ];
+  if (navigation.courseId) {
+    breadcrumbItems.push({
+      title: navigation.view === 'streams' ? (
+        <Text strong>{navigation.courseName}</Text>
+      ) : (
+        <a onClick={() => setNavigation({ view: 'streams', courseId: navigation.courseId, courseName: navigation.courseName })}>
+          {navigation.courseName}
+        </a>
+      ),
+    });
+  }
+  if (navigation.streamId) {
+    breadcrumbItems.push({
+      title: navigation.view === 'tariffs' ? (
+        <Text strong>{navigation.streamName}</Text>
+      ) : (
+        <a onClick={() => setNavigation({
+          view: 'tariffs',
+          courseId: navigation.courseId,
+          courseName: navigation.courseName,
+          streamId: navigation.streamId,
+          streamName: navigation.streamName,
+        })}>
+          {navigation.streamName}
+        </a>
+      ),
+    });
+  }
+  if (navigation.tariffId) {
+    breadcrumbItems.push({
+      title: <Text strong>{navigation.tariffName}</Text>,
+    });
+  }
 
-    if (navigation.courseId) {
-      items.push({ label: navigation.courseName || 'Курс', view: 'streams' as NavigationView });
-    }
-    if (navigation.streamId) {
-      items.push({ label: navigation.streamName || 'Поток', view: 'tariffs' as NavigationView });
-    }
-    if (navigation.tariffId) {
-      items.push({ label: navigation.tariffName || 'Тариф', view: 'configuration' as NavigationView });
-    }
-
-    return (
-      <div className="flex items-center gap-2 text-sm text-gray-600 mb-4">
-        {items.map((item, index) => (
-          <React.Fragment key={item.view}>
-            {index > 0 && <span className="text-gray-400">→</span>}
-            <button
-              onClick={() => {
-                if (item.view === 'courses') setNavigation({ view: 'courses' });
-                else if (item.view === 'streams') setNavigation({ view: 'streams', courseId: navigation.courseId, courseName: navigation.courseName });
-                else if (item.view === 'tariffs') setNavigation({ view: 'tariffs', courseId: navigation.courseId, courseName: navigation.courseName, streamId: navigation.streamId, streamName: navigation.streamName });
-              }}
-              disabled={index === items.length - 1}
-              className={`hover:text-blue-600 ${index === items.length - 1 ? 'font-medium text-gray-900' : ''}`}
-            >
-              {item.label}
-            </button>
-          </React.Fragment>
-        ))}
-      </div>
-    );
-  };
-
-  // ========== РЕНДЕР СПИСКА КУРСОВ ==========
+  // Рендер списка курсов
   const renderCoursesList = () => (
-    <div className="space-y-4">
-      <div className="flex items-center justify-between">
-        <h2 className="text-2xl font-bold text-gray-900">Курсы</h2>
-        <button
-          onClick={refetchCourses}
-          className="px-3 py-1.5 text-sm bg-gray-100 text-gray-700 rounded hover:bg-gray-200"
-          disabled={coursesLoading}
-        >
+    <Card
+      title={<Title level={4} style={{ margin: 0 }}>Курсы</Title>}
+      extra={
+        <Button icon={<ReloadOutlined />} onClick={refetchCourses} loading={coursesLoading}>
           Обновить
-        </button>
-      </div>
-
+        </Button>
+      }
+    >
       {coursesError && (
-        <div className="p-3 bg-red-50 border border-red-200 rounded text-red-700 text-sm">
-          {coursesError.message}
-        </div>
+        <Alert message={coursesError.message} type="error" showIcon style={{ marginBottom: 16 }} />
       )}
 
       {coursesLoading ? (
-        <div className="text-gray-600">Загрузка курсов...</div>
+        <div style={{ textAlign: 'center', padding: 48 }}><Spin /></div>
       ) : sortedCourses.length === 0 ? (
-        <div className="text-gray-500">Курсы не найдены</div>
+        <Empty description="Курсы не найдены" />
       ) : (
-        <div className="space-y-3">
-          {sortedCourses.map((course) => (
-            <div
-              key={course.id}
+        <List
+          dataSource={sortedCourses}
+          renderItem={(course) => (
+            <List.Item
+              style={{ cursor: 'pointer' }}
               onClick={() => handleCourseSelect(course.id, course.title)}
-              className="p-4 bg-gray-50 rounded-lg border border-gray-200 cursor-pointer hover:bg-gray-100 transition-colors"
+              actions={[<RightOutlined key="arrow" />]}
             >
-              <div className="flex items-center justify-between">
-                <div>
-                  <h3 className="text-lg font-medium text-gray-900">{course.title}</h3>
-                  {course.subtitle && (
-                    <p className="text-sm text-gray-600 mt-1">{course.subtitle}</p>
-                  )}
-                </div>
-                <span className="text-gray-400">→</span>
-              </div>
-            </div>
-          ))}
-        </div>
+              <List.Item.Meta
+                title={<Text strong>{course.title}</Text>}
+                description={course.subtitle}
+              />
+            </List.Item>
+          )}
+        />
       )}
-    </div>
+    </Card>
   );
 
-  // ========== РЕНДЕР СПИСКА ПОТОКОВ ==========
+  // Рендер списка потоков
   const renderStreamsList = () => (
-    <div className="space-y-4">
-      <div className="flex items-center justify-between">
+    <Card
+      title={
         <div>
-          <h2 className="text-2xl font-bold text-gray-900">Потоки курса</h2>
-          <p className="text-sm text-gray-600 mt-1">{navigation.courseName}</p>
+          <Title level={4} style={{ margin: 0 }}>Потоки курса</Title>
+          <Text type="secondary">{navigation.courseName}</Text>
         </div>
-        <button
-          onClick={handleNavigationBack}
-          className="px-3 py-1.5 text-sm bg-gray-100 text-gray-700 rounded hover:bg-gray-200"
-        >
-          ← Назад
-        </button>
-      </div>
-
+      }
+      extra={
+        <Button icon={<ArrowLeftOutlined />} onClick={handleNavigationBack}>
+          Назад
+        </Button>
+      }
+    >
       {streamsLoading ? (
-        <div className="text-gray-600">Загрузка потоков...</div>
+        <div style={{ textAlign: 'center', padding: 48 }}><Spin /></div>
       ) : !courseStreams || courseStreams.length === 0 ? (
-        <div className="text-gray-500">
-          У этого курса пока нет потоков. Создайте поток в разделе "Потоки".
-        </div>
+        <Empty description="У этого курса пока нет потоков. Создайте поток в разделе «Потоки»." />
       ) : (
-        <div className="space-y-3">
-          {courseStreams.map((stream) => (
-            <div
-              key={stream.id}
-              className="p-4 bg-gray-50 rounded-lg border border-gray-200"
-            >
-              <div className="flex items-center justify-between">
-                <div
-                  className="flex-1 cursor-pointer"
-                  onClick={() => handleStreamSelect(stream.id, stream.name)}
+        <List
+          dataSource={courseStreams}
+          renderItem={(stream) => (
+            <List.Item
+              actions={[
+                <Button
+                  key="copy"
+                  icon={<CopyOutlined />}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    openCopyModal(stream.id, stream.name);
+                  }}
                 >
-                  <h3 className="text-lg font-medium text-gray-900">{stream.name}</h3>
-                  <div className="flex items-center gap-3 mt-1">
+                  Копировать
+                </Button>,
+                <RightOutlined key="arrow" onClick={() => handleStreamSelect(stream.id, stream.name)} />,
+              ]}
+            >
+              <List.Item.Meta
+                title={
+                  <a onClick={() => handleStreamSelect(stream.id, stream.name)}>
+                    <Text strong>{stream.name}</Text>
+                  </a>
+                }
+                description={
+                  <Space>
                     {stream.start_date && (
-                      <span className="text-sm text-gray-600">
+                      <Text type="secondary">
                         Начало: {new Date(stream.start_date).toLocaleDateString('ru-RU')}
-                      </span>
+                      </Text>
                     )}
-                    <span className={`text-xs px-2 py-0.5 rounded ${
-                      stream.is_active
-                        ? 'bg-green-100 text-green-700'
-                        : 'bg-gray-100 text-gray-600'
-                    }`}>
+                    <Tag color={stream.is_active ? 'success' : 'default'}>
                       {stream.is_active ? 'Активен' : 'Неактивен'}
-                    </span>
-                  </div>
-                </div>
-                <div className="flex items-center gap-2">
-                  <button
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      openCopyModal(stream.id, stream.name);
-                    }}
-                    className="px-3 py-1 text-sm text-blue-600 hover:text-blue-700 border border-blue-300 rounded hover:bg-blue-50"
-                  >
-                    Копировать
-                  </button>
-                  <span
-                    className="text-gray-400 cursor-pointer"
-                    onClick={() => handleStreamSelect(stream.id, stream.name)}
-                  >
-                    →
-                  </span>
-                </div>
-              </div>
-            </div>
-          ))}
-        </div>
+                    </Tag>
+                  </Space>
+                }
+              />
+            </List.Item>
+          )}
+        />
       )}
-    </div>
+    </Card>
   );
 
-  // ========== РЕНДЕР СПИСКА ТАРИФОВ ПОТОКА ==========
+  // Рендер списка тарифов потока
   const renderTariffsList = () => (
-    <div className="space-y-4">
-      <div className="flex items-center justify-between">
+    <Card
+      title={
         <div>
-          <h2 className="text-2xl font-bold text-gray-900">Тарифы потока</h2>
-          <p className="text-sm text-gray-600 mt-1">{navigation.streamName}</p>
+          <Title level={4} style={{ margin: 0 }}>Тарифы потока</Title>
+          <Text type="secondary">{navigation.streamName}</Text>
         </div>
-        <button
-          onClick={handleNavigationBack}
-          className="px-3 py-1.5 text-sm bg-gray-100 text-gray-700 rounded hover:bg-gray-200"
-        >
-          ← Назад
-        </button>
-      </div>
-
+      }
+      extra={
+        <Button icon={<ArrowLeftOutlined />} onClick={handleNavigationBack}>
+          Назад
+        </Button>
+      }
+    >
       {tariffsLoading ? (
-        <div className="text-gray-600">Загрузка тарифов...</div>
+        <div style={{ textAlign: 'center', padding: 48 }}><Spin /></div>
       ) : (
         <>
-          {/* Список тарифов потока */}
           {!streamTariffs || streamTariffs.length === 0 ? (
-            <div className="text-gray-500">У этого потока пока нет тарифов.</div>
+            <Empty description="У этого потока пока нет тарифов." />
           ) : (
-            <div className="space-y-3">
-              {streamTariffs.map((st: any) => (
-                <div
-                  key={st.id}
-                  className="p-4 bg-gray-50 rounded-lg border border-gray-200"
-                >
-                  <div className="flex items-center justify-between">
-                    <div
-                      className="flex-1 cursor-pointer"
-                      onClick={() => handleTariffSelect(st.tariff_id, st.tariffs?.name || 'Тариф')}
+            <List
+              dataSource={streamTariffs}
+              renderItem={(st: any) => (
+                <List.Item
+                  actions={[
+                    <Popconfirm
+                      key="delete"
+                      title="Удалить тариф из потока?"
+                      description="Вся конфигурация модулей и техник будет удалена."
+                      onConfirm={() => handleRemoveTariffFromStream(st.id)}
+                      okText="Да"
+                      cancelText="Нет"
                     >
-                      <h3 className="text-lg font-medium text-gray-900">
-                        {st.tariffs?.name}
-                      </h3>
-                      <p className="text-sm text-gray-600">Код: {st.tariffs?.code}</p>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <button
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          handleRemoveTariffFromStream(st.id);
-                        }}
-                        className="px-3 py-1 text-sm text-red-600 hover:text-red-700 border border-red-300 rounded hover:bg-red-50"
-                      >
+                      <Button danger icon={<DeleteOutlined />}>
                         Удалить
-                      </button>
-                      <span
-                        className="text-gray-400 cursor-pointer"
-                        onClick={() => handleTariffSelect(st.tariff_id, st.tariffs?.name || 'Тариф')}
-                      >
-                        →
-                      </span>
-                    </div>
-                  </div>
-                </div>
-              ))}
-            </div>
+                      </Button>
+                    </Popconfirm>,
+                    <RightOutlined
+                      key="arrow"
+                      onClick={() => handleTariffSelect(st.tariff_id, st.tariffs?.name || 'Тариф')}
+                    />,
+                  ]}
+                >
+                  <List.Item.Meta
+                    title={
+                      <a onClick={() => handleTariffSelect(st.tariff_id, st.tariffs?.name || 'Тариф')}>
+                        <Text strong>{st.tariffs?.name}</Text>
+                      </a>
+                    }
+                    description={`Код: ${st.tariffs?.code}`}
+                  />
+                </List.Item>
+              )}
+            />
           )}
 
-          {/* Добавить тариф */}
           {availableTariffs && availableTariffs.length > 0 && (
-            <div className="mt-4">
-              <select
-                onChange={(e) => {
-                  if (e.target.value) {
-                    handleAddTariffToStream(e.target.value);
-                    e.target.value = '';
-                  }
+            <div style={{ marginTop: 16 }}>
+              <Select
+                placeholder="+ Добавить тариф в поток"
+                style={{ width: '100%' }}
+                onChange={(value) => {
+                  if (value) handleAddTariffToStream(value);
                 }}
-                className="w-full px-4 py-2 rounded-lg bg-white text-gray-900 border border-gray-300 focus:ring-2 focus:ring-blue-500"
+                value={null}
               >
-                <option value="">+ Добавить тариф в поток</option>
                 {availableTariffs.map((tariff) => (
-                  <option key={tariff.id} value={tariff.id}>
+                  <Select.Option key={tariff.id} value={tariff.id}>
                     {tariff.name} ({tariff.code})
-                  </option>
+                  </Select.Option>
                 ))}
-              </select>
+              </Select>
             </div>
           )}
         </>
       )}
-    </div>
+    </Card>
   );
 
-  // ========== РЕНДЕР КОНФИГУРАЦИИ ТАРИФА ==========
+  // Рендер конфигурации тарифа
   const renderConfiguration = () => (
-    <div className="space-y-4">
-      <div className="flex items-center justify-between">
+    <Card
+      title={
         <div>
-          <h2 className="text-2xl font-bold text-gray-900">Конфигурация тарифа</h2>
-          <p className="text-sm text-gray-600 mt-1">
-            {navigation.streamName} / {navigation.tariffName}
-          </p>
+          <Title level={4} style={{ margin: 0 }}>Конфигурация тарифа</Title>
+          <Text type="secondary">{navigation.streamName} / {navigation.tariffName}</Text>
         </div>
-        <button
-          onClick={handleNavigationBack}
-          className="px-3 py-1.5 text-sm bg-gray-100 text-gray-700 rounded hover:bg-gray-200"
-        >
-          ← Назад
-        </button>
-      </div>
-
+      }
+      extra={
+        <Button icon={<ArrowLeftOutlined />} onClick={handleNavigationBack}>
+          Назад
+        </Button>
+      }
+    >
       {configLoading ? (
-        <div className="text-gray-600">Загрузка конфигурации...</div>
+        <div style={{ textAlign: 'center', padding: 48 }}><Spin /></div>
       ) : (
         <>
-          {/* Список модулей */}
-          <div className="space-y-3">
-            {configuration?.modules.map((module) => (
-              <motion.div
-                key={module.stream_module_id}
-                layout
-                className="bg-gray-50 rounded-lg p-4 border border-gray-200"
-              >
-                <div className="flex items-start justify-between gap-4">
-                  <div className="flex-1">
-                    <div className="flex items-center gap-3">
-                      <button
-                        onClick={() => toggleModule(module.stream_module_id)}
-                        className="text-gray-700 hover:text-gray-900"
-                      >
-                        {expandedModules.has(module.stream_module_id) ? '▼' : '▶'}
-                      </button>
-                      <h3 className="text-lg font-medium text-gray-900">
-                        {module.module_name}
-                      </h3>
+          {configuration?.modules && configuration.modules.length > 0 ? (
+            <Collapse
+              activeKey={expandedModules}
+              onChange={(keys) => setExpandedModules(keys as string[])}
+              expandIcon={({ isActive }) => <CaretRightOutlined rotate={isActive ? 90 : 0} />}
+            >
+              {configuration.modules.map((module) => (
+                <Panel
+                  key={module.stream_module_id}
+                  header={
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', width: '100%' }}>
+                      <div>
+                        <Text strong>{module.module_name}</Text>
+                        <br />
+                        <Text type="secondary" style={{ fontSize: 12 }}>
+                          Доступ: {module.access_duration_days ? `${module.access_duration_days} дней` : 'Бессрочно'}
+                        </Text>
+                      </div>
                     </div>
-
-                    {/* Редактирование модуля */}
-                    {editingModule === module.tariff_stream_module_id ? (
-                      <div className="mt-3 ml-8 space-y-2 bg-white p-3 rounded border border-blue-300">
+                  }
+                  extra={
+                    <Space onClick={(e) => e.stopPropagation()}>
+                      <Button
+                        size="small"
+                        icon={<EditOutlined />}
+                        onClick={() => {
+                          setEditingModule(module.tariff_stream_module_id);
+                          setEditingModuleData({ days: module.access_duration_days });
+                        }}
+                      />
+                      <Popconfirm
+                        title="Удалить модуль из тарифа?"
+                        onConfirm={() => handleRemoveModule(module.tariff_stream_module_id)}
+                        okText="Да"
+                        cancelText="Нет"
+                      >
+                        <Button size="small" danger icon={<DeleteOutlined />} />
+                      </Popconfirm>
+                    </Space>
+                  }
+                >
+                  {/* Редактирование модуля */}
+                  {editingModule === module.tariff_stream_module_id && (
+                    <Card size="small" style={{ marginBottom: 16, background: '#fafafa' }}>
+                      <Space direction="vertical" style={{ width: '100%' }}>
                         <div>
-                          <label className="block text-xs font-medium text-gray-700 mb-1">
-                            Доступ к модулю (дней):
-                          </label>
-                          <input
-                            type="number"
-                            id={`access-days-${module.tariff_stream_module_id}`}
-                            defaultValue={module.access_duration_days || ''}
+                          <Text strong style={{ fontSize: 12 }}>Доступ к модулю (дней):</Text>
+                          <InputNumber
+                            style={{ width: '100%', marginTop: 4 }}
                             placeholder="Пусто = бессрочно"
-                            className="w-full px-3 py-1.5 text-sm rounded bg-white text-gray-900 border border-gray-300"
+                            value={editingModuleData.days}
+                            onChange={(value) => setEditingModuleData({ days: value })}
                           />
                         </div>
-                        <div className="flex gap-2">
-                          <button
-                            onClick={() => {
-                              const input = document.getElementById(
-                                `access-days-${module.tariff_stream_module_id}`
-                              ) as HTMLInputElement;
-                              const days = input.value ? parseInt(input.value) : null;
-                              handleUpdateModule(module.tariff_stream_module_id, days, module.order_num);
-                            }}
-                            className="px-3 py-1 text-xs bg-blue-600 text-white rounded hover:bg-blue-700"
+                        <Space>
+                          <Button
+                            type="primary"
+                            size="small"
+                            icon={<CheckOutlined />}
+                            onClick={() => handleUpdateModule(
+                              module.tariff_stream_module_id,
+                              editingModuleData.days,
+                              module.order_num
+                            )}
                           >
                             Сохранить
-                          </button>
-                          <button
+                          </Button>
+                          <Button
+                            size="small"
+                            icon={<CloseOutlined />}
                             onClick={() => setEditingModule(null)}
-                            className="px-3 py-1 text-xs border border-gray-300 text-gray-700 rounded hover:bg-gray-50"
                           >
                             Отмена
-                          </button>
-                        </div>
-                      </div>
-                    ) : (
-                      <div className="mt-1 ml-8 flex items-center gap-3">
-                        <p className="text-sm text-gray-600">
-                          Доступ: {module.access_duration_days ? `${module.access_duration_days} дней` : 'Бессрочно'}
-                        </p>
-                        <button
-                          onClick={() => setEditingModule(module.tariff_stream_module_id)}
-                          className="text-xs text-blue-600 hover:text-blue-700 underline"
-                        >
-                          Изменить
-                        </button>
-                      </div>
-                    )}
-                  </div>
-
-                  <button
-                    onClick={() => handleRemoveModule(module.tariff_stream_module_id)}
-                    className="px-3 py-1 text-sm text-red-600 hover:text-red-700 border border-red-300 rounded-lg hover:bg-red-50"
-                  >
-                    Удалить
-                  </button>
-                </div>
-
-                {/* Техники в модуле */}
-                <AnimatePresence>
-                  {expandedModules.has(module.stream_module_id) && (
-                    <motion.div
-                      initial={{ opacity: 0, height: 0 }}
-                      animate={{ opacity: 1, height: 'auto' }}
-                      exit={{ opacity: 0, height: 0 }}
-                      className="mt-4 ml-8 space-y-2"
-                    >
-                      <h4 className="text-sm font-medium text-gray-700">Техники:</h4>
-                      {module.techniques.length === 0 ? (
-                        <p className="text-sm text-gray-500">Нет техник</p>
-                      ) : (
-                        <div className="space-y-2">
-                          {module.techniques.map((technique) => (
-                            <div
-                              key={technique.technique_id}
-                              className="bg-white p-2 rounded border border-gray-200"
-                            >
-                              {editingTechnique === technique.tariff_module_technique_id ? (
-                                <div className="space-y-2">
-                                  <div className="font-medium text-gray-900">
-                                    {technique.technique_title}
-                                  </div>
-                                  <div>
-                                    <label className="block text-xs font-medium text-gray-700 mb-1">
-                                      Открыть через (дней):
-                                    </label>
-                                    <input
-                                      type="number"
-                                      id={`unlock-days-${technique.tariff_module_technique_id}`}
-                                      defaultValue={technique.unlock_offset_days}
-                                      min="0"
-                                      className="w-full px-2 py-1 text-sm rounded bg-white text-gray-900 border border-gray-300"
-                                    />
-                                  </div>
-                                  <div className="flex gap-2">
-                                    <button
-                                      onClick={() => {
-                                        const input = document.getElementById(
-                                          `unlock-days-${technique.tariff_module_technique_id}`
-                                        ) as HTMLInputElement;
-                                        const days = parseInt(input.value) || 0;
-                                        handleUpdateTechnique(technique.tariff_module_technique_id!, days, technique.order_num);
-                                      }}
-                                      className="px-2 py-1 text-xs bg-blue-600 text-white rounded hover:bg-blue-700"
-                                    >
-                                      Сохранить
-                                    </button>
-                                    <button
-                                      onClick={() => setEditingTechnique(null)}
-                                      className="px-2 py-1 text-xs border border-gray-300 text-gray-700 rounded hover:bg-gray-50"
-                                    >
-                                      Отмена
-                                    </button>
-                                  </div>
-                                </div>
-                              ) : (
-                                <div className="flex items-center justify-between">
-                                  <div className="flex items-center gap-2">
-                                    <span className="text-sm text-gray-900">
-                                      {technique.technique_title}
-                                    </span>
-                                    <span className="text-xs text-gray-500">
-                                      (через {technique.unlock_offset_days} дней)
-                                    </span>
-                                    <button
-                                      onClick={() => setEditingTechnique(technique.tariff_module_technique_id!)}
-                                      className="text-xs text-blue-600 hover:text-blue-700 underline"
-                                    >
-                                      Изменить
-                                    </button>
-                                  </div>
-                                  <button
-                                    onClick={() => handleRemoveTechnique(technique.tariff_module_technique_id!)}
-                                    className="text-xs text-red-600 hover:text-red-700"
-                                  >
-                                    ✕
-                                  </button>
-                                </div>
-                              )}
-                            </div>
-                          ))}
-                        </div>
-                      )}
-
-                      {/* Материалы модуля */}
-                      {moduleMaterials && moduleMaterials[module.stream_module_id] && moduleMaterials[module.stream_module_id].length > 0 && (
-                        <div className="mt-4">
-                          <h4 className="text-sm font-medium text-gray-700 mb-2">Материалы из библиотеки:</h4>
-                          <div className="space-y-2">
-                            {moduleMaterials[module.stream_module_id].map((mm) => (
-                              <div
-                                key={mm.id}
-                                className="bg-purple-50 p-2 rounded border border-purple-200 flex items-center justify-between"
-                              >
-                                <div className="flex items-center gap-2">
-                                  <span className="text-sm">
-                                    {mm.material.material_type === 'audio' ? '🎵' : '🎬'}
-                                  </span>
-                                  <span className="text-sm text-gray-900">
-                                    {mm.material.name}
-                                  </span>
-                                  <span className="text-xs text-gray-500">
-                                    (день {mm.release_day || 1}{mm.active_days ? `, ${mm.active_days} дн.` : ''})
-                                  </span>
-                                </div>
-                              </div>
-                            ))}
-                          </div>
-                        </div>
-                      )}
-
-                      {/* Добавить технику */}
-                      <div className="mt-3">
-                        <select
-                          onChange={(e) => {
-                            if (e.target.value) {
-                              handleAddTechnique(module.tariff_stream_module_id, e.target.value);
-                              e.target.value = '';
-                            }
-                          }}
-                          className="w-full px-3 py-1.5 text-sm rounded bg-white text-gray-900 border border-gray-300"
-                        >
-                          <option value="">+ Добавить технику</option>
-                          {getAvailableTechniques(module)?.map((technique) => (
-                            <option key={technique.id} value={technique.id}>
-                              {technique.title}
-                            </option>
-                          ))}
-                        </select>
-                      </div>
-                    </motion.div>
+                          </Button>
+                        </Space>
+                      </Space>
+                    </Card>
                   )}
-                </AnimatePresence>
-              </motion.div>
-            ))}
-          </div>
+
+                  {/* Техники */}
+                  <Text strong style={{ display: 'block', marginBottom: 8 }}>Техники:</Text>
+                  {module.techniques.length === 0 ? (
+                    <Text type="secondary">Нет техник</Text>
+                  ) : (
+                    <List
+                      size="small"
+                      dataSource={module.techniques}
+                      renderItem={(technique) => (
+                        <List.Item
+                          actions={
+                            editingTechnique === technique.tariff_module_technique_id
+                              ? []
+                              : [
+                                  <Button
+                                    key="edit"
+                                    type="link"
+                                    size="small"
+                                    onClick={() => {
+                                      setEditingTechnique(technique.tariff_module_technique_id!);
+                                      setEditingTechniqueData({ days: technique.unlock_offset_days });
+                                    }}
+                                  >
+                                    Изменить
+                                  </Button>,
+                                  <Popconfirm
+                                    key="delete"
+                                    title="Удалить технику?"
+                                    onConfirm={() => handleRemoveTechnique(technique.tariff_module_technique_id!)}
+                                    okText="Да"
+                                    cancelText="Нет"
+                                  >
+                                    <Button type="link" size="small" danger>
+                                      <CloseOutlined />
+                                    </Button>
+                                  </Popconfirm>,
+                                ]
+                          }
+                        >
+                          {editingTechnique === technique.tariff_module_technique_id ? (
+                            <Space direction="vertical" style={{ width: '100%' }}>
+                              <Text strong>{technique.technique_title}</Text>
+                              <div>
+                                <Text style={{ fontSize: 12 }}>Открыть через (дней):</Text>
+                                <InputNumber
+                                  size="small"
+                                  min={0}
+                                  value={editingTechniqueData.days}
+                                  onChange={(value) => setEditingTechniqueData({ days: value || 0 })}
+                                  style={{ width: 100, marginLeft: 8 }}
+                                />
+                              </div>
+                              <Space>
+                                <Button
+                                  type="primary"
+                                  size="small"
+                                  onClick={() => handleUpdateTechnique(
+                                    technique.tariff_module_technique_id!,
+                                    editingTechniqueData.days,
+                                    technique.order_num
+                                  )}
+                                >
+                                  Сохранить
+                                </Button>
+                                <Button size="small" onClick={() => setEditingTechnique(null)}>
+                                  Отмена
+                                </Button>
+                              </Space>
+                            </Space>
+                          ) : (
+                            <Space>
+                              <Text>{technique.technique_title}</Text>
+                              <Text type="secondary" style={{ fontSize: 12 }}>
+                                (через {technique.unlock_offset_days} дней)
+                              </Text>
+                            </Space>
+                          )}
+                        </List.Item>
+                      )}
+                    />
+                  )}
+
+                  {/* Материалы */}
+                  {moduleMaterials && moduleMaterials[module.stream_module_id] && moduleMaterials[module.stream_module_id].length > 0 && (
+                    <div style={{ marginTop: 16 }}>
+                      <Text strong style={{ display: 'block', marginBottom: 8 }}>Материалы из библиотеки:</Text>
+                      <List
+                        size="small"
+                        dataSource={moduleMaterials[module.stream_module_id]}
+                        renderItem={(mm) => (
+                          <List.Item>
+                            <Space>
+                              {mm.material.material_type === 'audio' ? <SoundOutlined /> : <VideoCameraOutlined />}
+                              <Text>{mm.material.name}</Text>
+                              <Text type="secondary" style={{ fontSize: 12 }}>
+                                (день {mm.release_day || 1}{mm.active_days ? `, ${mm.active_days} дн.` : ''})
+                              </Text>
+                            </Space>
+                          </List.Item>
+                        )}
+                      />
+                    </div>
+                  )}
+
+                  {/* Добавить технику */}
+                  <div style={{ marginTop: 16 }}>
+                    <Select
+                      placeholder="+ Добавить технику"
+                      style={{ width: '100%' }}
+                      onChange={(value) => {
+                        if (value) handleAddTechnique(module.tariff_stream_module_id, value);
+                      }}
+                      value={null}
+                    >
+                      {getAvailableTechniques(module)?.map((technique) => (
+                        <Select.Option key={technique.id} value={technique.id}>
+                          {technique.title}
+                        </Select.Option>
+                      ))}
+                    </Select>
+                  </div>
+                </Panel>
+              ))}
+            </Collapse>
+          ) : (
+            <Empty description="Нет модулей в тарифе" />
+          )}
 
           {/* Добавить модуль */}
           {availableModules && availableModules.length > 0 && (
-            <div className="mt-4">
-              <select
-                onChange={(e) => {
-                  if (e.target.value) {
-                    handleAddModule(e.target.value);
-                    e.target.value = '';
-                  }
+            <div style={{ marginTop: 16 }}>
+              <Select
+                placeholder="+ Добавить модуль в тариф"
+                style={{ width: '100%' }}
+                onChange={(value) => {
+                  if (value) handleAddModule(value);
                 }}
-                className="w-full px-4 py-2 rounded-lg bg-white text-gray-900 border border-gray-300 focus:ring-2 focus:ring-blue-500"
+                value={null}
               >
-                <option value="">+ Добавить модуль в тариф</option>
                 {availableModules.map((module) => (
-                  <option key={module.id} value={module.id}>
+                  <Select.Option key={module.id} value={module.id}>
                     {module.name}
-                  </option>
+                  </Select.Option>
                 ))}
-              </select>
+              </Select>
             </div>
           )}
         </>
       )}
-    </div>
+    </Card>
   );
 
-  // ========== ОСНОВНОЙ РЕНДЕР ==========
   return (
-    <div className="p-6 bg-white rounded-lg shadow-sm" style={{ minHeight: '600px' }}>
-      {renderBreadcrumb()}
+    <div>
+      <Breadcrumb items={breadcrumbItems} style={{ marginBottom: 16 }} />
 
-      <AnimatePresence mode="wait">
-        <motion.div
-          key={navigation.view}
-          initial={{ opacity: 0, x: 20 }}
-          animate={{ opacity: 1, x: 0 }}
-          exit={{ opacity: 0, x: -20 }}
-          transition={{ duration: 0.2 }}
-        >
-          {navigation.view === 'courses' && renderCoursesList()}
-          {navigation.view === 'streams' && renderStreamsList()}
-          {navigation.view === 'tariffs' && renderTariffsList()}
-          {navigation.view === 'configuration' && renderConfiguration()}
-        </motion.div>
-      </AnimatePresence>
+      {navigation.view === 'courses' && renderCoursesList()}
+      {navigation.view === 'streams' && renderStreamsList()}
+      {navigation.view === 'tariffs' && renderTariffsList()}
+      {navigation.view === 'configuration' && renderConfiguration()}
 
       {/* Модальное окно копирования потока */}
-      {showCopyModal && (
-        <div
-          className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50"
-          onClick={closeCopyModal}
-        >
-          <div
-            className="bg-white rounded-lg p-6 w-full max-w-md shadow-xl"
-            onClick={(e) => e.stopPropagation()}
+      <Modal
+        title="Копировать поток"
+        open={showCopyModal}
+        onOk={handleCopyStream}
+        onCancel={() => {
+          setShowCopyModal(false);
+          copyForm.resetFields();
+        }}
+        confirmLoading={copyStreamMutation.isPending}
+        okText="Копировать"
+        cancelText="Отмена"
+      >
+        <Form form={copyForm} layout="vertical">
+          <Form.Item name="streamId" hidden>
+            <Input />
+          </Form.Item>
+
+          <Form.Item
+            name="newName"
+            label="Название нового потока"
+            rules={[{ required: true, message: 'Введите название' }]}
           >
-            <div className="flex items-center justify-between mb-4">
-              <h3 className="text-xl font-bold text-gray-900">Копировать поток</h3>
-              <button
-                onClick={closeCopyModal}
-                className="text-gray-400 hover:text-gray-600 text-2xl"
-              >
-                ×
-              </button>
-            </div>
+            <Input placeholder="Название..." />
+          </Form.Item>
 
-            <div className="space-y-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Название нового потока *
-                </label>
-                <input
-                  type="text"
-                  value={copyStreamData.newName}
-                  onChange={(e) => setCopyStreamData({ ...copyStreamData, newName: e.target.value })}
-                  className="w-full px-3 py-2 rounded bg-white text-gray-900 border border-gray-300 focus:ring-2 focus:ring-blue-500"
-                />
-              </div>
+          <Form.Item
+            name="newStartDate"
+            label="Дата начала нового потока"
+            rules={[{ required: true, message: 'Выберите дату' }]}
+          >
+            <DatePicker style={{ width: '100%' }} />
+          </Form.Item>
 
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Дата начала нового потока *
-                </label>
-                <input
-                  type="date"
-                  value={copyStreamData.newStartDate}
-                  onChange={(e) => setCopyStreamData({ ...copyStreamData, newStartDate: e.target.value })}
-                  className="w-full px-3 py-2 rounded bg-white text-gray-900 border border-gray-300 focus:ring-2 focus:ring-blue-500"
-                />
-              </div>
-
-              <p className="text-sm text-gray-500">
-                Будут скопированы: модули, тарифы, конфигурация техник, события календаря
-              </p>
-
-              <div className="flex gap-3 pt-2">
-                <button
-                  onClick={handleCopyStream}
-                  disabled={copyStreamMutation.isPending || !copyStreamData.newName || !copyStreamData.newStartDate}
-                  className="flex-1 px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 disabled:opacity-50"
-                >
-                  {copyStreamMutation.isPending ? 'Копирование...' : 'Копировать'}
-                </button>
-                <button
-                  onClick={closeCopyModal}
-                  className="flex-1 px-4 py-2 bg-gray-200 text-gray-700 rounded hover:bg-gray-300"
-                >
-                  Отмена
-                </button>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
+          <Text type="secondary" style={{ fontSize: 12 }}>
+            Будут скопированы: модули, тарифы, конфигурация техник, события календаря
+          </Text>
+        </Form>
+      </Modal>
     </div>
   );
 };

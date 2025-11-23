@@ -2,7 +2,13 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/lib/supabase/client';
 import { PlayerProvider } from '@/contexts/PlayerContext';
+import { ConfigProvider, Layout, Card, Form, Input, Button, Alert, Typography, theme } from 'antd';
+import { UserOutlined, LockOutlined } from '@ant-design/icons';
+import ruRU from 'antd/locale/ru_RU';
 import './AdminPage.css';
+
+const { Content } = Layout;
+const { Title } = Typography;
 
 // Компоненты
 import { AdminSidebar, type AdminSection } from './components/AdminSidebar';
@@ -227,41 +233,86 @@ const AdminPageNew: React.FC = () => {
   // Форма входа
   if (!passwordAuth) {
     return (
-      <div className="admin-login">
-        <h1>Админ-панель</h1>
+      <ConfigProvider
+        locale={ruRU}
+        theme={{
+          algorithm: theme.defaultAlgorithm,
+          token: {
+            colorPrimary: '#1890ff',
+            borderRadius: 8,
+          },
+        }}
+      >
+        <div style={{
+          minHeight: '100vh',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+        }}>
+          <Card
+            style={{
+              width: 400,
+              boxShadow: '0 20px 60px rgba(0,0,0,0.3)',
+            }}
+          >
+            <div style={{ textAlign: 'center', marginBottom: 24 }}>
+              <Title level={3} style={{ marginBottom: 8 }}>Админ-панель</Title>
+              <Typography.Text type="secondary">
+                Введите данные для входа
+              </Typography.Text>
+            </div>
 
-        <div className="admin-warning">
-          Доступ ограничен. Введите логин и пароль для входа.
+            {error && (
+              <Alert
+                message={error}
+                type="error"
+                showIcon
+                style={{ marginBottom: 16 }}
+              />
+            )}
+
+            <Form
+              layout="vertical"
+              onFinish={authenticateUser}
+            >
+              <Form.Item label="Логин">
+                <Input
+                  prefix={<UserOutlined />}
+                  placeholder="Введите логин"
+                  value={login}
+                  onChange={(e) => setLogin(e.target.value)}
+                  disabled={authLoading}
+                  size="large"
+                />
+              </Form.Item>
+
+              <Form.Item label="Пароль">
+                <Input.Password
+                  prefix={<LockOutlined />}
+                  placeholder="Введите пароль"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  disabled={authLoading}
+                  size="large"
+                />
+              </Form.Item>
+
+              <Form.Item style={{ marginBottom: 0 }}>
+                <Button
+                  type="primary"
+                  htmlType="submit"
+                  loading={authLoading}
+                  block
+                  size="large"
+                >
+                  Войти
+                </Button>
+              </Form.Item>
+            </Form>
+          </Card>
         </div>
-
-        {error && <div className="admin-error">{error}</div>}
-
-        <input
-          type="text"
-          className="admin-input"
-          placeholder="Логин"
-          value={login}
-          onChange={(e) => setLogin(e.target.value)}
-          onKeyPress={(e) => e.key === 'Enter' && authenticateUser()}
-          disabled={authLoading}
-        />
-        <input
-          type="password"
-          className="admin-input"
-          placeholder="Пароль"
-          value={password}
-          onChange={(e) => setPassword(e.target.value)}
-          onKeyPress={(e) => e.key === 'Enter' && authenticateUser()}
-          disabled={authLoading}
-        />
-        <button
-          className="admin-button"
-          onClick={authenticateUser}
-          disabled={authLoading}
-        >
-          {authLoading ? 'Проверка...' : 'Войти'}
-        </button>
-      </div>
+      </ConfigProvider>
     );
   }
 
@@ -319,25 +370,41 @@ const AdminPageNew: React.FC = () => {
   };
 
   return (
-    <PlayerProvider>
-      <div className="flex h-screen bg-gray-100">
-        {/* Sidebar */}
-        <AdminSidebar
-          currentSection={currentSection}
-          onSectionChange={handleSectionChange}
-          userRole={adminUser?.role}
-          userName={`${adminUser?.last_name || ''} ${adminUser?.first_name || ''}`.trim()}
-          onLogout={handleLogout}
-        />
+    <ConfigProvider
+      locale={ruRU}
+      theme={{
+        algorithm: theme.defaultAlgorithm,
+        token: {
+          colorPrimary: '#1890ff',
+          borderRadius: 6,
+        },
+      }}
+    >
+      <PlayerProvider>
+        <Layout style={{ minHeight: '100vh' }}>
+          {/* Sidebar */}
+          <AdminSidebar
+            currentSection={currentSection}
+            onSectionChange={handleSectionChange}
+            userRole={adminUser?.role}
+            userName={`${adminUser?.last_name || ''} ${adminUser?.first_name || ''}`.trim()}
+            onLogout={handleLogout}
+          />
 
-        {/* Main Content */}
-        <div className="flex-1 overflow-auto">
-          <div className="p-6">
-            {renderContent()}
-          </div>
-        </div>
-      </div>
-    </PlayerProvider>
+          {/* Main Content */}
+          <Layout>
+            <Content style={{
+              padding: 24,
+              background: '#f5f5f5',
+              minHeight: '100vh',
+              overflow: 'auto',
+            }}>
+              {renderContent()}
+            </Content>
+          </Layout>
+        </Layout>
+      </PlayerProvider>
+    </ConfigProvider>
   );
 };
 
