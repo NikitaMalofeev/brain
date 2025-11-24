@@ -73,9 +73,9 @@ const EventCard: React.FC<EventCardProps> = ({ event, isGuest = false }) => {
       return;
     }
 
-    // Если нет доступа (не гость, но недоступно по тарифу)
+    // Если нет доступа (не гость, но недоступно по тарифу) - не делаем ничего,
+    // кнопка повышения тарифа отображается отдельно
     if (!event.can_access) {
-      alert('Это событие недоступно для вашего тарифа');
       return;
     }
 
@@ -189,25 +189,40 @@ const EventCard: React.FC<EventCardProps> = ({ event, isGuest = false }) => {
         </div>
 
         {/* Кнопка действия */}
-        <button
-          className={clsx('event-card-action', {
-            'event-card-action-disabled': !event.can_access,
-          })}
-          onClick={handleAction}
-          disabled={!event.can_access}
-        >
-          {!event.can_access ? (
-            isGuest ? (
-              'Недоступно гостям'
-            ) : (
-              'Недоступно для вашего тарифа'
-            )
-          ) : event.event_type === 'zoom' || event.event_type === 'offline' ? (
-            'Перейти'
-          ) : (
-            'Открыть'
-          )}
-        </button>
+        {event.can_access ? (
+          <button
+            className="event-card-action"
+            onClick={handleAction}
+          >
+            {event.event_type === 'zoom' || event.event_type === 'offline' ? 'Перейти' : 'Открыть'}
+          </button>
+        ) : isGuest ? (
+          <button
+            className="event-card-action event-card-action-disabled"
+            onClick={handleAction}
+          >
+            Недоступно гостям
+          </button>
+        ) : (
+          <div className="event-card-tariff-block">
+            <div className="event-card-tariff-message">
+              <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+                <path d="M8 14C11.3137 14 14 11.3137 14 8C14 4.68629 11.3137 2 8 2C4.68629 2 2 4.68629 2 8C2 11.3137 4.68629 14 8 14Z" stroke="currentColor" strokeWidth="1.5"/>
+                <path d="M8 5V8" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/>
+                <circle cx="8" cy="11" r="0.5" fill="currentColor"/>
+              </svg>
+              <span>Недоступно на вашем тарифе</span>
+            </div>
+            <a
+              href="https://t.me/brainprogramming_sales"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="event-card-upgrade-btn"
+            >
+              Повысить тариф
+            </a>
+          </div>
+        )}
       </div>
 
       {/* Модалка для гостей */}

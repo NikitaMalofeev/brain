@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { supabase } from '@/lib/supabase/client';
 import { PlayerProvider } from '@/contexts/PlayerContext';
 import { ConfigProvider, Layout, Card, Form, Input, Button, Alert, Typography, theme } from 'antd';
@@ -34,11 +34,52 @@ interface SubmissionsNavigationState {
   selectedSubmissionId?: number;
 }
 
+// Маппинг секций на URL-пути
+const sectionToPath: Record<AdminSection, string> = {
+  courses: 'courses',
+  materials: 'materials',
+  techniques: 'techniques',
+  streams: 'streams',
+  modules: 'modules',
+  tariffs: 'tariffs',
+  students: 'students',
+  curators: 'curators',
+  submissions: 'submissions',
+  chats: 'chats',
+  faq: 'faq',
+  broadcasts: 'broadcasts',
+  tokens: 'tokens',
+  calendar: 'calendar',
+};
+
+const pathToSection: Record<string, AdminSection> = Object.fromEntries(
+  Object.entries(sectionToPath).map(([k, v]) => [v, k as AdminSection])
+) as Record<string, AdminSection>;
+
 const AdminPageNew: React.FC = () => {
   const navigate = useNavigate();
+  const location = useLocation();
 
-  const [currentSection, setCurrentSection] = useState<AdminSection>('courses');
+  // Получаем секцию из URL
+  const getSectionFromPath = (): AdminSection => {
+    const path = location.pathname.replace('/admin/', '').replace('/admin', '');
+    const section = pathToSection[path];
+    return section || 'courses';
+  };
+
+  const [currentSection, setCurrentSection] = useState<AdminSection>(getSectionFromPath);
   const [submissionsNavigation, setSubmissionsNavigation] = useState<SubmissionsNavigationState>({ view: 'list' });
+
+  // Синхронизация секции с URL при изменении location
+  useEffect(() => {
+    const section = getSectionFromPath();
+    if (section !== currentSection) {
+      setCurrentSection(section);
+      if (section !== 'submissions') {
+        setSubmissionsNavigation({ view: 'list' });
+      }
+    }
+  }, [location.pathname]);
 
   // Состояние авторизации
   const [passwordAuth, setPasswordAuth] = useState<boolean>(() => {
@@ -110,8 +151,9 @@ const AdminPageNew: React.FC = () => {
 
   // Для куратора переключаемся на проверку ДЗ
   useEffect(() => {
-    if (adminUser?.role === 'curator') {
+    if (adminUser?.role === 'curator' && currentSection !== 'submissions' && currentSection !== 'students') {
       setCurrentSection('submissions');
+      navigate('/admin/submissions');
     }
   }, [adminUser]);
 
@@ -224,6 +266,9 @@ const AdminPageNew: React.FC = () => {
 
   const handleSectionChange = (section: AdminSection) => {
     setCurrentSection(section);
+    // Меняем URL
+    const path = sectionToPath[section];
+    navigate(`/admin/${path}`);
     // Сбрасываем навигацию сабмитов
     if (section !== 'submissions') {
       setSubmissionsNavigation({ view: 'list' });

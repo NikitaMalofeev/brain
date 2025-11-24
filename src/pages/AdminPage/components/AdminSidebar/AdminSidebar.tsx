@@ -6,7 +6,6 @@ import {
   TeamOutlined,
   CheckSquareOutlined,
   MessageOutlined,
-  SettingOutlined,
   LogoutOutlined,
   ReadOutlined,
   AimOutlined,
@@ -15,7 +14,6 @@ import {
   DollarOutlined,
   UserOutlined,
   SolutionOutlined,
-  FormOutlined,
   QuestionCircleOutlined,
   VideoCameraOutlined,
   KeyOutlined,
@@ -92,18 +90,14 @@ const AdminSidebar: React.FC<AdminSidebarProps> = ({
     getItem('Пользователи', 'users', <TeamOutlined />, [
       getItem('Ученики', 'students', <UserOutlined />),
       getItem('Кураторы', 'curators', <SolutionOutlined />),
+      getItem('Доступы', 'tokens', <KeyOutlined />),
     ]),
-    getItem('Проверка', 'review', <CheckSquareOutlined />, [
-      getItem('Проверка ДЗ', 'submissions', <FormOutlined />),
-    ]),
+    getItem('Проверка ДЗ', 'submissions', <CheckSquareOutlined />),
+    getItem('События', 'calendar', <ScheduleOutlined />),
     getItem('Коммуникации', 'communications', <MessageOutlined />, [
       getItem('Чаты', 'chats', <MessageOutlined />),
       getItem('FAQ', 'faq', <QuestionCircleOutlined />),
       getItem('Эфиры', 'broadcasts', <VideoCameraOutlined />),
-    ]),
-    getItem('Система', 'system', <SettingOutlined />, [
-      getItem('Доступы', 'tokens', <KeyOutlined />),
-      getItem('События', 'calendar', <ScheduleOutlined />),
     ]),
   ];
 
@@ -112,9 +106,7 @@ const AdminSidebar: React.FC<AdminSidebarProps> = ({
     getItem('Пользователи', 'users', <TeamOutlined />, [
       getItem('Ученики', 'students', <UserOutlined />),
     ]),
-    getItem('Проверка', 'review', <CheckSquareOutlined />, [
-      getItem('Проверка ДЗ', 'submissions', <FormOutlined />),
-    ]),
+    getItem('Проверка ДЗ', 'submissions', <CheckSquareOutlined />),
   ];
 
   const menuItems = userRole === 'curator' ? curatorMenuItems : adminMenuItems;
@@ -135,7 +127,7 @@ const AdminSidebar: React.FC<AdminSidebarProps> = ({
   // Определяем открытые группы на основе текущей секции
   const getOpenKeys = (): string[] => {
     const sectionToGroup: Record<AdminSection, string> = {
-      courses: 'content',
+      courses: '',
       materials: 'directories',
       techniques: 'directories',
       streams: 'directories',
@@ -143,14 +135,15 @@ const AdminSidebar: React.FC<AdminSidebarProps> = ({
       tariffs: 'directories',
       students: 'users',
       curators: 'users',
-      submissions: 'review',
+      submissions: '',
       chats: 'communications',
       faq: 'communications',
       broadcasts: 'communications',
-      tokens: 'system',
-      calendar: 'system',
+      tokens: 'users',
+      calendar: '',
     };
-    return [sectionToGroup[currentSection]];
+    const group = sectionToGroup[currentSection];
+    return group ? [group] : [];
   };
 
   return (

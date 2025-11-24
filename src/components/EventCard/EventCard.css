@@ -108,3 +108,50 @@
   background: #E5E5EA;
   transform: none;
 }
+
+/* Блок недоступно по тарифу */
+.event-card-tariff-block {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-top: 4px;
+}
+
+.event-card-tariff-message {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 12px;
+  background: #FFF3CD;
+  border-radius: 10px;
+  color: #856404;
+  font-size: 13px;
+}
+
+.event-card-tariff-message svg {
+  flex-shrink: 0;
+}
+
+.event-card-upgrade-btn {
+  display: block;
+  width: 100%;
+  padding: 12px;
+  border: none;
+  border-radius: 12px;
+  background: #B862EA;
+  color: white;
+  font-size: 14px;
+  font-weight: 600;
+  text-align: center;
+  text-decoration: none;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.event-card-upgrade-btn:hover {
+  background: #9B4DD8;
+}
+
+.event-card-upgrade-btn:active {
+  transform: scale(0.98);
+}

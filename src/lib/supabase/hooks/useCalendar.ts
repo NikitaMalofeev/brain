@@ -240,6 +240,150 @@ export function useDeleteCalendarEvent() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['calendar-events'] });
       queryClient.invalidateQueries({ queryKey: ['stream-events'] });
+      queryClient.invalidateQueries({ queryKey: ['admin-calendar-events'] });
+    },
+  });
+}
+
+/**
+ * Хук для обновления события календаря (для админки)
+ */
+export function useUpdateCalendarEvent() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async (params: { eventId: string; eventData: Partial<CalendarEvent> }) => {
+      if (!supabase) {
+        throw new Error('Supabase client not initialized');
+      }
+
+      logger.debug('Updating calendar event', params);
+
+      const { data, error } = await supabase
+        .from('calendar_events')
+        .update(params.eventData)
+        .eq('id', params.eventId)
+        .select()
+        .single();
+
+      if (error) {
+        logger.error('Error updating calendar event', { error });
+        throw error;
+      }
+
+      logger.debug('Calendar event updated successfully', { eventId: data.id });
+      return data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['calendar-events'] });
+      queryClient.invalidateQueries({ queryKey: ['stream-events'] });
+      queryClient.invalidateQueries({ queryKey: ['admin-calendar-events'] });
+    },
+  });
+}
+
+/**
+ * Хук для получения модулей потока (для выбора в форме события)
+ */
+export function useStreamModulesForSelect(streamId: string | null) {
+  return useQuery({
+    queryKey: ['stream-modules-select', streamId],
+    queryFn: async () => {
+      if (!streamId || !supabase) {
+        return [];
+      }
+
+      const { data, error } = await supabase
+        .from('stream_modules')
+        .select('id, name, color, order_num')
+        .eq('stream_id', streamId)
+        .order('order_num', { ascending: true });
+
+      if (error) {
+        logger.error('Error fetching stream modules', { error });
+        throw error;
+      }
+
+      return data || [];
+    },
+    enabled: !!streamId && !!supabase,
+  });
+}
+
+/**
+ * Хук для получения тарифов события
+ */
+export function useEventTariffs(eventId: string | null) {
+  return useQuery({
+    queryKey: ['event-tariffs', eventId],
+    queryFn: async () => {
+      if (!eventId || !supabase) {
+        return [];
+      }
+
+      const { data, error } = await supabase
+        .from('event_tariff_access')
+        .select('tariff_id')
+        .eq('event_id', eventId);
+
+      if (error) {
+        logger.error('Error fetching event tariffs', { error });
+        throw error;
+      }
+
+      return data?.map(t => t.tariff_id) || [];
+    },
+    enabled: !!eventId && !!supabase,
+  });
+}
+
+/**
+ * Хук для обновления тарифов события
+ */
+export function useUpdateEventTariffs() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async (params: { eventId: string; tariffIds: string[] }) => {
+      if (!supabase) {
+        throw new Error('Supabase client not initialized');
+      }
+
+      logger.debug('Updating event tariffs', params);
+
+      // Удаляем старые тарифы
+      const { error: deleteError } = await supabase
+        .from('event_tariff_access')
+        .delete()
+        .eq('event_id', params.eventId);
+
+      if (deleteError) {
+        logger.error('Error deleting old event tariffs', { error: deleteError });
+        throw deleteError;
+      }
+
+      // Добавляем новые тарифы (если есть)
+      if (params.tariffIds.length > 0) {
+        const { error: insertError } = await supabase
+          .from('event_tariff_access')
+          .insert(
+            params.tariffIds.map(tariffId => ({
+              event_id: params.eventId,
+              tariff_id: tariffId,
+            }))
+          );
+
+        if (insertError) {
+          logger.error('Error inserting event tariffs', { error: insertError });
+          throw insertError;
+        }
+      }
+
+      logger.debug('Event tariffs updated successfully');
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['event-tariffs'] });
+      queryClient.invalidateQueries({ queryKey: ['calendar-events'] });
     },
   });
 }

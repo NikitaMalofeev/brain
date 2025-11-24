@@ -1,11 +1,11 @@
-import React from 'react';
+import React, { useState, useMemo } from 'react';
 import { clsx } from 'clsx';
 import './CalendarGrid.css';
 
 interface CalendarGridProps {
   currentDate: Date;
   selectedDate: Date | null;
-  events: Array<{ event_date: string; module_color: string | null }>;
+  events: Array<{ event_date: string; module_color: string | null; module_name?: string | null }>;
   onDateClick: (date: Date) => void;
   onPrevMonth: () => void;
   onNextMonth: () => void;
@@ -23,6 +23,19 @@ const CalendarGrid: React.FC<CalendarGridProps> = ({
   onPrevMonth,
   onNextMonth,
 }) => {
+  const [showLegend, setShowLegend] = useState(false);
+
+  // Получаем уникальные модули для легенды
+  const moduleColors = useMemo(() => {
+    const colorMap = new Map<string, string>();
+    events.forEach((event) => {
+      if (event.module_color && event.module_name) {
+        colorMap.set(event.module_color, event.module_name);
+      }
+    });
+    return Array.from(colorMap.entries()).map(([color, name]) => ({ color, name }));
+  }, [events]);
+
   // Получаем информацию о месяце
   const year = currentDate.getFullYear();
   const month = currentDate.getMonth();
@@ -105,6 +118,28 @@ const CalendarGrid: React.FC<CalendarGridProps> = ({
 
   return (
     <div className="calendar-grid-container">
+      {/* Легенда цветов модулей */}
+      {showLegend && moduleColors.length > 0 && (
+        <div className="calendar-legend-popup">
+          <div className="calendar-legend-header">
+            <h3>Цвета модулей</h3>
+            <button onClick={() => setShowLegend(false)} className="calendar-legend-close">
+              <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+                <path d="M12 4L4 12M4 4L12 12" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
+              </svg>
+            </button>
+          </div>
+          <div className="calendar-legend-list">
+            {moduleColors.map(({ color, name }) => (
+              <div key={color} className="calendar-legend-item">
+                <div className="calendar-legend-color" style={{ backgroundColor: color }} />
+                <span>{name}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
       {/* Заголовок с месяцем и кнопками навигации */}
       <div className="calendar-header">
         <button className="calendar-nav-btn" onClick={onPrevMonth} aria-label="Предыдущий месяц">
@@ -122,6 +157,21 @@ const CalendarGrid: React.FC<CalendarGridProps> = ({
         <h2 className="calendar-title">
           {monthNames[month]} {year}
         </h2>
+
+        {/* Кнопка легенды */}
+        {moduleColors.length > 0 && (
+          <button
+            className="calendar-legend-btn"
+            onClick={() => setShowLegend(!showLegend)}
+            aria-label="Показать легенду цветов"
+          >
+            <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
+              <circle cx="10" cy="10" r="9" stroke="currentColor" strokeWidth="1.5" />
+              <path d="M10 9V14" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
+              <circle cx="10" cy="6" r="1" fill="currentColor" />
+            </svg>
+          </button>
+        )}
 
         <button className="calendar-nav-btn" onClick={onNextMonth} aria-label="Следующий месяц">
           <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
