@@ -13,7 +13,8 @@
       "Bash(npm run dev:*)",
       "Bash(git checkout:*)",
       "Bash(npm install:*)",
-      "Bash(find:*)"
+      "Bash(find:*)",
+      "Bash(xargs ls:*)"
     ],
     "deny": [],
     "ask": []

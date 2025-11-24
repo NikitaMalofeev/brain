@@ -32,26 +32,27 @@ const StageCard: React.FC<StageCardProps> = ({
     const canAccess = isUnlocked && (!isGuest || orderNum === 1);
 
     const handleClick = (e: React.MouseEvent) => {
-        if (!isUnlocked) {
+        // Если не разблокирован для обычных пользователей
+        if (!isUnlocked && !isGuest) {
             e.preventDefault();
             return;
         }
 
-        // Если гость пытается открыть недоступный модуль
+        // Если гость пытается открыть недоступный модуль (не первый)
         if (isGuest && orderNum !== 1) {
             e.preventDefault();
             setShowGuestModal(true);
             return;
         }
 
-        // Разрешаем переход
+        // Разрешаем переход (для гостей - только в первый модуль)
     };
 
     return (
         <>
             <motion.div
                 layout
-                whileTap={canAccess ? { scale: 0.97 } : {}}
+                whileTap={canAccess || isGuest ? { scale: 0.97 } : {}}
                 style={{ touchAction: 'manipulation' }}
                 className="w-full"
             >
@@ -61,7 +62,7 @@ const StageCard: React.FC<StageCardProps> = ({
                         onClick={handleClick}
                         className={clsx(
                             'block w-full h-full relative bg-white/70',
-                            canAccess ? 'cursor-pointer' : 'pointer-events-none',
+                            (canAccess || isGuest) ? 'cursor-pointer' : 'pointer-events-none',
                         )}
                     >
                     <img

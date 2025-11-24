@@ -7,9 +7,11 @@ import LessonCard from '@/components/LessonCard/LessonCard';
 import useStageDetails, { StageDetailsData } from '@/lib/supabase/hooks/useStageDetails';
 import useLibraryStages, { LibraryStageData } from '@/lib/supabase/hooks/useLibraryStages';
 import { useSupabaseUser, useActiveCourse } from '@/lib/supabase/hooks';
+import { useGuestStatus } from '@/lib/supabase/hooks/useIsGuest';
 import { useAppContext } from '@/contexts/AppContext';
 import { logger } from '@/lib/logger';
 import NativeModal from "@/components/NativeModal.tsx";
+import GuestBlockedModal from '@/components/GuestBlockedModal';
 import { Ripple } from '@/components/ui/Ripple/Ripple';
 import { motion } from 'framer-motion';
 import { clsx } from 'clsx';
@@ -43,38 +45,8 @@ const StagePage: React.FC = () => {
 
     const { id: stageId } = useParams<{ id: string }>();
 
-    // Автоскролл к текущему уроку
-    useEffect(() => {
-        if (!stageDetails || !stageDetails.lessons || stageDetails.lessons.length === 0) {
-            return;
-        }
-
-        // Небольшая задержка чтобы дать время для рендера
-        const timeoutId = setTimeout(() => {
-            // Находим первый разблокированный незавершенный урок
-            const currentLesson = stageDetails.lessons.find(
-                (lesson) => lesson.is_unlocked && !lesson.is_completed
-            );
-
-            if (currentLesson) {
-                const element = document.getElementById(`lesson-${currentLesson.lesson_id}`);
-                if (element) {
-                    logger.debug('Auto-scrolling to current lesson', { lessonId: currentLesson.lesson_id });
-                    element.scrollIntoView({
-                        behavior: 'smooth',
-                        block: 'center',
-                    });
-                }
-            } else {
-                // Если все уроки завершены или все заблокированы, скроллим в начало
-                window.scrollTo({ top: 0, behavior: 'smooth' });
-            }
-        }, 300);
-
-        return () => clearTimeout(timeoutId);
-    }, [stageDetails]);
-
     const [isOpen, setIsOpen] = useState(false);
+    const [showGuestModal, setShowGuestModal] = useState(false);
 
     const navigate = useNavigate();
 
@@ -86,6 +58,9 @@ const StagePage: React.FC = () => {
 
     // Получаем данные пользователя
     const { supabaseUser, loading: supabaseUserLoading, error: supabaseUserError } = useSupabaseUser(initDataSignal);
+
+    // Проверяем статус гостя
+    const { isGuest } = useGuestStatus(supabaseUser?.id);
 
     // Создаем Supabase-совместимого User из supabaseUser
     const [supabaseCompatUser, setSupabaseCompatUser] = useState<User | null>(null);
@@ -125,6 +100,37 @@ const StagePage: React.FC = () => {
         activeCourse?.course_id || null
     );
 
+    // Автоскролл к текущему уроку
+    useEffect(() => {
+        if (!stageDetails || !stageDetails.lessons || stageDetails.lessons.length === 0) {
+            return;
+        }
+
+        // Небольшая задержка чтобы дать время для рендера
+        const timeoutId = setTimeout(() => {
+            // Находим первый разблокированный незавершенный урок
+            const currentLesson = stageDetails.lessons.find(
+                (lesson) => lesson.is_unlocked && !lesson.is_completed
+            );
+
+            if (currentLesson) {
+                const element = document.getElementById(`lesson-${currentLesson.lesson_id}`);
+                if (element) {
+                    logger.debug('Auto-scrolling to current lesson', { lessonId: currentLesson.lesson_id });
+                    element.scrollIntoView({
+                        behavior: 'smooth',
+                        block: 'center',
+                    });
+                }
+            } else {
+                // Если все уроки завершены или все заблокированы, скроллим в начало
+                window.scrollTo({ top: 0, behavior: 'smooth' });
+            }
+        }, 300);
+
+        return () => clearTimeout(timeoutId);
+    }, [stageDetails]);
+
     // Объединяем состояния загрузки
     const loading = stageLoading || stagesLoading || (isTelegramApp && supabaseUserLoading);
 
@@ -137,6 +143,11 @@ const StagePage: React.FC = () => {
 
     // Обработчик клика на урок
     const handleLessonClick = (lessonId: number) => {
+        // Если гость - показываем модалку блокировки
+        if (isGuest) {
+            setShowGuestModal(true);
+            return;
+        }
         logger.debug('Navigating to lesson', { lessonId });
         navigate(`/library/lesson/${lessonId}`);
     };
@@ -191,6 +202,11 @@ const StagePage: React.FC = () => {
         ? `Еще ${lessonsRemaining} заданий до завершения ступени`
         : 'Ступень пройдена!';
 
+    // Прогресс по заданиям модуля
+    const totalAssignments = stageDetails.total_stage_assignments || 0;
+    const completedAssignments = stageDetails.completed_stage_assignments || 0;
+    const assignmentsProgressPercent = totalAssignments > 0 ? (completedAssignments / totalAssignments) * 100 : 0;
+
     // Подсчитываем количество НЕоткрытых уроков в текущей ступени
     const unlockedLessonsInCurrentStage = stageDetails.lessons.filter(lesson => !lesson.is_unlocked).length;
 
@@ -239,6 +255,20 @@ const StagePage: React.FC = () => {
                             })} />
                         ))}
                     </div>
+                    {totalAssignments > 0 && (
+                        <div className={'flex flex-col gap-2'}>
+                            <div className={'flex items-center justify-between'}>
+                                <p className={'text-sm font-medium'}>Прогресс по заданиям</p>
+                                <p className={'text-sm text-[#8C8C8C]'}>{completedAssignments} из {totalAssignments}</p>
+                            </div>
+                            <div className={'w-full h-2 bg-gray-200 rounded-full overflow-hidden'}>
+                                <div
+                                    className={'h-full bg-green-500 rounded-full transition-all duration-300'}
+                                    style={{ width: `${assignmentsProgressPercent}%` }}
+                                />
+                            </div>
+                        </div>
+                    )}
                 </div>
                 <motion.div
                     className={'bg-[url("/bg3.jpg")] min-h-full bg-cover bg-top p-4 rounded-t-3xl flex-1 flex flex-col gap-3'}
@@ -255,12 +285,19 @@ const StagePage: React.FC = () => {
                             <LessonCard
                                 lesson={lesson}
                                 onClick={handleLessonClick}
+                                isGuest={isGuest}
                             />
                         </motion.div>
                     ))}
                 </motion.div>
             </div>
             <NativeModal title={stageDetails.stage_name} description={stageDetails.stage_description} isOpen={isOpen} setIsOpen={setIsOpen} />
+            <GuestBlockedModal
+                isOpen={showGuestModal}
+                onClose={() => setShowGuestModal(false)}
+                title="Содержание урока доступно только ученикам"
+                description="Зарегистрируйтесь, чтобы получить доступ к материалам урока"
+            />
         </Page>
     );
 };

@@ -19,6 +19,9 @@ export interface LessonData {
     submission_status?: 'submitted' | 'pending_review' | 'approved' | 'rejected' | null;
     submission_id?: number;
     has_started?: boolean; // Новое поле - начал ли пользователь урок
+    // Прогресс по заданиям
+    total_assignments: number;
+    completed_assignments: number;
 }
 
 // Тип данных ступени
@@ -30,6 +33,9 @@ export interface StageDetailsData {
     completed_lessons: number;
     is_unlocked: boolean;
     lessons: LessonData[];
+    // Общий прогресс по заданиям модуля
+    total_stage_assignments: number;
+    completed_stage_assignments: number;
 }
 
 /**
@@ -55,6 +61,25 @@ const isLessonAccessible = (
 };
 
 /**
+ * Вспомогательная функция для расчёта фактической даты из смещения
+ */
+const calculateDateFromOffset = (startDate: string, dayOffset: number, timeString?: string): string => {
+    const start = new Date(startDate);
+    start.setDate(start.getDate() + dayOffset);
+
+    // Если есть время из старой даты, используем его
+    if (timeString) {
+        const timeParts = timeString.split('T')[1];
+        if (timeParts) {
+            return `${start.toISOString().split('T')[0]}T${timeParts}`;
+        }
+    }
+
+    // По умолчанию 09:00
+    return `${start.toISOString().split('T')[0]}T09:00:00.000Z`;
+};
+
+/**
  * Хук для получения деталей ступени и связанных уроков
  * @param user - пользователь Supabase
  * @param stageId - ID ступени
@@ -75,6 +100,16 @@ const useStageDetails = (user: User | null, stageId: string | number) => {
             setError(null);
 
             try {
+                // Получаем start_date потока пользователя
+                const { data: streamData, error: streamError } = await supabase
+                    .from('user_stream_enrollments')
+                    .select('streams(start_date)')
+                    .eq('user_id', user.id)
+                    .single();
+
+                // start_date потока (если нет - используем текущую дату как fallback)
+                const streamStartDate = (streamData?.streams as any)?.start_date || new Date().toISOString().split('T')[0];
+
                 // Получаем данные ступени
                 const { data: stageData, error: stageError } = await supabase
                     .from('course_stages')
@@ -127,6 +162,40 @@ const useStageDetails = (user: User | null, stageId: string | number) => {
                     console.warn('Ошибка загрузки submissions:', submissionsError.message);
                 }
 
+                // Загружаем assignments для всех уроков модуля
+                const lessonIds = lessonsWithAccess?.map(l => l.lesson_id) || [];
+                const { data: assignmentsData } = await supabase
+                    .from('assignments')
+                    .select('id, lesson_id')
+                    .in('lesson_id', lessonIds);
+
+                // Загружаем submissions пользователя по assignments
+                const assignmentIds = assignmentsData?.map(a => a.id) || [];
+                const { data: assignmentSubmissionsData } = await supabase
+                    .from('submissions')
+                    .select('id, assignment_id, status')
+                    .eq('user_id', user.id)
+                    .in('assignment_id', assignmentIds);
+
+                // Создаем мапы для подсчета assignments по урокам
+                const assignmentsByLesson = new Map<number, number>();
+                assignmentsData?.forEach(assignment => {
+                    const count = assignmentsByLesson.get(assignment.lesson_id) || 0;
+                    assignmentsByLesson.set(assignment.lesson_id, count + 1);
+                });
+
+                // Создаем мапы для подсчета completed submissions по урокам
+                const completedByLesson = new Map<number, number>();
+                assignmentsData?.forEach(assignment => {
+                    const submission = assignmentSubmissionsData?.find(
+                        s => s.assignment_id === assignment.id && s.status === 'approved'
+                    );
+                    if (submission) {
+                        const count = completedByLesson.get(assignment.lesson_id) || 0;
+                        completedByLesson.set(assignment.lesson_id, count + 1);
+                    }
+                });
+
                 // Создаем мапы для быстрого доступа
                 const progressMap = new Map();
                 progressData?.forEach(progress => {
@@ -173,6 +242,19 @@ const useStageDetails = (user: User | null, stageId: string | number) => {
                     // Определяем, начал ли пользователь урок
                     const hasStarted = !!progress?.started_at || !!submission;
 
+                    // Рассчитываем фактические даты из смещений относительно start_date потока
+                    // Всегда используем смещения для расчёта (они приходят из RPC с COALESCE)
+                    const calculatedOpenAt = calculateDateFromOffset(
+                        streamStartDate,
+                        lessonWithAccess.open_day_offset ?? (lessonWithAccess.order_num - 1),
+                        lessonWithAccess.open_at
+                    );
+                    const calculatedDeadlineAt = calculateDateFromOffset(
+                        streamStartDate,
+                        lessonWithAccess.deadline_day_offset ?? (lessonWithAccess.order_num + 1),
+                        lessonWithAccess.deadline_at
+                    );
+
                     return {
                             lesson_id: lessonWithAccess.lesson_id,
                             lesson_name: lessonWithAccess.lesson_name,
@@ -183,17 +265,23 @@ const useStageDetails = (user: User | null, stageId: string | number) => {
                         is_completed: isCompleted,
                         is_unlocked: isUnlocked,
                         completion_date: progress?.completed_at,
-                            open_at: lessonWithAccess.open_at,
-                            deadline_at: lessonWithAccess.deadline_at,
+                            open_at: calculatedOpenAt,
+                            deadline_at: calculatedDeadlineAt,
                         submission_status: submission?.status || null,
                         submission_id: submission?.id,
                         has_started: hasStarted,
+                        total_assignments: assignmentsByLesson.get(lessonWithAccess.lesson_id) || 0,
+                        completed_assignments: completedByLesson.get(lessonWithAccess.lesson_id) || 0,
                     };
                 }) || [];
 
                 // Подсчитываем статистику
                 const completedLessons = lessons.filter(l => l.is_completed).length;
                 const totalLessons = lessons.length;
+
+                // Подсчитываем общий прогресс по заданиям модуля
+                const totalStageAssignments = lessons.reduce((sum, l) => sum + l.total_assignments, 0);
+                const completedStageAssignments = lessons.reduce((sum, l) => sum + l.completed_assignments, 0);
 
                 // Формируем итоговые данные ступени
                 const stageDetailsResult: StageDetailsData = {
@@ -204,6 +292,8 @@ const useStageDetails = (user: User | null, stageId: string | number) => {
                     completed_lessons: completedLessons,
                     is_unlocked: true, // TODO: Логика разблокировки на основе условий
                     lessons,
+                    total_stage_assignments: totalStageAssignments,
+                    completed_stage_assignments: completedStageAssignments,
                 };
 
                 setStageDetails(stageDetailsResult);

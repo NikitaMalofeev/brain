@@ -10,6 +10,7 @@ import { motion } from 'framer-motion';
 interface LessonCardProps {
     lesson: LessonData;
     onClick: (lessonId: number) => void;
+    isGuest?: boolean;
 }
 
 // Функция для получения дефолтной обложки в зависимости от типа контента
@@ -51,6 +52,13 @@ const getLessonStatus = (lesson: LessonData) => {
     const timeStatus = getLessonTimeStatus(lesson);
     const deadlineStatus = getDeadlineStatus(lesson.deadline_at);
 
+    // Проверяем прогресс по заданиям
+    const totalAssignments = lesson.total_assignments || 0;
+    const completedAssignments = lesson.completed_assignments || 0;
+    const hasMultipleAssignments = totalAssignments > 0;
+    const allAssignmentsCompleted = hasMultipleAssignments && completedAssignments === totalAssignments;
+    const someAssignmentsCompleted = hasMultipleAssignments && completedAssignments > 0 && completedAssignments < totalAssignments;
+
     // Приоритет 1: "Откроется завтра" - высший приоритет
     if (timeStatus === 'opens_tomorrow') {
         return {
@@ -69,9 +77,27 @@ const getLessonStatus = (lesson: LessonData) => {
         };
     }
 
-    // ПРИОРИТЕТ 3: Завершенный урок через lesson_progress (независимо от заданий и дедлайнов)
+    // ПРИОРИТЕТ 3: Все задания сданы - Завершено (зеленый)
+    if (allAssignmentsCompleted) {
+        return {
+            type: 'completed',
+            text: 'Завершено',
+            bgClass: 'bg-green-500'
+        };
+    }
+
+    // ПРИОРИТЕТ 4: Частичный прогресс - Прогресс (желтый)
+    if (someAssignmentsCompleted) {
+        return {
+            type: 'in_progress',
+            text: 'Прогресс',
+            bgClass: 'bg-yellow-500'
+        };
+    }
+
+    // ПРИОРИТЕТ 5: Завершенный урок через lesson_progress (для уроков без множественных заданий)
     // Это покрывает случаи ручного управления прогрессом через админку
-    if (lesson.is_completed) {
+    if (lesson.is_completed && !hasMultipleAssignments) {
         return {
             type: 'completed',
             text: 'Завершено',
@@ -151,8 +177,13 @@ const getLessonStatus = (lesson: LessonData) => {
     };
 };
 
-const LessonCard: React.FC<LessonCardProps> = ({ lesson, onClick }) => {
+const LessonCard: React.FC<LessonCardProps> = ({ lesson, onClick, isGuest = false }) => {
     const handleClick = () => {
+        // Если гость - всегда вызываем onClick (он покажет модалку в родителе)
+        if (isGuest) {
+            onClick(lesson.lesson_id);
+            return;
+        }
         // Проверяем доступность урока перед переходом
         if (lesson.is_unlocked) {
             onClick(lesson.lesson_id);
@@ -161,6 +192,9 @@ const LessonCard: React.FC<LessonCardProps> = ({ lesson, onClick }) => {
             console.log('Урок заблокирован. Завершите предыдущий урок для разблокировки.');
         }
     };
+
+    // Для гостей все уроки визуально заблокированы
+    const isLocked = isGuest || !lesson.is_unlocked;
 
     // ВРЕМЕННО: используем дефолтную обложку вместо CloudFlare R2
     const coverImageUrl = buildFileUrl(lesson.cover_image_path) || getDefaultCover();
@@ -179,22 +213,22 @@ const LessonCard: React.FC<LessonCardProps> = ({ lesson, onClick }) => {
 
     return (
         <motion.div
-            whileTap={lesson.is_unlocked ? { scale: 0.97 } : {}}
+            whileTap={!isLocked || isGuest ? { scale: 0.97 } : {}}
             style={{ touchAction: 'manipulation' }}
             className="w-full"
         >
             <Ripple className="rounded-3xl overflow-hidden w-full shadow-sm">
-                <div onClick={lesson.is_unlocked ? handleClick : undefined} className={'flex flex-col w-full bg-white'}>
+                <div onClick={(!isLocked || isGuest) ? handleClick : undefined} className={'flex flex-col w-full bg-white'}>
                     <div className={'relative w-full'}>
                         <img
                             src={coverImageUrl}
                             alt={lesson.lesson_name}
-                            className={clsx('h-[193px] w-full object-cover', !lesson.is_unlocked && 'mix-blend-luminosity')}
+                            className={clsx('h-[193px] w-full object-cover', isLocked && 'mix-blend-luminosity')}
                             style={{
                                 objectPosition: 'center center' // Центрирование изображения
                             }}
                         />
-                        {!lesson.is_unlocked && <div className={'p-[6px] rounded-full bg-[linear-gradient(109.65deg,_#E1C1F4_13.64%,_#B862EA_124.92%)] absolute top-1/2 left-1/2 -translate-y-1/2 -translate-x-1/2 z-[2]'}>
+                        {isLocked && <div className={'p-[6px] rounded-full bg-[linear-gradient(109.65deg,_#E1C1F4_13.64%,_#B862EA_124.92%)] absolute top-1/2 left-1/2 -translate-y-1/2 -translate-x-1/2 z-[2]'}>
                             <img src={'/lock.svg'} alt={''} className={clsx('min-w-6 h-6')} />
                         </div>}
                     </div>

@@ -111,11 +111,8 @@ export const MainPage = () => {
                                 whileTap={{ scale: 0.95 }}
                                 style={{ touchAction: 'manipulation' }}
                                 onClick={() => {
-                                    if (isGuest) {
-                                        setShowGuestModal(true);
-                                    } else {
-                                        setIsRoadMapOpen(true);
-                                    }
+                                    // Гость может открыть карту и видеть её (но с заблокированными элементами)
+                                    setIsRoadMapOpen(true);
                                 }}
                                 className="w-8 h-8 bg-white rounded-full flex items-center justify-center shadow-sm hover:shadow-md transition-shadow"
                                 title="Дорожная карта"
@@ -216,6 +213,11 @@ export const MainPage = () => {
                 onStageClick={(stageId) => {
                     // Можно добавить навигацию к этапу или просто закрыть
                     console.log('Clicked stage:', stageId);
+                }}
+                isGuest={isGuest}
+                onGuestBlock={() => {
+                    setIsRoadMapOpen(false);
+                    setShowGuestModal(true);
                 }}
             />
 

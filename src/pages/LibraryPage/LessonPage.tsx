@@ -1,9 +1,10 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useSignal, initDataState } from '@telegram-apps/sdk-react';
 import { User } from '@supabase/supabase-js';
 import { Page } from '@/components/Page';
 import { useSupabaseUser } from '@/lib/supabase/hooks/useSupabaseUser';
+import { useGuestStatus } from '@/lib/supabase/hooks/useIsGuest';
 import { useAppContext } from '@/contexts/AppContext';
 import { logger } from '@/lib/logger';
 import { supabase } from '@/lib/supabase/client';
@@ -17,6 +18,9 @@ import NewPlayer from "@/components/NewPlayer/NewPlayer.tsx";
 import { clsx } from "clsx";
 import { Ripple } from '@/components/ui/Ripple/Ripple';
 import ReactMarkdown from 'react-markdown';
+import GuestBlockedModal from '@/components/GuestBlockedModal';
+import { Check, Clock, XCircle } from 'lucide-react';
+import { useAssignmentsWithProgress, useSaveAssignmentDraft, useSubmitAssignment } from '@/lib/supabase/hooks/useAssignments';
 
 interface LessonPageState {
     lesson: LessonWithBlocks | null;
@@ -25,6 +29,9 @@ interface LessonPageState {
     submission: Submission | null;
     progress: LessonProgress | null;
     userDataLoading: boolean; // Добавляем флаг загрузки пользовательских данных
+    // Прогресс по заданиям урока
+    totalAssignments: number;
+    completedAssignments: number;
 }
 
 // Функция для преобразования URL в тексте в кликабельные ссылки
@@ -70,14 +77,9 @@ function BlockContent({ block }: { block: LessonBlock }) {
 
         case 'audio':
             const audioWaveformData = block.meta_json?.audio_data;
-            console.log('LessonPage audio block:', {
-                blockId: block.id,
-                hasMetaJson: !!block.meta_json,
-                audioData: audioWaveformData
-            });
             return <div className={'flex flex-col gap-3'}>
                 {block.content_url && <NewPlayer
-                    audioUrl={buildFileUrl(block.content_url) || ''} 
+                    audioUrl={buildFileUrl(block.content_url) || ''}
                     waveformData={audioWaveformData}
                 />}
                 {block.content_text && <MarkdownContent content={block.content_text} className="mt-4" />}
@@ -112,13 +114,231 @@ function BlockContent({ block }: { block: LessonBlock }) {
     }
 }
 
-export const BlockItem = ({ block, initialState, childBlocks = [] }: { block: LessonBlock, initialState: boolean, childBlocks?: LessonBlock[] }) => {
+// Компонент формы сдачи задания (встроенный в BlockItem)
+interface AssignmentFormProps {
+    assignmentId: number;
+    userId: string;
+    lessonId: number;
+    initialText?: string;
+    submission?: any;
+}
+
+const AssignmentForm: React.FC<AssignmentFormProps> = ({ assignmentId, userId, lessonId, initialText = '', submission }) => {
+    const [text, setText] = useState(initialText);
+    const [isSaving, setIsSaving] = useState(false);
+    const [saveTimeoutId, setSaveTimeoutId] = useState<NodeJS.Timeout | null>(null);
+
+    const saveDraftMutation = useSaveAssignmentDraft();
+    const submitMutation = useSubmitAssignment();
+
+    // Автосохранение с debounce 1 секунда
+    const debouncedSave = useCallback(
+        (value: string) => {
+            if (saveTimeoutId) {
+                clearTimeout(saveTimeoutId);
+            }
+
+            const timeoutId = setTimeout(() => {
+                if (value.trim()) {
+                    setIsSaving(true);
+                    saveDraftMutation.mutate(
+                        {
+                            userId,
+                            assignmentId,
+                            draftText: value,
+                        },
+                        {
+                            onSuccess: () => {
+                                setIsSaving(false);
+                                logger.debug('Draft saved', { assignmentId });
+                            },
+                            onError: () => {
+                                setIsSaving(false);
+                            },
+                        }
+                    );
+                }
+            }, 1000);
+
+            setSaveTimeoutId(timeoutId);
+        },
+        [userId, assignmentId, saveDraftMutation, saveTimeoutId]
+    );
+
+    const handleTextChange = (value: string) => {
+        setText(value);
+        debouncedSave(value);
+    };
+
+    const handleSubmit = () => {
+        if (!text.trim()) {
+            alert('Пожалуйста, введите ответ перед сдачей');
+            return;
+        }
+
+        submitMutation.mutate(
+            {
+                userId,
+                assignmentId,
+                lessonId,
+                submissionText: text,
+            },
+            {
+                onSuccess: () => {
+                    logger.debug('Assignment submitted', { assignmentId });
+                    setText('');
+                },
+                onError: () => {
+                    alert('Ошибка при сдаче задания. Попробуйте еще раз.');
+                },
+            }
+        );
+    };
+
+    useEffect(() => {
+        return () => {
+            if (saveTimeoutId) {
+                clearTimeout(saveTimeoutId);
+            }
+        };
+    }, [saveTimeoutId]);
+
+    const canEdit = !submission || submission.status === 'rejected';
+
+    // Статус сдачи
+    const renderStatus = () => {
+        if (!submission) return null;
+
+        if (submission.status === 'approved') {
+            return (
+                <div className="flex flex-col gap-2 mb-3">
+                    <div className="flex items-center gap-2 px-3 py-2 bg-green-50 border border-green-200 rounded-lg">
+                        <Check className="w-4 h-4 text-green-600" />
+                        <div className="flex-1">
+                            <p className="text-sm font-medium text-green-800">Задание принято!</p>
+                            {submission.points_awarded > 0 && (
+                                <p className="text-xs text-green-600">+{submission.points_awarded} баллов</p>
+                            )}
+                        </div>
+                    </div>
+                    {submission.feedback_text && (
+                        <div className="p-3 bg-green-50 border border-green-200 rounded-lg">
+                            <h4 className="text-xs font-semibold text-green-800 mb-1">Комментарий куратора:</h4>
+                            <p className="text-sm text-green-700 whitespace-pre-wrap">{submission.feedback_text}</p>
+                        </div>
+                    )}
+                </div>
+            );
+        }
+
+        if (submission.status === 'pending_review') {
+            return (
+                <div className="flex items-center gap-2 px-3 py-2 bg-yellow-50 border border-yellow-200 rounded-lg mb-3">
+                    <Clock className="w-4 h-4 text-yellow-600" />
+                    <p className="text-sm font-medium text-yellow-800">На проверке</p>
+                </div>
+            );
+        }
+
+        if (submission.status === 'rejected') {
+            return (
+                <div className="flex flex-col gap-2 mb-3">
+                    <div className="flex items-center gap-2 px-3 py-2 bg-red-50 border border-red-200 rounded-lg">
+                        <XCircle className="w-4 h-4 text-red-600" />
+                        <p className="text-sm font-medium text-red-800">Требует доработки</p>
+                    </div>
+                    {submission.feedback_text && (
+                        <div className="p-3 bg-red-50 border border-red-200 rounded-lg">
+                            <h4 className="text-xs font-semibold text-red-800 mb-1">Обратная связь куратора:</h4>
+                            <p className="text-sm text-red-700 whitespace-pre-wrap">{submission.feedback_text}</p>
+                        </div>
+                    )}
+                </div>
+            );
+        }
+
+        return null;
+    };
+
+    return (
+        <div className="mt-4 border-t border-gray-100 pt-4">
+            {renderStatus()}
+
+            {/* Отображение сданного ответа (если уже сдано и принято) */}
+            {submission?.status === 'approved' && submission.content_text && (
+                <div className="p-3 bg-gray-50 border border-gray-200 rounded-lg mb-3">
+                    <h4 className="text-xs font-semibold text-gray-700 mb-1">Ваш ответ:</h4>
+                    <p className="text-sm text-gray-600 whitespace-pre-wrap">{submission.content_text}</p>
+                </div>
+            )}
+
+            {/* Поле ввода (если можно редактировать) */}
+            {canEdit && (
+                <div>
+                    <textarea
+                        value={text}
+                        onChange={(e) => handleTextChange(e.target.value)}
+                        placeholder="Ваш ответ..."
+                        rows={4}
+                        className="w-full px-4 py-3 border border-gray-200 rounded-xl resize-none focus:outline-none focus:ring-2 focus:ring-[#68B1EB] focus:border-transparent text-sm"
+                    />
+
+                    <div className="flex items-center justify-between mt-2">
+                        <div className="text-xs text-[#999]">
+                            {isSaving ? (
+                                <span className="flex items-center gap-1">
+                                    <div className="inline-block w-3 h-3 border-2 border-[#68B1EB] border-t-transparent rounded-full animate-spin"></div>
+                                    Сохранение...
+                                </span>
+                            ) : text.trim() ? (
+                                <span className="text-green-600">✓ Черновик сохранен</span>
+                            ) : (
+                                <span>Введите ответ</span>
+                            )}
+                        </div>
+
+                        <Button
+                            onClick={handleSubmit}
+                            disabled={!text.trim() || submitMutation.isPending}
+                            className="px-4 py-2 bg-gradient-to-r from-[#68B1EB] to-[#63ABE6] text-white text-sm font-medium rounded-xl hover:opacity-90 transition-opacity disabled:opacity-50 disabled:cursor-not-allowed"
+                        >
+                            {submitMutation.isPending ? 'Отправка...' : 'Сдать задание'}
+                        </Button>
+                    </div>
+                </div>
+            )}
+        </div>
+    );
+};
+
+interface BlockItemProps {
+    block: LessonBlock;
+    initialState: boolean;
+    childBlocks?: LessonBlock[];
+    assignmentData?: any;
+    userId?: string;
+    lessonId?: number;
+}
+
+export const BlockItem = ({ block, initialState, childBlocks = [], assignmentData, userId, lessonId }: BlockItemProps) => {
     const [collapsed, setCollapsed] = useState(initialState);
+
+    // Проверяем, является ли блок заданием (по названию)
+    const isAssignment = block.title?.toLowerCase().includes('задание');
+
     return (
         <div className={'mb-6 flex flex-col gap-3'}>
             <div onClick={() => setCollapsed((prev) => !prev)} className={'flex items-center gap-2 cursor-pointer'}>
                 <img src={'/arrow-right.svg'} className={clsx('w-3 h-3 duration-200', collapsed && 'rotate-90')} alt={''} />
                 <h3 className={'font-bold text-lg'}>{block.title}</h3>
+                {/* Индикатор статуса задания */}
+                {isAssignment && assignmentData?.submission && (
+                    <span className="ml-auto">
+                        {assignmentData.submission.status === 'approved' && <Check className="w-4 h-4 text-green-600" />}
+                        {assignmentData.submission.status === 'pending_review' && <Clock className="w-4 h-4 text-yellow-600" />}
+                        {assignmentData.submission.status === 'rejected' && <XCircle className="w-4 h-4 text-red-600" />}
+                    </span>
+                )}
             </div>
             {collapsed && (
                 <div className={'flex flex-col gap-6'}>
@@ -126,10 +346,20 @@ export const BlockItem = ({ block, initialState, childBlocks = [] }: { block: Le
                     {childBlocks.map((childBlock) => (
                         <BlockContent block={childBlock} key={childBlock.id} />
                     ))}
+                    {/* Форма сдачи задания (если это задание и есть данные) */}
+                    {isAssignment && assignmentData && userId && lessonId && (
+                        <AssignmentForm
+                            assignmentId={assignmentData.id}
+                            userId={userId}
+                            lessonId={lessonId}
+                            initialText={assignmentData.draft?.draft_text || ''}
+                            submission={assignmentData.submission}
+                        />
+                    )}
                 </div>
             )}
         </div>
-    )
+    );
 };
 const LessonPage: React.FC = () => {
     const { id: lessonId } = useParams<{ id: string }>();
@@ -138,6 +368,12 @@ const LessonPage: React.FC = () => {
     const initDataSignal = useSignal(initDataState);
     const { supabaseUser, loading: supabaseUserLoading, error: supabaseUserError } = useSupabaseUser(initDataSignal);
 
+    // Проверяем статус гостя
+    const { isGuest, isLoading: guestCheckLoading } = useGuestStatus(supabaseUser?.id);
+
+    // Состояние для модалки гостя
+    const [showGuestModal, setShowGuestModal] = useState(false);
+
     const [state, setState] = useState<LessonPageState>({
         lesson: null,
         loading: true,
@@ -145,6 +381,8 @@ const LessonPage: React.FC = () => {
         submission: null,
         progress: null,
         userDataLoading: true, // Изначально пользовательские данные загружаются
+        totalAssignments: 0,
+        completedAssignments: 0,
     });
 
     // Создаем Supabase-совместимого User
@@ -155,6 +393,12 @@ const LessonPage: React.FC = () => {
 
     // Состояние для пересдачи задания
     const [isRetryingSubmission, setIsRetryingSubmission] = useState(false);
+
+    // Загружаем данные заданий с прогрессом
+    const { data: assignmentsWithProgress } = useAssignmentsWithProgress(
+        supabaseUser?.id,
+        lessonId ? parseInt(lessonId) : undefined
+    );
 
     useEffect(() => {
         if (supabaseUser) {
@@ -172,6 +416,13 @@ const LessonPage: React.FC = () => {
             setSupabaseCompatUser(null);
         }
     }, [supabaseUser]);
+
+    // Проверяем гостя и показываем модалку
+    useEffect(() => {
+        if (!guestCheckLoading && isGuest) {
+            setShowGuestModal(true);
+        }
+    }, [isGuest, guestCheckLoading]);
 
     // Загружаем данные урока
     useEffect(() => {
@@ -195,12 +446,48 @@ const LessonPage: React.FC = () => {
                     throw new Error(`Ошибка загрузки урока: ${lessonError.message}`);
                 }
 
+                // Получаем start_date потока пользователя для расчёта дат
+                let streamStartDate = new Date().toISOString().split('T')[0]; // fallback
+                if (supabaseUser?.id) {
+                    const { data: streamData } = await supabase
+                        .from('user_stream_enrollments')
+                        .select('streams(start_date)')
+                        .eq('user_id', supabaseUser.id)
+                        .single();
+
+                    if ((streamData?.streams as any)?.start_date) {
+                        streamStartDate = (streamData.streams as any).start_date;
+                    }
+                }
+
+                // Рассчитываем фактические даты из смещений
+                const calculateDateFromOffset = (startDate: string, dayOffset: number, timeString?: string): string => {
+                    const start = new Date(startDate);
+                    start.setDate(start.getDate() + dayOffset);
+                    if (timeString) {
+                        const timeParts = timeString.split('T')[1];
+                        if (timeParts) {
+                            return `${start.toISOString().split('T')[0]}T${timeParts}`;
+                        }
+                    }
+                    return `${start.toISOString().split('T')[0]}T09:00:00.000Z`;
+                };
+
+                // Применяем смещения к датам
+                const openDayOffset = lessonData.open_day_offset ?? (lessonData.order_num - 1);
+                const deadlineDayOffset = lessonData.deadline_day_offset ?? (lessonData.order_num + 1);
+
+                const calculatedOpenAt = calculateDateFromOffset(streamStartDate, openDayOffset, lessonData.open_at);
+                const calculatedDeadlineAt = calculateDateFromOffset(streamStartDate, deadlineDayOffset, lessonData.deadline_at);
+
                 // Сортируем блоки по порядку
                 const sortedBlocks = lessonData.lesson_blocks?.sort((a: LessonBlock, b: LessonBlock) =>
                     a.order_num - b.order_num) || [];
 
                 const lesson: LessonWithBlocks = {
                     ...lessonData,
+                    open_at: calculatedOpenAt,
+                    deadline_at: calculatedDeadlineAt,
                     blocks: sortedBlocks,
                 };
 
@@ -224,7 +511,7 @@ const LessonPage: React.FC = () => {
         };
 
         fetchLessonData();
-    }, [lessonId]); // Убираю зависимость от supabaseCompatUser
+    }, [lessonId, supabaseUser?.id]); // Добавляем зависимость от supabaseUser для пересчёта дат
 
     // Отдельно загружаем пользовательские данные
     useEffect(() => {
@@ -260,11 +547,35 @@ const LessonPage: React.FC = () => {
                     .eq('lesson_id', lessonId)
                     .maybeSingle();
 
+                // Загружаем assignments для этого урока
+                const { data: assignmentsData } = await supabase
+                    .from('assignments')
+                    .select('id')
+                    .eq('lesson_id', lessonId);
+
+                const totalAssignments = assignmentsData?.length || 0;
+
+                // Загружаем submissions пользователя по этим assignments
+                let completedAssignments = 0;
+                if (totalAssignments > 0) {
+                    const assignmentIds = assignmentsData?.map(a => a.id) || [];
+                    const { data: assignmentSubmissions } = await supabase
+                        .from('submissions')
+                        .select('id, assignment_id, status')
+                        .eq('user_id', supabaseCompatUser.id)
+                        .in('assignment_id', assignmentIds)
+                        .eq('status', 'approved');
+
+                    completedAssignments = assignmentSubmissions?.length || 0;
+                }
+
                 setState(prev => ({
                     ...prev,
                     submission,
                     progress,
                     userDataLoading: false, // Загрузка пользовательских данных завершена
+                    totalAssignments,
+                    completedAssignments,
                 }));
 
                 logger.debug('User data loaded', { lessonId, hasSubmission: !!submission, hasProgress: !!progress });
@@ -383,9 +694,36 @@ const LessonPage: React.FC = () => {
         const hasStarted = !!state.progress?.started_at || !!submission;
         const deadlineStatus = getDeadlineStatus(state.lesson?.deadline_at);
 
-        // ПРИОРИТЕТ 0: Урок завершен через lesson_progress (независимо от наличия задания)
+        // Проверяем прогресс по заданиям
+        const totalAssignments = state.totalAssignments;
+        const completedAssignments = state.completedAssignments;
+        const hasMultipleAssignments = totalAssignments > 0;
+        const allAssignmentsCompleted = hasMultipleAssignments && completedAssignments === totalAssignments;
+        const someAssignmentsCompleted = hasMultipleAssignments && completedAssignments > 0 && completedAssignments < totalAssignments;
+
+        // ПРИОРИТЕТ 0: Все задания сданы - Завершено (зеленый)
+        if (allAssignmentsCompleted) {
+            return {
+                type: 'completed',
+                text: 'Завершено',
+                bgClass: 'bg-green-500',
+                icon: '✅'
+            };
+        }
+
+        // ПРИОРИТЕТ 1: Частичный прогресс - Прогресс (желтый)
+        if (someAssignmentsCompleted) {
+            return {
+                type: 'in_progress',
+                text: 'Прогресс',
+                bgClass: 'bg-yellow-500',
+                icon: '📝'
+            };
+        }
+
+        // ПРИОРИТЕТ 2: Урок завершен через lesson_progress (для уроков без множественных заданий)
         // Это покрывает случаи ручного управления прогрессом через админку
-        if (isLessonCompleted) {
+        if (isLessonCompleted && !hasMultipleAssignments) {
             return {
                 type: 'completed',
                 text: 'Завершено',
@@ -756,7 +1094,7 @@ const LessonPage: React.FC = () => {
 
 
     // Состояния загрузки и ошибок
-    const loading = state.loading || state.userDataLoading || (isTelegramApp && supabaseUserLoading);
+    const loading = state.loading || state.userDataLoading || guestCheckLoading || (isTelegramApp && supabaseUserLoading);
     const error = state.error || (isTelegramApp && supabaseUserError);
 
     if (loading) {
@@ -845,6 +1183,21 @@ const LessonPage: React.FC = () => {
                             </p>
                         )}
                     </div>
+                    {/* Прогресс по заданиям урока */}
+                    {state.totalAssignments > 0 && (
+                        <div className={'flex flex-col gap-2 mt-2'}>
+                            <div className={'flex items-center justify-between'}>
+                                <p className={'text-sm font-medium'}>Прогресс по заданиям</p>
+                                <p className={'text-sm text-[#8C8C8C]'}>{state.completedAssignments} из {state.totalAssignments}</p>
+                            </div>
+                            <div className={'w-full h-2 bg-gray-200 rounded-full overflow-hidden'}>
+                                <div
+                                    className={'h-full bg-green-500 rounded-full transition-all duration-300'}
+                                    style={{ width: `${state.totalAssignments > 0 ? (state.completedAssignments / state.totalAssignments) * 100 : 0}%` }}
+                                />
+                            </div>
+                        </div>
+                    )}
                 </div>
                 <div className={'p-4 mb-16'}>
                     {(() => {
@@ -869,13 +1222,27 @@ const LessonPage: React.FC = () => {
                         
                         return groupedBlocks.map((group, i) => {
                             if (group.parent.title && group.parent.title.trim() !== '') {
+                                // Проверяем, является ли блок заданием и находим соответствующие данные
+                                const isAssignmentBlock = group.parent.title.toLowerCase().includes('задание');
+                                let assignmentData = undefined;
+
+                                if (isAssignmentBlock && assignmentsWithProgress) {
+                                    // Ищем assignment по title блока
+                                    assignmentData = assignmentsWithProgress.find(
+                                        a => a.title.toLowerCase() === group.parent.title.toLowerCase()
+                                    );
+                                }
+
                                 // Блок с заголовком - используем BlockItem
                                 return (
-                                    <BlockItem 
-                                        key={group.parent.id} 
-                                        block={group.parent} 
+                                    <BlockItem
+                                        key={group.parent.id}
+                                        block={group.parent}
                                         initialState={i === 0}
                                         childBlocks={group.children}
+                                        assignmentData={assignmentData}
+                                        userId={supabaseUser?.id}
+                                        lessonId={lessonId ? parseInt(lessonId) : undefined}
                                     />
                                 );
                             } else {
@@ -932,8 +1299,8 @@ const LessonPage: React.FC = () => {
                 )}
 
 
-                {/* Fixed форма сдачи (если есть задание и оно не сдано ИЛИ идет пересдача) */}
-                {showSubmissionForm && state.lesson && (
+                {/* Старая форма сдачи (если нет assignments, но есть has_assignment) */}
+                {state.totalAssignments === 0 && showSubmissionForm && state.lesson && (
                     <FixedSubmissionForm
                         lessonId={parseInt(lessonId || '0')}
                         stageId={state.lesson.stage_id as number | undefined}
@@ -961,7 +1328,21 @@ const LessonPage: React.FC = () => {
                 )}
             </div>
 
-
+            {/* Модалка для гостей */}
+            <GuestBlockedModal
+                isOpen={showGuestModal}
+                onClose={() => {
+                    setShowGuestModal(false);
+                    // Редирект на страницу модуля при закрытии
+                    if (state.lesson?.stage_id) {
+                        navigate(`/library/stage/${state.lesson.stage_id}`);
+                    } else {
+                        navigate('/library');
+                    }
+                }}
+                title="Содержание урока доступно только ученикам"
+                description="Зарегистрируйтесь, чтобы получить доступ к материалам и заданиям"
+            />
         </Page>
     );
 };

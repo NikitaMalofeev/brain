@@ -1,13 +1,52 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { supabase } from '@/lib/supabase/client';
 import { SubmissionStatus, getSubmissionDisplayStatus } from '@/lib/supabase/types';
+import {
+    Card,
+    Button,
+    Select,
+    Tag,
+    Avatar,
+    Space,
+    Spin,
+    Alert,
+    Modal,
+    Input,
+    InputNumber,
+    Typography,
+    Statistic,
+    Row,
+    Col,
+    Collapse,
+    Empty,
+    Tooltip,
+    Badge,
+    Divider,
+    message
+} from 'antd';
+import {
+    ReloadOutlined,
+    CheckCircleOutlined,
+    CloseCircleOutlined,
+    ClockCircleOutlined,
+    EyeOutlined,
+    EditOutlined,
+    CheckOutlined,
+    ExclamationCircleOutlined,
+    UserOutlined,
+    MessageOutlined
+} from '@ant-design/icons';
+
+const { Text, Title } = Typography;
+const { TextArea } = Input;
+const { Panel } = Collapse;
 
 // Типы данных для сабмитов с assignment_id
 interface SubmissionWithDetails {
     id: number;
     user_id: string;
     lesson_id: number;
-    assignment_id?: number; // Новое поле
+    assignment_id?: number;
     submitted_at: string;
     first_submitted_at?: string;
     content_text?: string;
@@ -17,7 +56,6 @@ interface SubmissionWithDetails {
     reviewed_at?: string;
     feedback_text?: string;
     points_awarded: number;
-    // Дополнительные поля из JOIN
     user_first_name: string;
     user_last_name: string;
     user_photo_url?: string;
@@ -25,7 +63,6 @@ interface SubmissionWithDetails {
     stage_name: string;
     reviewer_name?: string;
     lesson_deadline?: string;
-    // Информация о задании
     assignment_title?: string;
     assignment_order?: number;
 }
@@ -38,7 +75,6 @@ interface LessonFeedback {
     created_at: string;
 }
 
-// Группа сдач по дню (lesson) и пользователю
 interface LessonSubmissionGroup {
     user_id: string;
     user_first_name: string;
@@ -77,14 +113,21 @@ const SubmissionsManager: React.FC<SubmissionsManagerProps> = ({
     const [currentUser, setCurrentUser] = useState<{ id: string; role: string } | null>(null);
     const [feedbackModalOpen, setFeedbackModalOpen] = useState<string | null>(null);
     const [feedbackText, setFeedbackText] = useState<string>('');
+    const [lessonAssignments, setLessonAssignments] = useState<Record<number, any[]>>({});
 
-    // Статистика
+    const [manualApproveModal, setManualApproveModal] = useState<{
+        userId: string;
+        lessonId: number;
+        assignmentId: number;
+        assignmentTitle: string;
+    } | null>(null);
+    const [manualApprovePoints, setManualApprovePoints] = useState<number>(100);
+
     const [stats, setStats] = useState({
         pending: 0,
         reviewedToday: 0
     });
 
-    // Загрузка данных
     const loadData = async () => {
         try {
             setLoading(true);
@@ -95,7 +138,6 @@ const SubmissionsManager: React.FC<SubmissionsManagerProps> = ({
                 return;
             }
 
-            // Получаем текущего пользователя
             let effectiveCurrentUser = propCurrentUser;
             if (!effectiveCurrentUser) {
                 const { data: { user } } = await supabase.auth.getUser();
@@ -110,19 +152,24 @@ const SubmissionsManager: React.FC<SubmissionsManagerProps> = ({
             }
             setCurrentUser(effectiveCurrentUser || null);
 
-            // Загружаем assignments для подсчета
             const { data: assignmentsData } = await supabase
                 .from('assignments')
-                .select('id, lesson_id');
+                .select('id, lesson_id, title, order_num');
 
             const assignmentsByLesson: Record<number, number> = {};
+            const assignmentsDetailsByLesson: Record<number, any[]> = {};
             assignmentsData?.forEach((assignment: any) => {
                 assignmentsByLesson[assignment.lesson_id] =
                     (assignmentsByLesson[assignment.lesson_id] || 0) + 1;
+
+                if (!assignmentsDetailsByLesson[assignment.lesson_id]) {
+                    assignmentsDetailsByLesson[assignment.lesson_id] = [];
+                }
+                assignmentsDetailsByLesson[assignment.lesson_id].push(assignment);
             });
             setAssignments(assignmentsByLesson);
+            setLessonAssignments(assignmentsDetailsByLesson);
 
-            // Строим запрос для submissions с assignment_id
             let query = supabase
                 .from('submissions')
                 .select(`
@@ -137,7 +184,6 @@ const SubmissionsManager: React.FC<SubmissionsManagerProps> = ({
                     reviewer:users!submissions_reviewed_by_curator_id_fkey(first_name, last_name)
                 `);
 
-            // Фильтр для кураторов
             if (effectiveCurrentUser?.role === 'curator') {
                 const { data: curatorStudents } = await supabase
                     .from('user_curator')
@@ -156,12 +202,10 @@ const SubmissionsManager: React.FC<SubmissionsManagerProps> = ({
             const { data, error: submissionsError } = await query.order('submitted_at', { ascending: false });
 
             if (submissionsError) {
-                console.error('Ошибка загрузки сабмитов:', submissionsError);
                 setError(`Ошибка загрузки данных: ${submissionsError.message}`);
                 return;
             }
 
-            // Трансформация данных
             const transformedSubmissions: SubmissionWithDetails[] = (data || []).map((submission: any) => ({
                 id: submission.id,
                 user_id: submission.user_id,
@@ -191,7 +235,6 @@ const SubmissionsManager: React.FC<SubmissionsManagerProps> = ({
 
             setSubmissions(transformedSubmissions);
 
-            // Загружаем lesson_feedback для всех уроков
             const lessonIds = Array.from(new Set(transformedSubmissions.map(s => s.lesson_id)));
             const userIds = Array.from(new Set(transformedSubmissions.map(s => s.user_id)));
 
@@ -210,7 +253,6 @@ const SubmissionsManager: React.FC<SubmissionsManagerProps> = ({
                 setLessonFeedbacks(feedbackMap);
             }
 
-            // Статистика
             const pendingCount = transformedSubmissions.filter(s =>
                 ['submitted', 'pending_review'].includes(s.status)
             ).length;
@@ -222,7 +264,6 @@ const SubmissionsManager: React.FC<SubmissionsManagerProps> = ({
             setStats({ pending: pendingCount, reviewedToday: reviewedTodayCount });
 
         } catch (err) {
-            console.error('Неожиданная ошибка:', err);
             setError('Произошла неожиданная ошибка при загрузке данных');
         } finally {
             setLoading(false);
@@ -233,7 +274,6 @@ const SubmissionsManager: React.FC<SubmissionsManagerProps> = ({
         loadData();
     }, [propCurrentUser]);
 
-    // Группировка submissions по lesson + user
     const groupedSubmissions = useMemo(() => {
         const groups: Record<string, LessonSubmissionGroup> = {};
 
@@ -260,28 +300,26 @@ const SubmissionsManager: React.FC<SubmissionsManagerProps> = ({
 
             groups[key].submissions.push(submission);
 
-            // Подсчет submitted и approved
-            if (['pending_review', 'approved', 'rejected'].includes(submission.status)) {
-                groups[key].submitted_assignments++;
-            }
-            if (submission.status === 'approved') {
-                groups[key].approved_assignments++;
+            if (submission.assignment_id) {
+                if (['pending_review', 'approved', 'rejected'].includes(submission.status)) {
+                    groups[key].submitted_assignments++;
+                }
+                if (submission.status === 'approved') {
+                    groups[key].approved_assignments++;
+                }
             }
         });
 
         return Object.values(groups);
     }, [submissions, assignments, lessonFeedbacks]);
 
-    // Фильтрация групп
     const filteredGroups = useMemo(() => {
         return groupedSubmissions.filter(group => {
             if (statusFilter === 'all') return true;
             if (statusFilter === 'pending') {
-                // Есть хотя бы один submitted/pending_review
                 return group.submissions.some(s => ['submitted', 'pending_review'].includes(s.status));
             }
             if (statusFilter === 'completed') {
-                // Все задания сданы и проверены
                 return group.submitted_assignments === group.total_assignments &&
                        group.submissions.every(s => ['approved', 'rejected'].includes(s.status));
             }
@@ -289,7 +327,6 @@ const SubmissionsManager: React.FC<SubmissionsManagerProps> = ({
         });
     }, [groupedSubmissions, statusFilter]);
 
-    // Действия с submissions
     const handleQuickAction = async (submissionId: number, action: 'approve' | 'reject', points?: number) => {
         try {
             if (!supabase) return;
@@ -310,12 +347,10 @@ const SubmissionsManager: React.FC<SubmissionsManagerProps> = ({
                 .eq('id', submissionId);
 
             if (error) {
-                console.error('Ошибка обновления сабмита:', error);
-                setError(`Ошибка обновления: ${error.message}`);
+                message.error(`Ошибка: ${error.message}`);
                 return;
             }
 
-            // Начисление баллов
             if (action === 'approve' && points) {
                 const submission = submissions.find(s => s.id === submissionId);
                 if (submission) {
@@ -334,25 +369,23 @@ const SubmissionsManager: React.FC<SubmissionsManagerProps> = ({
                 }
             }
 
+            message.success(action === 'approve' ? 'Задание принято' : 'Задание отклонено');
             await loadData();
         } catch (err) {
-            console.error('Ошибка быстрого действия:', err);
-            setError('Произошла ошибка при обработке действия');
+            message.error('Произошла ошибка при обработке действия');
         }
     };
 
-    // Сохранение обратной связи по дню
     const handleSaveLessonFeedback = async (userId: string, lessonId: number) => {
         try {
             if (!feedbackText.trim()) {
-                alert('Введите текст обратной связи');
+                message.warning('Введите текст обратной связи');
                 return;
             }
 
             const key = `${userId}-${lessonId}`;
 
             if (lessonFeedbacks[key]) {
-                // Обновление существующего feedback
                 const { error } = await supabase
                     .from('lesson_feedback')
                     .update({
@@ -363,7 +396,6 @@ const SubmissionsManager: React.FC<SubmissionsManagerProps> = ({
 
                 if (error) throw error;
             } else {
-                // Создание нового feedback
                 const { error } = await supabase
                     .from('lesson_feedback')
                     .insert({
@@ -378,10 +410,60 @@ const SubmissionsManager: React.FC<SubmissionsManagerProps> = ({
 
             setFeedbackModalOpen(null);
             setFeedbackText('');
+            message.success('Обратная связь сохранена');
             await loadData();
         } catch (err) {
-            console.error('Ошибка сохранения обратной связи:', err);
-            alert('Ошибка сохранения обратной связи');
+            message.error('Ошибка сохранения обратной связи');
+        }
+    };
+
+    const handleManualApprove = async () => {
+        if (!manualApproveModal || !supabase) return;
+
+        try {
+            const { userId, lessonId, assignmentId } = manualApproveModal;
+            const now = new Date().toISOString();
+
+            const { error: insertError } = await supabase
+                .from('submissions')
+                .insert({
+                    user_id: userId,
+                    lesson_id: lessonId,
+                    assignment_id: assignmentId,
+                    content_text: '[Ручная отметка трекером]',
+                    status: 'approved',
+                    submitted_at: now,
+                    first_submitted_at: now,
+                    reviewed_at: now,
+                    reviewed_by_curator_id: currentUser?.id || null,
+                    points_awarded: manualApprovePoints,
+                    feedback_text: 'Задание отмечено как выполненное трекером'
+                });
+
+            if (insertError) {
+                message.error(`Ошибка: ${insertError.message}`);
+                return;
+            }
+
+            const { data: userData } = await supabase
+                .from('users')
+                .select('total_points')
+                .eq('id', userId)
+                .single();
+
+            if (userData) {
+                await supabase
+                    .from('users')
+                    .update({ total_points: (userData.total_points || 0) + manualApprovePoints })
+                    .eq('id', userId);
+            }
+
+            setManualApproveModal(null);
+            setManualApprovePoints(100);
+            message.success('Задание отмечено как выполненное');
+            await loadData();
+        } catch (err) {
+            message.error('Произошла ошибка при ручном подтверждении задания');
         }
     };
 
@@ -396,258 +478,326 @@ const SubmissionsManager: React.FC<SubmissionsManagerProps> = ({
         });
     };
 
+    const getStatusTag = (status: string) => {
+        switch (status) {
+            case 'approved':
+                return <Tag icon={<CheckCircleOutlined />} color="success">Принято</Tag>;
+            case 'rejected':
+                return <Tag icon={<CloseCircleOutlined />} color="error">Отклонено</Tag>;
+            case 'submitted':
+            case 'pending_review':
+                return <Tag icon={<ClockCircleOutlined />} color="warning">На проверке</Tag>;
+            default:
+                return <Tag>{status}</Tag>;
+        }
+    };
+
     if (loading) {
-        return <div className="admin-loading">Загрузка сабмитов...</div>;
+        return (
+            <div style={{ textAlign: 'center', padding: '50px' }}>
+                <Spin size="large" />
+                <div style={{ marginTop: 16 }}>Загрузка сабмитов...</div>
+            </div>
+        );
     }
 
     return (
-        <div className="admin-section">
-            <div className="section-header">
-                <h2>Проверка домашних заданий</h2>
-                <div className="admin-stats">
-                    <div className="admin-stat-card">
-                        <div className="admin-stat-value">{stats.pending}</div>
-                        <div className="admin-stat-label">Ожидают проверки</div>
-                    </div>
-                    <div className="admin-stat-card">
-                        <div className="admin-stat-value">{stats.reviewedToday}</div>
-                        <div className="admin-stat-label">Проверено сегодня</div>
-                    </div>
-                    <button
-                        className="admin-refresh-btn"
-                        onClick={loadData}
-                        title="Обновить список"
-                    >
-                        🔄
-                    </button>
-                </div>
-            </div>
+        <div>
+            <Card style={{ marginBottom: 16 }}>
+                <Row gutter={16} align="middle">
+                    <Col flex="auto">
+                        <Title level={4} style={{ margin: 0 }}>Проверка домашних заданий</Title>
+                    </Col>
+                    <Col>
+                        <Space size="large">
+                            <Statistic
+                                title="Ожидают проверки"
+                                value={stats.pending}
+                                valueStyle={{ color: stats.pending > 0 ? '#faad14' : '#52c41a' }}
+                            />
+                            <Statistic
+                                title="Проверено сегодня"
+                                value={stats.reviewedToday}
+                                valueStyle={{ color: '#1890ff' }}
+                            />
+                            <Button
+                                icon={<ReloadOutlined />}
+                                onClick={loadData}
+                            >
+                                Обновить
+                            </Button>
+                        </Space>
+                    </Col>
+                </Row>
+            </Card>
 
-            {error && <div className="admin-error">{error}</div>}
+            {error && (
+                <Alert
+                    message="Ошибка"
+                    description={error}
+                    type="error"
+                    showIcon
+                    closable
+                    style={{ marginBottom: 16 }}
+                />
+            )}
 
-            {/* Фильтры */}
-            <div className="admin-filters">
-                <div className="admin-filter-group">
-                    <label>Статус:</label>
-                    <select
+            <Card style={{ marginBottom: 16 }}>
+                <Space>
+                    <Text strong>Статус:</Text>
+                    <Select
                         value={statusFilter}
-                        onChange={(e) => setStatusFilter(e.target.value)}
-                        className="admin-input"
-                    >
-                        <option value="all">Все</option>
-                        <option value="pending">Ожидают проверки</option>
-                        <option value="completed">Полностью сданные</option>
-                    </select>
-                </div>
-            </div>
+                        onChange={setStatusFilter}
+                        style={{ width: 200 }}
+                        options={[
+                            { value: 'all', label: 'Все' },
+                            { value: 'pending', label: 'Ожидают проверки' },
+                            { value: 'completed', label: 'Полностью сданные' }
+                        ]}
+                    />
+                </Space>
+            </Card>
 
-            {/* Группы по дням */}
-            <div className="submissions-groups" style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
-                {filteredGroups.length === 0 ? (
-                    <div className="empty-table">
-                        {statusFilter === 'pending'
+            {filteredGroups.length === 0 ? (
+                <Empty
+                    description={
+                        statusFilter === 'pending'
                             ? 'Нет сабмитов, ожидающих проверки'
                             : 'Сабмиты не найдены'
-                        }
-                    </div>
-                ) : (
-                    filteredGroups.map((group) => {
+                    }
+                />
+            ) : (
+                <Collapse
+                    accordion
+                    defaultActiveKey={filteredGroups.length > 0 ? [`${filteredGroups[0].user_id}-${filteredGroups[0].lesson_id}`] : []}
+                >
+                    {filteredGroups.map((group) => {
                         const key = `${group.user_id}-${group.lesson_id}`;
                         const allSubmitted = group.submitted_assignments === group.total_assignments;
+                        const hasPending = group.submissions.some(s => ['submitted', 'pending_review'].includes(s.status));
 
                         return (
-                            <div key={key} style={{
-                                border: '1px solid #e0e0e0',
-                                borderRadius: '8px',
-                                padding: '16px',
-                                backgroundColor: '#fff'
-                            }}>
-                                {/* Заголовок группы */}
-                                <div style={{
-                                    display: 'flex',
-                                    justifyContent: 'space-between',
-                                    alignItems: 'center',
-                                    marginBottom: '12px',
-                                    paddingBottom: '12px',
-                                    borderBottom: '1px solid #e0e0e0'
-                                }}>
-                                    <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                                        {group.user_photo_url && (
-                                            <img
+                            <Panel
+                                key={key}
+                                header={
+                                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', width: '100%' }}>
+                                        <Space>
+                                            <Avatar
                                                 src={group.user_photo_url}
-                                                alt="Аватар"
-                                                style={{
-                                                    width: '40px',
-                                                    height: '40px',
-                                                    borderRadius: '50%'
-                                                }}
+                                                icon={!group.user_photo_url && <UserOutlined />}
                                             />
-                                        )}
-                                        <div>
-                                            <div style={{ fontWeight: 'bold' }}>
-                                                {group.user_first_name} {group.user_last_name}
+                                            <div>
+                                                <Text strong>
+                                                    {group.user_first_name} {group.user_last_name}
+                                                </Text>
+                                                <br />
+                                                <Text type="secondary" style={{ fontSize: 12 }}>
+                                                    {group.lesson_name} • {group.stage_name}
+                                                </Text>
                                             </div>
-                                            <div style={{ fontSize: '12px', color: '#666' }}>
-                                                {group.lesson_name} • {group.stage_name}
-                                            </div>
-                                        </div>
+                                        </Space>
+                                        <Space>
+                                            {hasPending && (
+                                                <Badge status="warning" text="" />
+                                            )}
+                                            <Tag color={allSubmitted ? 'green' : 'default'}>
+                                                {group.submitted_assignments} / {group.total_assignments}
+                                                {group.approved_assignments > 0 && ` (✓${group.approved_assignments})`}
+                                            </Tag>
+                                        </Space>
                                     </div>
-                                    <div style={{ fontSize: '14px', color: '#666' }}>
-                                        Сдал {group.submitted_assignments} из {group.total_assignments}
-                                        {group.approved_assignments > 0 && ` (✅ ${group.approved_assignments})`}
-                                    </div>
-                                </div>
+                                }
+                            >
+                                <Space direction="vertical" style={{ width: '100%' }} size="small">
+                                    {/* Несданные задания */}
+                                    {(lessonAssignments[group.lesson_id] || [])
+                                        .sort((a, b) => (a.order_num || 0) - (b.order_num || 0))
+                                        .map((assignment) => {
+                                            const submission = group.submissions.find(
+                                                s => s.assignment_id === assignment.id
+                                            );
 
-                                {/* Список заданий */}
-                                <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                                            if (!submission) {
+                                                return (
+                                                    <Card
+                                                        key={`unsubmitted-${assignment.id}`}
+                                                        size="small"
+                                                        style={{ backgroundColor: '#fff7e6', borderColor: '#ffd591' }}
+                                                    >
+                                                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                                                            <Space>
+                                                                <ExclamationCircleOutlined style={{ color: '#faad14' }} />
+                                                                <Text>
+                                                                    {assignment.title || `Задание ${assignment.order_num}`}
+                                                                </Text>
+                                                                <Tag color="default">Не сдано</Tag>
+                                                            </Space>
+                                                            <Button
+                                                                size="small"
+                                                                icon={<CheckOutlined />}
+                                                                onClick={() => {
+                                                                    setManualApproveModal({
+                                                                        userId: group.user_id,
+                                                                        lessonId: group.lesson_id,
+                                                                        assignmentId: assignment.id,
+                                                                        assignmentTitle: assignment.title || `Задание ${assignment.order_num}`
+                                                                    });
+                                                                    setManualApprovePoints(100);
+                                                                }}
+                                                            >
+                                                                Отметить
+                                                            </Button>
+                                                        </div>
+                                                    </Card>
+                                                );
+                                            }
+
+                                            return null;
+                                        })}
+
+                                    {/* Сданные задания */}
                                     {group.submissions
+                                        .filter(s => s.assignment_id)
                                         .sort((a, b) => (a.assignment_order || 0) - (b.assignment_order || 0))
                                         .map((submission) => (
-                                            <div key={submission.id} style={{
-                                                display: 'flex',
-                                                justifyContent: 'space-between',
-                                                alignItems: 'center',
-                                                padding: '8px',
-                                                backgroundColor: '#f9f9f9',
-                                                borderRadius: '4px'
-                                            }}>
-                                                <div style={{ flex: 1 }}>
-                                                    <span style={{ fontWeight: '500' }}>
-                                                        {submission.assignment_title || `Задание ${submission.assignment_id}`}
-                                                    </span>
-                                                    <span style={{ marginLeft: '8px', fontSize: '12px', color: '#666' }}>
-                                                        {formatDate(submission.submitted_at)}
-                                                    </span>
-                                                </div>
-                                                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                                                    <span className={
-                                                        submission.status === 'approved' ? 'admin-status admin-yes' :
-                                                        submission.status === 'rejected' ? 'admin-status admin-no' :
-                                                        'admin-status'
-                                                    }>
-                                                        {submission.status === 'approved' && '✅ Принято'}
-                                                        {submission.status === 'rejected' && '❌ Отклонено'}
-                                                        {['submitted', 'pending_review'].includes(submission.status) && '⏳ На проверке'}
-                                                    </span>
+                                            <Card key={submission.id} size="small">
+                                                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                                                    <Space direction="vertical" size={0}>
+                                                        <Text strong>
+                                                            {submission.assignment_title || `Задание ${submission.assignment_order || submission.assignment_id}`}
+                                                        </Text>
+                                                        <Text type="secondary" style={{ fontSize: 12 }}>
+                                                            {formatDate(submission.submitted_at)}
+                                                        </Text>
+                                                    </Space>
+                                                    <Space>
+                                                        {getStatusTag(submission.status)}
 
-                                                    <button
-                                                        className="action-btn edit-btn"
-                                                        onClick={() => onSubmissionSelect(submission.id)}
-                                                        title="Просмотреть"
-                                                    >
-                                                        👁️
-                                                    </button>
+                                                        <Tooltip title="Просмотреть">
+                                                            <Button
+                                                                size="small"
+                                                                icon={<EyeOutlined />}
+                                                                onClick={() => onSubmissionSelect(submission.id)}
+                                                            />
+                                                        </Tooltip>
 
-                                                    {['submitted', 'pending_review'].includes(submission.status) && (
-                                                        <>
-                                                            <button
-                                                                className="action-btn admin-yes"
-                                                                onClick={() => handleQuickAction(submission.id, 'approve', 100)}
-                                                                title="Принять (100 баллов)"
-                                                            >
-                                                                ✅
-                                                            </button>
-                                                            <button
-                                                                className="action-btn admin-no"
-                                                                onClick={() => handleQuickAction(submission.id, 'reject')}
-                                                                title="Отклонить"
-                                                            >
-                                                                ❌
-                                                            </button>
-                                                        </>
-                                                    )}
+                                                        {['submitted', 'pending_review'].includes(submission.status) && (
+                                                            <>
+                                                                <Tooltip title="Принять (100 баллов)">
+                                                                    <Button
+                                                                        size="small"
+                                                                        type="primary"
+                                                                        icon={<CheckCircleOutlined />}
+                                                                        onClick={() => handleQuickAction(submission.id, 'approve', 100)}
+                                                                        style={{ backgroundColor: '#52c41a', borderColor: '#52c41a' }}
+                                                                    />
+                                                                </Tooltip>
+                                                                <Tooltip title="Отклонить">
+                                                                    <Button
+                                                                        size="small"
+                                                                        danger
+                                                                        icon={<CloseCircleOutlined />}
+                                                                        onClick={() => handleQuickAction(submission.id, 'reject')}
+                                                                    />
+                                                                </Tooltip>
+                                                            </>
+                                                        )}
+                                                    </Space>
                                                 </div>
-                                            </div>
+                                            </Card>
                                         ))}
-                                </div>
 
-                                {/* Обратная связь по дню */}
-                                {allSubmitted && (
-                                    <div style={{ marginTop: '16px', paddingTop: '16px', borderTop: '1px solid #e0e0e0' }}>
-                                        {group.lesson_feedback ? (
-                                            <div>
-                                                <div style={{ fontSize: '14px', fontWeight: 'bold', marginBottom: '8px' }}>
-                                                    Обратная связь по дню:
-                                                </div>
-                                                <div style={{
-                                                    padding: '12px',
-                                                    backgroundColor: '#f0f0f0',
-                                                    borderRadius: '4px',
-                                                    marginBottom: '8px'
-                                                }}>
-                                                    {group.lesson_feedback.feedback_text}
-                                                </div>
-                                                <button
-                                                    className="action-btn edit-btn"
+                                    {/* Обратная связь по дню */}
+                                    {allSubmitted && (
+                                        <>
+                                            <Divider style={{ margin: '12px 0' }} />
+                                            {group.lesson_feedback ? (
+                                                <Card size="small" style={{ backgroundColor: '#f6ffed' }}>
+                                                    <Space direction="vertical" style={{ width: '100%' }}>
+                                                        <Text strong>
+                                                            <MessageOutlined /> Обратная связь по дню:
+                                                        </Text>
+                                                        <Text>{group.lesson_feedback.feedback_text}</Text>
+                                                        <Button
+                                                            size="small"
+                                                            icon={<EditOutlined />}
+                                                            onClick={() => {
+                                                                setFeedbackModalOpen(key);
+                                                                setFeedbackText(group.lesson_feedback?.feedback_text || '');
+                                                            }}
+                                                        >
+                                                            Редактировать
+                                                        </Button>
+                                                    </Space>
+                                                </Card>
+                                            ) : (
+                                                <Button
+                                                    icon={<MessageOutlined />}
                                                     onClick={() => {
                                                         setFeedbackModalOpen(key);
-                                                        setFeedbackText(group.lesson_feedback?.feedback_text || '');
+                                                        setFeedbackText('');
                                                     }}
                                                 >
-                                                    Редактировать обратную связь
-                                                </button>
-                                            </div>
-                                        ) : (
-                                            <button
-                                                className="action-btn edit-btn"
-                                                onClick={() => {
-                                                    setFeedbackModalOpen(key);
-                                                    setFeedbackText('');
-                                                }}
-                                            >
-                                                Оставить обратную связь по дню
-                                            </button>
-                                        )}
-                                    </div>
-                                )}
+                                                    Оставить обратную связь по дню
+                                                </Button>
+                                            )}
+                                        </>
+                                    )}
+                                </Space>
 
                                 {/* Модальное окно для feedback */}
-                                {feedbackModalOpen === key && (
-                                    <div style={{
-                                        marginTop: '16px',
-                                        padding: '16px',
-                                        backgroundColor: '#f9f9f9',
-                                        borderRadius: '8px'
-                                    }}>
-                                        <h4>Обратная связь по дню</h4>
-                                        <textarea
-                                            value={feedbackText}
-                                            onChange={(e) => setFeedbackText(e.target.value)}
-                                            placeholder="Напишите общую обратную связь по всем заданиям дня..."
-                                            rows={5}
-                                            style={{
-                                                width: '100%',
-                                                padding: '8px',
-                                                borderRadius: '4px',
-                                                border: '1px solid #ccc',
-                                                fontSize: '14px',
-                                                marginBottom: '8px'
-                                            }}
-                                        />
-                                        <div style={{ display: 'flex', gap: '8px' }}>
-                                            <button
-                                                className="action-btn admin-yes"
-                                                onClick={() => handleSaveLessonFeedback(group.user_id, group.lesson_id)}
-                                            >
-                                                Сохранить
-                                            </button>
-                                            <button
-                                                className="action-btn"
-                                                onClick={() => {
-                                                    setFeedbackModalOpen(null);
-                                                    setFeedbackText('');
-                                                }}
-                                            >
-                                                Отмена
-                                            </button>
-                                        </div>
-                                    </div>
-                                )}
-                            </div>
+                                <Modal
+                                    title="Обратная связь по дню"
+                                    open={feedbackModalOpen === key}
+                                    onOk={() => handleSaveLessonFeedback(group.user_id, group.lesson_id)}
+                                    onCancel={() => {
+                                        setFeedbackModalOpen(null);
+                                        setFeedbackText('');
+                                    }}
+                                    okText="Сохранить"
+                                    cancelText="Отмена"
+                                >
+                                    <TextArea
+                                        value={feedbackText}
+                                        onChange={(e) => setFeedbackText(e.target.value)}
+                                        placeholder="Напишите общую обратную связь по всем заданиям дня..."
+                                        rows={5}
+                                    />
+                                </Modal>
+                            </Panel>
                         );
-                    })
-                )}
-            </div>
+                    })}
+                </Collapse>
+            )}
+
+            {/* Модалка ручного подтверждения */}
+            <Modal
+                title="Ручное подтверждение"
+                open={!!manualApproveModal}
+                onOk={handleManualApprove}
+                onCancel={() => {
+                    setManualApproveModal(null);
+                    setManualApprovePoints(100);
+                }}
+                okText="Подтвердить"
+                cancelText="Отмена"
+            >
+                <Space direction="vertical" style={{ width: '100%' }}>
+                    <Text>
+                        Отметить задание "<strong>{manualApproveModal?.assignmentTitle}</strong>" как выполненное?
+                    </Text>
+                    <div>
+                        <Text>Баллы:</Text>
+                        <InputNumber
+                            min={0}
+                            max={100}
+                            value={manualApprovePoints}
+                            onChange={(value) => setManualApprovePoints(value || 0)}
+                            style={{ width: '100%', marginTop: 8 }}
+                        />
+                    </div>
+                </Space>
+            </Modal>
         </div>
     );
 };

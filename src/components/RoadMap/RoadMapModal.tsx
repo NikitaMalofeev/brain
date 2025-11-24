@@ -17,6 +17,8 @@ interface RoadMapModalProps {
   onClose: () => void;
   stages: Stage[];
   onStageClick?: (stageId: number) => void;
+  isGuest?: boolean;
+  onGuestBlock?: () => void;
 }
 
 /**
@@ -28,6 +30,8 @@ const RoadMapModal: React.FC<RoadMapModalProps> = ({
   onClose,
   stages,
   onStageClick,
+  isGuest = false,
+  onGuestBlock,
 }) => {
   const handleStageClick = (stageId: number) => {
     if (onStageClick) {
@@ -69,7 +73,12 @@ const RoadMapModal: React.FC<RoadMapModalProps> = ({
 
             {/* Контент (прокручиваемый) */}
             <div className="flex-1 overflow-y-auto">
-              <RoadMap stages={stages} onStageClick={handleStageClick} />
+              <RoadMap
+                stages={stages}
+                onStageClick={handleStageClick}
+                isGuest={isGuest}
+                onGuestBlock={onGuestBlock}
+              />
             </div>
           </motion.div>
         </>

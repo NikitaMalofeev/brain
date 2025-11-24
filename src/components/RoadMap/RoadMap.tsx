@@ -15,6 +15,8 @@ interface Stage {
 interface RoadMapProps {
   stages: Stage[];
   onStageClick?: (stageId: number) => void;
+  isGuest?: boolean;
+  onGuestBlock?: () => void; // Callback когда гость кликает на заблокированный этап
 }
 
 /**
@@ -22,7 +24,7 @@ interface RoadMapProps {
  * Показывает вертикальную линию с точками для каждого этапа
  * Состояния: пройдено, текущее, заблокировано
  */
-const RoadMap: React.FC<RoadMapProps> = ({ stages, onStageClick }) => {
+const RoadMap: React.FC<RoadMapProps> = ({ stages, onStageClick, isGuest = false, onGuestBlock }) => {
   // Определить текущий активный этап (первый незавершенный разблокированный)
   const currentStageIndex = stages.findIndex(
     (stage) =>
@@ -30,6 +32,11 @@ const RoadMap: React.FC<RoadMapProps> = ({ stages, onStageClick }) => {
   );
 
   const getStageStatus = (stage: Stage, index: number) => {
+    // Для гостей: все этапы показываем как заблокированные (серые)
+    if (isGuest) {
+      return 'locked';
+    }
+
     if (!stage.is_unlocked) {
       return 'locked';
     }
@@ -133,6 +140,13 @@ const RoadMap: React.FC<RoadMapProps> = ({ stages, onStageClick }) => {
                   status !== 'locked' && 'hover:bg-gray-50 rounded-lg -ml-2 pl-2 py-1 transition-colors'
                 )}
                 onClick={() => {
+                  // Для гостей на любом этапе вызываем onGuestBlock
+                  if (isGuest) {
+                    if (onGuestBlock) {
+                      onGuestBlock();
+                    }
+                    return;
+                  }
                   if (status !== 'locked' && onStageClick) {
                     onStageClick(stage.stage_id);
                   }

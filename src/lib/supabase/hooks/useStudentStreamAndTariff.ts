@@ -67,7 +67,19 @@ export function useAssignStudentToStream() {
 
       logger.debug('Assigning student to stream', params);
 
-      // Проверяем, есть ли уже запись
+      // Получаем информацию о потоке, включая course_id
+      const { data: streamData, error: streamError } = await supabase
+        .from('streams')
+        .select('course_id')
+        .eq('id', params.streamId)
+        .single();
+
+      if (streamError) {
+        logger.error('Error fetching stream data', { streamId: params.streamId, error: streamError });
+        throw streamError;
+      }
+
+      // Проверяем, есть ли уже запись в user_stream_enrollments
       const { data: existing } = await supabase
         .from('user_stream_enrollments')
         .select('id')
@@ -100,11 +112,58 @@ export function useAssignStudentToStream() {
         }
       }
 
+      // Также создаем/обновляем запись в user_course_enrollments
+      if (streamData?.course_id) {
+        // Деактивируем все старые enrollments
+        await supabase
+          .from('user_course_enrollments')
+          .update({ is_active: false })
+          .eq('user_id', params.userId);
+
+        // Проверяем, есть ли уже enrollment для этого курса
+        const { data: existingEnrollment } = await supabase
+          .from('user_course_enrollments')
+          .select('id')
+          .eq('user_id', params.userId)
+          .eq('course_id', streamData.course_id)
+          .single();
+
+        if (existingEnrollment) {
+          // Активируем существующий enrollment
+          const { error: enrollError } = await supabase
+            .from('user_course_enrollments')
+            .update({ is_active: true })
+            .eq('id', existingEnrollment.id);
+
+          if (enrollError) {
+            logger.error('Error activating course enrollment', { params, error: enrollError });
+            throw enrollError;
+          }
+        } else {
+          // Создаем новый enrollment
+          const { error: enrollError } = await supabase
+            .from('user_course_enrollments')
+            .insert({
+              user_id: params.userId,
+              course_id: streamData.course_id,
+              is_active: true,
+            });
+
+          if (enrollError) {
+            logger.error('Error creating course enrollment', { params, error: enrollError });
+            throw enrollError;
+          }
+        }
+
+        logger.info('Course enrollment created/updated', { userId: params.userId, courseId: streamData.course_id });
+      }
+
       logger.info('Student assigned to stream', params);
     },
     onSuccess: (_, variables) => {
       queryClient.invalidateQueries({ queryKey: ['student-stream', variables.userId] });
       queryClient.invalidateQueries({ queryKey: ['students-list'] });
+      queryClient.invalidateQueries({ queryKey: ['active-course', variables.userId] });
     },
   });
 }
