@@ -46,7 +46,7 @@ const CopyStreamModal: React.FC<CopyStreamModalProps> = ({ stream, onClose, onSu
 
       // Вызвать SQL функцию copy_stream
       const { data, error } = await supabase!.rpc('copy_stream', {
-        p_original_stream_id: stream.id,
+        p_source_stream_id: stream.id,
         p_new_stream_name: newName.trim(),
         p_new_start_date: newStartDate,
       });

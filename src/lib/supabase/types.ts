@@ -205,6 +205,7 @@ export interface LessonProgress extends TimestampFields {
   id: number;
   user_id: string; // FK к User
   lesson_id: number; // FK к Lesson
+  stream_id?: string | null; // FK к Stream - привязка прогресса к потоку
   started_at?: string;
   completed_at?: string;
   is_completed: boolean;

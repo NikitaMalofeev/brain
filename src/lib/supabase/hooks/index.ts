@@ -41,3 +41,9 @@ export { useMaterialTariffAccess, saveChatTariffAccess, saveMaterialTariffAccess
 
 // Хуки для техник (аудиопрактик)
 export { useTechniques, useTechniquesFiltered } from './useTechniques';
+
+// Хук для информации о потоке и неделе обучения
+export { useUserStreamInfo } from './useUserStreamInfo';
+
+// Хук для модулей потока пользователя
+export { useUserStreamModules } from './useUserStreamModules';

@@ -5,6 +5,7 @@ import { User } from '@supabase/supabase-js';
 import { Page } from '@/components/Page';
 import { useSupabaseUser } from '@/lib/supabase/hooks/useSupabaseUser';
 import { useGuestStatus } from '@/lib/supabase/hooks/useIsGuest';
+import { useUserStreamInfo } from '@/lib/supabase/hooks';
 import { useAppContext } from '@/contexts/AppContext';
 import { logger } from '@/lib/logger';
 import { supabase } from '@/lib/supabase/client';
@@ -394,6 +395,9 @@ const LessonPage: React.FC = () => {
     // Состояние для пересдачи задания
     const [isRetryingSubmission, setIsRetryingSubmission] = useState(false);
 
+    // Получаем информацию о потоке пользователя
+    const { data: streamInfo } = useUserStreamInfo(supabaseUser?.id);
+
     // Загружаем данные заданий с прогрессом
     const { data: assignmentsWithProgress } = useAssignmentsWithProgress(
         supabaseUser?.id,
@@ -623,6 +627,7 @@ const LessonPage: React.FC = () => {
                 completed_at: now,
                 started_at: state.progress?.started_at || now,
                 submission_id: null, // Для уроков без задания всегда null
+                stream_id: streamInfo?.streamId || null, // Привязка к потоку
             };
 
             let updatedProgress: LessonProgress;

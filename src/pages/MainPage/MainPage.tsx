@@ -1,9 +1,8 @@
 import { Page } from "@/components";
-import { useSupabaseUser, useActiveCourse } from "@/lib/supabase/hooks";
+import { useSupabaseUser, useUserStreamInfo, useUserStreamModules } from "@/lib/supabase/hooks";
 import { initDataState, useSignal } from "@telegram-apps/sdk-react";
 import { Link } from "react-router-dom";
 import { UserProgress } from "@/components/UserProgress/UserProgress.tsx";
-import useLibraryStages from '@/lib/supabase/hooks/useLibraryStages';
 import { Ripple } from "@/components/ui/Ripple/Ripple.tsx";
 import StageCard from "@/components/StageCard/StageCard.tsx";
 import { motion } from "framer-motion";
@@ -46,17 +45,23 @@ export const MainPage = () => {
     // Проверяем является ли пользователь гостем
     const { isGuest } = useGuestStatus(supabaseUser?.id);
 
-    // Получаем активный курс пользователя
-    const { activeCourse } = useActiveCourse(supabaseUser?.id);
+    // Получаем информацию о потоке и неделе обучения
+    const { data: streamInfo } = useUserStreamInfo(supabaseUser?.id);
 
-    // Используем хук для получения ступеней с поддержкой fallback
-    const { stages, loading: isLoading } = useLibraryStages(
-        supabaseUser?.id || null,
-        activeCourse?.course_id || null
-    );
+    // Используем хук для получения модулей потока пользователя
+    const { modulesAsStages, loading: isLoading } = useUserStreamModules(supabaseUser?.id);
+
+    // Логирование для отладки
+    console.log('MainPage Debug:', {
+        userId: supabaseUser?.id,
+        modules: modulesAsStages,
+        modulesLength: modulesAsStages?.length,
+        isLoading,
+        isGuest
+    });
 
     // Фильтрация модулей по поисковому запросу
-    const filteredStages = stages?.filter((stage) =>
+    const filteredStages = modulesAsStages?.filter((stage) =>
         stage.stage_name.toLowerCase().includes(searchQuery.toLowerCase())
     ) || [];
 
@@ -66,17 +71,18 @@ export const MainPage = () => {
             <Page back={false}>
                 <div className="profile-loading">
                     <div className="profile-loading-spinner" aria-hidden="true" />
-                    <p>Загрузка ступеней...</p>
+                    <p>Загрузка модулей...</p>
                 </div>
             </Page>
         );
     }
 
-
-    if (stages?.length === 0 && !isLoading) {
+    if (modulesAsStages?.length === 0 && !isLoading) {
         return (
             <Page back={false}>
-                <div style={{ textAlign: 'center', marginTop: '50px' }}>Нет доступных этапов для этого курса.</div>
+                <div style={{ textAlign: 'center', marginTop: '50px' }}>
+                    У вас нет доступных модулей. Убедитесь, что вы добавлены в поток обучения.
+                </div>
             </Page>
         );
     }
@@ -203,22 +209,25 @@ export const MainPage = () => {
                 </motion.div>
 
             </div>
-            <UserProgress stages={stages || []} />
+            <UserProgress stages={modulesAsStages || []} />
 
             {/* Модалка дорожной карты */}
             <RoadMapModal
                 isOpen={isRoadMapOpen}
                 onClose={() => setIsRoadMapOpen(false)}
-                stages={stages || []}
+                stages={modulesAsStages || []}
                 onStageClick={(stageId) => {
-                    // Можно добавить навигацию к этапу или просто закрыть
-                    console.log('Clicked stage:', stageId);
+                    // Можно добавить навигацию к модулю или просто закрыть
+                    console.log('Clicked module:', stageId);
                 }}
                 isGuest={isGuest}
                 onGuestBlock={() => {
                     setIsRoadMapOpen(false);
                     setShowGuestModal(true);
                 }}
+                userPhotoUrl={supabaseUser?.photo_url || undefined}
+                currentWeek={streamInfo?.currentWeek || 1}
+                totalWeeks={streamInfo?.totalWeeks || 9}
             />
 
             {/* Модалка для гостей */}
