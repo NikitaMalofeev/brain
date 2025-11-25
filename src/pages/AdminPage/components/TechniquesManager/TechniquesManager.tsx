@@ -8,7 +8,6 @@ import {
   Table,
   Space,
   Typography,
-  Tag,
   message,
   Popconfirm,
   Avatar,
@@ -19,8 +18,6 @@ import {
   EditOutlined,
   DeleteOutlined,
   AppstoreOutlined,
-  LockOutlined,
-  UnlockOutlined,
 } from '@ant-design/icons';
 import TechniqueEditor from './TechniqueEditor';
 import TechniqueBlocksManager from './TechniqueBlocksManager';
@@ -107,15 +104,6 @@ const TechniquesManager: React.FC = () => {
     setBlocksView(null);
   };
 
-  const getStatusTag = (status: Technique['status']) => {
-    const config = {
-      free: { color: 'success', text: 'Бесплатная' },
-      purchasable: { color: 'processing', text: 'К покупке' },
-      locked: { color: 'default', text: 'Заблокирована' },
-    };
-    const { color, text } = config[status];
-    return <Tag color={color}>{text}</Tag>;
-  };
 
   if (isLoading) {
     return (
@@ -185,34 +173,11 @@ const TechniquesManager: React.FC = () => {
       ),
     },
     {
-      title: 'Статус',
-      dataIndex: 'status',
-      width: 120,
-      render: (status: Technique['status']) => getStatusTag(status),
-    },
-    {
       title: 'Длительность',
       dataIndex: 'duration_seconds',
       width: 120,
       render: (seconds: number | null) =>
         seconds ? `${Math.floor(seconds / 60)} мин` : '—',
-    },
-    {
-      title: 'Условие доступа',
-      dataIndex: 'unlock_condition_type',
-      width: 150,
-      render: (type: string | null, record: Technique) =>
-        type === 'after_technique' ? (
-          <Space>
-            <LockOutlined />
-            <Text>Через {record.unlock_condition_value?.duration_days || 0} дней</Text>
-          </Space>
-        ) : (
-          <Space>
-            <UnlockOutlined />
-            <Text type="secondary">Без условий</Text>
-          </Space>
-        ),
     },
     {
       title: 'Действия',

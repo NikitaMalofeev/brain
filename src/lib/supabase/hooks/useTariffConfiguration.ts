@@ -68,6 +68,7 @@ export function useTariffConfiguration(streamId: string | null, tariffId: string
 
         if (row.technique_id) {
           modulesMap.get(row.module_id)!.techniques.push({
+            tariff_module_technique_id: row.tariff_module_technique_id,
             technique_id: row.technique_id,
             technique_title: row.technique_title,
             unlock_offset_days: row.unlock_offset_days,

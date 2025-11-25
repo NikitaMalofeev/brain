@@ -20,14 +20,10 @@ export const useModuleTechniquesSchedule = (streamModuleId: string | null) => {
 
       logger.debug('Fetching module techniques schedule', { streamModuleId });
 
-      const { data, error } = await supabase
-        .from('stream_module_techniques')
-        .select(`
-          *,
-          technique:techniques(*)
-        `)
-        .eq('stream_module_id', streamModuleId)
-        .order('order_num', { ascending: true });
+      // Используем RPC функцию для получения расписания с is_unlocked и days_until_unlock
+      const { data, error } = await supabase.rpc('get_module_techniques_schedule', {
+        p_stream_module_id: streamModuleId,
+      });
 
       if (error) {
         logger.error('Error fetching module techniques schedule', { error });

@@ -13,7 +13,7 @@ import {
   TariffModuleConfig,
 } from '@/lib/supabase/hooks/useTariffConfiguration';
 import { useStreamModules } from '@/lib/supabase/hooks/useStreamModules';
-import { useTechniques } from '@/lib/supabase/hooks/useTechniques';
+// useTechniques removed - using direct query for admin
 import { supabase } from '@/lib/supabase/client';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { logger } from '@/lib/logger';
@@ -323,7 +323,23 @@ const UnifiedCoursesManager: React.FC = () => {
 
   // Хуки для конфигурации
   const { data: streamModules } = useStreamModules(navigation.streamId || null);
-  const { data: allTechniques } = useTechniques(null);
+
+  // Получить все техники напрямую из таблицы (для админки)
+  const { data: allTechniques } = useQuery({
+    queryKey: ['all-techniques-admin'],
+    queryFn: async () => {
+      if (!supabase) return [];
+      const { data, error } = await supabase
+        .from('techniques')
+        .select('id, title, order_num')
+        .order('order_num');
+      if (error) {
+        logger.error('Error fetching techniques for admin', { error });
+        throw error;
+      }
+      return data || [];
+    },
+  });
   const { data: streamTariffId } = useStreamTariffId(navigation.streamId || null, navigation.tariffId || null);
   const { data: configuration, isLoading: configLoading } = useTariffConfiguration(
     navigation.streamId || null,

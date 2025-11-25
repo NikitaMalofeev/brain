@@ -11,29 +11,31 @@ import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/lib/supabase/client';
 import { logger } from '@/lib/logger';
 
-interface ModuleTechniquesManagerProps {
-  streamModuleId: string;
-  moduleName: string;
-}
-
 interface Technique {
   id: string;
   title: string;
   available_from_module?: string;
 }
 
+interface ModuleTechniquesManagerProps {
+  streamModuleId: string;
+  moduleName: string;
+  moduleDurationDays?: number;
+}
+
 const ModuleTechniquesManager: React.FC<ModuleTechniquesManagerProps> = ({
   streamModuleId,
   moduleName,
+  moduleDurationDays = 21,
 }) => {
   const [isAddingTechnique, setIsAddingTechnique] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [selectedTechniqueId, setSelectedTechniqueId] = useState('');
-  const [unlockDate, setUnlockDate] = useState('');
+  const [unlockDay, setUnlockDay] = useState(1);
   const [orderNum, setOrderNum] = useState(1);
 
   // Получить все техники для выбора
-  const { data: allTechniques } = useQuery({
+  const { data: allTechniques, error: techniquesError } = useQuery({
     queryKey: ['all-techniques'],
     queryFn: async (): Promise<Technique[]> => {
       if (!supabase) throw new Error('Supabase not initialized');
@@ -48,9 +50,15 @@ const ModuleTechniquesManager: React.FC<ModuleTechniquesManagerProps> = ({
         throw error;
       }
 
+      console.log('Fetched all techniques for selection', { count: data?.length || 0, data });
       return data || [];
     },
   });
+
+  // Логируем ошибку если есть
+  if (techniquesError) {
+    logger.error('Error loading techniques for selection', { error: techniquesError });
+  }
 
   // Получить расписание техник в модуле
   const { data: moduleTechniques, isLoading } = useModuleTechniquesSchedule(streamModuleId);
@@ -60,8 +68,8 @@ const ModuleTechniquesManager: React.FC<ModuleTechniquesManagerProps> = ({
   const removeTechniqueMutation = useRemoveTechniqueFromModule();
 
   const handleAddTechnique = async () => {
-    if (!selectedTechniqueId || !unlockDate) {
-      alert('Выберите технику и укажите дату открытия');
+    if (!selectedTechniqueId || !unlockDay) {
+      alert('Выберите технику и укажите день открытия');
       return;
     }
 
@@ -69,13 +77,13 @@ const ModuleTechniquesManager: React.FC<ModuleTechniquesManagerProps> = ({
       await addTechniqueMutation.mutateAsync({
         stream_module_id: streamModuleId,
         technique_id: selectedTechniqueId,
-        unlock_date: unlockDate,
+        unlock_day: unlockDay,
         order_num: orderNum,
       });
 
       setIsAddingTechnique(false);
       setSelectedTechniqueId('');
-      setUnlockDate('');
+      setUnlockDay(1);
       setOrderNum(1);
     } catch (error) {
       console.error('Error adding technique:', error);
@@ -85,13 +93,13 @@ const ModuleTechniquesManager: React.FC<ModuleTechniquesManagerProps> = ({
 
   const handleUpdateTechnique = async (
     id: string,
-    newUnlockDate: string,
+    newUnlockDay: number,
     newOrderNum: number
   ) => {
     try {
       await updateTechniqueMutation.mutateAsync({
         id,
-        unlock_date: newUnlockDate,
+        unlock_day: newUnlockDay,
         order_num: newOrderNum,
       });
       setEditingId(null);
@@ -114,24 +122,22 @@ const ModuleTechniquesManager: React.FC<ModuleTechniquesManagerProps> = ({
     }
   };
 
-  const formatDate = (dateString: string) => {
-    const date = new Date(dateString);
-    return date.toLocaleDateString('ru-RU', {
-      year: 'numeric',
-      month: 'long',
-      day: 'numeric',
-    });
-  };
 
-  const isDatePassed = (dateString: string) => {
-    return new Date(dateString) <= new Date();
-  };
+  // Логируем данные для отладки
+  console.log('ModuleTechniquesManager data', {
+    allTechniquesCount: allTechniques?.length || 0,
+    moduleTechniquesCount: moduleTechniques?.length || 0,
+    allTechniques,
+    moduleTechniques,
+  });
 
   // Фильтруем техники, которые уже добавлены в модуль
   const availableTechniques =
     allTechniques?.filter(
       (tech) => !moduleTechniques?.some((mt: any) => mt.technique_id === tech.id)
     ) || [];
+
+  console.log('Available techniques for selection', { count: availableTechniques.length, availableTechniques });
 
   if (isLoading) {
     return <div className="text-sm text-gray-500">Загрузка...</div>;
@@ -175,14 +181,19 @@ const ModuleTechniquesManager: React.FC<ModuleTechniquesManagerProps> = ({
           <div className="grid grid-cols-2 gap-4">
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
-                Дата открытия
+                День открытия (1-{moduleDurationDays})
               </label>
               <input
-                type="date"
-                value={unlockDate}
-                onChange={(e) => setUnlockDate(e.target.value)}
+                type="number"
+                value={unlockDay}
+                onChange={(e) => setUnlockDay(parseInt(e.target.value) || 1)}
+                min="1"
+                max={moduleDurationDays}
                 className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500"
               />
+              <p className="text-xs text-gray-500 mt-1">
+                День модуля, когда откроется техника
+              </p>
             </div>
 
             <div>
@@ -226,18 +237,19 @@ const ModuleTechniquesManager: React.FC<ModuleTechniquesManagerProps> = ({
         <div className="space-y-2">
           {moduleTechniques.map((item: any) => {
             const isEditing = editingId === item.id;
-            const isPassed = isDatePassed(item.unlock_date);
+            const isUnlocked = item.is_unlocked;
 
             return (
               <div
                 key={item.id}
                 className={`border rounded-lg p-4 ${
-                  isPassed ? 'bg-green-50 border-green-200' : 'bg-gray-50 border-gray-200'
+                  isUnlocked ? 'bg-green-50 border-green-200' : 'bg-gray-50 border-gray-200'
                 }`}
               >
                 {isEditing ? (
                   <EditingRow
                     item={item}
+                    moduleDurationDays={moduleDurationDays}
                     onSave={handleUpdateTechnique}
                     onCancel={() => setEditingId(null)}
                     isUpdating={updateTechniqueMutation.isPending}
@@ -247,20 +259,25 @@ const ModuleTechniquesManager: React.FC<ModuleTechniquesManagerProps> = ({
                     <div className="flex-1">
                       <div className="flex items-center gap-3">
                         <span className="text-sm font-medium text-gray-500">#{item.order_num}</span>
-                        <h4 className="font-semibold">{item.technique.title}</h4>
+                        <h4 className="font-semibold">{item.technique?.title || item.technique_title}</h4>
                         <span
                           className={`px-2 py-1 text-xs rounded ${
-                            isPassed
+                            isUnlocked
                               ? 'bg-green-200 text-green-800'
                               : 'bg-orange-200 text-orange-800'
                           }`}
                         >
-                          {isPassed ? '✓ Открыта' : '🔒 Заблокирована'}
+                          {isUnlocked ? '✓ Открыта' : '🔒 Заблокирована'}
                         </span>
                       </div>
                       <div className="flex items-center gap-2 mt-1 text-sm text-gray-600">
                         <Calendar className="w-4 h-4" />
-                        <span>Открытие: {formatDate(item.unlock_date)}</span>
+                        <span>День {item.unlock_day}</span>
+                        {!isUnlocked && item.days_until_unlock > 0 && (
+                          <span className="text-orange-600">
+                            (через {item.days_until_unlock} дн.)
+                          </span>
+                        )}
                       </div>
                     </div>
 
@@ -273,7 +290,7 @@ const ModuleTechniquesManager: React.FC<ModuleTechniquesManagerProps> = ({
                         <Edit2 className="w-4 h-4 text-blue-600" />
                       </button>
                       <button
-                        onClick={() => handleRemoveTechnique(item.id, item.technique.title)}
+                        onClick={() => handleRemoveTechnique(item.id, item.technique?.title || item.technique_title)}
                         className="p-2 hover:bg-white rounded-lg transition-colors"
                         title="Удалить"
                       >
@@ -299,24 +316,29 @@ const ModuleTechniquesManager: React.FC<ModuleTechniquesManagerProps> = ({
 // Компонент для редактирования техники
 const EditingRow: React.FC<{
   item: any;
-  onSave: (id: string, unlockDate: string, orderNum: number) => void;
+  moduleDurationDays: number;
+  onSave: (id: string, unlockDay: number, orderNum: number) => void;
   onCancel: () => void;
   isUpdating: boolean;
-}> = ({ item, onSave, onCancel, isUpdating }) => {
-  const [unlockDate, setUnlockDate] = useState(item.unlock_date.split('T')[0]);
+}> = ({ item, moduleDurationDays, onSave, onCancel, isUpdating }) => {
+  const [unlockDay, setUnlockDay] = useState(item.unlock_day || 1);
   const [orderNum, setOrderNum] = useState(item.order_num);
 
   return (
     <div className="space-y-3">
-      <h4 className="font-semibold">{item.technique.title}</h4>
+      <h4 className="font-semibold">{item.technique?.title || item.technique_title}</h4>
 
       <div className="grid grid-cols-2 gap-4">
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">Дата открытия</label>
+          <label className="block text-sm font-medium text-gray-700 mb-1">
+            День открытия (1-{moduleDurationDays})
+          </label>
           <input
-            type="date"
-            value={unlockDate}
-            onChange={(e) => setUnlockDate(e.target.value)}
+            type="number"
+            value={unlockDay}
+            onChange={(e) => setUnlockDay(parseInt(e.target.value) || 1)}
+            min="1"
+            max={moduleDurationDays}
             className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500"
           />
         </div>
@@ -335,7 +357,7 @@ const EditingRow: React.FC<{
 
       <div className="flex gap-2">
         <Button
-          onClick={() => onSave(item.id, unlockDate, orderNum)}
+          onClick={() => onSave(item.id, unlockDay, orderNum)}
           disabled={isUpdating}
           className="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600"
         >

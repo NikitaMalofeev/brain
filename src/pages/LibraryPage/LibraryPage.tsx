@@ -72,14 +72,12 @@ const LibraryPage: React.FC = () => {
     const getLockReason = (stage: LibraryStageData): string | undefined => {
         if (stage.is_unlocked) return undefined;
         if (stage.unlock_condition_type_val === 'days_after_start') {
-            // TODO: Более умный расчет оставшихся дней, если это необходимо.
-            // Пока просто отображаем значение из базы.
             return `Откроется через ${stage.unlock_condition_value_val || 'N'} дней после начала`;
         }
         if (stage.unlock_condition_type_val === 'previous_stage_completed') {
             return 'Пройдите предыдущий этап';
         }
-        return 'Этап пока недоступен'; // Общее сообщение
+        return 'Этап пока недоступен';
     };
 
     if (loading) {
