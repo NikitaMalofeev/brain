@@ -47,3 +47,6 @@ export { useUserStreamInfo } from './useUserStreamInfo';
 
 // Хук для модулей потока пользователя
 export { useUserStreamModules } from './useUserStreamModules';
+
+// Хуки для управления ступенями и уроками в модулях
+export * from './useModuleStages';

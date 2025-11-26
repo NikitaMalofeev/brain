@@ -4,7 +4,7 @@ import { useQuery } from '@tanstack/react-query';
 import { logger } from '@/lib/logger';
 import { Button } from '@/components/ui/button';
 import { ArrowLeft, Save, ChevronDown, ChevronUp } from 'lucide-react';
-import ModuleTechniquesManager from './ModuleTechniquesManager';
+import ModuleContentManager from './ModuleContentManager';
 
 interface StreamEditorProps {
   streamId: string | null;
@@ -257,8 +257,10 @@ const StreamEditor: React.FC<StreamEditorProps> = ({ streamId, onClose, onSave }
               {/* Расписание техник модуля */}
               {expandedModules[module.id] && (
                 <div className="p-4 border-t">
-                  <ModuleTechniquesManager
+                  <ModuleContentManager
                     streamModuleId={module.id}
+                    streamId={streamId!}
+                    courseId={stream?.course_id || ''}
                     moduleName={module.name}
                   />
                 </div>

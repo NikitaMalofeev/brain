@@ -76,6 +76,7 @@ export interface Course extends TimestampFields {
 export interface CourseStage extends TimestampFields {
   id: number;
   course_id: string; // FK к Course
+  stream_module_id?: string; // FK к stream_modules (новая архитектура)
   name: string;
   description?: string;
   order_num: number;
@@ -89,6 +90,7 @@ export interface CourseStage extends TimestampFields {
 export interface Lesson extends TimestampFields {
   id: number;
   stage_id: number; // FK к CourseStage
+  stream_id?: string; // FK к Stream (для копирования)
   name: string;
   description?: string;
   order_num: number;

@@ -53,7 +53,7 @@ import {
   VideoCameraOutlined,
 } from '@ant-design/icons';
 import dayjs from 'dayjs';
-import TariffModuleMaterialsManager from './TariffModuleMaterialsManager';
+import TariffModuleContentManager from './TariffModuleContentManager';
 
 const { Title, Text } = Typography;
 const { Panel } = Collapse;
@@ -897,11 +897,13 @@ const UnifiedCoursesManager: React.FC = () => {
                     </Card>
                   )}
 
-                  {/* Drag & Drop интерфейс для материалов */}
-                  <TariffModuleMaterialsManager
+                  {/* Переключатель между материалами и уроками */}
+                  <TariffModuleContentManager
                     module={module}
                     allMaterials={allTechniques || []}
                     moduleDurationDays={module.access_duration_days || undefined}
+                    streamId={navigation.streamId!}
+                    courseId={navigation.courseId!}
                   />
                 </Panel>
               ))}

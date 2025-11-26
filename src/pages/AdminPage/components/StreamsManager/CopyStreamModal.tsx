@@ -150,10 +150,11 @@ const CopyStreamModal: React.FC<CopyStreamModalProps> = ({ stream, onClose, onSu
             </p>
             <ul className="text-sm text-blue-700 mt-2 space-y-1 ml-4 list-disc">
               <li>Все модули потока</li>
+              <li>Все ступени и уроки модулей</li>
               <li>Все материалы модулей (с привязкой к тарифам)</li>
               <li>Все события календаря</li>
               <li>Настройки доступа по тарифам</li>
-              <li>Даты событий и материалов будут сдвинуты на новую дату начала</li>
+              <li>Даты событий, уроков и материалов будут сдвинуты на новую дату начала</li>
             </ul>
           </div>
 
