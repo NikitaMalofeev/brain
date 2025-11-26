@@ -15,7 +15,10 @@
       "Bash(npm install:*)",
       "Bash(find:*)",
       "Bash(xargs ls:*)",
-      "Bash(cat:*)"
+      "Bash(cat:*)",
+      "Bash(\"C:\\Users\\admin\\Desktop\\WORK\\Работа\\brain\\braining\\src\\pages\\AdminPage\\components\\ModulesManager\\ModulesManager_backup.tsx\")",
+      "Bash(xargs -I {} git show {}:src/pages/AdminPage/components/StagesManager.tsx)",
+      "Bash(npx supabase db diff:*)"
     ],
     "deny": [],
     "ask": []

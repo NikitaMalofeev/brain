@@ -558,84 +558,147 @@ export type Database = {
 // ============================================================================
 // Типы для системы техник (аудиопрактик)
 // ============================================================================
+// МАТЕРИАЛЫ (объединенные materials + techniques)
+// ============================================================================
 
-// Статусы техники
-export type TechniqueStatus = 'free' | 'purchasable' | 'locked';
+// Статусы материала
+export type MaterialStatus = 'free' | 'purchasable' | 'locked';
 
 // Типы условий разблокировки
-export type UnlockConditionType = 'after_technique' | 'after_duration' | null;
+export type UnlockConditionType =
+  | 'after_material'                      // Техника после другой техники
+  | 'after_duration'                      // Техника через N дней с регистрации
+  | 'requires_purchase_and_material'      // Нужна покупка + доступ к другой технике
+  | 'requires_material_with_duration'     // Другая техника + время ожидания
+  | null;
 
-// Источник доступа к технике
-export type TechniqueAccessSource = 'purchase' | 'tariff' | 'gift' | 'free';
+// Источник доступа к материалу
+export type MaterialAccessSource = 'purchase' | 'tariff' | 'gift' | 'free';
 
 // Значение условия разблокировки
 export interface UnlockConditionValue {
-  technique_id?: string; // UUID предыдущей техники (для after_technique)
-  duration_days?: number; // Количество дней задержки
+  // Для after_material и requires_material_with_duration
+  material_id?: string;                   // UUID предыдущего материала
+  required_material_id?: string;          // UUID требуемого материала (новый формат)
+
+  // Для условий с временем
+  duration_days?: number;                 // Количество дней задержки
+
+  // Для requires_purchase_and_material
+  purchase_required?: boolean;            // Требуется оплата
+  purchase_price?: number;                // Цена покупки
+
+  // Deprecated (старый формат для обратной совместимости)
+  technique_id?: string;                  // Старое название для material_id
 }
 
-// Техника (аудиопрактика)
-export interface Technique extends TimestampFields {
+// Тип материала
+export type MaterialType = 'video' | 'audio';
+
+// Материал (объединенная сущность materials + techniques)
+export interface Material extends TimestampFields {
   id: string; // UUID
-  title: string;
-  description?: string;
-  audio_url: string;
-  cover_image?: string;
-  duration_seconds?: number;
-  status: TechniqueStatus;
-  purchase_url?: string;
-  upgrade_tariff_chat_url?: string;
-  available_from_module?: string;
-  unlock_condition_type?: UnlockConditionType;
-  unlock_condition_value?: UnlockConditionValue;
+  name: string; // Название материала
+  description?: string | null;
+  cover_image_path?: string | null; // Путь к обложке в storage
+  material_type: MaterialType; // Тип: video или audio
   order_num: number;
+  course_id?: string | null; // Привязка к курсу (опционально)
+  release_date?: string | null; // Дата релиза
+
+  // Специфичные поля (бывшие techniques)
+  audio_url?: string | null; // URL аудиофайла (для audio материалов)
+  duration_seconds?: number | null; // Длительность
+  status?: MaterialStatus; // Статус доступа
+  purchase_url?: string | null; // URL для покупки
+  upgrade_tariff_chat_url?: string | null; // URL чата с отделом продаж
+  available_from_module?: string | null; // Метка "Доступна с модуля X"
+  unlock_condition_type?: UnlockConditionType; // Тип условия разблокировки
+  unlock_condition_value?: UnlockConditionValue | null; // Параметры разблокировки
 }
 
-// Доступ пользователя к технике
-export interface UserTechniqueAccess extends TimestampFields {
+// Backwards compatibility: Technique = Material
+export type Technique = Material;
+export type TechniqueStatus = MaterialStatus;
+export type TechniqueAccessSource = MaterialAccessSource;
+
+// Доступ пользователя к материалу
+export interface UserMaterialAccess extends TimestampFields {
   id: string; // UUID
   user_id: string; // FK к User
-  technique_id: string; // FK к Technique
+  material_id: string; // FK к Material
   granted_at: string;
   expires_at?: string | null;
-  access_source: TechniqueAccessSource;
+  access_source: MaterialAccessSource;
 }
 
-// Результат функции can_user_purchase_technique
-export interface TechniquePurchaseInfo {
+// Backwards compatibility
+export type UserTechniqueAccess = UserMaterialAccess;
+
+// Результат функции can_user_purchase_material
+export interface MaterialPurchaseInfo {
   can_purchase: boolean;
   reason: string;
   unlock_date?: string | null;
-  module_name?: string | null; // Название модуля из которого техника
+  module_name?: string | null; // Название модуля из которого материал
   stream_name?: string | null; // Название потока
 }
 
-// Техника с информацией о доступе (результат get_techniques_with_access и get_user_techniques_with_schedule)
-export interface TechniqueWithAccess extends Technique {
+// Backwards compatibility
+export type TechniquePurchaseInfo = MaterialPurchaseInfo;
+
+// Материал с информацией о доступе (результат get_materials_with_access)
+export interface MaterialWithAccess extends Material {
   has_access: boolean;
   can_purchase: boolean;
-  purchase_info: TechniquePurchaseInfo;
+  purchase_info: MaterialPurchaseInfo;
   access_granted_at?: string | null;
   access_expires_at?: string | null;
-  access_source?: TechniqueAccessSource | null;
-  // Поля из get_user_techniques_with_schedule для расписания модулей
+  access_source?: MaterialAccessSource | null;
+  // Поля из get_user_materials_with_schedule для расписания модулей
   unlock_day?: number | null; // День открытия в модуле (1 = первый день)
-  is_unlocked?: boolean; // Открыта ли техника на текущую дату
+  release_day?: number | null; // Alias для unlock_day
+  is_unlocked?: boolean; // Открыт ли материал на текущую дату
   module_id?: string | null; // ID модуля
   module_name?: string | null; // Название модуля
 }
 
-// Типы для создания/обновления техник
-export type CreateTechnique = Omit<Technique, 'id' | 'created_at' | 'updated_at'>;
-export type UpdateTechnique = Partial<Technique> & { id: string };
+// Backwards compatibility
+export type TechniqueWithAccess = MaterialWithAccess;
+
+// Типы для создания/обновления материалов
+export type CreateMaterial = Omit<Material, 'id' | 'created_at' | 'updated_at'>;
+export type UpdateMaterial = Partial<Material> & { id: string };
+
+// Backwards compatibility
+export type CreateTechnique = CreateMaterial;
+export type UpdateTechnique = UpdateMaterial;
 
 // Типы для предоставления доступа
-export interface GrantTechniqueAccessRequest {
+export interface GrantMaterialAccessRequest {
   user_id: string;
-  technique_id: string;
-  access_source?: TechniqueAccessSource;
+  material_id: string;
+  access_source?: MaterialAccessSource;
   expires_at?: string | null;
 }
+
+// Backwards compatibility
+export type GrantTechniqueAccessRequest = GrantMaterialAccessRequest;
+
+// Блок контента материала
+export interface MaterialBlock extends TimestampFields {
+  id: number; // BIGSERIAL
+  material_id: string; // FK к Material
+  order_num: number;
+  title?: string | null;
+  block_type: 'text' | 'video' | 'audio' | 'image' | 'pdf';
+  content_text?: string | null;
+  content_url?: string | null;
+  meta_json?: Record<string, any> | null;
+}
+
+// Backwards compatibility
+export type TechniqueBlock = MaterialBlock;
 
 // =============================================
 // ТИПЫ ДЛЯ ПОТОКОВ И МОДУЛЕЙ
@@ -667,34 +730,55 @@ export interface UserStreamEnrollment {
   enrolled_at?: string;
 }
 
-// Связь техники с модулем потока и день открытия
-export interface StreamModuleTechnique extends TimestampFields {
+// Связь материала с модулем потока и день открытия
+export interface ModuleMaterial extends TimestampFields {
   id: string; // UUID
-  stream_module_id: string; // FK к StreamModule
-  technique_id: string; // FK к Technique
-  unlock_day: number; // день модуля (1 = первый день)
+  module_id: string; // FK к StreamModule
+  material_id: string; // FK к Material
+  stream_id?: string | null; // FK к Stream - материалы привязаны к конкретному потоку
+  tariff_id?: string | null; // FK к Tariff - материалы привязаны к конкретному тарифу
+  release_day: number; // день модуля (1 = первый день)
+  active_days?: number | null; // Сколько дней материал активен (NULL = бессрочно)
   order_num: number;
 }
 
-// Расширенная информация о технике с расписанием
-export interface TechniqueWithSchedule extends Technique {
-  unlock_day?: number | null; // День открытия в модуле
-  is_unlocked: boolean; // Открыта ли техника на текущую дату
+// Backwards compatibility
+export type StreamModuleTechnique = ModuleMaterial;
+
+// Расширенная информация о материале с расписанием
+export interface MaterialWithSchedule extends Material {
+  release_day?: number | null; // День открытия в модуле
+  unlock_day?: number | null; // Alias для release_day (backwards compatibility)
+  active_days?: number | null; // Сколько дней материал активен
+  is_unlocked: boolean; // Открыт ли материал на текущую дату
   has_access: boolean; // Есть ли доступ у пользователя
   can_purchase: boolean; // Может ли пользователь купить
-  purchase_info: TechniquePurchaseInfo;
+  purchase_info: MaterialPurchaseInfo;
 }
 
-// Типы для создания/обновления связи техник с модулями
-export interface CreateStreamModuleTechnique {
-  stream_module_id: string;
-  technique_id: string;
-  unlock_day: number; // День модуля (1-21)
+// Backwards compatibility
+export type TechniqueWithSchedule = MaterialWithSchedule;
+
+// Типы для создания/обновления связи материалов с модулями
+export interface CreateModuleMaterial {
+  module_id: string;
+  material_id: string;
+  stream_id: string; // Обязательно - привязка к потоку
+  tariff_id: string; // Обязательно - привязка к тарифу
+  release_day: number; // День модуля (1-21)
+  active_days?: number | null; // Сколько дней активен
   order_num?: number;
 }
 
-export interface UpdateStreamModuleTechnique {
+export interface UpdateModuleMaterial {
   id: string;
-  unlock_day?: number;
+  stream_id?: string;
+  tariff_id?: string;
+  release_day?: number;
+  active_days?: number | null;
   order_num?: number;
 }
+
+// Backwards compatibility
+export type CreateStreamModuleTechnique = CreateModuleMaterial;
+export type UpdateStreamModuleTechnique = UpdateModuleMaterial;

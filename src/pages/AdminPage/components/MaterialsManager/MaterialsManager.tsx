@@ -9,16 +9,28 @@ import DraggableMaterialRow from './DraggableMaterialRow';
 import { useTariffsAdmin, useMaterialTariffAccess, useCoursesAdmin } from '@/lib/supabase/hooks';
 import { generateWaveformData } from '@/lib/audio/waveformGenerator';
 
-// TODO: Определить типы для Material и MaterialBlock на основе db_schema.md
+// Объединенный тип Material (materials + techniques)
 interface Material {
     id: string; // uuid
     name: string;
     description?: string | null;
     cover_image_path?: string | null;
-    material_type: 'video' | 'audio'; // Пока только эти типы
+    material_type: 'video' | 'audio';
     order_num: number;
     course_id?: string | null;
     release_date?: string | null;
+
+    // Поля от techniques
+    audio_url?: string | null;
+    duration_seconds?: number | null;
+    status?: 'free' | 'purchasable' | 'locked';
+    purchase_url?: string | null;
+    upgrade_tariff_chat_url?: string | null;
+    available_from_module?: string | null;
+    unlock_condition_type?: 'after_material' | 'after_duration' | null;
+    unlock_condition_value?: any | null;
+    is_standalone?: boolean;
+
     created_at: string; // timestamptz
     updated_at: string; // timestamptz
 }
@@ -44,6 +56,18 @@ interface MaterialFormData {
     order_num: number;
     course_id: string;
     release_date: string;
+
+    // Поля от techniques
+    audio_url: string;
+    duration_seconds: number | null;
+    status: 'free' | 'purchasable' | 'locked';
+    purchase_url: string;
+    upgrade_tariff_chat_url: string;
+    available_from_module: string;
+    unlock_condition_type: 'after_material' | 'after_duration' | null;
+    unlock_condition_material_id: string;
+    unlock_condition_duration_days: number;
+    is_standalone: boolean;
 }
 
 interface BlockFormData {
@@ -99,7 +123,19 @@ const MaterialsManager: React.FC = () => {
         material_type: 'video',
         order_num: 1,
         course_id: '',
-        release_date: new Date().toISOString().split('T')[0]
+        release_date: new Date().toISOString().split('T')[0],
+
+        // Поля от techniques
+        audio_url: '',
+        duration_seconds: null,
+        status: 'free',
+        purchase_url: '',
+        upgrade_tariff_chat_url: '',
+        available_from_module: '',
+        unlock_condition_type: null,
+        unlock_condition_material_id: '',
+        unlock_condition_duration_days: 30,
+        is_standalone: false,
     });
 
     // Состояние для выбранных тарифов
@@ -272,7 +308,19 @@ const MaterialsManager: React.FC = () => {
                 material_type: material.material_type,
                 order_num: material.order_num,
                 course_id: material.course_id || '',
-                release_date: material.release_date ? new Date(material.release_date).toISOString().split('T')[0] : new Date().toISOString().split('T')[0]
+                release_date: material.release_date ? new Date(material.release_date).toISOString().split('T')[0] : new Date().toISOString().split('T')[0],
+
+                // Поля от techniques
+                audio_url: material.audio_url || '',
+                duration_seconds: material.duration_seconds || null,
+                status: material.status || 'free',
+                purchase_url: material.purchase_url || '',
+                upgrade_tariff_chat_url: material.upgrade_tariff_chat_url || '',
+                available_from_module: material.available_from_module || '',
+                unlock_condition_type: material.unlock_condition_type || null,
+                unlock_condition_material_id: material.unlock_condition_value?.material_id || '',
+                unlock_condition_duration_days: material.unlock_condition_value?.duration_days || 30,
+                is_standalone: material.is_standalone || false,
             });
         } else {
             setEditingMaterial(null);
@@ -283,7 +331,19 @@ const MaterialsManager: React.FC = () => {
                 material_type: 'video',
                 order_num: materials.length + 1,
                 course_id: coursesAdmin.courses.length > 0 ? coursesAdmin.courses[0].id : '',
-                release_date: new Date().toISOString().split('T')[0]
+                release_date: new Date().toISOString().split('T')[0],
+
+                // Поля от techniques (defaults для нового материала)
+                audio_url: '',
+                duration_seconds: null,
+                status: 'free',
+                purchase_url: '',
+                upgrade_tariff_chat_url: '',
+                available_from_module: '',
+                unlock_condition_type: null,
+                unlock_condition_material_id: '',
+                unlock_condition_duration_days: 30,
+                is_standalone: false,
             });
         }
         setMaterialModalOpen(true);
@@ -309,13 +369,29 @@ const MaterialsManager: React.FC = () => {
         }
 
         try {
-            const materialData = {
+            const materialData: any = {
                 name: materialForm.name.trim(),
                 description: materialForm.description.trim() || null,
                 material_type: materialForm.material_type,
-                order_num: materialForm.order_num || 1, // Если 0 или пустое значение, используем 1
+                order_num: materialForm.order_num || 1,
                 course_id: materialForm.course_id || null,
-                release_date: materialForm.release_date ? new Date(materialForm.release_date).toISOString() : null
+                release_date: materialForm.release_date ? new Date(materialForm.release_date).toISOString() : null,
+
+                // Поля от techniques
+                audio_url: materialForm.audio_url.trim() || null,
+                duration_seconds: materialForm.duration_seconds,
+                status: materialForm.status,
+                purchase_url: materialForm.purchase_url.trim() || null,
+                upgrade_tariff_chat_url: materialForm.upgrade_tariff_chat_url.trim() || null,
+                available_from_module: materialForm.available_from_module.trim() || null,
+                unlock_condition_type: materialForm.unlock_condition_type,
+                unlock_condition_value: materialForm.unlock_condition_type === 'after_material' || materialForm.unlock_condition_type === 'after_duration'
+                    ? {
+                        material_id: materialForm.unlock_condition_material_id || undefined,
+                        duration_days: materialForm.unlock_condition_duration_days || undefined,
+                    }
+                    : null,
+                is_standalone: materialForm.is_standalone,
             };
 
             let materialId: string;
@@ -602,7 +678,7 @@ const MaterialsManager: React.FC = () => {
                     if (audioUrl) {
                         console.log('Генерируем волну для аудио материала:', audioUrl);
                         const waveformData = await generateWaveformData(audioUrl);
-                        
+
                         // Добавляем audio_data в meta_json
                         blockData.meta_json = {
                             audio_data: waveformData
@@ -1168,32 +1244,6 @@ const MaterialsManager: React.FC = () => {
             {materialModalOpen && (
                 <div className="admin-modal-backdrop" onClick={handleCloseMaterialModal}>
                     <div className="admin-modal" onClick={(e) => e.stopPropagation()}>
-                        {/* Секция управления доступом по тарифам */}
-                        <div className="form-group">
-                            <label>Доступно для тарифов</label>
-                            {tariffsAdmin.loading || materialTariffAccess.loading ? (
-                                <div className="admin-loading">Загрузка тарифов...</div>
-                            ) : (
-                                <div className="checkbox-group">
-                                    {tariffsAdmin.tariffs.map(tariff => (
-                                        <label key={tariff.id} className="checkbox-inline" style={{ marginRight: '12px' }}>
-                                            <input
-                                                type="checkbox"
-                                                className="admin-checkbox"
-                                                checked={selectedTariffIds.includes(tariff.id)}
-                                                onChange={(e) => handleTariffCheckboxChange(tariff.id, e.target.checked)}
-                                            />
-                                            {tariff.name} ({tariff.code})
-                                        </label>
-                                    ))}
-                                </div>
-                            )}
-                            {materialTariffAccess.error && (
-                                <div className="admin-error" style={{ marginTop: '8px', fontSize: '12px' }}>
-                                    Ошибка загрузки доступов: {materialTariffAccess.error.message}
-                                </div>
-                            )}
-                        </div>
                         <button className="admin-modal-close" onClick={handleCloseMaterialModal}>×</button>
 
                         <h3>{editingMaterial ? 'Редактирование материала' : 'Создание материала'}</h3>
@@ -1222,23 +1272,6 @@ const MaterialsManager: React.FC = () => {
                                 />
                             </div>
 
-                            <div className="form-group">
-                                <label>Курс *</label>
-                                <select
-                                    className="admin-input"
-                                    value={materialForm.course_id}
-                                    onChange={(e) => setMaterialForm({ ...materialForm, course_id: e.target.value })}
-                                    required
-                                >
-                                    <option value="">Выберите курс</option>
-                                    {coursesAdmin.courses.map(course => (
-                                        <option key={course.id} value={course.id}>
-                                            {course.title}
-                                        </option>
-                                    ))}
-                                </select>
-                            </div>
-
                             <div className="form-row">
                                 <div className="form-group">
                                     <label>Тип материала *</label>
@@ -1265,23 +1298,136 @@ const MaterialsManager: React.FC = () => {
                                 </div>
                             </div>
 
+                            {/* Поля от techniques */}
+                            <hr style={{ margin: '20px 0', borderColor: '#e0e0e0' }} />
+                            <h4 style={{ marginBottom: '16px', color: '#666' }}>Расширенные настройки (от Techniques)</h4>
+
+                            <div className="form-group">
+                                <label>URL аудио файла</label>
+                                <input
+                                    type="text"
+                                    className="admin-input"
+                                    value={materialForm.audio_url}
+                                    onChange={(e) => setMaterialForm({ ...materialForm, audio_url: e.target.value })}
+                                    placeholder="https://..."
+                                />
+                                <small style={{ color: '#666', fontSize: '12px' }}>
+                                    Для аудио материалов - прямая ссылка на аудио файл
+                                </small>
+                            </div>
+
                             <div className="form-row">
                                 <div className="form-group">
-                                    <label>Порядковый номер *</label>
+                                    <label>Длительность (секунды)</label>
+                                    <input
+                                        type="number"
+                                        className="admin-input"
+                                        value={materialForm.duration_seconds || ''}
+                                        onChange={(e) => setMaterialForm({ ...materialForm, duration_seconds: e.target.value ? parseInt(e.target.value) : null })}
+                                        placeholder="120"
+                                    />
+                                </div>
+
+                                <div className="form-group">
+                                    <label>Статус доступа</label>
+                                    <select
+                                        className="admin-input"
+                                        value={materialForm.status}
+                                        onChange={(e) => setMaterialForm({ ...materialForm, status: e.target.value as 'free' | 'purchasable' | 'locked' })}
+                                    >
+                                        <option value="free">🆓 Бесплатный</option>
+                                        <option value="purchasable">💰 Доступен к покупке</option>
+                                        <option value="locked">🔒 Заблокирован</option>
+                                    </select>
+                                </div>
+                            </div>
+
+                            <div className="form-group">
+                                <label>URL для покупки</label>
+                                <input
+                                    type="text"
+                                    className="admin-input"
+                                    value={materialForm.purchase_url}
+                                    onChange={(e) => setMaterialForm({ ...materialForm, purchase_url: e.target.value })}
+                                    placeholder="https://..."
+                                />
+                                <small style={{ color: '#666', fontSize: '12px' }}>
+                                    Ссылка на страницу покупки (для purchasable материалов)
+                                </small>
+                            </div>
+
+                            <div className="form-group">
+                                <label>URL чата с отделом продаж</label>
+                                <input
+                                    type="text"
+                                    className="admin-input"
+                                    value={materialForm.upgrade_tariff_chat_url}
+                                    onChange={(e) => setMaterialForm({ ...materialForm, upgrade_tariff_chat_url: e.target.value })}
+                                    placeholder="https://t.me/..."
+                                />
+                            </div>
+
+                            <div className="form-group">
+                                <label>Тип условия разблокировки</label>
+                                <select
+                                    className="admin-input"
+                                    value={materialForm.unlock_condition_type || ''}
+                                    onChange={(e) => setMaterialForm({
+                                        ...materialForm,
+                                        unlock_condition_type: e.target.value ? e.target.value as 'after_material' | 'after_duration' : null
+                                    })}
+                                >
+                                    <option value="">Нет условий</option>
+                                    <option value="after_material">После получения другого материала</option>
+                                    <option value="after_duration">Через время (задержка)</option>
+                                </select>
+                            </div>
+
+                            {materialForm.unlock_condition_type === 'after_material' && (
+                                <div className="form-group">
+                                    <label>ID предыдущего материала</label>
                                     <input
                                         type="text"
                                         className="admin-input"
-                                        value={materialForm.order_num === 0 ? '' : materialForm.order_num}
-                                        onChange={(e) => {
-                                            const value = e.target.value;
-                                            // Разрешаем только цифры
-                                            if (value === '' || /^\d+$/.test(value)) {
-                                                setMaterialForm({ ...materialForm, order_num: value === '' ? 0 : parseInt(value) });
-                                            }
-                                        }}
-                                        required
+                                        value={materialForm.unlock_condition_material_id}
+                                        onChange={(e) => setMaterialForm({ ...materialForm, unlock_condition_material_id: e.target.value })}
+                                        placeholder="UUID материала"
                                     />
+                                    <small style={{ color: '#666', fontSize: '12px' }}>
+                                        Материал откроется после получения указанного материала
+                                    </small>
                                 </div>
+                            )}
+
+                            {materialForm.unlock_condition_type === 'after_duration' && (
+                                <div className="form-group">
+                                    <label>Задержка (дни)</label>
+                                    <input
+                                        type="number"
+                                        className="admin-input"
+                                        value={materialForm.unlock_condition_duration_days}
+                                        onChange={(e) => setMaterialForm({ ...materialForm, unlock_condition_duration_days: parseInt(e.target.value) || 30 })}
+                                        placeholder="30"
+                                    />
+                                    <small style={{ color: '#666', fontSize: '12px' }}>
+                                        Материал откроется через указанное количество дней
+                                    </small>
+                                </div>
+                            )}
+
+                            <div className="form-group">
+                                <label className="checkbox-inline" style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                                    <input
+                                        type="checkbox"
+                                        className="admin-checkbox"
+                                        checked={materialForm.is_standalone}
+                                        onChange={(e) => setMaterialForm({ ...materialForm, is_standalone: e.target.checked })}
+                                    />
+                                    <span>Самостоятельная техника</span>
+                                </label>
+                                <small style={{ color: '#666', fontSize: '12px', display: 'block', marginTop: '4px' }}>
+                                    Если отмечено, материал доступен независимо от модулей
+                                </small>
                             </div>
 
                             <div className="form-actions">

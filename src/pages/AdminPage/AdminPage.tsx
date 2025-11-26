@@ -22,11 +22,11 @@ import FaqManager from './components/FaqManager/FaqManager';
 import BroadcastsManager from './components/BroadcastsManager/BroadcastsManager';
 import SimpleTariffsManager from './components/TariffsManager/SimpleTariffsManager';
 import TokensManager from './components/TokensManager/TokensManager';
-import TechniquesManager from './components/TechniquesManager/TechniquesManager';
 import StreamsManager from './components/StreamsManager/StreamsManager';
 import CalendarEventsManager from './components/CalendarEventsManager/CalendarEventsManager';
 import { UnifiedCoursesManager } from './components/CoursesManager';
 import { ModulesManager } from './components/ModulesManager';
+import BundlesManager from './components/BundlesManager/BundlesManager';
 
 // Состояние для навигации по сабмитам
 interface SubmissionsNavigationState {
@@ -38,7 +38,7 @@ interface SubmissionsNavigationState {
 const sectionToPath: Record<AdminSection, string> = {
   courses: 'courses',
   materials: 'materials',
-  techniques: 'techniques',
+  bundles: 'bundles',
   streams: 'streams',
   modules: 'modules',
   tariffs: 'tariffs',
@@ -366,8 +366,10 @@ const AdminPageNew: React.FC = () => {
     switch (currentSection) {
       case 'courses':
         return <UnifiedCoursesManager />;
-      case 'techniques':
-        return <TechniquesManager />;
+      case 'materials':
+        return <MaterialsManager />;
+      case 'bundles':
+        return <BundlesManager />;
       case 'streams':
         return <StreamsManager />;
       case 'modules':
@@ -397,8 +399,6 @@ const AdminPageNew: React.FC = () => {
             )}
           </>
         );
-      case 'materials':
-        return <MaterialsManager />;
       case 'chats':
         return <ChatsManager />;
       case 'faq':

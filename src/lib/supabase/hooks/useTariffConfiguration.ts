@@ -122,8 +122,8 @@ export function useAddModuleToTariff() {
 
       return data;
     },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['tariff-configuration'] });
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({ queryKey: ['tariff-configuration'], refetchType: 'active' });
     },
   });
 }
@@ -161,8 +161,8 @@ export function useUpdateModuleInTariff() {
 
       return data;
     },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['tariff-configuration'] });
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({ queryKey: ['tariff-configuration'], refetchType: 'active' });
     },
   });
 }
@@ -189,8 +189,11 @@ export function useRemoveModuleFromTariff() {
         throw error;
       }
     },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['tariff-configuration'] });
+    onSuccess: async () => {
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: ['tariff-configuration'], refetchType: 'active' }),
+        queryClient.invalidateQueries({ queryKey: ['tariff-module-materials'], refetchType: 'active' }),
+      ]);
     },
   });
 }
@@ -206,32 +209,37 @@ export function useAddTechniqueToTariffModule() {
       tariff_stream_module_id: string;
       technique_id: string;
       unlock_offset_days: number;
+      active_days?: number | null;
       order_num: number;
     }) => {
       if (!supabase) throw new Error('Supabase not initialized');
 
-      logger.debug('Adding technique to tariff module', params);
+      logger.debug('Adding material to tariff module', params);
 
       const { data, error } = await supabase
-        .from('tariff_module_techniques')
+        .from('tariff_module_materials')
         .insert({
           tariff_stream_module_id: params.tariff_stream_module_id,
-          technique_id: params.technique_id,
+          material_id: params.technique_id, // technique_id -> material_id
           unlock_offset_days: params.unlock_offset_days,
+          active_days: params.active_days || null,
           order_num: params.order_num,
         })
         .select()
         .single();
 
       if (error) {
-        logger.error('Error adding technique to tariff module', { params, error });
+        logger.error('Error adding material to tariff module', { params, error });
         throw error;
       }
 
       return data;
     },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['tariff-configuration'] });
+    onSuccess: async () => {
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: ['tariff-configuration'], refetchType: 'active' }),
+        queryClient.invalidateQueries({ queryKey: ['tariff-module-materials'], refetchType: 'active' }),
+      ]);
     },
   });
 }
@@ -250,10 +258,10 @@ export function useUpdateTechniqueInTariffModule() {
     }) => {
       if (!supabase) throw new Error('Supabase not initialized');
 
-      logger.debug('Updating technique in tariff module', params);
+      logger.debug('Updating material in tariff module', params);
 
       const { data, error } = await supabase
-        .from('tariff_module_techniques')
+        .from('tariff_module_materials')
         .update({
           unlock_offset_days: params.unlock_offset_days,
           order_num: params.order_num,
@@ -263,14 +271,17 @@ export function useUpdateTechniqueInTariffModule() {
         .single();
 
       if (error) {
-        logger.error('Error updating technique in tariff module', { params, error });
+        logger.error('Error updating material in tariff module', { params, error });
         throw error;
       }
 
       return data;
     },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['tariff-configuration'] });
+    onSuccess: async () => {
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: ['tariff-configuration'], refetchType: 'active' }),
+        queryClient.invalidateQueries({ queryKey: ['tariff-module-materials'], refetchType: 'active' }),
+      ]);
     },
   });
 }
@@ -285,20 +296,23 @@ export function useRemoveTechniqueFromTariffModule() {
     mutationFn: async (tariffModuleTechniqueId: string) => {
       if (!supabase) throw new Error('Supabase not initialized');
 
-      logger.debug('Removing technique from tariff module', { tariffModuleTechniqueId });
+      logger.debug('Removing material from tariff module', { tariffModuleTechniqueId });
 
       const { error } = await supabase
-        .from('tariff_module_techniques')
+        .from('tariff_module_materials')
         .delete()
         .eq('id', tariffModuleTechniqueId);
 
       if (error) {
-        logger.error('Error removing technique from tariff module', { tariffModuleTechniqueId, error });
+        logger.error('Error removing material from tariff module', { tariffModuleTechniqueId, error });
         throw error;
       }
     },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['tariff-configuration'] });
+    onSuccess: async () => {
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: ['tariff-configuration'], refetchType: 'active' }),
+        queryClient.invalidateQueries({ queryKey: ['tariff-module-materials'], refetchType: 'active' }),
+      ]);
     },
   });
 }

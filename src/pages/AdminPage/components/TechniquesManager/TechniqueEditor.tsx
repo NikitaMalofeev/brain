@@ -281,34 +281,20 @@ const TechniqueEditor: React.FC<TechniqueEditorProps> = ({
           </div>
         </div>
 
-        {/* Длительность и порядок */}
-        <div className="grid grid-cols-2 gap-4">
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Длительность (секунды)
-            </label>
-            <input
-              type="number"
-              value={formData.duration_seconds || ''}
-              onChange={(e) =>
-                handleChange('duration_seconds', e.target.value ? parseInt(e.target.value) : null)
-              }
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#B862EA] focus:border-transparent"
-              placeholder="300"
-            />
-          </div>
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Порядковый номер
-            </label>
-            <input
-              type="number"
-              value={formData.order_num}
-              onChange={(e) => handleChange('order_num', parseInt(e.target.value) || 0)}
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#B862EA] focus:border-transparent"
-              placeholder="0"
-            />
-          </div>
+        {/* Длительность */}
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-2">
+            Длительность (секунды)
+          </label>
+          <input
+            type="number"
+            value={formData.duration_seconds || ''}
+            onChange={(e) =>
+              handleChange('duration_seconds', e.target.value ? parseInt(e.target.value) : null)
+            }
+            className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#B862EA] focus:border-transparent"
+            placeholder="300"
+          />
         </div>
 
         {/* Статус */}
@@ -337,7 +323,7 @@ const TechniqueEditor: React.FC<TechniqueEditorProps> = ({
             className="w-5 h-5 text-[#B862EA] border-gray-300 rounded focus:ring-[#B862EA]"
           />
           <label htmlFor="is_standalone" className="text-sm font-medium text-gray-700 cursor-pointer">
-            Standalone техника (доступна к покупке отдельно, не привязана к модулям тарифов)
+            Не привязана к модулям
           </label>
         </div>
 
@@ -367,20 +353,6 @@ const TechniqueEditor: React.FC<TechniqueEditorProps> = ({
               placeholder="https://t.me/..."
             />
           </div>
-        </div>
-
-        {/* Доступна с модуля */}
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-2">
-            Доступна с модуля
-          </label>
-          <input
-            type="text"
-            value={formData.available_from_module}
-            onChange={(e) => handleChange('available_from_module', e.target.value)}
-            className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#B862EA] focus:border-transparent"
-            placeholder="Модуль 3"
-          />
         </div>
 
         {/* Условие разблокировки */}

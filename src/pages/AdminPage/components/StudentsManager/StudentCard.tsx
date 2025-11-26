@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react';
+import { Select } from 'antd';
 import { useStudentDetails, StudentLessonProgress, StudentMaterialView } from '@/lib/supabase/hooks/useStudentDetails';
 import { useStudentActions } from '@/lib/supabase/hooks/useStudentActions';
 import { useTariffsAdmin } from '@/lib/supabase/hooks/useTariffsAdmin';
@@ -16,6 +17,12 @@ import {
     useRemoveStudentFromStream,
     useRemoveStudentTariff
 } from '@/lib/supabase/hooks/useStudentStreamAndTariff';
+import {
+    useBundles,
+    useUserBundles,
+    useAssignBundleToUser,
+    useRemoveBundleFromUser
+} from '@/lib/supabase/hooks/useBundles';
 
 interface StudentCardProps {
     studentId: string;
@@ -41,6 +48,12 @@ const StudentCard: React.FC<StudentCardProps> = ({ studentId, onBack, currentUse
     const assignTariffMutation = useAssignStudentTariff();
     const removeFromStreamMutation = useRemoveStudentFromStream();
     const removeTariffMutation = useRemoveStudentTariff();
+
+    // Пакеты
+    const { data: bundles, isLoading: bundlesLoading } = useBundles();
+    const { data: userBundles } = useUserBundles(studentId);
+    const assignBundleMutation = useAssignBundleToUser();
+    const removeBundleMutation = useRemoveBundleFromUser();
 
     // Cостояние для модального окна назначения куратором
     const [isPromoteModalOpen, setIsPromoteModalOpen] = useState(false);
@@ -82,6 +95,9 @@ const StudentCard: React.FC<StudentCardProps> = ({ studentId, onBack, currentUse
     const [personalChatLink, setPersonalChatLink] = useState<string>('');
     const [chatLinkLoading, setChatLinkLoading] = useState<boolean>(false);
     const [isEditingChatLink, setIsEditingChatLink] = useState<boolean>(false);
+
+    // Состояние для выбранных пакетов
+    const [selectedBundleIds, setSelectedBundleIds] = useState<string[]>([]);
 
     useEffect(() => {
         loadStudentDetails(studentId);
@@ -208,6 +224,51 @@ const StudentCard: React.FC<StudentCardProps> = ({ studentId, onBack, currentUse
         } catch (error) {
             console.error('Ошибка при удалении из потока:', error);
             alert('Ошибка при удалении из потока');
+        }
+    };
+
+    // Назначить пакеты пользователю
+    const handleAssignBundles = async () => {
+        if (selectedBundleIds.length === 0) {
+            alert('Выберите хотя бы один пакет');
+            return;
+        }
+
+        try {
+            // Получаем уже назначенные пакеты
+            const currentBundleIds = userBundles?.map(ub => ub.bundle_id) || [];
+
+            // Находим новые пакеты для добавления
+            const bundlesToAdd = selectedBundleIds.filter(id => !currentBundleIds.includes(id));
+
+            // Назначаем новые пакеты
+            for (const bundleId of bundlesToAdd) {
+                await assignBundleMutation.mutateAsync({
+                    user_id: studentId,
+                    bundle_id: bundleId,
+                });
+            }
+
+            alert('Пакеты успешно назначены');
+            setSelectedBundleIds([]);
+        } catch (error) {
+            console.error('Ошибка при назначении пакетов:', error);
+            alert('Ошибка при назначении пакетов');
+        }
+    };
+
+    // Удалить пакет у пользователя
+    const handleRemoveBundle = async (userBundleId: string) => {
+        if (!window.confirm('Вы уверены, что хотите удалить этот пакет у пользователя?')) {
+            return;
+        }
+
+        try {
+            await removeBundleMutation.mutateAsync(userBundleId);
+            alert('Пакет успешно удален');
+        } catch (error) {
+            console.error('Ошибка при удалении пакета:', error);
+            alert('Ошибка при удалении пакета');
         }
     };
 
@@ -798,6 +859,101 @@ const StudentCard: React.FC<StudentCardProps> = ({ studentId, onBack, currentUse
                             {assigningTariff ? 'Назначение...' : 'Назначить'}
                         </button>
                     </div>
+                </div>
+
+                {/* Назначение пакетов */}
+                <div className="form-group">
+                    <label style={{ fontSize: '14px', fontWeight: '600', marginBottom: '8px', display: 'block' }}>Пакеты материалов:</label>
+
+                    {/* Выбор пакетов для назначения */}
+                    <div style={{ marginBottom: '16px' }}>
+                        <div style={{ display: 'flex', gap: '12px', alignItems: 'flex-start' }}>
+                            <div style={{ flex: 1 }}>
+                                <Select
+                                    mode="multiple"
+                                    style={{ width: '100%', minWidth: '200px' }}
+                                    placeholder="Выберите пакеты для назначения"
+                                    value={selectedBundleIds}
+                                    onChange={setSelectedBundleIds}
+                                    loading={bundlesLoading}
+                                    disabled={bundlesLoading || assignBundleMutation.isPending}
+                                    showSearch
+                                    optionFilterProp="children"
+                                >
+                                    {bundles?.map(bundle => (
+                                        <Select.Option key={bundle.id} value={bundle.id}>
+                                            {bundle.name}
+                                        </Select.Option>
+                                    ))}
+                                </Select>
+                            </div>
+                            <button
+                                className="admin-button"
+                                style={{
+                                    fontSize: '14px',
+                                    padding: '8px 16px',
+                                    height: '36px',
+                                    minWidth: '100px',
+                                    flexShrink: 0
+                                }}
+                                onClick={handleAssignBundles}
+                                disabled={assignBundleMutation.isPending || selectedBundleIds.length === 0}
+                            >
+                                {assignBundleMutation.isPending ? 'Назначение...' : 'Назначить'}
+                            </button>
+                        </div>
+                    </div>
+
+                    {/* Список назначенных пакетов */}
+                    {userBundles && userBundles.length > 0 && (
+                        <div style={{ marginTop: '12px' }}>
+                            <small style={{
+                                display: 'block',
+                                marginBottom: '8px',
+                                color: '#666',
+                                fontSize: '12px',
+                                fontWeight: '600'
+                            }}>
+                                Назначенные пакеты:
+                            </small>
+                            <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
+                                {userBundles.map(ub => {
+                                    const bundle = bundles?.find(b => b.id === ub.bundle_id);
+                                    return (
+                                        <div
+                                            key={ub.id}
+                                            style={{
+                                                display: 'flex',
+                                                alignItems: 'center',
+                                                gap: '8px',
+                                                padding: '4px 12px',
+                                                backgroundColor: '#f0f0f0',
+                                                borderRadius: '4px',
+                                                fontSize: '13px'
+                                            }}
+                                        >
+                                            <span>{bundle?.name || 'Неизвестный пакет'}</span>
+                                            <button
+                                                onClick={() => handleRemoveBundle(ub.id)}
+                                                disabled={removeBundleMutation.isPending}
+                                                style={{
+                                                    border: 'none',
+                                                    background: 'transparent',
+                                                    cursor: 'pointer',
+                                                    padding: '0 4px',
+                                                    color: '#dc3545',
+                                                    fontSize: '16px',
+                                                    lineHeight: 1
+                                                }}
+                                            >
+                                                ×
+                                            </button>
+                                        </div>
+                                    );
+                                })}
+                            </div>
+                        </div>
+                    )}
                 </div>
 
                 {/* Выбор роли пользователя */}

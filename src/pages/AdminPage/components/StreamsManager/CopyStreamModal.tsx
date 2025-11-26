@@ -45,19 +45,38 @@ const CopyStreamModal: React.FC<CopyStreamModalProps> = ({ stream, onClose, onSu
       });
 
       // Вызвать SQL функцию copy_stream
-      const { data, error } = await supabase!.rpc('copy_stream', {
+      const { data: newStreamId, error: copyError } = await supabase!.rpc('copy_stream', {
         p_source_stream_id: stream.id,
         p_new_stream_name: newName.trim(),
         p_new_start_date: newStartDate,
       });
 
-      if (error) {
-        logger.error('Error copying stream', { error });
-        throw error;
+      if (copyError) {
+        logger.error('Error copying stream', { error: copyError });
+        throw copyError;
       }
 
-      logger.debug('Stream copied successfully', { newStreamId: data });
-      alert('Поток успешно скопирован!\n\nВсе модули и события скопированы с новыми датами.');
+      logger.debug('Stream copied successfully', { newStreamId });
+
+      // Копировать материалы модулей с пересчётом дат
+      logger.debug('Copying module materials');
+      const { data: copiedMaterialsCount, error: materialsError } = await supabase!.rpc('copy_stream_module_materials', {
+        p_source_stream_id: stream.id,
+        p_target_stream_id: newStreamId,
+        p_source_tariff_id: null, // Копируем для всех тарифов
+        p_target_tariff_id: null,
+        p_date_offset_days: null, // Автоматический расчёт по разнице start_date
+      });
+
+      if (materialsError) {
+        logger.error('Error copying module materials', { error: materialsError });
+        // Не прерываем процесс, так как поток уже скопирован
+        console.warn('Module materials were not copied:', materialsError);
+      } else {
+        logger.debug('Module materials copied', { count: copiedMaterialsCount });
+      }
+
+      alert(`Поток успешно скопирован!\n\nВсе модули и события скопированы с новыми датами.${copiedMaterialsCount ? `\nМатериалов модулей скопировано: ${copiedMaterialsCount}` : ''}`);
       onSuccess();
     } catch (error) {
       console.error('Error copying stream:', error);
@@ -131,9 +150,10 @@ const CopyStreamModal: React.FC<CopyStreamModalProps> = ({ stream, onClose, onSu
             </p>
             <ul className="text-sm text-blue-700 mt-2 space-y-1 ml-4 list-disc">
               <li>Все модули потока</li>
+              <li>Все материалы модулей (с привязкой к тарифам)</li>
               <li>Все события календаря</li>
               <li>Настройки доступа по тарифам</li>
-              <li>Даты событий будут сдвинуты на новую дату начала</li>
+              <li>Даты событий и материалов будут сдвинуты на новую дату начала</li>
             </ul>
           </div>
 

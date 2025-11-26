@@ -21,9 +21,11 @@ import {
   CopyOutlined,
   TeamOutlined,
   CalendarOutlined,
+  BookOutlined,
 } from '@ant-design/icons';
 import StreamEditorNew from './StreamEditorNew';
 import CopyStreamModal from './CopyStreamModal';
+import StreamTariffModuleMaterialsManager from './StreamTariffModuleMaterialsManager';
 
 const { Title, Text, Paragraph } = Typography;
 
@@ -40,6 +42,7 @@ const StreamsManager: React.FC = () => {
   const [selectedStreamId, setSelectedStreamId] = useState<string | null>(null);
   const [isCreating, setIsCreating] = useState(false);
   const [copyingStreamId, setCopyingStreamId] = useState<string | null>(null);
+  const [materialsStreamId, setMaterialsStreamId] = useState<string | null>(null);
   const queryClient = useQueryClient();
 
   const { data: streams, isLoading } = useQuery({
@@ -109,6 +112,14 @@ const StreamsManager: React.FC = () => {
     setCopyingStreamId(null);
   };
 
+  const handleManageMaterials = (streamId: string) => {
+    setMaterialsStreamId(streamId);
+  };
+
+  const handleCloseMaterials = () => {
+    setMaterialsStreamId(null);
+  };
+
   const formatDate = (dateString: string) => {
     const date = new Date(dateString);
     return date.toLocaleDateString('ru-RU', {
@@ -154,6 +165,15 @@ const StreamsManager: React.FC = () => {
           queryClient.invalidateQueries({ queryKey: ['admin-streams'] });
           handleCloseCopyModal();
         }}
+      />
+    );
+  }
+
+  if (materialsStreamId) {
+    return (
+      <StreamTariffModuleMaterialsManager
+        streamId={materialsStreamId}
+        onBack={handleCloseMaterials}
       />
     );
   }

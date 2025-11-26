@@ -53,6 +53,7 @@ import {
   VideoCameraOutlined,
 } from '@ant-design/icons';
 import dayjs from 'dayjs';
+import TariffModuleMaterialsManager from './TariffModuleMaterialsManager';
 
 const { Title, Text } = Typography;
 const { Panel } = Collapse;
@@ -326,18 +327,19 @@ const UnifiedCoursesManager: React.FC = () => {
 
   // Получить все техники напрямую из таблицы (для админки)
   const { data: allTechniques } = useQuery({
-    queryKey: ['all-techniques-admin'],
+    queryKey: ['all-materials-admin'],
     queryFn: async () => {
       if (!supabase) return [];
       const { data, error } = await supabase
-        .from('techniques')
-        .select('id, title, order_num')
+        .from('materials')
+        .select('id, name, order_num')
         .order('order_num');
       if (error) {
-        logger.error('Error fetching techniques for admin', { error });
+        logger.error('Error fetching materials for admin', { error });
         throw error;
       }
-      return data || [];
+      // Map to match expected interface (title -> name for backwards compatibility)
+      return (data || []).map(m => ({ ...m, title: m.name }));
     },
   });
   const { data: streamTariffId } = useStreamTariffId(navigation.streamId || null, navigation.tariffId || null);
@@ -372,9 +374,14 @@ const UnifiedCoursesManager: React.FC = () => {
     return allTariffs.filter((t) => !usedTariffIds.includes(t.id));
   }, [allTariffs, streamTariffs]);
 
-  const availableModules = streamModules?.filter(
-    (module) => !configuration?.modules.some((cm) => cm.stream_module_id === module.id)
-  );
+  const availableModules = useMemo(() => {
+    if (!streamModules || !configuration) return streamModules || [];
+
+    const addedModuleIds = configuration.modules.map(m => m.stream_module_id);
+    const filtered = streamModules.filter(module => !addedModuleIds.includes(module.id));
+
+    return filtered;
+  }, [streamModules, configuration]);
 
   const getAvailableTechniques = (module: TariffModuleConfig) => {
     return allTechniques?.filter(
@@ -835,6 +842,10 @@ const UnifiedCoursesManager: React.FC = () => {
                         onClick={() => {
                           setEditingModule(module.tariff_stream_module_id);
                           setEditingModuleData({ days: module.access_duration_days });
+                          // Открываем модуль если он закрыт
+                          if (!expandedModules.includes(module.stream_module_id)) {
+                            setExpandedModules([...expandedModules, module.stream_module_id]);
+                          }
                         }}
                       />
                       <Popconfirm
@@ -886,127 +897,12 @@ const UnifiedCoursesManager: React.FC = () => {
                     </Card>
                   )}
 
-                  {/* Техники */}
-                  <Text strong style={{ display: 'block', marginBottom: 8 }}>Техники:</Text>
-                  {module.techniques.length === 0 ? (
-                    <Text type="secondary">Нет техник</Text>
-                  ) : (
-                    <List
-                      size="small"
-                      dataSource={module.techniques}
-                      renderItem={(technique) => (
-                        <List.Item
-                          actions={
-                            editingTechnique === technique.tariff_module_technique_id
-                              ? []
-                              : [
-                                  <Button
-                                    key="edit"
-                                    type="link"
-                                    size="small"
-                                    onClick={() => {
-                                      setEditingTechnique(technique.tariff_module_technique_id!);
-                                      setEditingTechniqueData({ days: technique.unlock_offset_days });
-                                    }}
-                                  >
-                                    Изменить
-                                  </Button>,
-                                  <Popconfirm
-                                    key="delete"
-                                    title="Удалить технику?"
-                                    onConfirm={() => handleRemoveTechnique(technique.tariff_module_technique_id!)}
-                                    okText="Да"
-                                    cancelText="Нет"
-                                  >
-                                    <Button type="link" size="small" danger>
-                                      <CloseOutlined />
-                                    </Button>
-                                  </Popconfirm>,
-                                ]
-                          }
-                        >
-                          {editingTechnique === technique.tariff_module_technique_id ? (
-                            <Space direction="vertical" style={{ width: '100%' }}>
-                              <Text strong>{technique.technique_title}</Text>
-                              <div>
-                                <Text style={{ fontSize: 12 }}>Открыть через (дней):</Text>
-                                <InputNumber
-                                  size="small"
-                                  min={0}
-                                  value={editingTechniqueData.days}
-                                  onChange={(value) => setEditingTechniqueData({ days: value || 0 })}
-                                  style={{ width: 100, marginLeft: 8 }}
-                                />
-                              </div>
-                              <Space>
-                                <Button
-                                  type="primary"
-                                  size="small"
-                                  onClick={() => handleUpdateTechnique(
-                                    technique.tariff_module_technique_id!,
-                                    editingTechniqueData.days,
-                                    technique.order_num
-                                  )}
-                                >
-                                  Сохранить
-                                </Button>
-                                <Button size="small" onClick={() => setEditingTechnique(null)}>
-                                  Отмена
-                                </Button>
-                              </Space>
-                            </Space>
-                          ) : (
-                            <Space>
-                              <Text>{technique.technique_title}</Text>
-                              <Text type="secondary" style={{ fontSize: 12 }}>
-                                (через {technique.unlock_offset_days} дней)
-                              </Text>
-                            </Space>
-                          )}
-                        </List.Item>
-                      )}
-                    />
-                  )}
-
-                  {/* Материалы */}
-                  {moduleMaterials && moduleMaterials[module.stream_module_id] && moduleMaterials[module.stream_module_id].length > 0 && (
-                    <div style={{ marginTop: 16 }}>
-                      <Text strong style={{ display: 'block', marginBottom: 8 }}>Материалы из библиотеки:</Text>
-                      <List
-                        size="small"
-                        dataSource={moduleMaterials[module.stream_module_id]}
-                        renderItem={(mm) => (
-                          <List.Item>
-                            <Space>
-                              {mm.material.material_type === 'audio' ? <SoundOutlined /> : <VideoCameraOutlined />}
-                              <Text>{mm.material.name}</Text>
-                              <Text type="secondary" style={{ fontSize: 12 }}>
-                                (день {mm.release_day || 1}{mm.active_days ? `, ${mm.active_days} дн.` : ''})
-                              </Text>
-                            </Space>
-                          </List.Item>
-                        )}
-                      />
-                    </div>
-                  )}
-
-                  {/* Добавить технику */}
-                  <div style={{ marginTop: 16 }}>
-                    <Select
-                      placeholder="+ Добавить технику"
-                      style={{ width: '100%' }}
-                      onChange={(value) => {
-                        if (value) handleAddTechnique(module.tariff_stream_module_id, value);
-                      }}
-                      value={null}
-                    >
-                      {getAvailableTechniques(module)?.map((technique) => (
-                        <Select.Option key={technique.id} value={technique.id}>
-                          {technique.title}
-                        </Select.Option>
-                      ))}
-                    </Select>
-                  </div>
+                  {/* Drag & Drop интерфейс для материалов */}
+                  <TariffModuleMaterialsManager
+                    module={module}
+                    allMaterials={allTechniques || []}
+                    moduleDurationDays={module.access_duration_days || undefined}
+                  />
                 </Panel>
               ))}
             </Collapse>

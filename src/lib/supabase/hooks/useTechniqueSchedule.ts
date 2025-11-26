@@ -2,6 +2,10 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '../client';
 import { logger } from '@/lib/logger';
 import type {
+  ModuleMaterial,
+  CreateModuleMaterial,
+  UpdateModuleMaterial,
+  // Backwards compatibility
   StreamModuleTechnique,
   CreateStreamModuleTechnique,
   UpdateStreamModuleTechnique,
@@ -51,7 +55,7 @@ export const useAddTechniqueToModule = () => {
       logger.debug('Adding technique to module', { data });
 
       const { data: result, error } = await supabase
-        .from('stream_module_techniques')
+        .from('module_materials')
         .insert([data])
         .select()
         .single();
@@ -89,7 +93,7 @@ export const useUpdateTechniqueInModule = () => {
       const { id, ...updateData } = data;
 
       const { data: result, error } = await supabase
-        .from('stream_module_techniques')
+        .from('module_materials')
         .update(updateData)
         .eq('id', id)
         .select()
@@ -123,7 +127,7 @@ export const useRemoveTechniqueFromModule = () => {
 
       logger.debug('Removing technique from module', { id });
 
-      const { error } = await supabase.from('stream_module_techniques').delete().eq('id', id);
+      const { error } = await supabase.from('module_materials').delete().eq('id', id);
 
       if (error) {
         logger.error('Error removing technique from module', { error });
@@ -224,10 +228,10 @@ export const useUserTechniqueAccess = (userId: string | null) => {
       logger.debug('Fetching user technique access', { userId });
 
       const { data, error } = await supabase
-        .from('user_technique_access')
+        .from('user_material_access')
         .select(`
           *,
-          technique:techniques(*)
+          material:materials(*)
         `)
         .eq('user_id', userId)
         .order('granted_at', { ascending: false });

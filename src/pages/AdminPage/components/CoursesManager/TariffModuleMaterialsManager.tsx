@@ -1,0 +1,383 @@
+import React, { useState, useMemo } from 'react';
+import { supabase } from '@/lib/supabase/client';
+import { useQuery } from '@tanstack/react-query';
+import {
+  Card,
+  Space,
+  Typography,
+  Empty,
+  Spin,
+  Button,
+  InputNumber,
+  Popconfirm,
+  Modal,
+  Form,
+  Row,
+  Col,
+  message,
+  Input,
+} from 'antd';
+import {
+  DeleteOutlined,
+  DragOutlined,
+  SearchOutlined,
+} from '@ant-design/icons';
+import {
+  useAddTechniqueToTariffModule,
+  useRemoveTechniqueFromTariffModule,
+  TariffModuleConfig,
+} from '@/lib/supabase/hooks/useTariffConfiguration';
+
+const { Text } = Typography;
+
+interface Material {
+  id: string;
+  name: string;
+  material_type: 'video' | 'audio';
+}
+
+interface TariffModuleMaterial {
+  id: string;
+  tariff_stream_module_id: string;
+  material_id: string;
+  unlock_offset_days: number;
+  active_days: number | null;
+  order_num: number;
+  material?: Material;
+}
+
+interface TariffModuleMaterialsManagerProps {
+  module: TariffModuleConfig;
+  allMaterials: Material[];
+  moduleDurationDays?: number; // Количество дней доступа к модулю
+}
+
+// Хук для получения материалов модуля тарифа
+function useModuleMaterials(tariffStreamModuleId: string) {
+  return useQuery({
+    queryKey: ['tariff-module-materials', tariffStreamModuleId],
+    queryFn: async (): Promise<TariffModuleMaterial[]> => {
+      if (!supabase || !tariffStreamModuleId) return [];
+      const { data, error } = await supabase
+        .from('tariff_module_materials')
+        .select(`
+          id,
+          tariff_stream_module_id,
+          material_id,
+          unlock_offset_days,
+          active_days,
+          order_num,
+          material:materials(id, name, material_type)
+        `)
+        .eq('tariff_stream_module_id', tariffStreamModuleId)
+        .order('unlock_offset_days', { ascending: true });
+
+      if (error) throw error;
+
+      return (data || []).map(item => ({
+        ...item,
+        material: item.material as unknown as Material
+      }));
+    },
+    enabled: !!tariffStreamModuleId,
+  });
+}
+
+const TariffModuleMaterialsManager: React.FC<TariffModuleMaterialsManagerProps> = ({
+  module,
+  allMaterials,
+  moduleDurationDays,
+}) => {
+  const [draggedMaterial, setDraggedMaterial] = useState<Material | null>(null);
+  const [searchQuery, setSearchQuery] = useState<string>('');
+  const [addMaterialModal, setAddMaterialModal] = useState<{
+    materialId: string;
+    materialName: string;
+  } | null>(null);
+  const [unlockDay, setUnlockDay] = useState<number>(0);
+  const [activeDays, setActiveDays] = useState<number | null>(null);
+  const [customModuleDays, setCustomModuleDays] = useState<number>(14);
+
+  // Используем количество дней доступа к модулю из конфигурации тарифа или введенное значение
+  const moduleDaysCount = moduleDurationDays || customModuleDays;
+
+  const { data: moduleMaterials, isLoading } = useModuleMaterials(module.tariff_stream_module_id);
+  const addMaterialMutation = useAddTechniqueToTariffModule();
+  const removeMaterialMutation = useRemoveTechniqueFromTariffModule();
+
+  // Доступные материалы (которые ещё не добавлены в модуль)
+  const availableMaterials = useMemo(() => {
+    if (!allMaterials || !moduleMaterials) return allMaterials || [];
+    const addedIds = new Set(moduleMaterials.map(mm => mm.material_id));
+    return allMaterials.filter(m => !addedIds.has(m.id));
+  }, [allMaterials, moduleMaterials]);
+
+  // Отфильтрованные материалы по поисковому запросу
+  const filteredMaterials = useMemo(() => {
+    if (!searchQuery.trim()) return availableMaterials;
+    const lowerQuery = searchQuery.toLowerCase();
+    return availableMaterials.filter(m =>
+      m.name.toLowerCase().includes(lowerQuery)
+    );
+  }, [availableMaterials, searchQuery]);
+
+  // Материалы сгруппированные по дням
+  const materialsByDay = useMemo(() => {
+    if (!moduleMaterials) return {};
+    const result: Record<number, TariffModuleMaterial[]> = {};
+    for (const mm of moduleMaterials) {
+      const day = mm.unlock_offset_days || 0;
+      if (!result[day]) result[day] = [];
+      result[day].push(mm);
+    }
+    return result;
+  }, [moduleMaterials]);
+
+  const isMutating = addMaterialMutation.isPending || removeMaterialMutation.isPending;
+
+  const handleDrop = (day: number) => {
+    if (!draggedMaterial) return;
+    setAddMaterialModal({
+      materialId: draggedMaterial.id,
+      materialName: draggedMaterial.name,
+    });
+    setUnlockDay(day);
+    setActiveDays(null);
+    setDraggedMaterial(null);
+  };
+
+  const handleConfirmAddMaterial = async () => {
+    if (!addMaterialModal) return;
+    if (unlockDay < 0 || unlockDay >= moduleDaysCount) {
+      message.error(`День должен быть от 0 до ${moduleDaysCount - 1}`);
+      return;
+    }
+    if (activeDays !== null && activeDays < 1) {
+      message.error('Количество дней доступа должно быть больше 0');
+      return;
+    }
+    try {
+      await addMaterialMutation.mutateAsync({
+        tariff_stream_module_id: module.tariff_stream_module_id,
+        technique_id: addMaterialModal.materialId,
+        unlock_offset_days: unlockDay,
+        active_days: activeDays,
+        order_num: (moduleMaterials?.length || 0) + 1,
+      });
+      message.success('Материал добавлен');
+      setAddMaterialModal(null);
+      setUnlockDay(0);
+      setActiveDays(null);
+    } catch (err: any) {
+      message.error(err?.message || 'Ошибка при добавлении');
+    }
+  };
+
+  const handleRemoveMaterial = async (mm: TariffModuleMaterial) => {
+    try {
+      await removeMaterialMutation.mutateAsync(mm.id);
+      message.success('Материал удалён');
+    } catch (err: any) {
+      message.error(err?.message || 'Ошибка при удалении');
+    }
+  };
+
+  return (
+    <div style={{ marginTop: 16 }}>
+      <Space direction="vertical" size="large" style={{ width: '100%' }}>
+
+        {/* Инпут для количества дней если не указано */}
+        {!moduleDurationDays && (
+          <Card size="small">
+            <Space>
+              <Text strong>Количество дней в модуле:</Text>
+              <InputNumber
+                min={1}
+                max={365}
+                value={customModuleDays}
+                onChange={(value) => setCustomModuleDays(value || 14)}
+                style={{ width: 100 }}
+              />
+              <Text type="secondary" style={{ fontSize: 12 }}>
+                (не задано в конфигурации, используется для отображения сетки)
+              </Text>
+            </Space>
+          </Card>
+        )}
+
+        <Row gutter={24}>
+          {/* Доступные материалы */}
+          <Col span={6}>
+            <Card size="small" title="Доступные материалы">
+              <Input
+                placeholder="Поиск по названию"
+                prefix={<SearchOutlined />}
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                style={{ marginBottom: 12 }}
+                allowClear
+              />
+              {isLoading ? (
+                <Spin />
+              ) : availableMaterials.length === 0 ? (
+                <Empty description="Все материалы добавлены" />
+              ) : filteredMaterials.length === 0 ? (
+                <Empty description="Нет результатов" />
+              ) : (
+                <Space direction="vertical" style={{ width: '100%' }}>
+                  {filteredMaterials.map((material) => (
+                    <Card
+                      key={material.id}
+                      size="small"
+                      draggable
+                      onDragStart={() => setDraggedMaterial(material)}
+                      onDragEnd={() => setDraggedMaterial(null)}
+                      style={{ cursor: 'grab' }}
+                      bodyStyle={{ padding: 8 }}
+                    >
+                      <Space>
+                        <DragOutlined />
+                        {material.material_type === 'audio' ? '🎵' : '🎬'}
+                        <Text ellipsis style={{ maxWidth: 120 }}>
+                          {material.name}
+                        </Text>
+                      </Space>
+                    </Card>
+                  ))}
+                </Space>
+              )}
+            </Card>
+          </Col>
+
+          {/* Сетка дней */}
+          <Col span={18}>
+            <Card size="small" title="Дни модуля (когда открывается материал)">
+              <div
+                style={{
+                  display: 'grid',
+                  gridTemplateColumns: 'repeat(7, 1fr)',
+                  gap: 8,
+                }}
+              >
+                {Array.from({ length: moduleDaysCount }, (_, i) => i).map((day) => (
+                  <div
+                    key={day}
+                    onDragOver={(e) => e.preventDefault()}
+                    onDrop={() => handleDrop(day)}
+                    style={{
+                      minHeight: 100,
+                      padding: 8,
+                      borderRadius: 6,
+                      border: `2px solid ${
+                        draggedMaterial
+                          ? '#1890ff'
+                          : materialsByDay[day]?.length
+                          ? '#722ed1'
+                          : '#d9d9d9'
+                      }`,
+                      background: draggedMaterial
+                        ? '#e6f7ff'
+                        : materialsByDay[day]?.length
+                        ? '#f9f0ff'
+                        : '#fafafa',
+                    }}
+                  >
+                    <Text strong style={{ fontSize: 12 }}>
+                      День {day}
+                    </Text>
+                    {materialsByDay[day]?.map((mm) => (
+                      <Card
+                        key={mm.id}
+                        size="small"
+                        style={{ marginTop: 4 }}
+                        bodyStyle={{ padding: 4 }}
+                      >
+                        <Space direction="vertical" size={2} style={{ width: '100%' }}>
+                          <Space size={2} style={{ width: '100%', justifyContent: 'space-between' }}>
+                            <Space size={2}>
+                              {mm.material?.material_type === 'audio' ? '🎵' : '🎬'}
+                              <Text ellipsis style={{ fontSize: 11, maxWidth: 60 }}>
+                                {mm.material?.name}
+                              </Text>
+                            </Space>
+                            <Popconfirm
+                              title="Удалить материал?"
+                              onConfirm={() => handleRemoveMaterial(mm)}
+                              okText="Да"
+                              cancelText="Нет"
+                            >
+                              <Button type="text" size="small" danger icon={<DeleteOutlined />} />
+                            </Popconfirm>
+                          </Space>
+                          {mm.active_days && (
+                            <Text type="secondary" style={{ fontSize: 10 }}>
+                              Доступен {mm.active_days} дн.
+                            </Text>
+                          )}
+                        </Space>
+                      </Card>
+                    ))}
+                  </div>
+                ))}
+              </div>
+            </Card>
+          </Col>
+        </Row>
+      </Space>
+
+      {/* Modal для добавления материала */}
+      <Modal
+        title="Добавить материал"
+        open={!!addMaterialModal}
+        onOk={handleConfirmAddMaterial}
+        onCancel={() => {
+          setAddMaterialModal(null);
+          setUnlockDay(0);
+          setActiveDays(null);
+        }}
+        confirmLoading={isMutating}
+        okText="Добавить"
+        cancelText="Отмена"
+      >
+        <Space direction="vertical" style={{ width: '100%' }} size="large">
+          <div>
+            <Text strong>Материал:</Text> {addMaterialModal?.materialName}
+          </div>
+
+          <div>
+            <Text strong>День открытия материала:</Text>
+            <InputNumber
+              min={0}
+              max={moduleDaysCount - 1}
+              value={unlockDay}
+              onChange={(value) => setUnlockDay(value || 0)}
+              style={{ width: '100%', marginTop: 8 }}
+              placeholder={`От 0 до ${moduleDaysCount - 1}`}
+            />
+            <Text type="secondary" style={{ fontSize: 12, display: 'block', marginTop: 4 }}>
+              Материал откроется на {unlockDay} день после начала доступа к модулю
+            </Text>
+          </div>
+
+          <div>
+            <Text strong>Количество дней доступа к материалу:</Text>
+            <InputNumber
+              min={1}
+              value={activeDays}
+              onChange={(value) => setActiveDays(value)}
+              style={{ width: '100%', marginTop: 8 }}
+              placeholder="Не ограничено (оставьте пустым)"
+            />
+            <Text type="secondary" style={{ fontSize: 12, display: 'block', marginTop: 4 }}>
+              {activeDays
+                ? `Материал будет доступен ${activeDays} дней после открытия`
+                : 'Материал будет доступен без ограничения по времени'}
+            </Text>
+          </div>
+        </Space>
+      </Modal>
+    </div>
+  );
+};
+
+export default TariffModuleMaterialsManager;
