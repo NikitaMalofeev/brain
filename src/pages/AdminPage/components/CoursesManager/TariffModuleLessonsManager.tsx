@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
-import { Card, Button, Collapse, Space, Empty, Modal, Form, Input, InputNumber, message, Popconfirm, Spin, DatePicker, Checkbox } from 'antd';
-import { PlusOutlined, EditOutlined, DeleteOutlined, CaretRightOutlined } from '@ant-design/icons';
+import { Card, Button, Collapse, Space, Empty, Modal, Form, Input, InputNumber, message, Popconfirm, Spin, DatePicker, Checkbox, Select, Alert } from 'antd';
+import { PlusOutlined, EditOutlined, DeleteOutlined, CaretRightOutlined, LinkOutlined, DisconnectOutlined } from '@ant-design/icons';
 import dayjs from 'dayjs';
 import {
   useModuleStages,
@@ -10,6 +10,9 @@ import {
   useCreateLessonInStage,
   useUpdateLesson,
   useDeleteLesson,
+  useUnassignedStages,
+  useAssignStageToModule,
+  useUnassignStageFromModule,
   StageWithLessons,
 } from '@/lib/supabase/hooks/useModuleStages';
 import { Lesson } from '@/lib/supabase/types';
@@ -34,13 +37,25 @@ const ModuleLessonsManager: React.FC<ModuleLessonsManagerProps> = ({
   const [lessonForm] = Form.useForm();
   const [stageModalVisible, setStageModalVisible] = useState(false);
   const [lessonModalVisible, setLessonModalVisible] = useState(false);
+  const [assignStageModalVisible, setAssignStageModalVisible] = useState(false);
+  const [selectedStageToAssign, setSelectedStageToAssign] = useState<number | null>(null);
   const [editingStage, setEditingStage] = useState<StageWithLessons | null>(null);
   const [editingLesson, setEditingLesson] = useState<{ lesson: Lesson; stageId: number } | null>(null);
   const [currentStageForLesson, setCurrentStageForLesson] = useState<number | null>(null);
 
   // Хуки
   const { data: stages, isLoading } = useModuleStages(streamModuleId);
+  const { data: unassignedStages, isLoading: unassignedLoading } = useUnassignedStages(courseId);
   const createStageMutation = useCreateStageInModule();
+  const assignStageMutation = useAssignStageToModule();
+  const unassignStageMutation = useUnassignStageFromModule();
+
+  // Debug: выводим информацию в консоль
+  console.log('[TariffModuleLessonsManager] streamModuleId:', streamModuleId);
+  console.log('[TariffModuleLessonsManager] courseId:', courseId);
+  console.log('[TariffModuleLessonsManager] stages:', stages);
+  console.log('[TariffModuleLessonsManager] unassignedStages:', unassignedStages);
+  console.log('[TariffModuleLessonsManager] isLoading:', isLoading);
   const updateStageMutation = useUpdateStage();
   const deleteStageMutation = useDeleteStage();
   const createLessonMutation = useCreateLessonInStage();
@@ -110,6 +125,40 @@ const ModuleLessonsManager: React.FC<ModuleLessonsManagerProps> = ({
     }
   };
 
+  // Привязать существующую ступень к модулю
+  const handleAssignStage = async () => {
+    if (!selectedStageToAssign) {
+      message.warning('Выберите ступень для привязки');
+      return;
+    }
+    try {
+      await assignStageMutation.mutateAsync({
+        stage_id: selectedStageToAssign,
+        stream_module_id: streamModuleId,
+        course_id: courseId,
+      });
+      message.success('Ступень привязана к модулю');
+      setAssignStageModalVisible(false);
+      setSelectedStageToAssign(null);
+    } catch (err: any) {
+      message.error(err?.message || 'Ошибка при привязке ступени');
+    }
+  };
+
+  // Отвязать ступень от модуля
+  const handleUnassignStage = async (stageId: number) => {
+    try {
+      await unassignStageMutation.mutateAsync({
+        stage_id: stageId,
+        stream_module_id: streamModuleId,
+        course_id: courseId,
+      });
+      message.success('Ступень отвязана от модуля');
+    } catch (err: any) {
+      message.error(err?.message || 'Ошибка при отвязке ступени');
+    }
+  };
+
   // Открыть модальное окно создания/редактирования урока
   const handleOpenLessonModal = (stageId: number, lesson?: Lesson) => {
     setCurrentStageForLesson(stageId);
@@ -120,6 +169,9 @@ const ModuleLessonsManager: React.FC<ModuleLessonsManagerProps> = ({
         description: lesson.description,
         order_num: lesson.order_num,
         has_assignment: lesson.has_assignment,
+        open_at: lesson.open_at ? dayjs(lesson.open_at) : null,
+        deadline_at: lesson.deadline_at ? dayjs(lesson.deadline_at) : null,
+        estimated_duration_minutes: lesson.estimated_duration_minutes,
       });
     } else {
       setEditingLesson(null);
@@ -127,6 +179,9 @@ const ModuleLessonsManager: React.FC<ModuleLessonsManagerProps> = ({
       lessonForm.setFieldsValue({
         order_num: (stage?.lessons?.length || 0) + 1,
         has_assignment: false,
+        open_at: null,
+        deadline_at: null,
+        estimated_duration_minutes: null,
       });
     }
     setLessonModalVisible(true);
@@ -141,22 +196,24 @@ const ModuleLessonsManager: React.FC<ModuleLessonsManagerProps> = ({
   };
 
   // Сохранить урок
-  const handleSaveLesson = async (values: {
-    name: string;
-    description?: string;
-    order_num: number;
-    has_assignment: boolean;
-  }) => {
+  const handleSaveLesson = async (values: any) => {
     if (!currentStageForLesson) return;
+
+    const lessonData = {
+      name: values.name,
+      description: values.description,
+      order_num: values.order_num,
+      has_assignment: values.has_assignment,
+      open_at: values.open_at ? dayjs(values.open_at).toISOString() : undefined,
+      deadline_at: values.deadline_at ? dayjs(values.deadline_at).toISOString() : undefined,
+      estimated_duration_minutes: values.estimated_duration_minutes || undefined,
+    };
 
     try {
       if (editingLesson) {
         await updateLessonMutation.mutateAsync({
           id: editingLesson.lesson.id,
-          name: values.name,
-          description: values.description,
-          order_num: values.order_num,
-          has_assignment: values.has_assignment,
+          ...lessonData,
           stream_module_id: streamModuleId,
         });
         message.success('Урок обновлен');
@@ -165,10 +222,7 @@ const ModuleLessonsManager: React.FC<ModuleLessonsManagerProps> = ({
           stage_id: currentStageForLesson,
           stream_id: streamId,
           stream_module_id: streamModuleId,
-          name: values.name,
-          description: values.description,
-          order_num: values.order_num,
-          has_assignment: values.has_assignment,
+          ...lessonData,
         });
         message.success('Урок создан');
       }
@@ -203,14 +257,39 @@ const ModuleLessonsManager: React.FC<ModuleLessonsManagerProps> = ({
         {/* Заголовок */}
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
           <h3>Ступени и уроки модуля: {moduleName}</h3>
-          <Button type="primary" icon={<PlusOutlined />} onClick={() => handleOpenStageModal()}>
-            Создать ступень
-          </Button>
+          <Space>
+            {unassignedStages && unassignedStages.length > 0 && (
+              <Button
+                icon={<LinkOutlined />}
+                onClick={() => setAssignStageModalVisible(true)}
+              >
+                Привязать существующую ({unassignedStages.length})
+              </Button>
+            )}
+            <Button type="primary" icon={<PlusOutlined />} onClick={() => handleOpenStageModal()}>
+              Создать ступень
+            </Button>
+          </Space>
         </div>
+
+        {/* Информация о непривязанных ступенях */}
+        {unassignedStages && unassignedStages.length > 0 && (
+          <Alert
+            type="info"
+            showIcon
+            message={`Есть ${unassignedStages.length} непривязанных ступеней в курсе`}
+            description={
+              <span>
+                Ступени: {unassignedStages.map(s => `"${s.name}" (${s.lessons?.length || 0} уроков)`).join(', ')}.
+                Нажмите "Привязать существующую" чтобы добавить их в этот модуль.
+              </span>
+            }
+          />
+        )}
 
         {/* Список ступеней */}
         {!stages || stages.length === 0 ? (
-          <Empty description="Ступеней пока нет" />
+          <Empty description="Ступеней пока нет. Создайте новую ступень или привяжите существующую из курса." />
         ) : (
           <Collapse expandIcon={({ isActive }) => <CaretRightOutlined rotate={isActive ? 90 : 0} />}>
             {stages.map(stage => (
@@ -228,6 +307,15 @@ const ModuleLessonsManager: React.FC<ModuleLessonsManagerProps> = ({
                 extra={
                   <Space onClick={e => e.stopPropagation()}>
                     <Button size="small" icon={<EditOutlined />} onClick={() => handleOpenStageModal(stage)} />
+                    <Popconfirm
+                      title="Отвязать ступень от модуля?"
+                      description="Ступень останется в курсе, но не будет привязана к этому модулю"
+                      onConfirm={() => handleUnassignStage(stage.id)}
+                      okText="Да"
+                      cancelText="Нет"
+                    >
+                      <Button size="small" icon={<DisconnectOutlined />} title="Отвязать от модуля" />
+                    </Popconfirm>
                     <Popconfirm
                       title="Удалить ступень?"
                       description="Это также удалит все уроки ступени"
@@ -329,19 +417,41 @@ const ModuleLessonsManager: React.FC<ModuleLessonsManagerProps> = ({
         open={lessonModalVisible}
         onCancel={handleCloseLessonModal}
         footer={null}
+        width={600}
       >
         <Form form={lessonForm} layout="vertical" onFinish={handleSaveLesson}>
           <Form.Item name="name" label="Название урока" rules={[{ required: true, message: 'Введите название' }]}>
             <Input placeholder="День 1" />
           </Form.Item>
           <Form.Item name="description" label="Описание">
-            <TextArea rows={2} placeholder="Описание урока..." />
+            <TextArea rows={3} placeholder="Описание урока..." />
           </Form.Item>
-          <Form.Item name="order_num" label="Порядковый номер" rules={[{ required: true }]}>
-            <InputNumber min={1} style={{ width: '100%' }} />
-          </Form.Item>
+          <Space style={{ width: '100%' }} size="large">
+            <Form.Item name="order_num" label="Порядковый номер" rules={[{ required: true }]}>
+              <InputNumber min={1} style={{ width: 120 }} />
+            </Form.Item>
+            <Form.Item name="estimated_duration_minutes" label="Длительность (мин)">
+              <InputNumber min={1} style={{ width: 120 }} placeholder="30" />
+            </Form.Item>
+          </Space>
           <Form.Item name="has_assignment" label="Есть домашнее задание" valuePropName="checked">
-            <input type="checkbox" />
+            <Checkbox>Есть ДЗ</Checkbox>
+          </Form.Item>
+          <Form.Item name="open_at" label="Время открытия урока">
+            <DatePicker
+              showTime
+              format="YYYY-MM-DD HH:mm"
+              style={{ width: '100%' }}
+              placeholder="Выберите дату и время"
+            />
+          </Form.Item>
+          <Form.Item name="deadline_at" label="Дедлайн сдачи задания">
+            <DatePicker
+              showTime
+              format="YYYY-MM-DD HH:mm"
+              style={{ width: '100%' }}
+              placeholder="Выберите дату и время"
+            />
           </Form.Item>
           <Form.Item style={{ marginBottom: 0 }}>
             <Space>
@@ -356,6 +466,47 @@ const ModuleLessonsManager: React.FC<ModuleLessonsManagerProps> = ({
             </Space>
           </Form.Item>
         </Form>
+      </Modal>
+
+      {/* Модальное окно привязки существующей ступени */}
+      <Modal
+        title="Привязать существующую ступень к модулю"
+        open={assignStageModalVisible}
+        onCancel={() => {
+          setAssignStageModalVisible(false);
+          setSelectedStageToAssign(null);
+        }}
+        onOk={handleAssignStage}
+        okText="Привязать"
+        cancelText="Отмена"
+        confirmLoading={assignStageMutation.isPending}
+      >
+        <div style={{ marginBottom: 16 }}>
+          <p>Выберите ступень из курса, которую нужно привязать к модулю "{moduleName}":</p>
+        </div>
+        <Select
+          style={{ width: '100%' }}
+          placeholder="Выберите ступень..."
+          value={selectedStageToAssign}
+          onChange={setSelectedStageToAssign}
+          loading={unassignedLoading}
+          options={unassignedStages?.map(stage => ({
+            value: stage.id,
+            label: `${stage.name} (${stage.lessons?.length || 0} уроков, порядок: ${stage.order_num})`,
+          }))}
+        />
+        {selectedStageToAssign && unassignedStages && (
+          <div style={{ marginTop: 16, padding: 12, background: '#f5f5f5', borderRadius: 8 }}>
+            <strong>Уроки в выбранной ступени:</strong>
+            <ul style={{ margin: '8px 0 0 0', paddingLeft: 20 }}>
+              {unassignedStages
+                .find(s => s.id === selectedStageToAssign)
+                ?.lessons?.map(lesson => (
+                  <li key={lesson.id}>{lesson.name}</li>
+                )) || <li>Нет уроков</li>}
+            </ul>
+          </div>
+        )}
       </Modal>
     </div>
   );

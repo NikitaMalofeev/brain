@@ -37,6 +37,17 @@ export function useModuleStages(streamModuleId: string | null) {
         throw error;
       }
 
+      logger.debug('Fetched stages for module', {
+        streamModuleId,
+        stagesCount: data?.length || 0,
+        stages: data?.map(s => ({
+          id: s.id,
+          name: s.name,
+          lessonsCount: s.lessons?.length || 0,
+          lessons: s.lessons
+        }))
+      });
+
       return (data || []).map(stage => ({
         ...stage,
         lessons: stage.lessons || []
@@ -282,6 +293,133 @@ export function useDeleteLesson() {
     onSuccess: (_, variables) => {
       queryClient.invalidateQueries({
         queryKey: ['module-stages', variables.stream_module_id],
+        refetchType: 'active'
+      });
+    },
+  });
+}
+
+/**
+ * Получить все ступени курса, не привязанные к модулю (для выбора и привязки)
+ */
+export function useUnassignedStages(courseId: string | null) {
+  return useQuery({
+    queryKey: ['unassigned-stages', courseId],
+    queryFn: async (): Promise<StageWithLessons[]> => {
+      if (!courseId || !supabase) return [];
+
+      logger.debug('Fetching unassigned stages for course', { courseId });
+
+      const { data, error } = await supabase
+        .from('course_stages')
+        .select(`
+          *,
+          lessons (*)
+        `)
+        .eq('course_id', courseId)
+        .is('stream_module_id', null)
+        .order('order_num', { ascending: true });
+
+      if (error) {
+        logger.error('Error fetching unassigned stages', { courseId, error });
+        throw error;
+      }
+
+      logger.debug('Fetched unassigned stages', {
+        courseId,
+        stagesCount: data?.length || 0,
+      });
+
+      return (data || []).map(stage => ({
+        ...stage,
+        lessons: stage.lessons || []
+      }));
+    },
+    enabled: !!courseId,
+    staleTime: 2 * 60 * 1000,
+  });
+}
+
+/**
+ * Привязать существующую ступень к модулю потока
+ */
+export function useAssignStageToModule() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async (params: {
+      stage_id: number;
+      stream_module_id: string;
+      course_id: string;
+    }) => {
+      if (!supabase) throw new Error('Supabase not initialized');
+
+      logger.debug('Assigning stage to module', params);
+
+      const { data, error } = await supabase
+        .from('course_stages')
+        .update({ stream_module_id: params.stream_module_id })
+        .eq('id', params.stage_id)
+        .select()
+        .single();
+
+      if (error) {
+        logger.error('Error assigning stage to module', { params, error });
+        throw error;
+      }
+
+      return data;
+    },
+    onSuccess: (_, variables) => {
+      queryClient.invalidateQueries({
+        queryKey: ['module-stages', variables.stream_module_id],
+        refetchType: 'active'
+      });
+      queryClient.invalidateQueries({
+        queryKey: ['unassigned-stages', variables.course_id],
+        refetchType: 'active'
+      });
+    },
+  });
+}
+
+/**
+ * Отвязать ступень от модуля (вернуть в непривязанные)
+ */
+export function useUnassignStageFromModule() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async (params: {
+      stage_id: number;
+      stream_module_id: string;
+      course_id: string;
+    }) => {
+      if (!supabase) throw new Error('Supabase not initialized');
+
+      logger.debug('Unassigning stage from module', params);
+
+      const { data, error } = await supabase
+        .from('course_stages')
+        .update({ stream_module_id: null })
+        .eq('id', params.stage_id)
+        .select()
+        .single();
+
+      if (error) {
+        logger.error('Error unassigning stage from module', { params, error });
+        throw error;
+      }
+
+      return data;
+    },
+    onSuccess: (_, variables) => {
+      queryClient.invalidateQueries({
+        queryKey: ['module-stages', variables.stream_module_id],
+        refetchType: 'active'
+      });
+      queryClient.invalidateQueries({
+        queryKey: ['unassigned-stages', variables.course_id],
         refetchType: 'active'
       });
     },
