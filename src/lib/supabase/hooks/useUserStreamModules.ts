@@ -17,9 +17,10 @@ export interface UserStreamModule {
     stream_name: string;
     unlock_day: number; // С какого дня потока модуль доступен
     first_stage_id: number | null; // ID первой ступени для навигации
-    // Новые поля для подсчёта заданий
+    // Поля для подсчёта заданий
     total_assignments: number;
     completed_assignments: number;
+    overdue_assignments: number;
 }
 
 // Интерфейс совместимый с существующими компонентами (StageCard, RoadMap)
@@ -37,9 +38,10 @@ export interface StreamModuleAsStage {
     module_id: string;
     module_color: string | null;
     unlock_day: number; // С какого дня потока модуль доступен
-    // Новые поля для подсчёта заданий
+    // Поля для подсчёта заданий
     total_assignments: number;
     completed_assignments: number;
+    overdue_assignments: number;
 }
 
 interface UseUserStreamModulesResult {
@@ -102,9 +104,10 @@ export function useUserStreamModules(userId: string | null | undefined): UseUser
         module_id: module.module_id,
         module_color: module.module_color,
         unlock_day: module.unlock_day,
-        // Новые поля для заданий
+        // Поля для заданий
         total_assignments: module.total_assignments || 0,
         completed_assignments: module.completed_assignments || 0,
+        overdue_assignments: module.overdue_assignments || 0,
     }));
 
     return {

@@ -135,13 +135,20 @@ export const UserPage = () => {
         return unlockedStages.length > 0 ? unlockedStages.length : 1;
     }, [stages]);
 
-    const totalLessons = useMemo(() => {
+    // Суммируем задания по всем разблокированным модулям
+    const totalAssignments = useMemo(() => {
         if (!stages) return 0;
-        return stages.filter(s => s.is_unlocked).reduce((acc, stage) => acc + (stage.total_lessons || 0), 0);
+        return stages.filter(s => s.is_unlocked).reduce((acc, stage) => acc + (stage.total_assignments || 0), 0);
     }, [stages]);
-    const overdueLessons = useMemo(() => {
+
+    const completedAssignments = useMemo(() => {
         if (!stages) return 0;
-        return stages.filter(s => s.is_unlocked).reduce((acc, stage) => acc + (stage.overdue_lessons || 0), 0);
+        return stages.filter(s => s.is_unlocked).reduce((acc, stage) => acc + (stage.completed_assignments || 0), 0);
+    }, [stages]);
+
+    const overdueAssignments = useMemo(() => {
+        if (!stages) return 0;
+        return stages.filter(s => s.is_unlocked).reduce((acc, stage) => acc + (stage.overdue_assignments || 0), 0);
     }, [stages]);
 
 
@@ -229,20 +236,20 @@ export const UserPage = () => {
                         </div>
                         <div className={'p-3 rounded-2xl bg-white flex items-center flex-col'}>
                             <p className={'text-sm font-medium text-[#9F9F9F]'}>Выполнено</p>
-                            <p className={'text-[20px] font-bold'}>{isGuest ? '—' : `${currentStage?.completed_assignments ?? 0} из ${currentStage?.total_assignments ?? 0}`}</p>
+                            <p className={'text-[20px] font-bold'}>{isGuest ? '—' : `${completedAssignments} из ${totalAssignments}`}</p>
                             <p className={'text-sm font-bold'}>заданий</p>
                         </div>
                         <div className={'p-3 rounded-2xl bg-white flex items-center flex-col'}>
                             <p className={'text-sm font-medium text-[#9F9F9F] flex items-center gap-1'}>
                                 Просрочено
-                                {overdueLessons > 0 && <svg width="16" height="16" viewBox="0 0 16 16" fill="none"
+                                {overdueAssignments > 0 && <svg width="16" height="16" viewBox="0 0 16 16" fill="none"
                                                             xmlns="http://www.w3.org/2000/svg">
                                     <path fillRule="evenodd" clipRule="evenodd"
                                           d="M5.22867 2.53465C6.58133 1.73398 7.25733 1.33331 8 1.33331C8.74267 1.33331 9.41867 1.73331 10.7713 2.53465L11.2287 2.80531C12.5813 3.60665 13.2573 4.00731 13.6287 4.66665C14 5.32665 14 6.12665 14 7.72931V8.27065C14 9.87265 14 10.674 13.6287 11.3333C13.2573 11.9926 12.5813 12.3933 11.2287 13.194L10.7713 13.4653C9.41867 14.266 8.74267 14.6666 8 14.6666C7.25733 14.6666 6.58133 14.2666 5.22867 13.4653L4.77133 13.194C3.41867 12.394 2.74267 11.9926 2.37133 11.3333C2 10.6733 2 9.87331 2 8.27065V7.72931C2 6.12665 2 5.32598 2.37133 4.66665C2.74267 4.00731 3.41867 3.60665 4.77133 2.80531L5.22867 2.53465ZM8.66667 10.6666C8.66667 10.8435 8.59643 11.013 8.4714 11.1381C8.34638 11.2631 8.17681 11.3333 8 11.3333C7.82319 11.3333 7.65362 11.2631 7.5286 11.1381C7.40357 11.013 7.33333 10.8435 7.33333 10.6666C7.33333 10.4898 7.40357 10.3203 7.5286 10.1952C7.65362 10.0702 7.82319 9.99998 8 9.99998C8.17681 9.99998 8.34638 10.0702 8.4714 10.1952C8.59643 10.3203 8.66667 10.4898 8.66667 10.6666ZM8 4.16665C8.13261 4.16665 8.25979 4.21932 8.35355 4.31309C8.44732 4.40686 8.5 4.53404 8.5 4.66665V8.66665C8.5 8.79925 8.44732 8.92643 8.35355 9.0202C8.25979 9.11397 8.13261 9.16665 8 9.16665C7.86739 9.16665 7.74022 9.11397 7.64645 9.0202C7.55268 8.92643 7.5 8.79925 7.5 8.66665V4.66665C7.5 4.53404 7.55268 4.40686 7.64645 4.31309C7.74022 4.21932 7.86739 4.16665 8 4.16665Z"
                                           fill="#D2667D"/>
                                 </svg>}
                             </p>
-                            <p className={'text-[20px] font-bold'}>{isGuest ? '—' : `${overdueLessons} из ${totalLessons}`}</p>
+                            <p className={'text-[20px] font-bold'}>{isGuest ? '—' : `${overdueAssignments} из ${totalAssignments}`}</p>
                             <p className={'text-sm font-bold'}>заданий</p>
                         </div>
                         <div

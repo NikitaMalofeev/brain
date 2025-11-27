@@ -11,7 +11,6 @@ import { useActiveCourse } from '@/lib/supabase/hooks/useActiveCourse';
 import { logger } from '@/lib/logger';
 import { useAppContext } from '@/contexts/AppContext';
 import { Page } from '@/components/Page';
-import { StageProgressData, UserProgress } from "@/components/UserProgress/UserProgress.tsx";
 
 // Расширяем глобальный объект Window, добавляя Telegram
 declare global {
@@ -134,7 +133,6 @@ const LibraryPage: React.FC = () => {
                     ))}
                 </div>
             </div>
-            <UserProgress stages={stages as StageProgressData[]} />
         </Page>
     );
 };

@@ -3,8 +3,7 @@ import { Link } from 'react-router-dom';
 import { Ripple } from '@/components/ui/Ripple/Ripple';
 import { getNounPluralForm } from '@/helpers/pluralize';
 
-// The RPC function 'get_library_stages' returns this type.
-// We define it here to make this component self-contained with its data requirements.
+// Тип для данных модуля (совместим с StreamModuleAsStage)
 export type StageProgressData = {
     stage_id: number;
     stage_name: string;
@@ -12,8 +11,14 @@ export type StageProgressData = {
     completed_lessons: number;
     total_lessons: number;
     overdue_lessons: number;
-    unlocked_lessons: number; // НОВОЕ ПОЛЕ: количество неоткрытых уроков
+    unlocked_lessons: number;
     cover_image_path?: string | null;
+    // Поля для модулей
+    module_id?: string;
+    unlock_day?: number;
+    total_assignments?: number;
+    completed_assignments?: number;
+    overdue_assignments?: number;
 };
 
 
@@ -32,78 +37,63 @@ export const UserProgress: React.FC<UserProgressProps> = ({ stages, className })
         return null;
     }
 
-    const totalCompletedLessons = stages.reduce((acc, stage) => acc + (stage.completed_lessons || 0), 0);
-    const totalLessons = stages.reduce((acc, stage) => acc + (stage.total_lessons || 0), 0);
+    // Суммируем задания по всем разблокированным модулям
+    const unlockedStages = stages.filter(s => s.is_unlocked);
+    const totalCompletedAssignments = unlockedStages.reduce((acc, stage) => acc + (stage.completed_assignments || 0), 0);
+    const totalAssignments = unlockedStages.reduce((acc, stage) => acc + (stage.total_assignments || 0), 0);
+
+    // Находим текущий (последний разблокированный) модуль
     const currentStage = [...stages].reverse().find(stage => stage.is_unlocked);
 
-    // If no stage is unlocked yet, show a starting message.
+    // Если ни один модуль не разблокирован
     if (!currentStage) {
         return (
             <div className={`bg-white p-4 flex flex-col gap-2 sticky bottom-0 ${className}`}>
                 <p className={'font-bold text-black'}>Прогресс скоро появится</p>
-                <p className={'text-sm text-[#8C8C8C]'}>Разблокируйте первую ступень, чтобы начать обучение.</p>
+                <p className={'text-sm text-[#8C8C8C]'}>Разблокируйте первый модуль, чтобы начать обучение.</p>
             </div>
         );
     }
 
-    const nextStageIndex = stages.findIndex(s => !s.is_unlocked);
+    // Находим следующий нераскрытый модуль
     const nextStage = stages.find(s => !s.is_unlocked);
 
-    // Подсчитываем количество НЕоткрытых уроков в открытых ступенях до следующей неоткрытой ступени
-    let unlockedLessonsUntilNextStage = 0;
-    if (nextStageIndex !== -1) {
-        // Если есть неоткрытая ступень, считаем неоткрытые уроки в открытых ступенях до неё
-        for (let i = 0; i < nextStageIndex; i++) {
-            const stage = stages[i];
-            if (stage.is_unlocked) {
-                unlockedLessonsUntilNextStage += stage.unlocked_lessons;
-            }
-        }
-    } else {
-        // Если все ступени открыты, считаем неоткрытые уроки во всех открытых ступенях
-        unlockedLessonsUntilNextStage = stages.reduce((acc, stage) => {
-            if (stage.is_unlocked) {
-                return acc + stage.unlocked_lessons;
-            }
-            return acc;
-        }, 0);
-    }
+    // Считаем сколько заданий осталось до открытия следующего модуля
+    const remainingAssignments = totalAssignments - totalCompletedAssignments;
 
-    const progressPercentage = totalCompletedLessons / totalLessons * 100;
-
-    // Генерируем текст в зависимости от количества неоткрытых уроков
+    // Генерируем текст прогресса
     let progressText = '';
-    const word = getNounPluralForm(unlockedLessonsUntilNextStage, 'день', 'дня', 'дней');
 
-    if (nextStageIndex !== -1 && unlockedLessonsUntilNextStage > 0) {
-        progressText = `Еще ${unlockedLessonsUntilNextStage} ${word} до перехода на уровень «${nextStage?.stage_name}»`;
-    } else if (nextStageIndex !== -1 && unlockedLessonsUntilNextStage === 0) {
-        progressText = `Все задания до ступени «${nextStage?.stage_name}» открыты`;
-    } else if (unlockedLessonsUntilNextStage > 0) {
-        progressText = `Еще ${unlockedLessonsUntilNextStage} ${word} до полного открытия всех уровней`;
+    if (nextStage && nextStage.unlock_day !== undefined) {
+        const assignmentsWord = getNounPluralForm(remainingAssignments, 'задание', 'задания', 'заданий');
+        progressText = `Ещё ${remainingAssignments} ${assignmentsWord} и ${nextStage.unlock_day} день до открытия модуля «${nextStage.stage_name}»`;
+    } else if (nextStage) {
+        const assignmentsWord = getNounPluralForm(remainingAssignments, 'задание', 'задания', 'заданий');
+        progressText = `Ещё ${remainingAssignments} ${assignmentsWord} до открытия модуля «${nextStage.stage_name}»`;
     } else {
-        progressText = 'Все задания открыты!';
+        progressText = 'Все модули открыты!';
     }
 
-    const completedLessonsWord = getNounPluralForm(totalCompletedLessons, 'задание', 'задания', 'заданий');
+    const completedWord = getNounPluralForm(totalCompletedAssignments, 'задание', 'задания', 'заданий');
+    const progressPercentage = totalAssignments > 0 ? (totalCompletedAssignments / totalAssignments) * 100 : 0;
 
     return (
         <div className={`bg-white p-4 pb-[30px] flex flex-col gap-3 ${className}`}>
             <div className={'flex items-center justify-between'}>
                 <div className={'flex flex-col'}>
-                    <p className={'font-bold text-black'}>Выполнено {totalCompletedLessons} {completedLessonsWord}</p>
+                    <p className={'font-bold text-black'}>Выполнено {totalCompletedAssignments} {completedWord}</p>
                     <p className={'text-sm text-[#8C8C8C]'}>{progressText}</p>
                 </div>
                 <Ripple className="rounded-full overflow-hidden">
-                    <Link to={`/library/stage/${currentStage.stage_id}`}>
-                        <img src={'/arrow-icon.svg'} alt={'Перейти к текущей ступени'} className={'w-[36px] h-[36px]'} />
+                    <Link to={currentStage.module_id ? `/library/module/${currentStage.module_id}` : `/library/stage/${currentStage.stage_id}`}>
+                        <img src={'/arrow-icon.svg'} alt={'Перейти к текущему модулю'} className={'w-[36px] h-[36px]'} />
                     </Link>
                 </Ripple>
             </div>
             <div className="w-full bg-gray-200 rounded-full h-3" style={{
-                background: `linear-gradient(90deg, #68B1EB 0%, #D0E4FF ${progressPercentage}%, #D0E4FF ${progressPercentage}%)`
+                background: `linear-gradient(90deg, #68B1EB 0%, #68B1EB ${progressPercentage}%, #D0E4FF ${progressPercentage}%)`
             }}>
             </div>
         </div>
     );
-}; 
+};

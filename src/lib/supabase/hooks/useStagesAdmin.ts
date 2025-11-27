@@ -7,7 +7,7 @@ interface StagesAdminResult {
     loading: boolean;
     error: Error | null;
     refetch: () => void;
-    createStage: (stage: { course_id: string; name: string; description?: string; order_num: number; is_unlocked?: boolean; cover_image_path?: string; }) => Promise<CourseStage>;
+    createStage: (stage: { course_id: string; name: string; description?: string; order_num?: number; is_unlocked?: boolean; cover_image_path?: string; stream_module_id?: string; }) => Promise<CourseStage>;
     updateStage: (id: number, updates: Partial<CourseStage>) => Promise<void>;
     deleteStage: (id: number) => Promise<void>;
 }
@@ -55,15 +55,30 @@ export function useStagesAdmin(courseId: string): StagesAdminResult {
     };
 
     // Создание новой ступени
-    const createStage = async (stageData: { course_id: string; name: string; description?: string; order_num: number; is_unlocked?: boolean; cover_image_path?: string; }): Promise<CourseStage> => {
+    const createStage = async (stageData: { course_id: string; name: string; description?: string; order_num?: number; is_unlocked?: boolean; cover_image_path?: string; stream_module_id?: string; }): Promise<CourseStage> => {
         if (!supabase) {
             throw new Error('Supabase клиент не инициализирован');
+        }
+
+        // Автоматически вычисляем order_num если не передан
+        let orderNum = stageData.order_num;
+        if (orderNum === undefined || orderNum === null) {
+            const { data: maxData } = await supabase
+                .from('course_stages')
+                .select('order_num')
+                .eq('course_id', stageData.course_id)
+                .order('order_num', { ascending: false })
+                .limit(1)
+                .single();
+
+            orderNum = (maxData?.order_num || 0) + 1;
         }
 
         const { data, error } = await supabase
             .from('course_stages')
             .insert([{
                 ...stageData,
+                order_num: orderNum,
                 is_unlocked: stageData.is_unlocked ?? false
             }])
             .select()
