@@ -7,6 +7,7 @@ import { TONConnectPage } from '@/pages/TONConnectPage/TONConnectPage';
 import { DiagnosticsPage } from '@/pages/DiagnosticsPage/DiagnosticsPage';
 import LibraryPage from '@/pages/LibraryPage/LibraryPage';
 import StagePage from '@/pages/LibraryPage/StagePage';
+import ModuleStagesPage from '@/pages/LibraryPage/ModuleStagesPage';
 import LessonPage from '@/pages/LibraryPage/LessonPage';
 import { UserPage } from "@/pages/UserPage/UserPage.tsx";
 import { Chats } from "@/pages/Chats/Chats.tsx";
@@ -29,6 +30,10 @@ export const routers = [
   {
     path: '/library',
     Component: CommonPage
+  },
+  {
+    path: '/library/module/:moduleId',
+    Component: ModuleStagesPage
   },
   {
     path: '/library/stage/:id',

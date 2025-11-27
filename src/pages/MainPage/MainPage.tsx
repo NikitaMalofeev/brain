@@ -191,6 +191,7 @@ export const MainPage = () => {
                                     orderNum={i + 1}
                                     isGuest={isGuest}
                                     unlockDay={stage.unlock_day}
+                                    moduleId={stage.module_id}
                                 />
                             </motion.div>
                         ))

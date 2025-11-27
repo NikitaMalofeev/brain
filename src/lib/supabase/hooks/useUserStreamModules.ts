@@ -12,9 +12,14 @@ export interface UserStreamModule {
     total_lessons: number;
     completed_lessons: number;
     unlocked_lessons: number;
+    overdue_lessons: number; // Просроченные уроки
     stream_id: string;
     stream_name: string;
     unlock_day: number; // С какого дня потока модуль доступен
+    first_stage_id: number | null; // ID первой ступени для навигации
+    // Новые поля для подсчёта заданий
+    total_assignments: number;
+    completed_assignments: number;
 }
 
 // Интерфейс совместимый с существующими компонентами (StageCard, RoadMap)
@@ -26,11 +31,15 @@ export interface StreamModuleAsStage {
     total_lessons: number;
     completed_lessons: number;
     unlocked_lessons: number;
+    overdue_lessons: number; // Просроченные уроки
     cover_image_path?: string | null;
     // Дополнительные поля для stream_modules
     module_id: string;
     module_color: string | null;
     unlock_day: number; // С какого дня потока модуль доступен
+    // Новые поля для подсчёта заданий
+    total_assignments: number;
+    completed_assignments: number;
 }
 
 interface UseUserStreamModulesResult {
@@ -80,18 +89,22 @@ export function useUserStreamModules(userId: string | null | undefined): UseUser
 
     // Конвертируем модули в формат совместимый со StageCard и RoadMap
     const modulesAsStages: StreamModuleAsStage[] = (query.data || []).map((module, index) => ({
-        stage_id: index + 1, // Используем порядковый номер как ID
+        stage_id: module.first_stage_id || (index + 1), // Используем реальный ID ступени из БД
         stage_name: module.module_name,
         stage_order_num: module.module_order_num,
         is_unlocked: module.is_unlocked,
         total_lessons: module.total_lessons,
         completed_lessons: module.completed_lessons,
         unlocked_lessons: module.unlocked_lessons,
+        overdue_lessons: module.overdue_lessons || 0,
         cover_image_path: null, // stream_modules не имеют обложек
         // Дополнительные поля
         module_id: module.module_id,
         module_color: module.module_color,
         unlock_day: module.unlock_day,
+        // Новые поля для заданий
+        total_assignments: module.total_assignments || 0,
+        completed_assignments: module.completed_assignments || 0,
     }));
 
     return {

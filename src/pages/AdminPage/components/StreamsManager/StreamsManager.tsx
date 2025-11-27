@@ -18,13 +18,10 @@ import {
   PlusOutlined,
   EditOutlined,
   DeleteOutlined,
-  CopyOutlined,
   TeamOutlined,
   CalendarOutlined,
-  BookOutlined,
 } from '@ant-design/icons';
 import StreamEditorNew from './StreamEditorNew';
-import CopyStreamModal from './CopyStreamModal';
 import StreamTariffModuleMaterialsManager from './StreamTariffModuleMaterialsManager';
 
 const { Title, Text, Paragraph } = Typography;
@@ -41,7 +38,6 @@ interface Stream {
 const StreamsManager: React.FC = () => {
   const [selectedStreamId, setSelectedStreamId] = useState<string | null>(null);
   const [isCreating, setIsCreating] = useState(false);
-  const [copyingStreamId, setCopyingStreamId] = useState<string | null>(null);
   const [materialsStreamId, setMaterialsStreamId] = useState<string | null>(null);
   const queryClient = useQueryClient();
 
@@ -104,14 +100,6 @@ const StreamsManager: React.FC = () => {
     setIsCreating(false);
   };
 
-  const handleCopy = (streamId: string) => {
-    setCopyingStreamId(streamId);
-  };
-
-  const handleCloseCopyModal = () => {
-    setCopyingStreamId(null);
-  };
-
   const handleManageMaterials = (streamId: string) => {
     setMaterialsStreamId(streamId);
   };
@@ -150,20 +138,6 @@ const StreamsManager: React.FC = () => {
         onSave={() => {
           queryClient.invalidateQueries({ queryKey: ['admin-streams'] });
           handleCloseEditor();
-        }}
-      />
-    );
-  }
-
-  if (copyingStreamId) {
-    const streamToCopy = streams?.find((s) => s.id === copyingStreamId);
-    return (
-      <CopyStreamModal
-        stream={streamToCopy!}
-        onClose={handleCloseCopyModal}
-        onSuccess={() => {
-          queryClient.invalidateQueries({ queryKey: ['admin-streams'] });
-          handleCloseCopyModal();
         }}
       />
     );
@@ -209,15 +183,6 @@ const StreamsManager: React.FC = () => {
                     onClick={() => handleEdit(stream.id)}
                   >
                     Редактировать
-                  </Button>,
-                  <Button
-                    key="copy"
-                    type="link"
-                    icon={<CopyOutlined />}
-                    onClick={() => handleCopy(stream.id)}
-                    style={{ color: '#52c41a' }}
-                  >
-                    Копировать
                   </Button>,
                   <Popconfirm
                     key="delete"

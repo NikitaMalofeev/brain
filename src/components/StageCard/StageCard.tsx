@@ -4,7 +4,7 @@ import { buildFileUrl } from '@/lib/supabase/supabaseStorageService';
 import { motion } from 'framer-motion';
 import { Ripple } from '@/components/ui/Ripple/Ripple';
 import { clsx } from 'clsx';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link } from 'react-router-dom';
 import GuestBlockedModal from '@/components/GuestBlockedModal';
 
 export interface StageCardProps {
@@ -15,6 +15,7 @@ export interface StageCardProps {
     orderNum: number;
     isGuest?: boolean;
     unlockDay?: number; // С какого дня потока модуль доступен
+    moduleId?: string; // ID модуля для навигации на страницу ступеней
 }
 
 const StageCard: React.FC<StageCardProps> = ({
@@ -25,8 +26,8 @@ const StageCard: React.FC<StageCardProps> = ({
     orderNum,
     isGuest = false,
     unlockDay,
+    moduleId,
 }) => {
-    const navigate = useNavigate();
     const [showGuestModal, setShowGuestModal] = useState(false);
     const isUnlocked = !isLocked;
 
@@ -60,7 +61,7 @@ const StageCard: React.FC<StageCardProps> = ({
             >
                 <Ripple className="rounded-4xl overflow-hidden">
                     <Link
-                        to={`/library/stage/${id}`}
+                        to={moduleId ? `/library/module/${moduleId}` : `/library/stage/${id}`}
                         onClick={handleClick}
                         className={clsx(
                             'block w-full h-full relative bg-white/70',
