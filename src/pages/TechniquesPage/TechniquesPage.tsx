@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { Page } from '@/components/Page';
 import { useSupabaseUser } from '@/lib/supabase/hooks/useSupabaseUser';
 import { useGuestStatus } from '@/lib/supabase/hooks/useIsGuest';
-import { useTechniquesFiltered } from '@/lib/supabase/hooks/useTechniques';
+import { useTechniquesFiltered, BundleGroup } from '@/lib/supabase/hooks/useTechniques';
 import { useSignal, initDataState } from '@telegram-apps/sdk-react';
 import { logger } from '@/lib/logger';
 import { TechniqueWithAccess } from '@/lib/supabase/types';
@@ -47,21 +47,13 @@ const TechniquesPage: React.FC = () => {
     lockedTechniques,
     myTechniques,
     freeTechniques,
+    myFreeTechniques,
+    moduleTechniques,
+    bundleGroups,
     isLoading: techniquesLoading,
     error,
   } = useTechniquesFiltered(supabaseUser?.id);
 
-  // Логирование для отладки
-  useEffect(() => {
-    logger.debug('TechniquesPage state', {
-      userId: supabaseUser?.id,
-      isGuest,
-      availableCount: availableTechniques.length,
-      lockedCount: lockedTechniques.length,
-      myCount: myTechniques.length,
-      freeCount: freeTechniques.length,
-    });
-  }, [supabaseUser, isGuest, availableTechniques, lockedTechniques, myTechniques, freeTechniques]);
 
   // Общее состояние загрузки
   const loading = userLoading || guestCheckLoading || techniquesLoading;
@@ -248,7 +240,7 @@ const TechniquesPage: React.FC = () => {
                       <p className="text-xs text-white/60 mt-1">{error.message}</p>
                     </div>
                   </div>
-                ) : currentTechniques.length === 0 && activeTab === 'mine' ? (
+                ) : (activeTab === 'mine' && myTechniques.length === 0 && bundleGroups.length === 0 && myFreeTechniques.length === 0) ? (
                   <div className="flex items-center justify-center h-full min-h-[300px]">
                     <div className="text-center">
                       <p className="text-sm text-white/60">
@@ -261,12 +253,62 @@ const TechniquesPage: React.FC = () => {
                   <div className="flex flex-col gap-4">
                     {activeTab === 'all' ? (
                       <>
-                        {/* Секция "К покупке" - все платные техники (и с кнопкой Купить, и заблокированные) */}
-                        {[...availableTechniques, ...lockedTechniques].filter(t => !t.has_access && t.status !== 'free').length > 0 && (
+                        {/* Секция "Мои" - техники к которым есть доступ (не из пакетов) */}
+                        {myTechniques.length > 0 && (
+                          <div>
+                            <h2 className="text-[20px] font-semibold text-white mb-3 leading-none tracking-normal">Мои</h2>
+                            <div className="flex flex-col gap-3">
+                              {myTechniques.map((technique) => (
+                                <TechniqueCard
+                                  key={technique.id}
+                                  technique={technique}
+                                  onClick={() => handleTechniqueClick(technique.id)}
+                                />
+                              ))}
+                            </div>
+                          </div>
+                        )}
+
+                        {/* Секции пакетов */}
+                        {bundleGroups.map((bundle) => (
+                          <div key={bundle.bundleId}>
+                            <h2 className="text-[20px] font-semibold text-white mb-3 leading-none tracking-normal">
+                              Пакет «{bundle.bundleName}»
+                            </h2>
+                            <div className="flex flex-col gap-3">
+                              {bundle.techniques.map((technique) => (
+                                <TechniqueCard
+                                  key={technique.id}
+                                  technique={technique}
+                                  onClick={() => handleTechniqueClick(technique.id)}
+                                />
+                              ))}
+                            </div>
+                          </div>
+                        ))}
+
+                        {/* Секция "Модули" - техники из модулей, заблокированные по времени */}
+                        {moduleTechniques.length > 0 && (
+                          <div>
+                            <h2 className="text-[20px] font-semibold text-white mb-3 leading-none tracking-normal">Модули</h2>
+                            <div className="flex flex-col gap-3">
+                              {moduleTechniques.map((technique) => (
+                                <TechniqueCard
+                                  key={technique.id}
+                                  technique={technique}
+                                  onClick={() => handleTechniqueClick(technique.id)}
+                                />
+                              ))}
+                            </div>
+                          </div>
+                        )}
+
+                        {/* Секция "К покупке" - платные техники доступные к покупке */}
+                        {availableTechniques.length > 0 && (
                           <div>
                             <h2 className="text-[20px] font-semibold text-white mb-3 leading-none tracking-normal">К покупке</h2>
                             <div className="flex flex-col gap-3">
-                              {[...availableTechniques, ...lockedTechniques].filter(t => !t.has_access && t.status !== 'free').map((technique) => (
+                              {availableTechniques.map((technique) => (
                                 <TechniqueCard
                                   key={technique.id}
                                   technique={technique}
@@ -294,22 +336,73 @@ const TechniquesPage: React.FC = () => {
                         )}
 
                         {/* Если нет ни одной техники */}
-                        {[...availableTechniques, ...lockedTechniques].filter(t => !t.has_access && t.status !== 'free').length === 0 && freeTechniques.length === 0 && (
+                        {myTechniques.length === 0 && bundleGroups.length === 0 && moduleTechniques.length === 0 && availableTechniques.length === 0 && freeTechniques.length === 0 && (
                           <div className="flex items-center justify-center h-full min-h-[300px]">
                             <p className="text-sm text-white/60">Нет доступных техник</p>
                           </div>
                         )}
                       </>
                     ) : (
-                      /* Таб "Мои техники" */
-                      <div className="flex flex-col gap-3">
-                        {currentTechniques.map((technique) => (
-                          <TechniqueCard
-                            key={technique.id}
-                            technique={technique}
-                            onClick={() => handleTechniqueClick(technique.id)}
-                          />
+                      /* Таб "Мои техники" - группируем по секциям */
+                      <div className="flex flex-col gap-4">
+                        {/* Секция "Мои" - техники с прямым доступом или из модулей */}
+                        {myTechniques.length > 0 && (
+                          <div>
+                            <h2 className="text-[20px] font-semibold text-white mb-3 leading-none tracking-normal">Мои</h2>
+                            <div className="flex flex-col gap-3">
+                              {myTechniques.map((technique) => (
+                                <TechniqueCard
+                                  key={technique.id}
+                                  technique={technique}
+                                  onClick={() => handleTechniqueClick(technique.id)}
+                                />
+                              ))}
+                            </div>
+                          </div>
+                        )}
+
+                        {/* Секции пакетов */}
+                        {bundleGroups.map((bundle) => (
+                          <div key={bundle.bundleId}>
+                            <h2 className="text-[20px] font-semibold text-white mb-3 leading-none tracking-normal">
+                              Пакет «{bundle.bundleName}»
+                            </h2>
+                            <div className="flex flex-col gap-3">
+                              {bundle.techniques.map((technique) => (
+                                <TechniqueCard
+                                  key={technique.id}
+                                  technique={technique}
+                                  onClick={() => handleTechniqueClick(technique.id)}
+                                />
+                              ))}
+                            </div>
+                          </div>
                         ))}
+
+                        {/* Секция "Бесплатные" */}
+                        {myFreeTechniques.length > 0 && (
+                          <div>
+                            <h2 className="text-[20px] font-semibold text-white mb-3 leading-none tracking-normal">Бесплатные</h2>
+                            <div className="flex flex-col gap-3">
+                              {myFreeTechniques.map((technique) => (
+                                <TechniqueCard
+                                  key={technique.id}
+                                  technique={technique}
+                                  onClick={() => handleTechniqueClick(technique.id)}
+                                />
+                              ))}
+                            </div>
+                          </div>
+                        )}
+
+                        {/* Если нет ни одной техники */}
+                        {myTechniques.length === 0 && bundleGroups.length === 0 && myFreeTechniques.length === 0 && (
+                          <div className="flex items-center justify-center h-full min-h-[300px]">
+                            <p className="text-sm text-white/60">
+                              {isGuest ? 'Станьте учеником, чтобы получить доступ к техникам' : 'У вас пока нет техник'}
+                            </p>
+                          </div>
+                        )}
                       </div>
                     )}
                   </div>

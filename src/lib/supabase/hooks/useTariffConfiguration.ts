@@ -11,6 +11,7 @@ export interface TariffModuleConfig {
   stream_module_id: string;
   module_name: string;
   access_duration_days: number | null;
+  unlock_offset_days: number; // С какого дня потока модуль доступен
   order_num: number;
   techniques: TariffTechniqueConfig[];
 }
@@ -61,6 +62,7 @@ export function useTariffConfiguration(streamId: string | null, tariffId: string
             stream_module_id: row.module_id,
             module_name: row.module_name,
             access_duration_days: row.access_duration_days,
+            unlock_offset_days: row.unlock_offset_days ?? 0,
             order_num: row.module_order_num,
             techniques: [],
           });
@@ -71,7 +73,7 @@ export function useTariffConfiguration(streamId: string | null, tariffId: string
             tariff_module_technique_id: row.tariff_module_technique_id,
             technique_id: row.technique_id,
             technique_title: row.technique_title,
-            unlock_offset_days: row.unlock_offset_days,
+            unlock_offset_days: row.technique_unlock_offset_days ?? row.unlock_offset_days ?? 0,
             order_num: row.technique_order_num,
           });
         }
@@ -138,6 +140,7 @@ export function useUpdateModuleInTariff() {
     mutationFn: async (params: {
       tariff_stream_module_id: string;
       access_duration_days: number | null;
+      unlock_offset_days?: number | null;
       order_num: number;
     }) => {
       if (!supabase) throw new Error('Supabase not initialized');
@@ -148,6 +151,7 @@ export function useUpdateModuleInTariff() {
         .from('tariff_stream_modules')
         .update({
           access_duration_days: params.access_duration_days,
+          unlock_offset_days: params.unlock_offset_days ?? 0,
           order_num: params.order_num,
         })
         .eq('id', params.tariff_stream_module_id)

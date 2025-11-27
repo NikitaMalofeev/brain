@@ -30,24 +30,23 @@ const CalendarPage: React.FC = () => {
     error: eventsError,
   } = useCalendarEvents(supabaseUser?.id, selectedMonth);
 
-  // Логирование для отладки
-  React.useEffect(() => {
-    logger.debug('CalendarPage state', {
-      userId: supabaseUser?.id,
-      isGuest,
-      selectedMonth: selectedMonth.toISOString(),
-      eventsCount: events?.length || 0,
-    });
-  }, [supabaseUser, isGuest, selectedMonth, events]);
 
   // Общее состояние загрузки
   const loading = userLoading || guestCheckLoading || eventsLoading;
+
+  // Форматируем дату в YYYY-MM-DD без учёта часового пояса
+  const formatDateLocal = (date: Date): string => {
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const day = String(date.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
+  };
 
   // Фильтруем события для выбранной даты
   const selectedDateEvents = useMemo(() => {
     if (!selectedDate || !events) return [];
 
-    const selectedDateStr = selectedDate.toISOString().split('T')[0];
+    const selectedDateStr = formatDateLocal(selectedDate);
     return events.filter((event) => event.event_date === selectedDateStr);
   }, [selectedDate, events]);
 

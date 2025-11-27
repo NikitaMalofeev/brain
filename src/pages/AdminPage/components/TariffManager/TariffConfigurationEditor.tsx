@@ -126,12 +126,14 @@ const TariffConfigurationEditor: React.FC = () => {
   const handleUpdateModule = async (
     tariffStreamModuleId: string,
     accessDurationDays: number | null,
+    unlockOffsetDays: number,
     orderNum: number
   ) => {
     try {
       await updateModuleMutation.mutateAsync({
         tariff_stream_module_id: tariffStreamModuleId,
         access_duration_days: accessDurationDays,
+        unlock_offset_days: unlockOffsetDays,
         order_num: orderNum,
       });
       logger.info('Module updated in tariff', { tariffStreamModuleId });
@@ -267,6 +269,19 @@ const TariffConfigurationEditor: React.FC = () => {
                           <div className="mt-3 ml-8 space-y-2 bg-white p-3 rounded border border-blue-300">
                             <div>
                               <label className="block text-xs font-medium text-gray-700 mb-1">
+                                Открыть с дня потока:
+                              </label>
+                              <input
+                                type="number"
+                                id={`unlock-days-${module.tariff_stream_module_id}`}
+                                defaultValue={module.unlock_offset_days || 0}
+                                min="0"
+                                placeholder="0 = сразу доступен"
+                                className="w-full px-3 py-1.5 text-sm rounded bg-white text-gray-900 border border-gray-300"
+                              />
+                            </div>
+                            <div>
+                              <label className="block text-xs font-medium text-gray-700 mb-1">
                                 Доступ к модулю (дней):
                               </label>
                               <input
@@ -280,11 +295,15 @@ const TariffConfigurationEditor: React.FC = () => {
                             <div className="flex gap-2">
                               <button
                                 onClick={() => {
-                                  const input = document.getElementById(
+                                  const accessInput = document.getElementById(
                                     `access-days-${module.tariff_stream_module_id}`
                                   ) as HTMLInputElement;
-                                  const days = input.value ? parseInt(input.value) : null;
-                                  handleUpdateModule(module.tariff_stream_module_id, days, module.order_num);
+                                  const unlockInput = document.getElementById(
+                                    `unlock-days-${module.tariff_stream_module_id}`
+                                  ) as HTMLInputElement;
+                                  const accessDays = accessInput.value ? parseInt(accessInput.value) : null;
+                                  const unlockDays = unlockInput.value ? parseInt(unlockInput.value) : 0;
+                                  handleUpdateModule(module.tariff_stream_module_id, accessDays, unlockDays, module.order_num);
                                 }}
                                 className="px-3 py-1 text-xs bg-blue-600 text-white rounded hover:bg-blue-700"
                               >
@@ -299,9 +318,12 @@ const TariffConfigurationEditor: React.FC = () => {
                             </div>
                           </div>
                         ) : (
-                          <div className="mt-1 ml-8 flex items-center gap-3">
+                          <div className="mt-1 ml-8 flex items-center gap-3 flex-wrap">
                             <p className="text-sm text-gray-600">
-                              Доступ: {module.access_duration_days ? `${module.access_duration_days} дней` : 'Бессрочно'}
+                              Открыть: {module.unlock_offset_days > 0 ? `с ${module.unlock_offset_days} дня` : 'сразу'}
+                            </p>
+                            <p className="text-sm text-gray-600">
+                              Доступ: {module.access_duration_days ? `${module.access_duration_days} дней` : 'бессрочно'}
                             </p>
                             <button
                               onClick={() => setEditingModule(module.tariff_stream_module_id)}

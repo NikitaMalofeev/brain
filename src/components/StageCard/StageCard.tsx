@@ -14,6 +14,7 @@ export interface StageCardProps {
     coverImagePath?: string;
     orderNum: number;
     isGuest?: boolean;
+    unlockDay?: number; // С какого дня потока модуль доступен
 }
 
 const StageCard: React.FC<StageCardProps> = ({
@@ -23,6 +24,7 @@ const StageCard: React.FC<StageCardProps> = ({
     coverImagePath,
     orderNum,
     isGuest = false,
+    unlockDay,
 }) => {
     const navigate = useNavigate();
     const [showGuestModal, setShowGuestModal] = useState(false);
@@ -79,6 +81,11 @@ const StageCard: React.FC<StageCardProps> = ({
                             LEVEL 0{orderNum}
                             {(!isUnlocked || (isGuest && orderNum !== 1)) && <img src={'/lock.svg'} alt={''} />}
                         </div>
+                        {!isUnlocked && unlockDay !== undefined && unlockDay > 0 && (
+                            <div className='text-xs text-gray-600 bg-white/80 px-2 py-1 rounded-full'>
+                                Откроется на {unlockDay} день
+                            </div>
+                        )}
                     </div>
                 </Link>
             </Ripple>

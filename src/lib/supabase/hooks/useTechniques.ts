@@ -66,9 +66,23 @@ export function useTechniques(userId: string | null | undefined) {
   return query;
 }
 
+// Интерфейс для группы техник по пакету
+export interface BundleGroup {
+  bundleId: string;
+  bundleName: string;
+  techniques: TechniqueWithAccess[];
+}
+
 /**
  * Хук-хелпер для фильтрации техник по категориям
  * Разделяет техники на доступные, заблокированные и те, к которым есть доступ
+ *
+ * Категории:
+ * - myTechniques: техники с has_access = true (из пакетов, модулей, прямого доступа)
+ * - availableTechniques: can_purchase = true И is_unlocked = true (можно купить прямо сейчас)
+ * - lockedTechniques: is_unlocked = false ИЛИ (can_purchase = false И has_access = false)
+ * - freeTechniques: status = 'free'
+ * - bundleGroups: техники сгруппированные по пакетам
  *
  * @param userId - ID пользователя
  * @returns Объект с отфильтрованными массивами техник
@@ -76,22 +90,55 @@ export function useTechniques(userId: string | null | undefined) {
 export function useTechniquesFiltered(userId: string | null | undefined) {
   const { data: techniques, isLoading, error } = useTechniques(userId);
 
-  // Фильтруем техники по категориям
-  const availableTechniques = techniques?.filter(
-    (t) => t.can_purchase && !t.has_access
-  ) || [];
-
-  const lockedTechniques = techniques?.filter(
-    (t) => !t.can_purchase && !t.has_access
-  ) || [];
-
+  // Мои техники - те, к которым есть доступ (has_access = true), НЕ из пакетов
   const myTechniques = techniques?.filter(
-    (t) => t.has_access
+    (t) => t.has_access && t.user_access_source !== 'bundle'
   ) || [];
 
-  // Бесплатные техники (доступны всем, включая гостей)
+  // Техники из пакетов с доступом - группируем по bundle_name
+  const bundleTechniquesWithAccess = techniques?.filter(
+    (t) => t.has_access && t.user_access_source === 'bundle' && t.bundle_id
+  ) || [];
+
+  // Группируем техники из пакетов по bundle_id
+  const bundleGroupsMap = new Map<string, BundleGroup>();
+  bundleTechniquesWithAccess.forEach((t) => {
+    if (t.bundle_id && t.bundle_name) {
+      if (!bundleGroupsMap.has(t.bundle_id)) {
+        bundleGroupsMap.set(t.bundle_id, {
+          bundleId: t.bundle_id,
+          bundleName: t.bundle_name,
+          techniques: [],
+        });
+      }
+      bundleGroupsMap.get(t.bundle_id)!.techniques.push(t);
+    }
+  });
+  const bundleGroups = Array.from(bundleGroupsMap.values());
+
+  // Бесплатные техники - для таба "Мои техники" (все бесплатные доступны пользователю)
+  const myFreeTechniques = techniques?.filter(
+    (t) => t.status === 'free'
+  ) || [];
+
+  // Бесплатные техники - для таба "Все техники" в секции "Бесплатные" (те же самые)
   const freeTechniques = techniques?.filter(
     (t) => t.status === 'free'
+  ) || [];
+
+  // К покупке - можно купить, нет доступа, не бесплатная, разблокирована
+  const availableTechniques = techniques?.filter(
+    (t) => !t.has_access && t.can_purchase && t.status !== 'free' && t.is_unlocked !== false
+  ) || [];
+
+  // Заблокированные (не из модуля) - нет доступа, не разблокирована, НЕ из модуля
+  const lockedTechniques = techniques?.filter(
+    (t) => !t.has_access && t.is_unlocked === false && t.user_access_source !== 'module'
+  ) || [];
+
+  // Техники из модулей (заблокированные по времени) - из модуля И ещё НЕ разблокированы (is_unlocked = false)
+  const moduleTechniques = techniques?.filter(
+    (t) => !t.has_access && t.user_access_source === 'module' && t.is_unlocked === false
   ) || [];
 
   return {
@@ -100,6 +147,9 @@ export function useTechniquesFiltered(userId: string | null | undefined) {
     lockedTechniques,
     myTechniques,
     freeTechniques,
+    myFreeTechniques,
+    moduleTechniques,
+    bundleGroups,
     isLoading,
     error,
   };

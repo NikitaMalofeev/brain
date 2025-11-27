@@ -24,11 +24,20 @@ const TechniqueCard: React.FC<TechniqueCardProps> = ({ technique, onClick }) => 
     unlock_date,
     is_unlocked,
     purchase_info,
+    module_name,
+    unlock_day,
+    user_access_source,
   } = technique;
 
   // Определяем можно ли кликнуть на карточку
   const isClickable = has_access || status === 'free';
-  const isLocked = !has_access && !can_purchase && status !== 'free';
+
+  // Техника заблокирована если:
+  // 1. Нет доступа И is_unlocked = false (техника из модуля, ещё не разблокирована по времени)
+  // 2. Нет доступа И нельзя купить И не бесплатная
+  const isLocked = !has_access && status !== 'free' && (
+    is_unlocked === false || (!can_purchase && !is_unlocked)
+  );
 
   // Форматируем дату открытия
   const formatUnlockDate = (dateString: string | null | undefined): string | null => {
@@ -117,10 +126,53 @@ const TechniqueCard: React.FC<TechniqueCardProps> = ({ technique, onClick }) => 
             </p>
           )}
 
-          {/* Дата открытия для заблокированных техник */}
-          {isLocked && formattedUnlockDate && (
+          {/* Информация для заблокированных техник из модуля */}
+          {isLocked && user_access_source === 'module' && module_name && (
             <div className="mt-2 flex flex-col gap-1">
-              {/* Название модуля если есть */}
+              {/* Название модуля */}
+              <span
+                className="text-white/60 text-xs"
+                style={{
+                  fontFamily: 'Inter',
+                  fontWeight: 400,
+                }}
+              >
+                Техника из модуля "{module_name}"
+              </span>
+              {/* День разблокировки */}
+              {unlock_day !== null && unlock_day !== undefined && (
+                <div className="flex items-center gap-1.5">
+                  <svg
+                    className="w-3.5 h-3.5 text-white/60"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"
+                    />
+                  </svg>
+                  <span
+                    className="text-white/60 text-xs"
+                    style={{
+                      fontFamily: 'Inter',
+                      fontWeight: 400,
+                    }}
+                  >
+                    Откроется на {unlock_day} день
+                  </span>
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* Дата открытия для заблокированных техник (старый формат) */}
+          {isLocked && !module_name && formattedUnlockDate && (
+            <div className="mt-2 flex flex-col gap-1">
+              {/* Название модуля если есть в purchase_info */}
               {purchase_info?.module_name && (
                 <span
                   className="text-white/60 text-xs"
@@ -160,8 +212,8 @@ const TechniqueCard: React.FC<TechniqueCardProps> = ({ technique, onClick }) => 
             </div>
           )}
 
-          {/* Причина блокировки если нет даты */}
-          {isLocked && !formattedUnlockDate && purchase_info?.reason && (
+          {/* Причина блокировки если нет даты и модуля */}
+          {isLocked && !module_name && !formattedUnlockDate && purchase_info?.reason && (
             <div className="mt-2">
               <span
                 className="text-white/60 text-xs"

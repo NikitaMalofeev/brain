@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Card, Button, Collapse, Space, Empty, Modal, Form, Input, InputNumber, message, Popconfirm, Spin, DatePicker, Checkbox, Select, Alert } from 'antd';
-import { PlusOutlined, EditOutlined, DeleteOutlined, CaretRightOutlined, LinkOutlined, DisconnectOutlined } from '@ant-design/icons';
+import { PlusOutlined, EditOutlined, DeleteOutlined, CaretRightOutlined, LinkOutlined, DisconnectOutlined, BlockOutlined } from '@ant-design/icons';
 import dayjs from 'dayjs';
 import {
   useModuleStages,
@@ -16,6 +16,7 @@ import {
   StageWithLessons,
 } from '@/lib/supabase/hooks/useModuleStages';
 import { Lesson } from '@/lib/supabase/types';
+import BlocksManager from '../BlocksManager/BlocksManager';
 
 const { Panel } = Collapse;
 const { TextArea } = Input;
@@ -43,6 +44,9 @@ const ModuleLessonsManager: React.FC<ModuleLessonsManagerProps> = ({
   const [editingLesson, setEditingLesson] = useState<{ lesson: Lesson; stageId: number } | null>(null);
   const [currentStageForLesson, setCurrentStageForLesson] = useState<number | null>(null);
 
+  // Состояние для просмотра блоков урока
+  const [selectedLessonForBlocks, setSelectedLessonForBlocks] = useState<{ lesson: Lesson; stageId: number } | null>(null);
+
   // Хуки
   const { data: stages, isLoading } = useModuleStages(streamModuleId);
   const { data: unassignedStages, isLoading: unassignedLoading } = useUnassignedStages(courseId);
@@ -50,12 +54,6 @@ const ModuleLessonsManager: React.FC<ModuleLessonsManagerProps> = ({
   const assignStageMutation = useAssignStageToModule();
   const unassignStageMutation = useUnassignStageFromModule();
 
-  // Debug: выводим информацию в консоль
-  console.log('[TariffModuleLessonsManager] streamModuleId:', streamModuleId);
-  console.log('[TariffModuleLessonsManager] courseId:', courseId);
-  console.log('[TariffModuleLessonsManager] stages:', stages);
-  console.log('[TariffModuleLessonsManager] unassignedStages:', unassignedStages);
-  console.log('[TariffModuleLessonsManager] isLoading:', isLoading);
   const updateStageMutation = useUpdateStage();
   const deleteStageMutation = useDeleteStage();
   const createLessonMutation = useCreateLessonInStage();
@@ -251,6 +249,18 @@ const ModuleLessonsManager: React.FC<ModuleLessonsManagerProps> = ({
     );
   }
 
+  // Если выбран урок для просмотра блоков - показываем BlocksManager
+  if (selectedLessonForBlocks) {
+    return (
+      <BlocksManager
+        courseId={courseId}
+        stageId={selectedLessonForBlocks.stageId}
+        lessonId={selectedLessonForBlocks.lesson.id}
+        onBack={() => setSelectedLessonForBlocks(null)}
+      />
+    );
+  }
+
   return (
     <div style={{ padding: 24 }}>
       <Space direction="vertical" size="large" style={{ width: '100%' }}>
@@ -353,6 +363,15 @@ const ModuleLessonsManager: React.FC<ModuleLessonsManagerProps> = ({
                               </div>
                             </div>
                             <Space>
+                              <Button
+                                size="small"
+                                type="primary"
+                                ghost
+                                icon={<BlockOutlined />}
+                                onClick={() => setSelectedLessonForBlocks({ lesson, stageId: stage.id })}
+                              >
+                                Блоки
+                              </Button>
                               <Button
                                 size="small"
                                 icon={<EditOutlined />}

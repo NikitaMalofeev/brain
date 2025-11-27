@@ -301,7 +301,7 @@ const UnifiedCoursesManager: React.FC = () => {
   const [navigation, setNavigation] = useState<NavigationState>({ view: 'courses' });
   const [expandedModules, setExpandedModules] = useState<string[]>([]);
   const [editingModule, setEditingModule] = useState<string | null>(null);
-  const [editingModuleData, setEditingModuleData] = useState<{ days: number | null }>({ days: null });
+  const [editingModuleData, setEditingModuleData] = useState<{ days: number | null; unlockDays: number | null }>({ days: null, unlockDays: null });
   const [editingTechnique, setEditingTechnique] = useState<string | null>(null);
   const [editingTechniqueData, setEditingTechniqueData] = useState<{ days: number }>({ days: 0 });
   const [showCopyModal, setShowCopyModal] = useState(false);
@@ -507,12 +507,14 @@ const UnifiedCoursesManager: React.FC = () => {
   const handleUpdateModule = async (
     tariffStreamModuleId: string,
     accessDurationDays: number | null,
+    unlockOffsetDays: number | null,
     orderNum: number
   ) => {
     try {
       await updateModuleMutation.mutateAsync({
         tariff_stream_module_id: tariffStreamModuleId,
         access_duration_days: accessDurationDays,
+        unlock_offset_days: unlockOffsetDays,
         order_num: orderNum,
       });
       setEditingModule(null);
@@ -829,7 +831,9 @@ const UnifiedCoursesManager: React.FC = () => {
                         <Text strong>{module.module_name}</Text>
                         <br />
                         <Text type="secondary" style={{ fontSize: 12 }}>
-                          Доступ: {module.access_duration_days ? `${module.access_duration_days} дней` : 'Бессрочно'}
+                          {module.unlock_offset_days ? `Открывается на ${module.unlock_offset_days} день` : 'Доступен сразу'}
+                          {' | '}
+                          {module.access_duration_days ? `${module.access_duration_days} дней доступа` : 'Бессрочно'}
                         </Text>
                       </div>
                     </div>
@@ -841,7 +845,10 @@ const UnifiedCoursesManager: React.FC = () => {
                         icon={<EditOutlined />}
                         onClick={() => {
                           setEditingModule(module.tariff_stream_module_id);
-                          setEditingModuleData({ days: module.access_duration_days });
+                          setEditingModuleData({
+                            days: module.access_duration_days,
+                            unlockDays: module.unlock_offset_days ?? 0
+                          });
                           // Открываем модуль если он закрыт
                           if (!expandedModules.includes(module.stream_module_id)) {
                             setExpandedModules([...expandedModules, module.stream_module_id]);
@@ -864,12 +871,22 @@ const UnifiedCoursesManager: React.FC = () => {
                     <Card size="small" style={{ marginBottom: 16, background: '#fafafa' }}>
                       <Space direction="vertical" style={{ width: '100%' }}>
                         <div>
+                          <Text strong style={{ fontSize: 12 }}>С какого дня потока модуль доступен:</Text>
+                          <InputNumber
+                            style={{ width: '100%', marginTop: 4 }}
+                            placeholder="0 = сразу"
+                            min={0}
+                            value={editingModuleData.unlockDays}
+                            onChange={(value) => setEditingModuleData({ ...editingModuleData, unlockDays: value })}
+                          />
+                        </div>
+                        <div>
                           <Text strong style={{ fontSize: 12 }}>Доступ к модулю (дней):</Text>
                           <InputNumber
                             style={{ width: '100%', marginTop: 4 }}
                             placeholder="Пусто = бессрочно"
                             value={editingModuleData.days}
-                            onChange={(value) => setEditingModuleData({ days: value })}
+                            onChange={(value) => setEditingModuleData({ ...editingModuleData, days: value })}
                           />
                         </div>
                         <Space>
@@ -880,6 +897,7 @@ const UnifiedCoursesManager: React.FC = () => {
                             onClick={() => handleUpdateModule(
                               module.tariff_stream_module_id,
                               editingModuleData.days,
+                              editingModuleData.unlockDays,
                               module.order_num
                             )}
                           >

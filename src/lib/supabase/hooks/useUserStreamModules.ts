@@ -14,6 +14,7 @@ export interface UserStreamModule {
     unlocked_lessons: number;
     stream_id: string;
     stream_name: string;
+    unlock_day: number; // С какого дня потока модуль доступен
 }
 
 // Интерфейс совместимый с существующими компонентами (StageCard, RoadMap)
@@ -29,6 +30,7 @@ export interface StreamModuleAsStage {
     // Дополнительные поля для stream_modules
     module_id: string;
     module_color: string | null;
+    unlock_day: number; // С какого дня потока модуль доступен
 }
 
 interface UseUserStreamModulesResult {
@@ -89,6 +91,7 @@ export function useUserStreamModules(userId: string | null | undefined): UseUser
         // Дополнительные поля
         module_id: module.module_id,
         module_color: module.module_color,
+        unlock_day: module.unlock_day,
     }));
 
     return {

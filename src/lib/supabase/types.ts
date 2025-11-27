@@ -649,7 +649,7 @@ export interface MaterialPurchaseInfo {
 // Backwards compatibility
 export type TechniquePurchaseInfo = MaterialPurchaseInfo;
 
-// Материал с информацией о доступе (результат get_materials_with_access)
+// Материал с информацией о доступе (результат get_materials_with_access / get_user_techniques_with_schedule)
 export interface MaterialWithAccess extends Material {
   has_access: boolean;
   can_purchase: boolean;
@@ -657,12 +657,16 @@ export interface MaterialWithAccess extends Material {
   access_granted_at?: string | null;
   access_expires_at?: string | null;
   access_source?: MaterialAccessSource | null;
-  // Поля из get_user_materials_with_schedule для расписания модулей
-  unlock_day?: number | null; // День открытия в модуле (1 = первый день)
-  release_day?: number | null; // Alias для unlock_day
+  // Поля из get_user_techniques_with_schedule для расписания модулей
+  unlock_day?: number | null; // День открытия в модуле (unlock_offset_days)
+  active_days?: number | null; // Количество дней доступа после разблокировки
   is_unlocked?: boolean; // Открыт ли материал на текущую дату
   module_id?: string | null; // ID модуля
   module_name?: string | null; // Название модуля
+  user_access_source?: 'direct' | 'bundle' | 'module' | string | null; // Источник доступа
+  user_access_expires_at?: string | null; // Когда истекает доступ
+  bundle_id?: string | null; // ID пакета (bundle)
+  bundle_name?: string | null; // Название пакета (bundle)
 }
 
 // Backwards compatibility

@@ -37,17 +37,6 @@ export function useModuleStages(streamModuleId: string | null) {
         throw error;
       }
 
-      logger.debug('Fetched stages for module', {
-        streamModuleId,
-        stagesCount: data?.length || 0,
-        stages: data?.map(s => ({
-          id: s.id,
-          name: s.name,
-          lessonsCount: s.lessons?.length || 0,
-          lessons: s.lessons
-        }))
-      });
-
       return (data || []).map(stage => ({
         ...stage,
         lessons: stage.lessons || []

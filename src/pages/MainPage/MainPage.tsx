@@ -52,13 +52,16 @@ export const MainPage = () => {
     const { modulesAsStages, loading: isLoading } = useUserStreamModules(supabaseUser?.id);
 
     // Логирование для отладки
-    console.log('MainPage Debug:', {
-        userId: supabaseUser?.id,
-        modules: modulesAsStages,
-        modulesLength: modulesAsStages?.length,
-        isLoading,
-        isGuest
-    });
+    console.log('=== MainPage DEBUG ===');
+    console.log('userId:', supabaseUser?.id);
+    console.log('modulesAsStages:', modulesAsStages);
+    console.log('modules details:', modulesAsStages?.map(m => ({
+        module_id: m.module_id,
+        name: m.stage_name,
+        is_unlocked: m.is_unlocked,
+        unlock_day: m.unlock_day,
+    })));
+    console.log('isLoading:', isLoading);
 
     // Фильтрация модулей по поисковому запросу
     const filteredStages = modulesAsStages?.filter((stage) =>
@@ -154,7 +157,7 @@ export const MainPage = () => {
                             type="text"
                             value={searchQuery}
                             onChange={(e) => setSearchQuery(e.target.value)}
-                            placeholder="Поиск модулей..."
+                            placeholder="Поиск уроков"
                             className="w-full bg-white/90 backdrop-blur-sm rounded-xl pl-10 pr-10 py-3 text-sm text-gray-900 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-white/50 transition-all"
                         />
                         {searchQuery && (
@@ -187,6 +190,7 @@ export const MainPage = () => {
                                     coverImagePath={stage.cover_image_path || undefined}
                                     orderNum={i + 1}
                                     isGuest={isGuest}
+                                    unlockDay={stage.unlock_day}
                                 />
                             </motion.div>
                         ))

@@ -65,15 +65,23 @@ const CalendarGrid: React.FC<CalendarGridProps> = ({
     days.push(new Date(year, month, day));
   }
 
+  // Форматируем дату в YYYY-MM-DD без учёта часового пояса
+  const formatDateLocal = (date: Date): string => {
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const day = String(date.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
+  };
+
   // Проверяем есть ли события на эту дату
   const hasEventsOnDate = (date: Date): boolean => {
-    const dateStr = date.toISOString().split('T')[0];
+    const dateStr = formatDateLocal(date);
     return events.some((event) => event.event_date === dateStr);
   };
 
   // Получаем цвета модулей для даты
   const getModuleColorsForDate = (date: Date): string[] => {
-    const dateStr = date.toISOString().split('T')[0];
+    const dateStr = formatDateLocal(date);
     const colors = events
       .filter((event) => event.event_date === dateStr && event.module_color)
       .map((event) => event.module_color as string);
@@ -216,16 +224,23 @@ const CalendarGrid: React.FC<CalendarGridProps> = ({
             >
               <span className="calendar-day-number">{date.getDate()}</span>
 
-              {/* Индикаторы модулей (цветные точки) */}
-              {moduleColors.length > 0 && (
+              {/* Индикаторы событий (цветные точки) */}
+              {hasEvents && (
                 <div className="calendar-day-indicators">
-                  {moduleColors.slice(0, 3).map((color, idx) => (
+                  {moduleColors.length > 0 ? (
+                    moduleColors.slice(0, 3).map((color, idx) => (
+                      <div
+                        key={idx}
+                        className="calendar-day-indicator"
+                        style={{ backgroundColor: color }}
+                      />
+                    ))
+                  ) : (
                     <div
-                      key={idx}
                       className="calendar-day-indicator"
-                      style={{ backgroundColor: color }}
+                      style={{ backgroundColor: '#007AFF' }}
                     />
-                  ))}
+                  )}
                 </div>
               )}
             </div>
