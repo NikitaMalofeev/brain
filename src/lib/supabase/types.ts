@@ -99,6 +99,8 @@ export interface Lesson extends TimestampFields {
   estimated_duration_minutes?: number;
   open_at?: string; // Дата и время открытия урока
   deadline_at?: string; // Дедлайн сдачи задания
+  open_day_offset?: number; // Смещение в днях от открытия модуля
+  deadline_day_offset?: number; // Смещение дедлайна в днях от открытия модуля
 }
 
 // Возможные типы блоков урока

@@ -50,7 +50,7 @@ const getLessonTimeStatus = (lesson: LessonData) => {
 // Функция для определения статуса урока
 const getLessonStatus = (lesson: LessonData) => {
     const timeStatus = getLessonTimeStatus(lesson);
-    const deadlineStatus = getDeadlineStatus(lesson.deadline_at);
+    const deadlineStatus = getDeadlineStatus(lesson.deadline_at ?? undefined);
 
     // Проверяем прогресс по заданиям
     const totalAssignments = lesson.total_assignments || 0;
@@ -235,12 +235,20 @@ const LessonCard: React.FC<LessonCardProps> = ({ lesson, onClick, isGuest = fals
                     <div className={'p-4 flex flex-col gap-2 bg-white'}>
                         <p className={'font-semibold'}>{lesson.lesson_name}</p>
                         <div className={'flex flex-wrap gap-1'}>
-                            <p className={'rounded-full px-2 py-1 text-white text-xs font-medium bg-[linear-gradient(135deg,_rgba(141,197,241)_-48.61%,_#63ABE6_105.56%)]'}>День {lesson.order_num}</p>
-
                             {/* Отображаем статус урока */}
                             <p className={`rounded-full px-2 py-1 text-white text-xs font-medium ${status.bgClass}`}>
                                 {status.text}
                             </p>
+
+                            {/* Если урок заблокирован и есть дата открытия — показываем её */}
+                            {!lesson.is_unlocked && lesson.open_at && (
+                                <p className={'rounded-full px-2 py-1 text-white/80 text-xs font-medium bg-gray-400'}>
+                                    Откроется {new Date(lesson.open_at).toLocaleDateString('ru-RU', {
+                                        day: 'numeric',
+                                        month: 'short'
+                                    })}
+                                </p>
+                            )}
                         </div>
                     </div>
                 </div>

@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useSignal, initDataState } from '@telegram-apps/sdk-react';
 import { useQuery } from '@tanstack/react-query';
@@ -11,6 +11,7 @@ import { motion } from 'framer-motion';
 import { Ripple } from '@/components/ui/Ripple/Ripple';
 import GuestBlockedModal from '@/components/GuestBlockedModal';
 import { buildFileUrl } from '@/lib/supabase/supabaseStorageService';
+import { clsx } from 'clsx';
 
 const listVariants = {
     hidden: { opacity: 0 },
@@ -28,6 +29,67 @@ const itemVariants = {
         transition: { type: 'tween', ease: 'easeOut', duration: 0.3 }
     },
 };
+
+/**
+ * Хук для получения данных о доступе к модулю (stream_start_date, module_unlock_offset)
+ */
+function useModuleAccessData(userId: string | undefined, moduleId: string | undefined) {
+    return useQuery({
+        queryKey: ['module-access-data', userId, moduleId],
+        queryFn: async () => {
+            if (!userId || !moduleId || !supabase) {
+                return { streamStartDate: null, moduleUnlockOffset: 0 };
+            }
+
+            // Получаем start_date потока пользователя
+            const { data: enrollmentData } = await supabase
+                .from('user_stream_enrollments')
+                .select('streams(start_date)')
+                .eq('user_id', userId)
+                .single();
+
+            const streamStartDate = (enrollmentData?.streams as any)?.start_date || null;
+
+            // Получаем unlock_offset_days модуля для тарифа пользователя
+            const { data: offsetData } = await supabase
+                .from('user_tariffs')
+                .select(`
+                    tariff_id,
+                    user_stream_enrollments!inner(stream_id),
+                    stream_tariffs!inner(
+                        tariff_stream_modules!inner(
+                            unlock_offset_days,
+                            stream_module_id
+                        )
+                    )
+                `)
+                .eq('user_id', userId)
+                .eq('is_active', true)
+                .single();
+
+            let moduleUnlockOffset = 0;
+            if (offsetData?.stream_tariffs) {
+                const tariffs = Array.isArray(offsetData.stream_tariffs)
+                    ? offsetData.stream_tariffs
+                    : [offsetData.stream_tariffs];
+                for (const st of tariffs) {
+                    const modules = Array.isArray(st.tariff_stream_modules)
+                        ? st.tariff_stream_modules
+                        : [st.tariff_stream_modules];
+                    const found = modules.find((m: any) => m.stream_module_id === moduleId);
+                    if (found) {
+                        moduleUnlockOffset = found.unlock_offset_days || 0;
+                        break;
+                    }
+                }
+            }
+
+            return { streamStartDate, moduleUnlockOffset };
+        },
+        enabled: !!userId && !!moduleId,
+        staleTime: 5 * 60 * 1000,
+    });
+}
 
 /**
  * Хук для получения прогресса по заданиям модуля
@@ -110,18 +172,51 @@ const ModuleStagesPage: React.FC = () => {
 
     const { data: stages, isLoading: stagesLoading, error: stagesError } = useModuleStages(moduleId || null);
 
+    // Получаем данные о доступе к модулю
+    const { data: accessData, isLoading: accessLoading } = useModuleAccessData(supabaseUser?.id, moduleId);
+    const streamStartDate = accessData?.streamStartDate;
+    const moduleUnlockOffset = accessData?.moduleUnlockOffset || 0;
+
     // Получаем прогресс по заданиям модуля
     const { data: progressData } = useModuleAssignmentsProgress(supabaseUser?.id, moduleId);
     const totalAssignments = progressData?.totalAssignments || 0;
     const completedAssignments = progressData?.completedAssignments || 0;
     const assignmentsProgressPercent = totalAssignments > 0 ? (completedAssignments / totalAssignments) * 100 : 0;
 
-    const loading = userLoading || stagesLoading;
+    // Вычисляем доступность каждой ступени на основе open_day_offset
+    const stagesWithAccess = useMemo(() => {
+        if (!stages || !streamStartDate) return stages || [];
 
-    const handleStageClick = (lessonId: number) => {
+        const now = new Date();
+        const startDate = new Date(streamStartDate);
+
+        return stages.map(stage => {
+            const firstLesson = stage.lessons?.[0];
+            const lessonOpenOffset = firstLesson?.open_day_offset ?? 0;
+
+            // Дата открытия = stream_start_date + module_unlock_offset + lesson_open_offset
+            const openDate = new Date(startDate);
+            openDate.setDate(openDate.getDate() + moduleUnlockOffset + lessonOpenOffset);
+
+            const isUnlocked = now >= openDate;
+
+            return {
+                ...stage,
+                isUnlocked,
+                openDate,
+            };
+        });
+    }, [stages, streamStartDate, moduleUnlockOffset]);
+
+    const loading = userLoading || stagesLoading || accessLoading;
+
+    const handleStageClick = (lessonId: number, isUnlocked: boolean) => {
         if (isGuest) {
             setShowGuestModal(true);
             return;
+        }
+        if (!isUnlocked) {
+            return; // Не переходим если заблокировано
         }
         navigate(`/library/lesson/${lessonId}`);
     };
@@ -205,42 +300,68 @@ const ModuleStagesPage: React.FC = () => {
                     initial="hidden"
                     animate="show"
                 >
-                    {stages.map((stage, index) => {
-                        const lessonsCount = stage.lessons?.length || 0;
+                    {stagesWithAccess.map((stage) => {
                         const firstLesson = stage.lessons?.[0];
                         const coverUrl = buildFileUrl(stage.cover_image_path) || '/test.png';
+                        const isUnlocked = (stage as any).isUnlocked !== false; // По умолчанию открыт если нет данных
+                        const openDate = (stage as any).openDate as Date | undefined;
 
                         return (
                             <motion.div key={stage.id} variants={itemVariants}>
                                 <motion.div
-                                    whileTap={{ scale: 0.97 }}
+                                    whileTap={isUnlocked ? { scale: 0.97 } : {}}
                                     style={{ touchAction: 'manipulation' }}
                                     className="w-full"
                                 >
                                     <Ripple className="rounded-3xl overflow-hidden w-full shadow-sm">
                                         <div
-                                            onClick={() => firstLesson && handleStageClick(firstLesson.id)}
-                                            className="flex flex-col w-full bg-white cursor-pointer"
+                                            onClick={() => firstLesson && handleStageClick(firstLesson.id, isUnlocked)}
+                                            className={clsx(
+                                                "flex flex-col w-full bg-white",
+                                                isUnlocked ? "cursor-pointer" : "cursor-not-allowed"
+                                            )}
                                         >
-                                            {/* Обложка как в LessonCard */}
+                                            {/* Обложка */}
                                             <div className="relative w-full">
                                                 <img
                                                     src={coverUrl}
                                                     alt={stage.name}
-                                                    className="h-[193px] w-full object-cover"
+                                                    className={clsx(
+                                                        "h-[193px] w-full object-cover",
+                                                        !isUnlocked && "mix-blend-luminosity"
+                                                    )}
                                                     onError={(e) => { e.currentTarget.src = '/test.png'; }}
                                                 />
+                                                {/* Иконка замка для заблокированных */}
+                                                {!isUnlocked && (
+                                                    <div className="p-[6px] rounded-full bg-[linear-gradient(109.65deg,_#E1C1F4_13.64%,_#B862EA_124.92%)] absolute top-1/2 left-1/2 -translate-y-1/2 -translate-x-1/2 z-[2]">
+                                                        <img src="/lock.svg" alt="" className="min-w-6 h-6" />
+                                                    </div>
+                                                )}
                                             </div>
-                                            {/* Информация как в LessonCard */}
+                                            {/* Информация */}
                                             <div className="p-4 flex flex-col gap-2 bg-white">
                                                 <p className="font-semibold">{stage.name}</p>
                                                 <div className="flex flex-wrap gap-1">
-                                                    <p className="rounded-full px-2 py-1 text-white text-xs font-medium bg-[linear-gradient(135deg,_rgba(141,197,241)_-48.61%,_#63ABE6_105.56%)]">
-                                                        Ступень {index + 1}
-                                                    </p>
-                                                    <p className="rounded-full px-2 py-1 text-white text-xs font-medium bg-[linear-gradient(135deg,_rgba(141,197,241)_-48.61%,_#63ABE6_105.56%)]">
-                                                        {lessonsCount} {lessonsCount === 1 ? 'урок' : lessonsCount < 5 ? 'урока' : 'уроков'}
-                                                    </p>
+                                                    {/* Статус */}
+                                                    {isUnlocked ? (
+                                                        <p className="rounded-full px-2 py-1 text-white text-xs font-medium bg-[linear-gradient(135deg,_rgba(141,197,241)_-48.61%,_#63ABE6_105.56%)]">
+                                                            Не начато
+                                                        </p>
+                                                    ) : (
+                                                        <p className="rounded-full px-2 py-1 text-white text-xs font-medium bg-gray-500">
+                                                            Заблокировано
+                                                        </p>
+                                                    )}
+                                                    {/* Дата открытия если заблокировано */}
+                                                    {!isUnlocked && openDate && (
+                                                        <p className="rounded-full px-2 py-1 text-white/80 text-xs font-medium bg-gray-400">
+                                                            Откроется {openDate.toLocaleDateString('ru-RU', {
+                                                                day: 'numeric',
+                                                                month: 'short'
+                                                            })}
+                                                        </p>
+                                                    )}
                                                 </div>
                                             </div>
                                         </div>

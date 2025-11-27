@@ -14,7 +14,7 @@ export interface LessonData {
     is_unlocked: boolean; // Добавляем поле для отслеживания разблокировки
     completion_date?: string;
     open_at?: string; // Добавляем время открытия урока
-    deadline_at?: string; // Добавляем время дедлайна урока
+    deadline_at?: string | null; // Добавляем время дедлайна урока
     // Добавляем поля для submissions
     submission_status?: 'submitted' | 'pending_review' | 'approved' | 'rejected' | null;
     submission_id?: number;
@@ -38,19 +38,35 @@ export interface StageDetailsData {
     completed_stage_assignments: number;
 }
 
+// Тип данных из RPC get_user_accessible_lessons_optimized
+interface RpcLessonData {
+    out_lesson_id: number;
+    out_lesson_name: string;
+    out_order_num: number;
+    out_is_accessible: boolean;
+    out_open_at: string | null;
+    out_deadline_at: string | null;
+    out_has_assignment: boolean;
+    out_cover_image_path: string | null;
+    out_open_day_offset: number | null;
+    out_deadline_day_offset: number | null;
+    out_module_unlock_offset_days: number | null;
+    out_stream_start_date: string | null;
+}
+
 /**
  * Проверяет доступность урока с учетом временных ограничений и доступа по тарифам
- * @param lesson - данные урока
+ * @param calculatedOpenAt - вычисленная дата открытия урока
  * @param isAccessibleByTariff - доступен ли урок по тарифу
  * @returns true если урок доступен, false если заблокирован
  */
 const isLessonAccessible = (
-    lesson: any,
+    calculatedOpenAt: string | null,
     isAccessibleByTariff: boolean
 ): boolean => {
     // Сначала проверяем временное ограничение
     const now = new Date();
-    const openAt = lesson.open_at ? new Date(lesson.open_at) : null;
+    const openAt = calculatedOpenAt ? new Date(calculatedOpenAt) : null;
 
     if (openAt && now < openAt) {
         return false; // Урок еще не открыт по времени
@@ -62,10 +78,20 @@ const isLessonAccessible = (
 
 /**
  * Вспомогательная функция для расчёта фактической даты из смещения
+ * @param startDate - дата начала потока
+ * @param moduleUnlockOffset - смещение открытия модуля от даты начала потока (в днях)
+ * @param lessonDayOffset - смещение урока от даты открытия модуля (в днях)
+ * @param timeString - время из старой даты (опционально)
  */
-const calculateDateFromOffset = (startDate: string, dayOffset: number, timeString?: string): string => {
+const calculateDateFromOffset = (
+    startDate: string,
+    moduleUnlockOffset: number,
+    lessonDayOffset: number,
+    timeString?: string
+): string => {
     const start = new Date(startDate);
-    start.setDate(start.getDate() + dayOffset);
+    // Дата открытия урока = start_date + module_unlock_offset + lesson_day_offset
+    start.setDate(start.getDate() + moduleUnlockOffset + lessonDayOffset);
 
     // Если есть время из старой даты, используем его
     if (timeString) {
@@ -130,7 +156,7 @@ const useStageDetails = (user: User | null, stageId: string | number) => {
                     .rpc('get_user_accessible_lessons_optimized', {
                         p_user_id: user.id,
                         p_stage_id: parseInt(stageId.toString())
-                    });
+                    }) as { data: RpcLessonData[] | null; error: any };
 
                 if (lessonsError) {
                     throw new Error(`Ошибка загрузки уроков: ${lessonsError.message}`);
@@ -138,7 +164,7 @@ const useStageDetails = (user: User | null, stageId: string | number) => {
 
                 // Получаем прогресс пользователя по урокам
                 // ФИЛЬТРУЕМ: получаем прогресс только для доступных уроков
-                const accessibleLessonIds = lessonsWithAccess?.filter(l => l.is_accessible)?.map(l => l.lesson_id) || [];
+                const accessibleLessonIds = lessonsWithAccess?.filter((l: RpcLessonData) => l.out_is_accessible)?.map((l: RpcLessonData) => l.out_lesson_id) || [];
                 const { data: progressData, error: progressError } = await supabase
                     .from('lesson_progress')
                     .select('lesson_id, completed_at, started_at, is_completed')
@@ -151,19 +177,19 @@ const useStageDetails = (user: User | null, stageId: string | number) => {
 
                 // Получаем submissions пользователя для уроков с заданиями
                 // ФИЛЬТРУЕМ: получаем submissions только для доступных уроков с заданиями
-                const accessibleLessonsWithAssignments = lessonsWithAccess?.filter(l => l.is_accessible && l.has_assignment) || [];
+                const accessibleLessonsWithAssignments = lessonsWithAccess?.filter((l: RpcLessonData) => l.out_is_accessible && l.out_has_assignment) || [];
                 const { data: submissionsData, error: submissionsError } = await supabase
                     .from('submissions')
                     .select('id, lesson_id, status')
                     .eq('user_id', user.id)
-                    .in('lesson_id', accessibleLessonsWithAssignments.map(l => l.lesson_id));
+                    .in('lesson_id', accessibleLessonsWithAssignments.map((l: RpcLessonData) => l.out_lesson_id));
 
                 if (submissionsError) {
                     console.warn('Ошибка загрузки submissions:', submissionsError.message);
                 }
 
                 // Загружаем assignments для всех уроков модуля
-                const lessonIds = lessonsWithAccess?.map(l => l.lesson_id) || [];
+                const lessonIds = lessonsWithAccess?.map((l: RpcLessonData) => l.out_lesson_id) || [];
                 const { data: assignmentsData } = await supabase
                     .from('assignments')
                     .select('id, lesson_id')
@@ -217,51 +243,63 @@ const useStageDetails = (user: User | null, stageId: string | number) => {
                 // Формируем данные уроков с улучшенной логикой статусов
                 // ФИЛЬТРУЕМ: показываем только доступные уроки (is_accessible = true)
                 const lessons: LessonData[] = lessonsWithAccess
-                    ?.filter(lessonWithAccess => lessonWithAccess.is_accessible)
-                    ?.map((lessonWithAccess) => {
-                        const progress = progressMap.get(lessonWithAccess.lesson_id);
-                        const submission = submissionsMap.get(lessonWithAccess.lesson_id);
+                    ?.filter((lessonWithAccess: RpcLessonData) => lessonWithAccess.out_is_accessible)
+                    ?.map((lessonWithAccess: RpcLessonData) => {
+                        const progress = progressMap.get(lessonWithAccess.out_lesson_id);
+                        const submission = submissionsMap.get(lessonWithAccess.out_lesson_id);
 
                     // Определяем статус завершения
                     // ПРИОРИТЕТ 1: Флаг is_completed из lesson_progress (покрывает админское управление)
                     let isCompleted = !!progress?.is_completed;
 
                     // ПРИОРИТЕТ 2: Для уроков с заданием - также засчитываем approved submission
-                        if (!isCompleted && lessonWithAccess.has_assignment) {
+                        if (!isCompleted && lessonWithAccess.out_has_assignment) {
                         isCompleted = submission?.status === 'approved';
                     }
 
                     // ПРИОРИТЕТ 3: Для уроков без задания - также засчитываем completed_at
-                        if (!isCompleted && !lessonWithAccess.has_assignment) {
+                        if (!isCompleted && !lessonWithAccess.out_has_assignment) {
                         isCompleted = !!progress?.completed_at;
                     }
-
-                    // Используем централизованную функцию для проверки доступности
-                        const isUnlocked = isLessonAccessible(lessonWithAccess, lessonWithAccess.is_accessible);
 
                     // Определяем, начал ли пользователь урок
                     const hasStarted = !!progress?.started_at || !!submission;
 
-                    // Рассчитываем фактические даты из смещений относительно start_date потока
-                    // Всегда используем смещения для расчёта (они приходят из RPC с COALESCE)
+                    // Рассчитываем фактические даты из смещений
+                    // Формула: stream_start_date + module_unlock_offset + lesson_day_offset
+                    const moduleUnlockOffset = lessonWithAccess.out_module_unlock_offset_days ?? 0;
+                    const lessonOpenOffset = lessonWithAccess.out_open_day_offset ?? 0;
+                    const lessonDeadlineOffset = lessonWithAccess.out_deadline_day_offset ?? null;
+
+                    // Используем stream_start_date из RPC или fallback на streamStartDate
+                    const effectiveStartDate = lessonWithAccess.out_stream_start_date || streamStartDate;
+
                     const calculatedOpenAt = calculateDateFromOffset(
-                        streamStartDate,
-                        lessonWithAccess.open_day_offset ?? (lessonWithAccess.order_num - 1),
-                        lessonWithAccess.open_at
+                        effectiveStartDate,
+                        moduleUnlockOffset,
+                        lessonOpenOffset,
+                        lessonWithAccess.out_open_at ?? undefined
                     );
-                    const calculatedDeadlineAt = calculateDateFromOffset(
-                        streamStartDate,
-                        lessonWithAccess.deadline_day_offset ?? (lessonWithAccess.order_num + 1),
-                        lessonWithAccess.deadline_at
-                    );
+                    // Для deadline: если deadline_day_offset не задан (null), не считаем
+                    const calculatedDeadlineAt = lessonDeadlineOffset !== null
+                        ? calculateDateFromOffset(
+                            effectiveStartDate,
+                            moduleUnlockOffset,
+                            lessonDeadlineOffset,
+                            lessonWithAccess.out_deadline_at ?? undefined
+                          )
+                        : null;
+
+                    // Проверяем доступность с учётом вычисленной даты открытия
+                    const isUnlocked = isLessonAccessible(calculatedOpenAt, lessonWithAccess.out_is_accessible);
 
                     return {
-                            lesson_id: lessonWithAccess.lesson_id,
-                            lesson_name: lessonWithAccess.lesson_name,
+                            lesson_id: lessonWithAccess.out_lesson_id,
+                            lesson_name: lessonWithAccess.out_lesson_name,
                         content_type: 'mixed', // Теперь уроки могут содержать разные типы блоков
-                            cover_image_path: lessonWithAccess.cover_image_path, // Используем путь к файлу из БД
-                            order_num: lessonWithAccess.order_num,
-                            has_assignment: lessonWithAccess.has_assignment || false,
+                            cover_image_path: lessonWithAccess.out_cover_image_path ?? undefined, // Используем путь к файлу из БД
+                            order_num: lessonWithAccess.out_order_num,
+                            has_assignment: lessonWithAccess.out_has_assignment || false,
                         is_completed: isCompleted,
                         is_unlocked: isUnlocked,
                         completion_date: progress?.completed_at,
@@ -270,8 +308,8 @@ const useStageDetails = (user: User | null, stageId: string | number) => {
                         submission_status: submission?.status || null,
                         submission_id: submission?.id,
                         has_started: hasStarted,
-                        total_assignments: assignmentsByLesson.get(lessonWithAccess.lesson_id) || 0,
-                        completed_assignments: completedByLesson.get(lessonWithAccess.lesson_id) || 0,
+                        total_assignments: assignmentsByLesson.get(lessonWithAccess.out_lesson_id) || 0,
+                        completed_assignments: completedByLesson.get(lessonWithAccess.out_lesson_id) || 0,
                     };
                 }) || [];
 

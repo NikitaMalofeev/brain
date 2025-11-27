@@ -184,6 +184,11 @@ export function useCreateLessonInStage() {
       description?: string;
       order_num: number;
       has_assignment?: boolean;
+      open_day_offset?: number;
+      deadline_day_offset?: number | null;
+      open_at?: string;
+      deadline_at?: string;
+      estimated_duration_minutes?: number;
     }) => {
       if (!supabase) throw new Error('Supabase not initialized');
 
@@ -226,6 +231,11 @@ export function useUpdateLesson() {
       description?: string;
       order_num?: number;
       has_assignment?: boolean;
+      open_day_offset?: number;
+      deadline_day_offset?: number | null;
+      open_at?: string;
+      deadline_at?: string;
+      estimated_duration_minutes?: number;
       stream_module_id: string;
     }) => {
       if (!supabase) throw new Error('Supabase not initialized');

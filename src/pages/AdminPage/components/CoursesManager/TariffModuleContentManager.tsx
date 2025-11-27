@@ -57,6 +57,7 @@ const TariffModuleContentManager: React.FC<TariffModuleContentManagerProps> = ({
           streamId={streamId}
           courseId={courseId}
           moduleName={module.module_name}
+          moduleDurationDays={moduleDurationDays}
         />
       )}
     </div>
