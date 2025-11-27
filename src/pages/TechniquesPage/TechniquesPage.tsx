@@ -80,14 +80,20 @@ const TechniquesPage: React.FC = () => {
 
   // Функция для формирования сообщений модалки (только для учеников)
   const getBlockedModalContent = (technique: TechniqueWithAccess) => {
-    setModalTitle(`Техника ${technique.title} не доступна`);
+    setModalTitle(`Техника «${technique.title}» недоступна`);
 
-    // Формируем описание на основе unlock_condition
+    // Кейс 1: Техника из модуля (заблокирована по времени)
+    if (technique.user_access_source === 'module' && technique.module_name && technique.unlock_day !== undefined) {
+      setModalDescription(`Техника из модуля «${technique.module_name}»\nОткроется на ${technique.unlock_day} день`);
+      return;
+    }
+
+    // Кейс 2: Техника с условием после другой техники
     if (technique.unlock_condition_type === 'after_technique' && technique.unlock_condition_value) {
       const prerequisiteTechniqueId = technique.unlock_condition_value.technique_id;
 
       // Находим предыдущую технику по ID
-      const allTechniques = [...availableTechniques, ...lockedTechniques, ...myTechniques, ...freeTechniques];
+      const allTechniques = [...availableTechniques, ...lockedTechniques, ...myTechniques, ...freeTechniques, ...moduleTechniques];
       const prerequisiteTechnique = allTechniques.find(t => t.id === prerequisiteTechniqueId);
       const prerequisiteName = prerequisiteTechnique?.title || 'предыдущей техники';
 
@@ -97,20 +103,30 @@ const TechniquesPage: React.FC = () => {
       } else if (technique.title === 'Богиня') {
         setModalDescription('Становится доступна к покупке через 1 месяц после покупки «Верховной жрицы» (и при наличии «Императрицы»)');
       } else {
-        // Для других техник с условием after_technique
         setModalDescription(`Становится доступной к покупке через 1 месяц после получения доступа к «${prerequisiteName}»`);
       }
-    } else if (technique.unlock_condition_type === 'after_duration' && technique.unlock_condition_value) {
+      return;
+    }
+
+    // Кейс 3: Техника с условием по времени после регистрации
+    if (technique.unlock_condition_type === 'after_duration' && technique.unlock_condition_value) {
       const durationDays = technique.unlock_condition_value.duration_days || 0;
       const durationText = durationDays === 30 ? '1 месяц' :
                           durationDays === 60 ? '2 месяца' :
                           durationDays === 90 ? '3 месяца' :
                           `${durationDays} дней`;
       setModalDescription(`Становится доступной к покупке через ${durationText} после регистрации в программе`);
-    } else {
-      // Используем reason из purchase_info как fallback
-      setModalDescription(technique.purchase_info?.reason || 'Техника временно недоступна');
+      return;
     }
+
+    // Кейс 4: Техника недоступна по другим причинам
+    if (technique.purchase_info?.reason) {
+      setModalDescription(technique.purchase_info.reason);
+      return;
+    }
+
+    // Fallback
+    setModalDescription('Техника временно недоступна');
   };
 
   // Обработчик клика по технике
@@ -118,13 +134,24 @@ const TechniquesPage: React.FC = () => {
     logger.debug('Opening technique', { techniqueId });
 
     // Найти технику во всех списках
-    const technique = [...availableTechniques, ...lockedTechniques, ...myTechniques, ...freeTechniques]
+    const technique = [...availableTechniques, ...lockedTechniques, ...myTechniques, ...freeTechniques, ...moduleTechniques]
       .find(t => t.id === techniqueId);
 
-    // Если техника заблокирована (нет доступа и нельзя купить)
-    if (technique && !technique.has_access && !technique.can_purchase && technique.status !== 'free') {
+    if (!technique) {
+      navigate(`/techniques/${techniqueId}`);
+      return;
+    }
+
+    // Кейс 1: Техника из модуля, заблокированная по времени (is_unlocked = false)
+    if (technique.user_access_source === 'module' && technique.is_unlocked === false) {
+      getBlockedModalContent(technique);
+      setShowBlockedModal(true);
+      return;
+    }
+
+    // Кейс 2: Техника заблокирована (нет доступа и нельзя купить, не бесплатная)
+    if (!technique.has_access && !technique.can_purchase && technique.status !== 'free') {
       if (!isGuest) {
-        // Ученик - показываем модалку с правильными сообщениями
         getBlockedModalContent(technique);
         setShowBlockedModal(true);
         return;

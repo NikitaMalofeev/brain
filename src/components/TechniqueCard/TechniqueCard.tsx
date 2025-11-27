@@ -21,12 +21,7 @@ const TechniqueCard: React.FC<TechniqueCardProps> = ({ technique, onClick }) => 
     has_access,
     can_purchase,
     status,
-    unlock_date,
     is_unlocked,
-    purchase_info,
-    module_name,
-    unlock_day,
-    user_access_source,
   } = technique;
 
   // Определяем можно ли кликнуть на карточку
@@ -38,23 +33,6 @@ const TechniqueCard: React.FC<TechniqueCardProps> = ({ technique, onClick }) => 
   const isLocked = !has_access && status !== 'free' && (
     is_unlocked === false || (!can_purchase && !is_unlocked)
   );
-
-  // Форматируем дату открытия
-  const formatUnlockDate = (dateString: string | null | undefined): string | null => {
-    if (!dateString) return null;
-    try {
-      const date = new Date(dateString);
-      return date.toLocaleDateString('ru-RU', {
-        day: 'numeric',
-        month: 'long',
-        year: 'numeric',
-      });
-    } catch {
-      return null;
-    }
-  };
-
-  const formattedUnlockDate = formatUnlockDate(unlock_date);
 
   return (
     <motion.div
@@ -124,107 +102,6 @@ const TechniqueCard: React.FC<TechniqueCardProps> = ({ technique, onClick }) => 
             >
               {description}
             </p>
-          )}
-
-          {/* Информация для заблокированных техник из модуля */}
-          {isLocked && user_access_source === 'module' && module_name && (
-            <div className="mt-2 flex flex-col gap-1">
-              {/* Название модуля */}
-              <span
-                className="text-white/60 text-xs"
-                style={{
-                  fontFamily: 'Inter',
-                  fontWeight: 400,
-                }}
-              >
-                Техника из модуля "{module_name}"
-              </span>
-              {/* День разблокировки */}
-              {unlock_day !== null && unlock_day !== undefined && (
-                <div className="flex items-center gap-1.5">
-                  <svg
-                    className="w-3.5 h-3.5 text-white/60"
-                    fill="none"
-                    stroke="currentColor"
-                    viewBox="0 0 24 24"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"
-                    />
-                  </svg>
-                  <span
-                    className="text-white/60 text-xs"
-                    style={{
-                      fontFamily: 'Inter',
-                      fontWeight: 400,
-                    }}
-                  >
-                    Откроется на {unlock_day} день
-                  </span>
-                </div>
-              )}
-            </div>
-          )}
-
-          {/* Дата открытия для заблокированных техник (старый формат) */}
-          {isLocked && !module_name && formattedUnlockDate && (
-            <div className="mt-2 flex flex-col gap-1">
-              {/* Название модуля если есть в purchase_info */}
-              {purchase_info?.module_name && (
-                <span
-                  className="text-white/60 text-xs"
-                  style={{
-                    fontFamily: 'Inter',
-                    fontWeight: 400,
-                  }}
-                >
-                  Техника из модуля "{purchase_info.module_name}"
-                </span>
-              )}
-              {/* Дата открытия */}
-              <div className="flex items-center gap-1.5">
-                <svg
-                  className="w-3.5 h-3.5 text-white/60"
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"
-                  />
-                </svg>
-                <span
-                  className="text-white/60 text-xs"
-                  style={{
-                    fontFamily: 'Inter',
-                    fontWeight: 400,
-                  }}
-                >
-                  Откроется {formattedUnlockDate}
-                </span>
-              </div>
-            </div>
-          )}
-
-          {/* Причина блокировки если нет даты и модуля */}
-          {isLocked && !module_name && !formattedUnlockDate && purchase_info?.reason && (
-            <div className="mt-2">
-              <span
-                className="text-white/60 text-xs"
-                style={{
-                  fontFamily: 'Inter',
-                  fontWeight: 400,
-                }}
-              >
-                {purchase_info.reason}
-              </span>
-            </div>
           )}
         </div>
 

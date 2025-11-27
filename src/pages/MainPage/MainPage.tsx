@@ -6,11 +6,13 @@ import { UserProgress } from "@/components/UserProgress/UserProgress.tsx";
 import { Ripple } from "@/components/ui/Ripple/Ripple.tsx";
 import StageCard from "@/components/StageCard/StageCard.tsx";
 import { motion } from "framer-motion";
-import { useState } from "react";
-import { Map, Search, X } from "lucide-react";
+import { useState, useDeferredValue } from "react";
+import { Map, Search, X, Loader2 } from "lucide-react";
 import RoadMapModal from "@/components/RoadMap/RoadMapModal";
 import { useGuestStatus } from "@/lib/supabase/hooks/useIsGuest";
 import GuestBlockedModal from "@/components/GuestBlockedModal";
+import { useGlobalSearch } from "@/lib/supabase/hooks/useGlobalSearch";
+import SearchResultCard from "@/components/SearchResultCard/SearchResultCard";
 
 const listVariants = {
     hidden: { opacity: 0 },
@@ -51,22 +53,18 @@ export const MainPage = () => {
     // Используем хук для получения модулей потока пользователя
     const { modulesAsStages, loading: isLoading } = useUserStreamModules(supabaseUser?.id);
 
-    // Логирование для отладки
-    console.log('=== MainPage DEBUG ===');
-    console.log('userId:', supabaseUser?.id);
-    console.log('modulesAsStages:', modulesAsStages);
-    console.log('modules details:', modulesAsStages?.map(m => ({
-        module_id: m.module_id,
-        name: m.stage_name,
-        is_unlocked: m.is_unlocked,
-        unlock_day: m.unlock_day,
-    })));
-    console.log('isLoading:', isLoading);
+    // Дебаунс поискового запроса для оптимизации
+    const deferredSearchQuery = useDeferredValue(searchQuery);
 
-    // Фильтрация модулей по поисковому запросу
-    const filteredStages = modulesAsStages?.filter((stage) =>
-        stage.stage_name.toLowerCase().includes(searchQuery.toLowerCase())
-    ) || [];
+    // Глобальный поиск по ступеням и блокам
+    const { results: searchResults, loading: searchLoading } = useGlobalSearch(
+        supabaseUser?.id,
+        deferredSearchQuery,
+        2 // Минимум 2 символа для поиска
+    );
+
+    // Показываем результаты поиска если есть запрос
+    const isSearching = searchQuery.length >= 2;
 
 
     if (!supabaseUser?.id || isLoading) {
@@ -177,39 +175,84 @@ export const MainPage = () => {
                     initial="hidden"
                     animate="show"
                 >
-                    {filteredStages.length > 0 ? (
-                        filteredStages.map((stage, i) => (
-                            <motion.div
-                                key={stage.stage_id}
-                                variants={itemVariants}
-                            >
-                                <StageCard
-                                    id={stage.stage_id}
-                                    name={stage.stage_name}
-                                    isLocked={!stage.is_unlocked}
-                                    coverImagePath={stage.cover_image_path || undefined}
-                                    orderNum={i + 1}
-                                    isGuest={isGuest}
-                                    unlockDay={stage.unlock_day}
-                                    moduleId={stage.module_id}
-                                />
-                            </motion.div>
-                        ))
+                    {isSearching ? (
+                        // Режим поиска - показываем результаты глобального поиска
+                        <>
+                            {searchLoading ? (
+                                <motion.div
+                                    variants={itemVariants}
+                                    className="flex items-center justify-center py-8 bg-white/90 backdrop-blur-sm rounded-xl"
+                                >
+                                    <Loader2 className="w-5 h-5 animate-spin text-gray-400 mr-2" />
+                                    <p className="text-sm text-gray-500">Поиск...</p>
+                                </motion.div>
+                            ) : searchResults.length > 0 ? (
+                                <>
+                                    <motion.p
+                                        variants={itemVariants}
+                                        className="text-xs text-gray-600 px-1"
+                                    >
+                                        Найдено: {searchResults.length} результатов
+                                    </motion.p>
+                                    {searchResults.map((result, i) => (
+                                        <motion.div
+                                            key={`${result.stage_id}-${result.block_id || 'stage'}-${i}`}
+                                            variants={itemVariants}
+                                        >
+                                            <SearchResultCard
+                                                result={result}
+                                                onDisabledClick={() => setShowGuestModal(true)}
+                                            />
+                                        </motion.div>
+                                    ))}
+                                </>
+                            ) : (
+                                <motion.div
+                                    variants={itemVariants}
+                                    className="text-center py-8 bg-white/90 backdrop-blur-sm rounded-xl"
+                                >
+                                    <p className="text-sm text-gray-500">
+                                        Ничего не найдено по запросу "{searchQuery}"
+                                    </p>
+                                    <button
+                                        onClick={() => setSearchQuery('')}
+                                        className="mt-2 text-sm text-blue-600 hover:text-blue-700 font-medium"
+                                    >
+                                        Сбросить поиск
+                                    </button>
+                                </motion.div>
+                            )}
+                        </>
                     ) : (
-                        <motion.div
-                            variants={itemVariants}
-                            className="text-center py-8 bg-white/90 backdrop-blur-sm rounded-xl"
-                        >
-                            <p className="text-sm text-gray-500">
-                                Модули не найдены
-                            </p>
-                            <button
-                                onClick={() => setSearchQuery('')}
-                                className="mt-2 text-sm text-blue-600 hover:text-blue-700 font-medium"
+                        // Обычный режим - показываем модули
+                        modulesAsStages && modulesAsStages.length > 0 ? (
+                            modulesAsStages.map((stage, i) => (
+                                <motion.div
+                                    key={stage.stage_id}
+                                    variants={itemVariants}
+                                >
+                                    <StageCard
+                                        id={stage.stage_id}
+                                        name={stage.stage_name}
+                                        isLocked={!stage.is_unlocked}
+                                        coverImagePath={stage.cover_image_path || undefined}
+                                        orderNum={i + 1}
+                                        isGuest={isGuest}
+                                        unlockDay={stage.unlock_day}
+                                        moduleId={stage.module_id}
+                                    />
+                                </motion.div>
+                            ))
+                        ) : (
+                            <motion.div
+                                variants={itemVariants}
+                                className="text-center py-8 bg-white/90 backdrop-blur-sm rounded-xl"
                             >
-                                Сбросить поиск
-                            </button>
-                        </motion.div>
+                                <p className="text-sm text-gray-500">
+                                    Нет доступных модулей
+                                </p>
+                            </motion.div>
+                        )
                     )}
                 </motion.div>
 

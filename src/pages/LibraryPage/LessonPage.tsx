@@ -10,7 +10,7 @@ import { useAppContext } from '@/contexts/AppContext';
 import { logger } from '@/lib/logger';
 import { supabase } from '@/lib/supabase/client';
 import { LessonWithBlocks, LessonBlock, Submission, LessonProgress } from '@/lib/supabase/types';
-import { VideoBlock, FixedSubmissionForm, DocumentBlock, ImageBlock, MaterialBlock } from '@/components/LessonContent';
+import { VideoBlock, DocumentBlock, ImageBlock, MaterialBlock } from '@/components/LessonContent';
 import { MarkdownContent } from '@/components/LessonContent/MarkdownContent';
 import { Button } from '@/components/ui/button';
 import { getDeadlineStatus, formatDeadline } from '@/helpers/deadlineUtils';
@@ -1304,18 +1304,6 @@ const LessonPage: React.FC = () => {
                 )}
 
 
-                {/* Старая форма сдачи (если нет assignments, но есть has_assignment) */}
-                {state.totalAssignments === 0 && showSubmissionForm && state.lesson && (
-                    <FixedSubmissionForm
-                        lessonId={parseInt(lessonId || '0')}
-                        stageId={state.lesson.stage_id as number | undefined}
-                        user={supabaseCompatUser}
-                        existingSubmission={state.submission}
-                        onSubmissionUpdate={handleSubmissionUpdate}
-                        isRetryMode={isRetryingSubmission}
-                        lessonDeadline={state.lesson.deadline_at}
-                    />
-                )}
 
                 {/* Кнопка завершения урока (если нет задания и урок не завершен) */}
                 {!hasAssignment && !isLessonCompleted && state.lesson && (
