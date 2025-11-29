@@ -1,0 +1,22 @@
+.search {
+    position: absolute;
+    width: 16px;
+    height: 16px;
+    left: 12px;
+    top: 50%;
+    transform: translateY(-50%);
+    pointer-events: none;
+    z-index: 10;
+}
+
+.roadmap {
+    border-radius: 24px;
+    background-color: white;
+    padding: 9.5px 20px;
+}
+
+.roadmap__link {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}

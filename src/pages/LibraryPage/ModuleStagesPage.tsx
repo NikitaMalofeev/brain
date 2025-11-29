@@ -303,7 +303,7 @@ const ModuleStagesPage: React.FC = () => {
                     {stagesWithAccess.map((stage) => {
                         const firstLesson = stage.lessons?.[0];
                         const coverUrl = buildFileUrl(stage.cover_image_path) || '/test.png';
-                        const isUnlocked = (stage as any).isUnlocked !== false; // По умолчанию открыт если нет данных
+                        const isUnlocked = (stage as any).isUnlocked !== false;
                         const openDate = (stage as any).openDate as Date | undefined;
 
                         return (
@@ -332,7 +332,6 @@ const ModuleStagesPage: React.FC = () => {
                                                     )}
                                                     onError={(e) => { e.currentTarget.src = '/test.png'; }}
                                                 />
-                                                {/* Иконка замка для заблокированных */}
                                                 {!isUnlocked && (
                                                     <div className="p-[6px] rounded-full bg-[linear-gradient(109.65deg,_#E1C1F4_13.64%,_#B862EA_124.92%)] absolute top-1/2 left-1/2 -translate-y-1/2 -translate-x-1/2 z-[2]">
                                                         <img src="/lock.svg" alt="" className="min-w-6 h-6" />
@@ -343,7 +342,6 @@ const ModuleStagesPage: React.FC = () => {
                                             <div className="p-4 flex flex-col gap-2 bg-white">
                                                 <p className="font-semibold">{stage.name}</p>
                                                 <div className="flex flex-wrap gap-1">
-                                                    {/* Статус */}
                                                     {isUnlocked ? (
                                                         <p className="rounded-full px-2 py-1 text-white text-xs font-medium bg-[linear-gradient(135deg,_rgba(141,197,241)_-48.61%,_#63ABE6_105.56%)]">
                                                             Не начато
@@ -353,7 +351,6 @@ const ModuleStagesPage: React.FC = () => {
                                                             Заблокировано
                                                         </p>
                                                     )}
-                                                    {/* Дата открытия если заблокировано */}
                                                     {!isUnlocked && openDate && (
                                                         <p className="rounded-full px-2 py-1 text-white/80 text-xs font-medium bg-gray-400">
                                                             Откроется {openDate.toLocaleDateString('ru-RU', {

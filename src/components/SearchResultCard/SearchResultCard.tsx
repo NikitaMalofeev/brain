@@ -1,5 +1,5 @@
 import React from 'react';
-import { Link } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { Ripple } from '@/components/ui/Ripple/Ripple';
 import { Lock } from 'lucide-react';
@@ -11,19 +11,27 @@ interface SearchResultCardProps {
     onDisabledClick?: () => void;
 }
 
+// Удаляем текст в квадратных скобках из названия (например [1127-1405])
+const cleanName = (name: string) => name.replace(/\s*\[.*?\]/g, '').trim();
+
 export const SearchResultCard: React.FC<SearchResultCardProps> = ({ result, onDisabledClick }) => {
+    const navigate = useNavigate();
     const isDisabled = !result.is_unlocked;
     const coverUrl = buildFileUrl(result.stage_cover_image_path) || '/test.png';
+    const stageName = cleanName(result.stage_name);
 
-    // Показываем первые 2 места совпадения
-    const matchedInDisplay = result.matched_in.slice(0, 2).join(', ');
+    // Показываем первые 2 места совпадения (тоже чистим от скобок)
+    const matchedInDisplay = result.matched_in.slice(0, 2).map(cleanName).join(', ');
     const hasMore = result.matched_in.length > 2;
 
-    const handleClick = (e: React.MouseEvent) => {
+    const handleClick = () => {
         if (isDisabled) {
-            e.preventDefault();
             onDisabledClick?.();
+            return;
         }
+        // Программная навигация на страницу урока
+        const path = `/library/lesson/${result.lesson_id}`;
+        navigate(path);
     };
 
     const cardContent = (
@@ -39,7 +47,7 @@ export const SearchResultCard: React.FC<SearchResultCardProps> = ({ result, onDi
                 <div className="relative w-24 h-24 flex-shrink-0">
                     <img
                         src={coverUrl}
-                        alt={result.stage_name}
+                        alt={stageName}
                         className="w-full h-full object-cover"
                         onError={(e) => { e.currentTarget.src = '/test.png'; }}
                     />
@@ -55,7 +63,7 @@ export const SearchResultCard: React.FC<SearchResultCardProps> = ({ result, onDi
                     <div>
                         {/* Название ступени */}
                         <p className="font-semibold text-sm text-gray-900 truncate">
-                            {result.stage_name}
+                            {stageName}
                         </p>
 
                         {/* Где найдено совпадение */}
@@ -67,7 +75,7 @@ export const SearchResultCard: React.FC<SearchResultCardProps> = ({ result, onDi
                     <div className="flex items-center gap-2 mt-2">
                         {/* Модуль */}
                         <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-700 truncate max-w-[150px]">
-                            {result.module_name}
+                            {cleanName(result.module_name)}
                         </span>
 
                         {/* День открытия если заблокировано */}
@@ -82,19 +90,11 @@ export const SearchResultCard: React.FC<SearchResultCardProps> = ({ result, onDi
         </motion.div>
     );
 
-    if (isDisabled) {
-        return (
-            <div onClick={handleClick} className="cursor-not-allowed">
-                {cardContent}
-            </div>
-        );
-    }
-
     return (
         <Ripple className="rounded-2xl overflow-hidden w-full">
-            <Link to={`/library/lesson/${result.lesson_id}`} className="block">
+            <div onClick={handleClick} className={isDisabled ? "cursor-not-allowed" : "cursor-pointer"}>
                 {cardContent}
-            </Link>
+            </div>
         </Ripple>
     );
 };

@@ -25,6 +25,7 @@ export type StageProgressData = {
 interface UserProgressProps {
     stages: StageProgressData[];
     className?: string;
+    nextLessonId?: number | null; // ID первого урока с невыполненным заданием
 }
 
 export function getWordByIndex(index: number): string {
@@ -32,7 +33,7 @@ export function getWordByIndex(index: number): string {
     return words[index - 1] || "";
 }
 
-export const UserProgress: React.FC<UserProgressProps> = ({ stages, className }) => {
+export const UserProgress: React.FC<UserProgressProps> = ({ stages, className, nextLessonId }) => {
     if (!stages || stages.length === 0) {
         return null;
     }
@@ -64,12 +65,9 @@ export const UserProgress: React.FC<UserProgressProps> = ({ stages, className })
     // Генерируем текст прогресса
     let progressText = '';
 
-    if (nextStage && nextStage.unlock_day !== undefined) {
+    if (nextStage) {
         const assignmentsWord = getNounPluralForm(remainingAssignments, 'задание', 'задания', 'заданий');
-        progressText = `Ещё ${remainingAssignments} ${assignmentsWord} и ${nextStage.unlock_day} день до открытия модуля «${nextStage.stage_name}»`;
-    } else if (nextStage) {
-        const assignmentsWord = getNounPluralForm(remainingAssignments, 'задание', 'задания', 'заданий');
-        progressText = `Ещё ${remainingAssignments} ${assignmentsWord} до открытия модуля «${nextStage.stage_name}»`;
+        progressText = `Ещё ${remainingAssignments} ${assignmentsWord} до открытия «${nextStage.stage_name}»`;
     } else {
         progressText = 'Все модули открыты!';
     }
@@ -78,20 +76,27 @@ export const UserProgress: React.FC<UserProgressProps> = ({ stages, className })
     const progressPercentage = totalAssignments > 0 ? (totalCompletedAssignments / totalAssignments) * 100 : 0;
 
     return (
-        <div className={`bg-white p-4 pb-[30px] flex flex-col gap-3 ${className}`}>
+        <div className={`bg-[#0000004D] p-4 pb-[16px] flex flex-col gap-3 rounded-3xl ${className}`}>
             <div className={'flex items-center justify-between'}>
-                <div className={'flex flex-col'}>
-                    <p className={'font-bold text-black'}>Выполнено {totalCompletedAssignments} {completedWord}</p>
-                    <p className={'text-sm text-[#8C8C8C]'}>{progressText}</p>
+                <div className={'flex flex-col gap-1'}>
+                    <p className={'text-white'} style={{ fontFamily: 'Nunito', fontWeight: 700, fontSize: '16px', lineHeight: '100%' }}>
+                        Выполнено {totalCompletedAssignments} {completedWord}
+                    </p>
+                    <p className={'text-sm text-white/80'}>{progressText}</p>
                 </div>
-                <Ripple className="rounded-full overflow-hidden">
-                    <Link to={currentStage.module_id ? `/library/module/${currentStage.module_id}` : `/library/stage/${currentStage.stage_id}`}>
-                        <img src={'/arrow-icon.svg'} alt={'Перейти к текущему модулю'} className={'w-[36px] h-[36px]'} />
+                <Ripple className="rounded-full overflow-hidden flex-shrink-0">
+                    <Link
+                        to={nextLessonId ? `/library/lesson/${nextLessonId}` : (currentStage.module_id ? `/library/module/${currentStage.module_id}` : `/library/stage/${currentStage.stage_id}`)}
+                        className="w-9 h-9 bg-[#FFFFFF33] rounded-full flex items-center justify-center"
+                    >
+                        <svg width="7" height="14" viewBox="0 0 7 14" fill="none" xmlns="http://www.w3.org/2000/svg">
+                            <path d="M1 1L6 7L1 13" stroke="white" strokeWidth="1" strokeLinecap="round" strokeLinejoin="round" />
+                        </svg>
                     </Link>
                 </Ripple>
             </div>
-            <div className="w-full bg-gray-200 rounded-full h-3" style={{
-                background: `linear-gradient(90deg, #68B1EB 0%, #68B1EB ${progressPercentage}%, #D0E4FF ${progressPercentage}%)`
+            <div className="w-full bg-[#FFFFFF33] rounded-full h-3" style={{
+                background: `linear-gradient(90deg, white 0%, white ${progressPercentage}%, #FFFFFF33 ${progressPercentage}%)`
             }}>
             </div>
         </div>

@@ -16,6 +16,7 @@ export interface StageCardProps {
     isGuest?: boolean;
     unlockDay?: number; // С какого дня потока модуль доступен
     moduleId?: string; // ID модуля для навигации на страницу ступеней
+    streamStartDate?: string; // Дата начала потока для расчёта даты открытия
 }
 
 const StageCard: React.FC<StageCardProps> = ({
@@ -27,9 +28,25 @@ const StageCard: React.FC<StageCardProps> = ({
     isGuest = false,
     unlockDay,
     moduleId,
+    streamStartDate,
 }) => {
     const [showGuestModal, setShowGuestModal] = useState(false);
     const isUnlocked = !isLocked;
+
+    // Вычисляем дату открытия модуля
+    const getUnlockDate = (): string | null => {
+        if (!streamStartDate || unlockDay === undefined || unlockDay <= 0) {
+            return null;
+        }
+        const startDate = new Date(streamStartDate);
+        startDate.setDate(startDate.getDate() + unlockDay - 1);
+        return startDate.toLocaleDateString('ru-RU', {
+            day: 'numeric',
+            month: 'long',
+        });
+    };
+
+    const unlockDate = getUnlockDate();
 
     // Для гостей доступна только первая ступень ("Исцеление")
     const canAccess = isUnlocked && (!isGuest || orderNum === 1);
@@ -76,15 +93,19 @@ const StageCard: React.FC<StageCardProps> = ({
                         }}
                         alt=""
                     />
+                    {/* Затемнение для заблокированных карточек */}
+                    {(!isUnlocked || (isGuest && orderNum !== 1)) && (
+                        <div className="absolute inset-0 bg-[#0000004D] z-[1]" />
+                    )}
                     <div className='absolute top-5 left-5 z-[2] flex flex-col gap-1'>
-                        <p className='font-bold uppercase text-black'>{name}</p>
+                        <p className={clsx('font-bold uppercase', (!isUnlocked || (isGuest && orderNum !== 1)) ? 'text-white' : 'text-black')}>{name}</p>
                         <div className='text-xs text-white w-max font-medium bg-[linear-gradient(135deg,_rgba(141,197,241)_-48.61%,_#63ABE6_105.56%)] px-2 py-1 rounded-full flex items-center gap-1'>
                             LEVEL 0{orderNum}
                             {(!isUnlocked || (isGuest && orderNum !== 1)) && <img src={'/lock.svg'} alt={''} />}
                         </div>
-                        {!isUnlocked && unlockDay !== undefined && unlockDay > 0 && (
+                        {!isUnlocked && unlockDate && (
                             <div className='text-xs text-gray-600 bg-white/80 px-2 py-1 rounded-full'>
-                                Откроется на {unlockDay} день
+                                Откроется {unlockDate}
                             </div>
                         )}
                     </div>

@@ -53,3 +53,6 @@ export * from './useModuleStages';
 
 // Хук для глобального поиска
 export * from './useGlobalSearch';
+
+// Хук для первого невыполненного урока
+export * from './useFirstIncompleteLesson';

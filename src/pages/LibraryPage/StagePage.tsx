@@ -41,8 +41,6 @@ const itemVariants = {
 };
 
 const StagePage: React.FC = () => {
-
-
     const { id: stageId } = useParams<{ id: string }>();
 
     const [isOpen, setIsOpen] = useState(false);

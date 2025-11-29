@@ -1,5 +1,5 @@
 import { Page } from "@/components";
-import { useSupabaseUser, useUserStreamInfo, useUserStreamModules } from "@/lib/supabase/hooks";
+import { useSupabaseUser, useUserStreamInfo, useUserStreamModules, useFirstIncompleteLesson } from "@/lib/supabase/hooks";
 import { initDataState, useSignal } from "@telegram-apps/sdk-react";
 import { Link } from "react-router-dom";
 import { UserProgress } from "@/components/UserProgress/UserProgress.tsx";
@@ -13,6 +13,10 @@ import { useGuestStatus } from "@/lib/supabase/hooks/useIsGuest";
 import GuestBlockedModal from "@/components/GuestBlockedModal";
 import { useGlobalSearch } from "@/lib/supabase/hooks/useGlobalSearch";
 import SearchResultCard from "@/components/SearchResultCard/SearchResultCard";
+import searchIcon from '@/shared/assets/icons/search.svg';
+import roadmapIcon from '@/shared/assets/icons/roadmap.svg';
+import dnaIcon from '@/shared/assets/icons/dna.svg';
+import './MainPage.css'
 
 const listVariants = {
     hidden: { opacity: 0 },
@@ -53,6 +57,9 @@ export const MainPage = () => {
     // Используем хук для получения модулей потока пользователя
     const { modulesAsStages, loading: isLoading } = useUserStreamModules(supabaseUser?.id);
 
+    // Получаем первый урок с невыполненным заданием
+    const { data: firstIncompleteLesson } = useFirstIncompleteLesson(supabaseUser?.id);
+
     // Дебаунс поискового запроса для оптимизации
     const deferredSearchQuery = useDeferredValue(searchQuery);
 
@@ -91,7 +98,7 @@ export const MainPage = () => {
     return (
         <Page back={false}>
             <div
-                className={'bg-[url("/bg3.jpg")] bg-cover bg-bottom p-4 pt-24 rounded-b-3xl flex-1 flex flex-col gap-3'}
+                className={'bg-[url("/bg3.jpg")] bg-cover bg-bottom p-4 pt-3 rounded-b-3xl flex-1 flex flex-col gap-5'}
             >
                 <motion.div
                     className={'flex items-center justify-between w-full'}
@@ -99,18 +106,35 @@ export const MainPage = () => {
                     initial="hidden"
                     animate="show"
                 >
-                    <div className="flex items-center gap-2">
-                        <Ripple className="rounded-full overflow-hidden">
-                            <motion.div
-                                whileTap={{ scale: 0.95 }}
-                                style={{ touchAction: 'manipulation' }}
-                            >
-                                <Link to={'/profile2'} className={'block'}>
-                                    <img src={supabaseUser?.photo_url || ''} className={'w-8 h-8 rounded-full border border-white'}
-                                        alt={'Профиль'} />
-                                </Link>
-                            </motion.div>
-                        </Ripple>
+                    <div className="flex gap-2 justify-between w-full">
+                        <div className="flex justify-between items-center gap-2.25">
+                            <Ripple className="rounded-full overflow-hidden">
+                                <motion.div
+                                    whileTap={{ scale: 0.95 }}
+                                    style={{ touchAction: 'manipulation' }}
+                                >
+                                    <Link to={'/profile2'} className={'block'}>
+                                        <img src={supabaseUser?.photo_url || ''} className={'w-8 h-8 rounded-full border border-white'}
+                                            alt={'Профиль'} />
+                                    </Link>
+                                </motion.div>
+                            </Ripple>
+
+                            <Ripple className="roadmap">
+                                <motion.div
+                                    whileTap={{ scale: 0.95 }}
+                                    style={{ touchAction: 'manipulation' }}
+                                >
+                                    <Link to={'/points'} className="roadmap__link">
+
+                                        <div className="flex gap-1 items-center">
+                                            <p className={'text-black font-semibold leading-4'}>{supabaseUser?.total_points}</p>
+                                            <img src={dnaIcon} alt="search" />
+                                        </div>
+                                    </Link>
+                                </motion.div>
+                            </Ripple>
+                        </div>
 
                         {/* Кнопка дорожной карты */}
                         <Ripple className="rounded-full overflow-hidden">
@@ -121,25 +145,17 @@ export const MainPage = () => {
                                     // Гость может открыть карту и видеть её (но с заблокированными элементами)
                                     setIsRoadMapOpen(true);
                                 }}
-                                className="w-8 h-8 bg-white rounded-full flex items-center justify-center shadow-sm hover:shadow-md transition-shadow"
+                                className="roadmap"
                                 title="Дорожная карта"
                             >
-                                <Map className="w-4 h-4 text-gray-700" />
+                                <div className="flex gap-1 ">
+                                    <span className={'text-black font-semibold '}>Дорожная карта</span>
+                                    <img src={roadmapIcon} alt="search" />
+                                </div>
                             </motion.button>
                         </Ripple>
                     </div>
 
-                    <Ripple className="rounded-full overflow-hidden">
-                        <motion.div
-                            whileTap={{ scale: 0.95 }}
-                            style={{ touchAction: 'manipulation' }}
-                        >
-                            <Link to={'/points'} className={'block flex items-center gap-1 py-[6px] px-2 bg-white'}>
-                                <p className={'text-black font-semibold leading-4'}>{supabaseUser?.total_points}</p>
-                                <img src={'/eid.svg'} className={'w-5 h-5'} />
-                            </Link>
-                        </motion.div>
-                    </Ripple>
                 </motion.div>
 
                 {/* Поле поиска */}
@@ -150,12 +166,12 @@ export const MainPage = () => {
                     className="relative"
                 >
                     <div className="relative">
-                        <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+                        <img className="search" src={searchIcon} alt="search" />
                         <input
                             type="text"
                             value={searchQuery}
                             onChange={(e) => setSearchQuery(e.target.value)}
-                            placeholder="Поиск уроков"
+                            placeholder="Поиск по модулям"
                             className="w-full bg-white/90 backdrop-blur-sm rounded-xl pl-10 pr-10 py-3 text-sm text-gray-900 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-white/50 transition-all"
                         />
                         {searchQuery && (
@@ -240,6 +256,7 @@ export const MainPage = () => {
                                         isGuest={isGuest}
                                         unlockDay={stage.unlock_day}
                                         moduleId={stage.module_id}
+                                        streamStartDate={streamInfo?.startDate}
                                     />
                                 </motion.div>
                             ))
@@ -257,7 +274,7 @@ export const MainPage = () => {
                 </motion.div>
 
             </div>
-            <UserProgress stages={modulesAsStages || []} />
+            <UserProgress stages={modulesAsStages || []} className="mt-5" nextLessonId={firstIncompleteLesson?.lessonId} />
 
             {/* Модалка дорожной карты */}
             <RoadMapModal
