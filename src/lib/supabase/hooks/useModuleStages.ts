@@ -231,7 +231,7 @@ export function useUpdateLesson() {
       description?: string;
       order_num?: number;
       has_assignment?: boolean;
-      open_day_offset?: number;
+      open_day_offset?: number | null;
       deadline_day_offset?: number | null;
       open_at?: string;
       deadline_at?: string;

@@ -13,6 +13,9 @@ import GuestBlockedModal from '@/components/GuestBlockedModal';
 import { buildFileUrl } from '@/lib/supabase/supabaseStorageService';
 import { clsx } from 'clsx';
 
+// Удаляем текст в квадратных скобках из названия
+const cleanName = (name: string) => name.replace(/\s*\[.*?\]/g, '').trim();
+
 const listVariants = {
     hidden: { opacity: 0 },
     show: {
@@ -29,6 +32,28 @@ const itemVariants = {
         transition: { type: 'tween', ease: 'easeOut', duration: 0.3 }
     },
 };
+
+/**
+ * Хук для получения названия модуля
+ */
+function useModuleName(moduleId: string | undefined) {
+    return useQuery({
+        queryKey: ['module-name', moduleId],
+        queryFn: async () => {
+            if (!moduleId || !supabase) return null;
+
+            const { data } = await supabase
+                .from('stream_modules')
+                .select('name')
+                .eq('id', moduleId)
+                .single();
+
+            return data?.name || null;
+        },
+        enabled: !!moduleId,
+        staleTime: 10 * 60 * 1000,
+    });
+}
 
 /**
  * Хук для получения данных о доступе к модулю (stream_start_date, module_unlock_offset)
@@ -172,6 +197,9 @@ const ModuleStagesPage: React.FC = () => {
 
     const { data: stages, isLoading: stagesLoading, error: stagesError } = useModuleStages(moduleId || null);
 
+    // Получаем название модуля
+    const { data: moduleName } = useModuleName(moduleId);
+
     // Получаем данные о доступе к модулю
     const { data: accessData, isLoading: accessLoading } = useModuleAccessData(supabaseUser?.id, moduleId);
     const streamStartDate = accessData?.streamStartDate;
@@ -192,11 +220,13 @@ const ModuleStagesPage: React.FC = () => {
 
         return stages.map(stage => {
             const firstLesson = stage.lessons?.[0];
-            const lessonOpenOffset = firstLesson?.open_day_offset ?? 0;
+            // open_day_offset теперь 1-based: 1 = первый день модуля
+            const lessonOpenOffset = firstLesson?.open_day_offset ?? 1;
 
-            // Дата открытия = stream_start_date + module_unlock_offset + lesson_open_offset
+            // Дата открытия = stream_start_date + module_unlock_offset + (lesson_open_offset - 1)
+            // Вычитаем 1 потому что day 1 = первый день (offset 0)
             const openDate = new Date(startDate);
-            openDate.setDate(openDate.getDate() + moduleUnlockOffset + lessonOpenOffset);
+            openDate.setDate(openDate.getDate() + moduleUnlockOffset + (lessonOpenOffset - 1));
 
             const isUnlocked = now >= openDate;
 
@@ -256,110 +286,102 @@ const ModuleStagesPage: React.FC = () => {
     }
 
     const totalStages = stages.length;
+    const unlockedStages = stagesWithAccess.filter(s => (s as any).isUnlocked !== false).length;
+
+    // Название модуля из хука или fallback (очищенное от скобок)
+    const displayModuleName = cleanName(moduleName || 'Модуль');
 
     return (
         <Page showTabBar={false}>
-            <div className="text-black min-h-full">
-                {/* Шапка как в StagePage */}
-                <div className="bg-white p-4 flex flex-col gap-3 pt-24">
-                    <div className="flex items-center justify-between">
-                        <div className="flex flex-col">
-                            <p className="font-bold text-xl">Ступени модуля</p>
-                            <p className="text-sm text-[#8C8C8C]">
-                                {totalStages} {totalStages === 1 ? 'ступень' : totalStages < 5 ? 'ступени' : 'ступеней'}
-                            </p>
-                        </div>
+            <div className="bg-[url('/bg3.jpg')] min-h-full bg-cover bg-top text-black">
+                {/* Белая карточка с заголовком и прогрессом */}
+                <div className="bg-white rounded-2xl mx-4 mt-4 p-4 flex flex-col gap-3">
+                    <div className="flex items-center gap-2">
+                        <p className="font-bold text-xl">{displayModuleName}</p>
+                        <Ripple className="rounded-full overflow-hidden">
+                            <div className="cursor-pointer w-5 h-5 flex items-center justify-center">
+                                <span className="text-gray-400 text-sm">ⓘ</span>
+                            </div>
+                        </Ripple>
                     </div>
-                    {/* Прогресс-бар по ступеням */}
+                    <p className="text-sm text-[#8C8C8C]">
+                        {totalAssignments > 0
+                            ? `Прогресс по заданиям: ${completedAssignments} из ${totalAssignments}`
+                            : `${totalStages} ${totalStages === 1 ? 'ступень' : totalStages < 5 ? 'ступени' : 'ступеней'}`
+                        }
+                    </p>
+                    {/* Прогресс-бар из сегментов */}
                     <div className="flex items-center gap-1 w-full">
                         {stages.map((_, i) => (
-                            <div key={i} className="flex-1 h-4 bg-[#68B1EB] rounded-xs" />
+                            <div key={i} className={clsx("flex-1 h-1 rounded-full", {
+                                "bg-[#68B1EB]": i < unlockedStages,
+                                "bg-[#E5E5E5]": i >= unlockedStages
+                            })} />
                         ))}
                     </div>
-                    {/* Прогресс по заданиям модуля */}
-                    {totalAssignments > 0 && (
-                        <div className="flex flex-col gap-2">
-                            <div className="flex items-center justify-between">
-                                <p className="text-sm font-medium">Прогресс по заданиям</p>
-                                <p className="text-sm text-[#8C8C8C]">{completedAssignments} из {totalAssignments}</p>
-                            </div>
-                            <div className="w-full h-2 bg-gray-200 rounded-full overflow-hidden">
-                                <div
-                                    className="h-full bg-green-500 rounded-full transition-all duration-300"
-                                    style={{ width: `${assignmentsProgressPercent}%` }}
-                                />
-                            </div>
-                        </div>
-                    )}
                 </div>
 
-                {/* Список ступеней с фоном как в StagePage */}
+                {/* Сетка ступеней 2 колонки */}
                 <motion.div
-                    className="bg-[url('/bg3.jpg')] min-h-full bg-cover bg-top p-4 rounded-t-3xl flex-1 flex flex-col gap-3"
+                    className="p-4 grid grid-cols-2 gap-3"
                     variants={listVariants}
                     initial="hidden"
                     animate="show"
                 >
-                    {stagesWithAccess.map((stage) => {
+                    {stagesWithAccess.map((stage, index) => {
                         const firstLesson = stage.lessons?.[0];
                         const coverUrl = buildFileUrl(stage.cover_image_path) || '/test.png';
                         const isUnlocked = (stage as any).isUnlocked !== false;
-                        const openDate = (stage as any).openDate as Date | undefined;
+
+                        // Рассчитываем неделю и день относительно открытия модуля
+                        // open_day_offset теперь 1-based: 1 = первый день, 7 = конец первой недели, 8 = начало второй
+                        const lessonOpenOffset = firstLesson?.open_day_offset ?? 1;
+                        const weekNumber = Math.ceil(lessonOpenOffset / 7);
+                        const dayNumber = lessonOpenOffset; // Уже 1-based
 
                         return (
                             <motion.div key={stage.id} variants={itemVariants}>
                                 <motion.div
-                                    whileTap={isUnlocked ? { scale: 0.97 } : {}}
+                                    whileTap={isUnlocked || isGuest ? { scale: 0.97 } : {}}
                                     style={{ touchAction: 'manipulation' }}
                                     className="w-full"
                                 >
-                                    <Ripple className="rounded-3xl overflow-hidden w-full shadow-sm">
+                                    <Ripple className="rounded-2xl overflow-hidden w-full shadow-sm">
                                         <div
                                             onClick={() => firstLesson && handleStageClick(firstLesson.id, isUnlocked)}
-                                            className={clsx(
-                                                "flex flex-col w-full bg-white",
-                                                isUnlocked ? "cursor-pointer" : "cursor-not-allowed"
-                                            )}
+                                            className="flex flex-col w-full bg-white cursor-pointer"
                                         >
-                                            {/* Обложка */}
-                                            <div className="relative w-full">
+                                            {/* Изображение с бейджами */}
+                                            <div className="relative w-full aspect-[4/3]">
                                                 <img
                                                     src={coverUrl}
                                                     alt={stage.name}
-                                                    className={clsx(
-                                                        "h-[193px] w-full object-cover",
-                                                        !isUnlocked && "mix-blend-luminosity"
-                                                    )}
+                                                    className={clsx('w-full h-full object-cover', !isUnlocked && 'brightness-75')}
                                                     onError={(e) => { e.currentTarget.src = '/test.png'; }}
                                                 />
+
+                                                {/* Бейдж с номером недели - левый верхний угол */}
+                                                <div className="absolute top-2 left-2 bg-[#A89080]/90 text-white text-[10px] font-medium px-2 py-1 rounded-md">
+                                                    Неделя {weekNumber}
+                                                </div>
+
+                                                {/* Бейдж "Не доступно" с замком - для заблокированных */}
                                                 {!isUnlocked && (
-                                                    <div className="p-[6px] rounded-full bg-[linear-gradient(109.65deg,_#E1C1F4_13.64%,_#B862EA_124.92%)] absolute top-1/2 left-1/2 -translate-y-1/2 -translate-x-1/2 z-[2]">
-                                                        <img src="/lock.svg" alt="" className="min-w-6 h-6" />
+                                                    <div className="absolute bottom-2 left-2 bg-[#8C8C8C]/90 text-white text-[10px] font-medium px-2 py-1 rounded-md flex items-center gap-1">
+                                                        <span>Не доступно</span>
+                                                        <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                                            <rect x="3" y="11" width="18" height="11" rx="2" ry="2"/>
+                                                            <path d="M7 11V7a5 5 0 0 1 10 0v4"/>
+                                                        </svg>
                                                     </div>
                                                 )}
                                             </div>
-                                            {/* Информация */}
-                                            <div className="p-4 flex flex-col gap-2 bg-white">
-                                                <p className="font-semibold">{stage.name}</p>
-                                                <div className="flex flex-wrap gap-1">
-                                                    {isUnlocked ? (
-                                                        <p className="rounded-full px-2 py-1 text-white text-xs font-medium bg-[linear-gradient(135deg,_rgba(141,197,241)_-48.61%,_#63ABE6_105.56%)]">
-                                                            Не начато
-                                                        </p>
-                                                    ) : (
-                                                        <p className="rounded-full px-2 py-1 text-white text-xs font-medium bg-gray-500">
-                                                            Заблокировано
-                                                        </p>
-                                                    )}
-                                                    {!isUnlocked && openDate && (
-                                                        <p className="rounded-full px-2 py-1 text-white/80 text-xs font-medium bg-gray-400">
-                                                            Откроется {openDate.toLocaleDateString('ru-RU', {
-                                                                day: 'numeric',
-                                                                month: 'short'
-                                                            })}
-                                                        </p>
-                                                    )}
-                                                </div>
+
+                                            {/* День с открытия модуля снизу */}
+                                            <div className="p-3 bg-white">
+                                                <p className="font-semibold text-sm text-black truncate">
+                                                    День {dayNumber}
+                                                </p>
                                             </div>
                                         </div>
                                     </Ripple>

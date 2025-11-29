@@ -74,31 +74,78 @@ const ModuleLessonsManager: React.FC<ModuleLessonsManagerProps> = ({
   // Все уроки из всех ступеней плоским списком
   const allLessons = useMemo(() => {
     if (!stages) return [];
-    return stages.flatMap(stage =>
+    console.log('📊 [DEBUG] stages from useModuleStages:', stages);
+    console.log('📊 [DEBUG] stages count:', stages.length);
+
+    // Подробный лог по каждой ступени и уроку
+    let totalLessonsCount = 0;
+    stages.forEach((stage, i) => {
+      const lessons = stage.lessons || [];
+      totalLessonsCount += lessons.length;
+      console.log(`📊 [DEBUG] Stage ${i + 1} (id: ${stage.id}):`, {
+        name: stage.name,
+        lessonsCount: lessons.length,
+      });
+      lessons.forEach((l, j) => {
+        console.log(`  📖 [DEBUG] Lesson ${j + 1}: id=${l.id}, name="${l.name}", open_day_offset=${l.open_day_offset}`);
+      });
+    });
+    console.log(`📊 [DEBUG] TOTAL LESSONS COUNT: ${totalLessonsCount}`);
+
+    // Проверяем аномальные open_day_offset
+    const result = stages.flatMap(stage =>
       (stage.lessons || []).map(lesson => ({
         lesson,
         stageId: stage.id,
         stageName: stage.name
       }))
     );
+
+    const anomalousLessons = result.filter(item =>
+      item.lesson.open_day_offset !== null &&
+      item.lesson.open_day_offset !== undefined &&
+      item.lesson.open_day_offset > 100
+    );
+    if (anomalousLessons.length > 0) {
+      console.warn('⚠️ [WARNING] Lessons with abnormally high open_day_offset (>100):',
+        anomalousLessons.map(l => ({
+          id: l.lesson.id,
+          name: l.lesson.name,
+          open_day_offset: l.lesson.open_day_offset,
+          stageName: l.stageName
+        }))
+      );
+    }
+
+    return result;
   }, [stages]);
 
-  // Уроки сгруппированные по дням открытия
+  // Уроки сгруппированные по дням открытия (только распределённые)
   const lessonsByDay = useMemo(() => {
     const result: Record<number, { lesson: Lesson; stageId: number; stageName: string }[]> = {};
     for (const item of allLessons) {
-      const day = item.lesson.open_day_offset ?? 0;
+      // Пропускаем нераспределённые уроки (null/undefined)
+      if (item.lesson.open_day_offset === null || item.lesson.open_day_offset === undefined) {
+        continue;
+      }
+      const day = item.lesson.open_day_offset;
       if (!result[day]) result[day] = [];
       result[day].push(item);
     }
+    console.log('📅 [DEBUG] lessonsByDay:', result);
+    console.log('📅 [DEBUG] scheduled lessons count:', Object.values(result).flat().length);
     return result;
   }, [allLessons]);
 
   // Уроки без назначенного дня (open_day_offset = null или undefined)
   const unscheduledLessons = useMemo(() => {
-    return allLessons.filter(item =>
+    const unscheduled = allLessons.filter(item =>
       item.lesson.open_day_offset === null || item.lesson.open_day_offset === undefined
     );
+    console.log('📋 [DEBUG] unscheduledLessons:', unscheduled);
+    console.log('📋 [DEBUG] unscheduled count:', unscheduled.length);
+    console.log('📋 [DEBUG] allLessons count:', allLessons.length);
+    return unscheduled;
   }, [allLessons]);
 
   // Отфильтрованные уроки по поисковому запросу
@@ -110,6 +157,32 @@ const ModuleLessonsManager: React.FC<ModuleLessonsManagerProps> = ({
       item.stageName.toLowerCase().includes(lowerQuery)
     );
   }, [unscheduledLessons, searchQuery]);
+
+  // Уроки с аномально высоким open_day_offset (вне видимой сетки)
+  const anomalousLessons = useMemo(() => {
+    return allLessons.filter(item =>
+      item.lesson.open_day_offset !== null &&
+      item.lesson.open_day_offset !== undefined &&
+      item.lesson.open_day_offset > moduleDaysCount
+    );
+  }, [allLessons, moduleDaysCount]);
+
+  // Функция для сброса open_day_offset у аномальных уроков
+  const handleFixAnomalousLessons = async () => {
+    if (anomalousLessons.length === 0) return;
+    try {
+      for (const item of anomalousLessons) {
+        await updateLessonMutation.mutateAsync({
+          id: item.lesson.id,
+          open_day_offset: null,
+          stream_module_id: streamModuleId,
+        });
+      }
+      message.success(`Исправлено ${anomalousLessons.length} уроков - сброшены в нераспределённые`);
+    } catch (err: any) {
+      message.error(err?.message || 'Ошибка при исправлении');
+    }
+  };
 
   // Открыть модальное окно создания/редактирования ступени
   const handleOpenStageModal = (stage?: StageWithLessons) => {
@@ -231,7 +304,7 @@ const ModuleLessonsManager: React.FC<ModuleLessonsManagerProps> = ({
       lessonForm.setFieldsValue({
         order_num: nextOrderNum,
         has_assignment: false,
-        open_day_offset: nextOrderNum - 1, // По умолчанию: урок 1 = день 0, урок 2 = день 1 и т.д.
+        open_day_offset: null, // По умолчанию: не распределён, нужно перетащить в расписание
         deadline_day_offset: null,
         open_at: null,
         deadline_at: null,
@@ -315,12 +388,12 @@ const ModuleLessonsManager: React.FC<ModuleLessonsManagerProps> = ({
     setDraggedLesson(null);
   };
 
-  // Убрать урок из расписания (сбросить open_day_offset)
+  // Убрать урок из расписания (сбросить open_day_offset на null)
   const handleUnscheduleLesson = async (lessonId: number) => {
     try {
       await updateLessonMutation.mutateAsync({
         id: lessonId,
-        open_day_offset: undefined,
+        open_day_offset: null,
         stream_module_id: streamModuleId,
       });
       message.success('Урок убран из расписания');
@@ -351,7 +424,9 @@ const ModuleLessonsManager: React.FC<ModuleLessonsManagerProps> = ({
   }
 
   // Рендер списка уроков (классический вид)
-  const renderListView = () => (
+  const renderListView = () => {
+    console.log('📝 [DEBUG] renderListView - stages:', stages?.length, stages);
+    return (
     <Space direction="vertical" size="large" style={{ width: '100%' }}>
       {/* Список ступеней */}
       {!stages || stages.length === 0 ? (
@@ -459,10 +534,46 @@ const ModuleLessonsManager: React.FC<ModuleLessonsManagerProps> = ({
       )}
     </Space>
   );
+  };
 
   // Рендер расписания (drag-and-drop вид)
-  const renderScheduleView = () => (
+  const renderScheduleView = () => {
+    console.log('📆 [DEBUG] renderScheduleView - unscheduledLessons:', unscheduledLessons.length);
+    console.log('📆 [DEBUG] renderScheduleView - lessonsByDay keys:', Object.keys(lessonsByDay));
+    console.log('📆 [DEBUG] renderScheduleView - anomalousLessons:', anomalousLessons.length, anomalousLessons);
+    return (
     <Space direction="vertical" size="large" style={{ width: '100%' }}>
+      {/* Предупреждение о уроках с неправильными днями */}
+      {anomalousLessons.length > 0 && (
+        <Alert
+          type="warning"
+          showIcon
+          message={`Найдено ${anomalousLessons.length} уроков с некорректным днём открытия (вне сетки ${moduleDaysCount} дней)`}
+          description={
+            <div>
+              <div style={{ marginBottom: 8 }}>
+                Эти уроки не отображаются в расписании:
+                {anomalousLessons.slice(0, 5).map(item => (
+                  <div key={item.lesson.id} style={{ fontSize: 12 }}>
+                    • "{item.lesson.name}" (день {item.lesson.open_day_offset}) - {item.stageName}
+                  </div>
+                ))}
+                {anomalousLessons.length > 5 && <div style={{ fontSize: 12 }}>...и ещё {anomalousLessons.length - 5}</div>}
+              </div>
+              <Button
+                size="small"
+                type="primary"
+                danger
+                onClick={handleFixAnomalousLessons}
+                loading={updateLessonMutation.isPending}
+              >
+                Сбросить в нераспределённые
+              </Button>
+            </div>
+          }
+        />
+      )}
+
       {/* Инпут для количества дней если не указано */}
       {!moduleDurationDays && (
         <Card size="small">
@@ -494,11 +605,11 @@ const ModuleLessonsManager: React.FC<ModuleLessonsManagerProps> = ({
               style={{ marginBottom: 12 }}
               allowClear
             />
-            {allLessons.length === 0 ? (
-              <Empty description="Нет уроков. Создайте ступени и уроки." />
+            {unscheduledLessons.length === 0 ? (
+              <Empty description="Все уроки распределены в расписании" />
             ) : (
               <Space direction="vertical" style={{ width: '100%', maxHeight: 400, overflowY: 'auto' }}>
-                {(searchQuery ? filteredUnscheduledLessons : allLessons).map((item) => (
+                {(searchQuery ? filteredUnscheduledLessons : unscheduledLessons).map((item) => (
                   <Card
                     key={item.lesson.id}
                     size="small"
@@ -507,9 +618,7 @@ const ModuleLessonsManager: React.FC<ModuleLessonsManagerProps> = ({
                     onDragEnd={() => setDraggedLesson(null)}
                     style={{
                       cursor: 'grab',
-                      background: item.lesson.open_day_offset !== null && item.lesson.open_day_offset !== undefined
-                        ? '#f6ffed'
-                        : '#fff'
+                      background: '#fff'
                     }}
                     bodyStyle={{ padding: 8 }}
                   >
@@ -522,9 +631,6 @@ const ModuleLessonsManager: React.FC<ModuleLessonsManagerProps> = ({
                       </Space>
                       <Text type="secondary" style={{ fontSize: 10 }}>
                         {item.stageName}
-                        {item.lesson.open_day_offset !== null && item.lesson.open_day_offset !== undefined && (
-                          <> | День {item.lesson.open_day_offset}</>
-                        )}
                       </Text>
                     </Space>
                   </Card>
@@ -544,7 +650,7 @@ const ModuleLessonsManager: React.FC<ModuleLessonsManagerProps> = ({
                 gap: 8,
               }}
             >
-              {Array.from({ length: moduleDaysCount }, (_, i) => i).map((day) => (
+              {Array.from({ length: moduleDaysCount }, (_, i) => i + 1).map((day) => (
                 <div
                   key={day}
                   onDragOver={(e) => e.preventDefault()}
@@ -613,6 +719,7 @@ const ModuleLessonsManager: React.FC<ModuleLessonsManagerProps> = ({
       </Row>
     </Space>
   );
+  };
 
   return (
     <div style={{ padding: 24 }}>
@@ -725,17 +832,16 @@ const ModuleLessonsManager: React.FC<ModuleLessonsManagerProps> = ({
             <Form.Item
               name="open_day_offset"
               label="Открыть с дня модуля"
-              tooltip="0 = сразу после открытия модуля, 1 = на следующий день и т.д."
-              rules={[{ required: true }]}
+              tooltip="1 = первый день модуля, 2 = второй день и т.д. Пусто = не распределён"
             >
-              <InputNumber min={0} style={{ width: 150 }} placeholder="0" />
+              <InputNumber min={1} style={{ width: 150 }} placeholder="Не распределён" />
             </Form.Item>
             <Form.Item
               name="deadline_day_offset"
               label="Дедлайн (день модуля)"
               tooltip="День модуля когда наступает дедлайн. Пусто = без дедлайна"
             >
-              <InputNumber min={0} style={{ width: 150 }} placeholder="Без дедлайна" />
+              <InputNumber min={1} style={{ width: 150 }} placeholder="Без дедлайна" />
             </Form.Item>
           </Space>
           <Form.Item name="has_assignment" label="Есть домашнее задание" valuePropName="checked">

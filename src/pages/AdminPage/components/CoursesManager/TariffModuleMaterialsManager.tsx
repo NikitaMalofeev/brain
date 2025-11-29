@@ -107,9 +107,13 @@ const TariffModuleMaterialsManager: React.FC<TariffModuleMaterialsManagerProps> 
 
   // Доступные материалы (которые ещё не добавлены в модуль)
   const availableMaterials = useMemo(() => {
+    console.log('🎵 [DEBUG] allMaterials:', allMaterials?.length, allMaterials);
+    console.log('🎵 [DEBUG] moduleMaterials:', moduleMaterials?.length, moduleMaterials);
     if (!allMaterials || !moduleMaterials) return allMaterials || [];
     const addedIds = new Set(moduleMaterials.map(mm => mm.material_id));
-    return allMaterials.filter(m => !addedIds.has(m.id));
+    const available = allMaterials.filter(m => !addedIds.has(m.id));
+    console.log('🎵 [DEBUG] availableMaterials (not added yet):', available.length, available);
+    return available;
   }, [allMaterials, moduleMaterials]);
 
   // Отфильтрованные материалы по поисковому запросу
@@ -130,6 +134,8 @@ const TariffModuleMaterialsManager: React.FC<TariffModuleMaterialsManagerProps> 
       if (!result[day]) result[day] = [];
       result[day].push(mm);
     }
+    console.log('📅 [DEBUG] materialsByDay:', result);
+    console.log('📅 [DEBUG] scheduled materials count:', moduleMaterials.length);
     return result;
   }, [moduleMaterials]);
 

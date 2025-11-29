@@ -158,7 +158,9 @@ export function useGlobalSearch(
                 const firstLesson = sortedLessons[0];
 
                 // Урок разблокирован если модуль открыт И прошло достаточно дней с учётом open_day_offset урока
-                const lessonUnlockDay = moduleUnlockDay + (firstLesson?.open_day_offset || 0);
+                // open_day_offset теперь 1-based: 1 = первый день модуля
+                const lessonOpenOffset = firstLesson?.open_day_offset ?? 1;
+                const lessonUnlockDay = moduleUnlockDay + (lessonOpenOffset - 1);
                 const isLessonUnlocked = currentDay >= lessonUnlockDay;
 
                 const matchedIn: string[] = [];

@@ -6,7 +6,7 @@ import { Page } from '@/components/Page';
 import LessonCard from '@/components/LessonCard/LessonCard';
 import useStageDetails, { StageDetailsData } from '@/lib/supabase/hooks/useStageDetails';
 import useLibraryStages, { LibraryStageData } from '@/lib/supabase/hooks/useLibraryStages';
-import { useSupabaseUser, useActiveCourse } from '@/lib/supabase/hooks';
+import { useSupabaseUser, useActiveCourse, useUserStreamInfo } from '@/lib/supabase/hooks';
 import { useGuestStatus } from '@/lib/supabase/hooks/useIsGuest';
 import { useAppContext } from '@/contexts/AppContext';
 import { logger } from '@/lib/logger';
@@ -91,6 +91,9 @@ const StagePage: React.FC = () => {
 
     // Получаем активный курс пользователя
     const { activeCourse } = useActiveCourse(supabaseUser?.id);
+
+    // Получаем информацию о потоке
+    const { data: streamInfo } = useUserStreamInfo(supabaseUser?.id);
 
     // Получаем данные обо всех ступенях для подсчета прогресса до следующей ступени
     const { stages, loading: stagesLoading } = useLibraryStages(
@@ -233,43 +236,39 @@ const StagePage: React.FC = () => {
 
     return (
         <Page showTabBar={false}>
-            <div
-                className={'text-black min-h-full'}
-            >
-                <div className={'bg-white p-4 flex flex-col gap-3 p-4 pt-24'}>
+            <div className={'bg-[url("/bg3.jpg")] min-h-full bg-cover bg-top text-black'}>
+                {/* Белая карточка с заголовком и прогрессом */}
+                <div className={'bg-white rounded-2xl mx-4 mt-4 p-4 flex flex-col gap-3'}>
                     <div className={'flex items-center justify-between'}>
-                        <div className={'flex flex-col'}>
-                            <p className={'font-bold text-xl'}>{stageDetails.stage_name}</p>
+                        <div className={'flex flex-col gap-0.5'}>
+                            <div className={'flex items-center gap-2'}>
+                                <p className={'font-bold text-xl'}>{stageDetails.stage_name}</p>
+                                <Ripple className="rounded-full overflow-hidden">
+                                    <img
+                                        onClick={() => setIsOpen(true)}
+                                        src={'/ask-icon.svg'}
+                                        alt={'Информация'}
+                                        className="cursor-pointer w-5 h-5"
+                                    />
+                                </Ripple>
+                            </div>
                             <p className={'text-sm text-[#8C8C8C]'}>{nextStageText}</p>
                         </div>
-                        <Ripple className="rounded-full overflow-hidden">
-                            <img onClick={() => setIsOpen(true)} src={'/ask-icon.svg'} alt={''} className="cursor-pointer" />
-                        </Ripple>
                     </div>
+                    {/* Прогресс-бар из сегментов */}
                     <div className={'flex items-center gap-1 w-full'}>
                         {Array.from({ length: totalLessons }).map((_, i) => (
-                            <div key={i} className={clsx("flex-1 h-4 bg-[#68B1EB] rounded-xs", {
-                                "bg-[#C8DCF7]": i >= unlockedLessons
+                            <div key={i} className={clsx("flex-1 h-1 rounded-full", {
+                                "bg-[#68B1EB]": i < unlockedLessons,
+                                "bg-[#E5E5E5]": i >= unlockedLessons
                             })} />
                         ))}
                     </div>
-                    {totalAssignments > 0 && (
-                        <div className={'flex flex-col gap-2'}>
-                            <div className={'flex items-center justify-between'}>
-                                <p className={'text-sm font-medium'}>Прогресс по заданиям</p>
-                                <p className={'text-sm text-[#8C8C8C]'}>{completedAssignments} из {totalAssignments}</p>
-                            </div>
-                            <div className={'w-full h-2 bg-gray-200 rounded-full overflow-hidden'}>
-                                <div
-                                    className={'h-full bg-green-500 rounded-full transition-all duration-300'}
-                                    style={{ width: `${assignmentsProgressPercent}%` }}
-                                />
-                            </div>
-                        </div>
-                    )}
                 </div>
+
+                {/* Сетка уроков 2 колонки */}
                 <motion.div
-                    className={'bg-[url("/bg3.jpg")] min-h-full bg-cover bg-top p-4 rounded-t-3xl flex-1 flex flex-col gap-3'}
+                    className={'p-4 grid grid-cols-2 gap-3'}
                     variants={listVariants}
                     initial="hidden"
                     animate="show"
@@ -284,6 +283,7 @@ const StagePage: React.FC = () => {
                                 lesson={lesson}
                                 onClick={handleLessonClick}
                                 isGuest={isGuest}
+                                stageName={stageDetails.stage_name}
                             />
                         </motion.div>
                     ))}
