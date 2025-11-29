@@ -63,9 +63,6 @@ const TabBar: FC<TabBarProps> = ({ className }) => {
                 boxShadow: theme.boxShadow,
                 paddingLeft: '12px',
                 paddingRight: '12px',
-                height: '60px',
-                display: 'flex',
-                alignItems: 'center',
             }}
         >
             {buttons.map((button) => {

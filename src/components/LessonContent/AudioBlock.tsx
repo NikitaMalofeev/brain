@@ -4,6 +4,7 @@ import { usePlayer, PlayerType } from '@/contexts/PlayerContext';
 import { useAppContext } from '@/contexts/AppContext';
 import { LessonBlock } from '@/lib/supabase/types';
 import StreamingAudioBlock from './StreamingAudioBlock';
+import HLSAudioBlock from './HLSAudioBlock';
 
 interface AudioBlockProps {
     block: LessonBlock;

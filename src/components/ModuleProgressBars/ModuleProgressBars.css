@@ -1,0 +1,60 @@
+.module-progress-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 16px;
+  background: #fff;
+  border-radius: 16px;
+}
+
+.module-progress-header {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  margin-bottom: 16px;
+}
+
+.module-progress-label {
+  font-family: 'Nunito', sans-serif;
+  font-weight: 500;
+  font-size: 14px;
+  color: #9F9F9F;
+  margin: 0;
+}
+
+.module-progress-number {
+  font-family: 'Nunito', sans-serif;
+  font-weight: 700;
+  font-size: 22px;
+  line-height: 100%;
+  letter-spacing: 0%;
+  text-align: center;
+  color: #000000;
+  margin: 0;
+}
+
+.module-progress-bars {
+  display: flex;
+  flex-direction: row;
+  gap: 12px;
+}
+
+.module-progress-bar {
+  width: 18px;
+  height: 66px;
+  background: #E5E6FB;
+  border-radius: 18px;
+  position: relative;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+}
+
+.module-progress-bar-fill {
+  width: 100%;
+  background: linear-gradient(135deg, rgba(141, 197, 241, 0.4) -48.61%, #63ABE6 105.56%);
+  border-radius: 18px;
+  transition: height 0.3s ease;
+}

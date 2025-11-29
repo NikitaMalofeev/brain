@@ -23,6 +23,7 @@ import TechniquePlayerPage from '@/pages/TechniquesPage/TechniquePlayerPage';
 import CalendarPage from '@/pages/CalendarPage/CalendarPage';
 import EventPage from '@/pages/EventPage/EventPage';
 import RoadMapPage from '@/pages/RoadMapPage/RoadMapPage';
+import { AudioPlayerPage } from '@/pages/AudioPlayerPage';
 
 export const routers = [
   {
@@ -56,6 +57,10 @@ export const routers = [
   {
     path: '/techniques/:id',
     Component: TechniquePlayerPage
+  },
+  {
+    path: '/audio-player',
+    Component: AudioPlayerPage
   },
   {
     path: '/calendar',

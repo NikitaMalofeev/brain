@@ -1,15 +1,12 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { Page } from '@/components/Page';
 import { useSupabaseUser } from '@/lib/supabase/hooks/useSupabaseUser';
 import { useGuestStatus } from '@/lib/supabase/hooks/useIsGuest';
 import { useTechniques } from '@/lib/supabase/hooks/useTechniques';
 import { useSignal, initDataState } from '@telegram-apps/sdk-react';
-import { logger } from '@/lib/logger';
-import { TechniqueWithAccess } from '@/lib/supabase/types';
 import GuestBlockedModal from '@/components/GuestBlockedModal';
 import TechniqueBlockedModal from '@/components/TechniqueBlockedModal';
-import { Ripple } from '@/components/ui/Ripple/Ripple';
 import { motion } from 'framer-motion';
 import LoadingSpinner from '@/components/LoadingSpinner/LoadingSpinner';
 
@@ -35,12 +32,6 @@ const TechniquePlayerPage: React.FC = () => {
   const [showStudentBlockedModal, setShowStudentBlockedModal] = useState(false);
   const [modalTitle, setModalTitle] = useState('');
   const [modalDescription, setModalDescription] = useState('');
-
-  // Аудио плеер
-  const audioRef = useRef<HTMLAudioElement>(null);
-  const [isPlaying, setIsPlaying] = useState(false);
-  const [currentTime, setCurrentTime] = useState(0);
-  const [duration, setDuration] = useState(0);
 
   // Находим текущую технику
   const technique = techniques?.find((t) => t.id === id);
@@ -100,61 +91,55 @@ const TechniquePlayerPage: React.FC = () => {
     }
   };
 
-  // Проверка доступа
+  // Моковый аудио URL для тестирования (2 минуты)
+  const MOCK_AUDIO_URL = 'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3';
+
+  // Проверка доступа и автоматический переход на плеер
   useEffect(() => {
-    if (!loading && technique && !technique.has_access && technique.status !== 'free') {
+    if (loading || !technique) return;
+
+    const canPlay = technique.has_access || technique.status === 'free';
+
+    // Если есть доступ - сразу переходим на AudioPlayerPage
+    // TODO: вернуть проверку technique.audio_url когда будут реальные данные
+    if (canPlay) {
+      navigate('/audio-player', {
+        replace: true,
+        state: {
+          title: technique.title,
+          description: technique.description,
+          audioUrl: technique.audio_url || MOCK_AUDIO_URL,
+          coverImage: technique.cover_image,
+          moduleName: technique.available_from_module,
+        }
+      });
+      return;
+    }
+
+    // Если нет доступа - показываем модалки
+    if (!technique.has_access && technique.status !== 'free') {
       if (isGuest) {
         setShowGuestModal(true);
       } else if (technique.status === 'locked' && !technique.can_purchase) {
-        // Модалку показываем только для locked техник, которые нельзя купить
         getBlockedModalContent();
         setShowStudentBlockedModal(true);
       }
     }
-  }, [loading, technique, isGuest, techniques]);
+  }, [loading, technique, isGuest, techniques, navigate]);
 
-  // Обработчики аудио плеера
-  const handlePlayPause = () => {
-    if (!audioRef.current) return;
+  // Переход на страницу аудиоплеера
+  const handleOpenAudioPlayer = () => {
+    if (!technique) return;
 
-    if (isPlaying) {
-      audioRef.current.pause();
-    } else {
-      audioRef.current.play();
-    }
-    setIsPlaying(!isPlaying);
-  };
-
-  const handleTimeUpdate = () => {
-    if (audioRef.current) {
-      setCurrentTime(audioRef.current.currentTime);
-    }
-  };
-
-  const handleLoadedMetadata = () => {
-    if (audioRef.current) {
-      setDuration(audioRef.current.duration);
-    }
-  };
-
-  const handleSeek = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const newTime = parseFloat(e.target.value);
-    if (audioRef.current) {
-      audioRef.current.currentTime = newTime;
-      setCurrentTime(newTime);
-    }
-  };
-
-  const handleEnded = () => {
-    setIsPlaying(false);
-    setCurrentTime(0);
-  };
-
-  // Форматирование времени
-  const formatTime = (seconds: number): string => {
-    const mins = Math.floor(seconds / 60);
-    const secs = Math.floor(seconds % 60);
-    return `${mins}:${secs.toString().padStart(2, '0')}`;
+    navigate('/audio-player', {
+      state: {
+        title: technique.title,
+        description: technique.description,
+        audioUrl: technique.audio_url,
+        coverImage: technique.cover_image,
+        moduleName: technique.available_from_module,
+      }
+    });
   };
 
   // Обработчик покупки
@@ -259,56 +244,19 @@ const TechniquePlayerPage: React.FC = () => {
           )}
         </div>
 
-        {/* Аудио плеер */}
+        {/* Кнопка воспроизведения */}
         {canPlay ? (
-          <div className="bg-white rounded-2xl p-4 mb-4">
-            <audio
-              ref={audioRef}
-              src={technique.audio_url}
-              onTimeUpdate={handleTimeUpdate}
-              onLoadedMetadata={handleLoadedMetadata}
-              onEnded={handleEnded}
-            />
-
-            {/* Прогресс бар */}
-            <div className="mb-4">
-              <input
-                type="range"
-                min="0"
-                max={duration || 0}
-                value={currentTime}
-                onChange={handleSeek}
-                className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer"
-                style={{
-                  background: `linear-gradient(to right, #B862EA 0%, #B862EA ${
-                    (currentTime / duration) * 100 || 0
-                  }%, #E5E7EB ${(currentTime / duration) * 100 || 0}%, #E5E7EB 100%)`,
-                }}
-              />
-              <div className="flex justify-between text-xs text-[#666] mt-2">
-                <span>{formatTime(currentTime)}</span>
-                <span>{formatTime(duration)}</span>
-              </div>
-            </div>
-
-            {/* Кнопки управления */}
-            <div className="flex items-center justify-center gap-4">
-              <motion.button
-                whileTap={{ scale: 0.95 }}
-                onClick={handlePlayPause}
-                className="w-16 h-16 rounded-full bg-gradient-to-r from-[#E1C1F4] to-[#B862EA] flex items-center justify-center text-white"
-              >
-                {isPlaying ? (
-                  <svg className="w-8 h-8" fill="currentColor" viewBox="0 0 24 24">
-                    <path d="M6 4h4v16H6V4zm8 0h4v16h-4V4z" />
-                  </svg>
-                ) : (
-                  <svg className="w-8 h-8 ml-1" fill="currentColor" viewBox="0 0 24 24">
-                    <path d="M8 5v14l11-7z" />
-                  </svg>
-                )}
-              </motion.button>
-            </div>
+          <div className="mb-4">
+            <motion.button
+              whileTap={{ scale: 0.95 }}
+              onClick={handleOpenAudioPlayer}
+              className="w-full py-4 rounded-2xl bg-gradient-to-r from-[#E1C1F4] to-[#B862EA] flex items-center justify-center gap-3 text-white"
+            >
+              <svg className="w-6 h-6" fill="currentColor" viewBox="0 0 24 24">
+                <path d="M8 5v14l11-7z" />
+              </svg>
+              <span className="font-semibold">Слушать</span>
+            </motion.button>
           </div>
         ) : (
           <div className="bg-gray-50 rounded-2xl p-6 mb-4 text-center">
