@@ -1,14 +1,13 @@
 import { Page } from "@/components";
 import { useSupabaseUser, useUserStreamInfo, useUserStreamModules, useFirstIncompleteLesson } from "@/lib/supabase/hooks";
 import { initDataState, useSignal } from "@telegram-apps/sdk-react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { UserProgress } from "@/components/UserProgress/UserProgress.tsx";
 import { Ripple } from "@/components/ui/Ripple/Ripple.tsx";
 import StageCard from "@/components/StageCard/StageCard.tsx";
 import { motion } from "framer-motion";
 import { useState, useDeferredValue } from "react";
-import { Map, Search, X, Loader2 } from "lucide-react";
-import RoadMapModal from "@/components/RoadMap/RoadMapModal";
+import { X, Loader2 } from "lucide-react";
 import { useGuestStatus } from "@/lib/supabase/hooks/useIsGuest";
 import GuestBlockedModal from "@/components/GuestBlockedModal";
 import { useGlobalSearch } from "@/lib/supabase/hooks/useGlobalSearch";
@@ -42,9 +41,9 @@ const itemVariants = {
 };
 
 export const MainPage = () => {
+    const navigate = useNavigate();
     const initDataSignal = useSignal(initDataState);
     const { supabaseUser } = useSupabaseUser(initDataSignal);
-    const [isRoadMapOpen, setIsRoadMapOpen] = useState(false);
     const [searchQuery, setSearchQuery] = useState('');
     const [showGuestModal, setShowGuestModal] = useState(false);
 
@@ -78,8 +77,34 @@ export const MainPage = () => {
         return (
             <Page back={false}>
                 <div className="profile-loading">
-                    <div className="profile-loading-spinner" aria-hidden="true" />
-                    <p>Загрузка модулей...</p>
+                    <img
+                        src="/coin3.png"
+                        alt="Loading"
+                        style={{
+                            width: 128,
+                            height: 128,
+                            animation: 'coin3dSpin 1s linear infinite',
+                        }}
+                    />
+                    <style>{`
+                        @keyframes coin3dSpin {
+                            0% { transform: rotateY(0deg); }
+                            100% { transform: rotateY(360deg); }
+                        }
+                        @keyframes dotAnimation {
+                            0%, 20% { opacity: 0; }
+                            40% { opacity: 1; }
+                            100% { opacity: 1; }
+                        }
+                        .loading-dots span {
+                            opacity: 0;
+                            animation: dotAnimation 1.5s infinite;
+                        }
+                        .loading-dots span:nth-child(1) { animation-delay: 0s; }
+                        .loading-dots span:nth-child(2) { animation-delay: 0.3s; }
+                        .loading-dots span:nth-child(3) { animation-delay: 0.6s; }
+                    `}</style>
+                    <p>Загрузка модулей<span className="loading-dots"><span>.</span><span>.</span><span>.</span></span></p>
                 </div>
             </Page>
         );
@@ -141,10 +166,7 @@ export const MainPage = () => {
                             <motion.button
                                 whileTap={{ scale: 0.95 }}
                                 style={{ touchAction: 'manipulation' }}
-                                onClick={() => {
-                                    // Гость может открыть карту и видеть её (но с заблокированными элементами)
-                                    setIsRoadMapOpen(true);
-                                }}
+                                onClick={() => navigate('/roadmap')}
                                 className="roadmap"
                                 title="Дорожная карта"
                             >
@@ -285,25 +307,6 @@ export const MainPage = () => {
 
             </div>
             <UserProgress stages={modulesAsStages || []} className="mt-5" nextLessonId={firstIncompleteLesson?.lessonId} />
-
-            {/* Модалка дорожной карты */}
-            <RoadMapModal
-                isOpen={isRoadMapOpen}
-                onClose={() => setIsRoadMapOpen(false)}
-                stages={modulesAsStages || []}
-                onStageClick={(stageId) => {
-                    // Можно добавить навигацию к модулю или просто закрыть
-                    console.log('Clicked module:', stageId);
-                }}
-                isGuest={isGuest}
-                onGuestBlock={() => {
-                    setIsRoadMapOpen(false);
-                    setShowGuestModal(true);
-                }}
-                userPhotoUrl={supabaseUser?.photo_url || undefined}
-                currentWeek={streamInfo?.currentWeek || 1}
-                totalWeeks={streamInfo?.totalWeeks || 9}
-            />
 
             {/* Модалка для гостей */}
             <GuestBlockedModal

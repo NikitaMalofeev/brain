@@ -2,17 +2,23 @@ import React, { useState, useMemo } from 'react';
 import { Page } from '@/components/Page';
 import { useSupabaseUser } from '@/lib/supabase/hooks/useSupabaseUser';
 import { useGuestStatus } from '@/lib/supabase/hooks/useIsGuest';
-import { useCalendarEvents } from '@/lib/supabase/hooks/useCalendar';
+import { useCalendarEvents, CalendarEvent } from '@/lib/supabase/hooks/useCalendar';
 import { useSignal, initDataState } from '@telegram-apps/sdk-react';
-import { logger } from '@/lib/logger';
 import CalendarGrid from '@/components/CalendarGrid/CalendarGrid';
 import EventCard from '@/components/EventCard/EventCard';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion } from 'framer-motion';
 import './CalendarPage.css';
+
+// Группировка событий по дате
+interface EventGroup {
+  date: string;
+  dateFormatted: string;
+  events: CalendarEvent[];
+}
 
 /**
  * Страница календаря
- * Отображает сетку календаря с событиями и список событий выбранного дня
+ * Отображает сетку календаря с событиями и список всех событий месяца
  */
 const CalendarPage: React.FC = () => {
   const [selectedMonth, setSelectedMonth] = useState(new Date());
@@ -30,25 +36,44 @@ const CalendarPage: React.FC = () => {
     error: eventsError,
   } = useCalendarEvents(supabaseUser?.id, selectedMonth);
 
-
   // Общее состояние загрузки
   const loading = userLoading || guestCheckLoading || eventsLoading;
 
-  // Форматируем дату в YYYY-MM-DD без учёта часового пояса
-  const formatDateLocal = (date: Date): string => {
-    const year = date.getFullYear();
-    const month = String(date.getMonth() + 1).padStart(2, '0');
-    const day = String(date.getDate()).padStart(2, '0');
-    return `${year}-${month}-${day}`;
+  // Форматируем дату для отображения (например: "16 октября")
+  const formatDateDisplay = (dateStr: string): string => {
+    const date = new Date(dateStr + 'T00:00:00');
+    const day = date.getDate();
+    const monthNames = [
+      'января', 'февраля', 'марта', 'апреля', 'мая', 'июня',
+      'июля', 'августа', 'сентября', 'октября', 'ноября', 'декабря'
+    ];
+    return `${day} ${monthNames[date.getMonth()]}`;
   };
 
-  // Фильтруем события для выбранной даты
-  const selectedDateEvents = useMemo(() => {
-    if (!selectedDate || !events) return [];
+  // Группируем события по дате и сортируем по дате
+  const eventsByDate = useMemo((): EventGroup[] => {
+    if (!events || events.length === 0) return [];
 
-    const selectedDateStr = formatDateLocal(selectedDate);
-    return events.filter((event) => event.event_date === selectedDateStr);
-  }, [selectedDate, events]);
+    const grouped = new Map<string, CalendarEvent[]>();
+
+    events.forEach((event) => {
+      const existing = grouped.get(event.event_date);
+      if (existing) {
+        existing.push(event);
+      } else {
+        grouped.set(event.event_date, [event]);
+      }
+    });
+
+    // Сортируем по дате (от ближайшей)
+    return Array.from(grouped.entries())
+      .sort(([a], [b]) => a.localeCompare(b))
+      .map(([date, events]) => ({
+        date,
+        dateFormatted: formatDateDisplay(date),
+        events,
+      }));
+  }, [events]);
 
   // Навигация по месяцам
   const handlePrevMonth = () => {
@@ -61,7 +86,7 @@ const CalendarPage: React.FC = () => {
     setSelectedDate(null);
   };
 
-  // Выбор даты
+  // Выбор даты (оставляем для возможного использования в будущем)
   const handleDateClick = (date: Date) => {
     setSelectedDate(date);
   };
@@ -111,104 +136,34 @@ const CalendarPage: React.FC = () => {
           onNextMonth={handleNextMonth}
         />
 
-        {/* Список событий */}
+        {/* Список всех событий месяца */}
         <div className="calendar-events-section">
-          <AnimatePresence mode="wait">
-            {selectedDate ? (
-              <motion.div
-                key={`events-${selectedDate.toISOString()}`}
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, y: -20 }}
-                className="calendar-events-container"
-              >
-                <div className="calendar-events-header">
-                  <h2 className="calendar-events-title">
-                    События на {selectedDate.getDate()}{' '}
-                    {selectedDate.toLocaleDateString('ru-RU', { month: 'long' })}
-                  </h2>
-                </div>
-
-                {selectedDateEvents.length > 0 ? (
+          {eventsByDate.length > 0 ? (
+            <motion.div
+              key={`events-${selectedMonth.toISOString()}`}
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              className="calendar-events-container"
+            >
+              {eventsByDate.map((group) => (
+                <div key={group.date} className="calendar-event-group">
+                  <h3 className="calendar-event-group-title">{group.dateFormatted}</h3>
                   <div className="calendar-events-list">
-                    {selectedDateEvents.map((event) => (
+                    {group.events.map((event) => (
                       <EventCard key={event.event_id} event={event} isGuest={isGuest} />
                     ))}
                   </div>
-                ) : (
-                  <div className="calendar-events-empty">
-                    <svg width="64" height="64" viewBox="0 0 64 64" fill="none">
-                      <circle cx="32" cy="32" r="32" fill="#F5F5F7" />
-                      <path
-                        d="M45 20H19C17.8954 20 17 20.8954 17 22V44C17 45.1046 17.8954 46 19 46H45C46.1046 46 47 45.1046 47 44V22C47 20.8954 46.1046 20 45 20Z"
-                        stroke="#8E8E93"
-                        strokeWidth="2"
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                      />
-                      <path
-                        d="M39 17V23"
-                        stroke="#8E8E93"
-                        strokeWidth="2"
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                      />
-                      <path
-                        d="M25 17V23"
-                        stroke="#8E8E93"
-                        strokeWidth="2"
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                      />
-                      <path
-                        d="M17 29H47"
-                        stroke="#8E8E93"
-                        strokeWidth="2"
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                      />
-                    </svg>
-                    <p>На эту дату нет событий</p>
-                  </div>
-                )}
-              </motion.div>
-            ) : (
-              <motion.div
-                key="no-date"
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                exit={{ opacity: 0 }}
-                className="calendar-events-placeholder"
-              >
-                <svg width="64" height="64" viewBox="0 0 64 64" fill="none">
-                  <circle cx="32" cy="32" r="32" fill="#F5F5F7" />
-                  <path
-                    d="M32 42C37.5228 42 42 37.5228 42 32C42 26.4772 37.5228 22 32 22C26.4772 22 22 26.4772 22 32C22 37.5228 26.4772 42 32 42Z"
-                    stroke="#8E8E93"
-                    strokeWidth="2"
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                  />
-                  <path
-                    d="M32 27V32L35 35"
-                    stroke="#8E8E93"
-                    strokeWidth="2"
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                  />
-                </svg>
-                <p>Выберите дату, чтобы увидеть события</p>
-              </motion.div>
-            )}
-          </AnimatePresence>
+                </div>
+              ))}
+            </motion.div>
+          ) : (
+            !loading && (
+              <div className="calendar-no-events">
+                <p>На этот месяц нет запланированных событий</p>
+              </div>
+            )
+          )}
         </div>
-
-        {/* Сообщение если нет событий вообще */}
-        {!loading && events && events.length === 0 && (
-          <div className="calendar-no-events">
-            <p>На этот месяц нет запланированных событий</p>
-          </div>
-        )}
       </div>
     </Page>
   );

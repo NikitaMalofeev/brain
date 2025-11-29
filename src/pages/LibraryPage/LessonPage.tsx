@@ -20,6 +20,8 @@ import { clsx } from "clsx";
 import { Ripple } from '@/components/ui/Ripple/Ripple';
 import ReactMarkdown from 'react-markdown';
 import GuestBlockedModal from '@/components/GuestBlockedModal';
+import dayBackground from '@/shared/assets/images/dayBackground.png';
+import Background1 from '@/shared/assets/images/background1.png';
 import { Check, Clock, XCircle } from 'lucide-react';
 import { useAssignmentsWithProgress, useSaveAssignmentDraft, useSubmitAssignment } from '@/lib/supabase/hooks/useAssignments';
 
@@ -205,71 +207,118 @@ const AssignmentForm: React.FC<AssignmentFormProps> = ({ assignmentId, userId, l
     }, [saveTimeoutId]);
 
     const canEdit = !submission || submission.status === 'rejected';
-
-    // Статус сдачи
-    const renderStatus = () => {
-        if (!submission) return null;
-
-        if (submission.status === 'approved') {
-            return (
-                <div className="flex flex-col gap-2 mb-3">
-                    <div className="flex items-center gap-2 px-3 py-2 bg-green-50 border border-green-200 rounded-lg">
-                        <Check className="w-4 h-4 text-green-600" />
-                        <div className="flex-1">
-                            <p className="text-sm font-medium text-green-800">Задание принято!</p>
-                            {submission.points_awarded > 0 && (
-                                <p className="text-xs text-green-600">+{submission.points_awarded} баллов</p>
-                            )}
-                        </div>
-                    </div>
-                    {submission.feedback_text && (
-                        <div className="p-3 bg-green-50 border border-green-200 rounded-lg">
-                            <h4 className="text-xs font-semibold text-green-800 mb-1">Комментарий куратора:</h4>
-                            <p className="text-sm text-green-700 whitespace-pre-wrap">{submission.feedback_text}</p>
-                        </div>
-                    )}
-                </div>
-            );
-        }
-
-        if (submission.status === 'pending_review') {
-            return (
-                <div className="flex items-center gap-2 px-3 py-2 bg-yellow-50 border border-yellow-200 rounded-lg mb-3">
-                    <Clock className="w-4 h-4 text-yellow-600" />
-                    <p className="text-sm font-medium text-yellow-800">На проверке</p>
-                </div>
-            );
-        }
-
-        if (submission.status === 'rejected') {
-            return (
-                <div className="flex flex-col gap-2 mb-3">
-                    <div className="flex items-center gap-2 px-3 py-2 bg-red-50 border border-red-200 rounded-lg">
-                        <XCircle className="w-4 h-4 text-red-600" />
-                        <p className="text-sm font-medium text-red-800">Требует доработки</p>
-                    </div>
-                    {submission.feedback_text && (
-                        <div className="p-3 bg-red-50 border border-red-200 rounded-lg">
-                            <h4 className="text-xs font-semibold text-red-800 mb-1">Обратная связь куратора:</h4>
-                            <p className="text-sm text-red-700 whitespace-pre-wrap">{submission.feedback_text}</p>
-                        </div>
-                    )}
-                </div>
-            );
-        }
-
-        return null;
-    };
+    const showFeedback = submission?.status === 'approved' || submission?.status === 'rejected';
 
     return (
-        <div className="mt-4 border-t border-gray-100 pt-4">
-            {renderStatus()}
+        <div style={{ marginTop: 16, display: 'flex', flexDirection: 'column', gap: 16 }}>
+            {/* Ваш ответ (если уже отправлен) */}
+            {submission?.content_text && (
+                <div
+                    style={{
+                        backgroundColor: '#fff',
+                        borderRadius: 16,
+                        padding: 16,
+                    }}
+                >
+                    <p
+                        style={{
+                            fontFamily: 'Nunito, sans-serif',
+                            fontWeight: 600,
+                            fontSize: 14,
+                            lineHeight: '100%',
+                            color: '#222222',
+                            margin: 0,
+                            marginBottom: 8,
+                        }}
+                    >
+                        Ваш ответ
+                    </p>
+                    <p
+                        style={{
+                            fontFamily: 'Nunito, sans-serif',
+                            fontWeight: 400,
+                            fontSize: 14,
+                            lineHeight: '140%',
+                            color: 'rgba(0, 0, 0, 0.48)',
+                            margin: 0,
+                            whiteSpace: 'pre-wrap',
+                            wordBreak: 'break-word',
+                        }}
+                    >
+                        {submission.content_text}
+                    </p>
+                </div>
+            )}
 
-            {/* Отображение сданного ответа (если уже сдано и принято) */}
-            {submission?.status === 'approved' && submission.content_text && (
-                <div className="p-3 bg-gray-50 border border-gray-200 rounded-lg mb-3">
-                    <h4 className="text-xs font-semibold text-gray-700 mb-1">Ваш ответ:</h4>
-                    <p className="text-sm text-gray-600 whitespace-pre-wrap">{submission.content_text}</p>
+            {/* Комментарий куратора */}
+            {showFeedback && submission?.feedback_text && (
+                <div
+                    style={{
+                        backgroundColor: '#fff',
+                        borderRadius: 16,
+                        padding: 16,
+                    }}
+                >
+                    <p
+                        style={{
+                            fontFamily: 'Nunito, sans-serif',
+                            fontWeight: 600,
+                            fontSize: 14,
+                            lineHeight: '100%',
+                            color: '#222222',
+                            margin: 0,
+                            marginBottom: 8,
+                        }}
+                    >
+                        Комментарий куратора
+                    </p>
+                    <p
+                        style={{
+                            fontFamily: 'Nunito, sans-serif',
+                            fontWeight: 400,
+                            fontSize: 14,
+                            lineHeight: '140%',
+                            color: 'rgba(0, 0, 0, 0.48)',
+                            margin: 0,
+                            whiteSpace: 'pre-wrap',
+                            wordBreak: 'break-word',
+                        }}
+                    >
+                        {submission.feedback_text}
+                    </p>
+                    {/* Информация о проверке */}
+                    {(submission.reviewer?.first_name || submission.reviewed_at) && (
+                        <div style={{ marginTop: 8, display: 'flex', gap: 12 }}>
+                            {submission.reviewer?.first_name && (
+                                <p
+                                    style={{
+                                        fontFamily: 'Nunito, sans-serif',
+                                        fontWeight: 500,
+                                        fontSize: 12,
+                                        lineHeight: '14px',
+                                        color: 'rgba(0, 0, 0, 0.48)',
+                                        margin: 0,
+                                    }}
+                                >
+                                    {submission.reviewer.first_name}
+                                </p>
+                            )}
+                            {submission.reviewed_at && (
+                                <p
+                                    style={{
+                                        fontFamily: 'Nunito, sans-serif',
+                                        fontWeight: 500,
+                                        fontSize: 12,
+                                        lineHeight: '14px',
+                                        color: 'rgba(0, 0, 0, 0.48)',
+                                        margin: 0,
+                                    }}
+                                >
+                                    {new Date(submission.reviewed_at).toLocaleDateString('ru-RU')}
+                                </p>
+                            )}
+                        </div>
+                    )}
                 </div>
             )}
 
@@ -279,33 +328,49 @@ const AssignmentForm: React.FC<AssignmentFormProps> = ({ assignmentId, userId, l
                     <textarea
                         value={text}
                         onChange={(e) => handleTextChange(e.target.value)}
-                        placeholder="Ваш ответ..."
+                        placeholder=""
                         rows={4}
-                        className="w-full px-4 py-3 border border-gray-200 rounded-xl resize-none focus:outline-none focus:ring-2 focus:ring-[#68B1EB] focus:border-transparent text-sm"
+                        style={{
+                            width: '100%',
+                            padding: '12px 16px',
+                            border: 'none',
+                            borderRadius: 16,
+                            resize: 'none',
+                            fontFamily: 'Nunito, sans-serif',
+                            fontSize: 14,
+                            lineHeight: '140%',
+                            color: '#000',
+                            backgroundColor: '#F9F9F9',
+                            outline: 'none',
+                            marginBottom: 16,
+                        }}
                     />
 
-                    <div className="flex items-center justify-between mt-2">
-                        <div className="text-xs text-[#999]">
-                            {isSaving ? (
-                                <span className="flex items-center gap-1">
-                                    <div className="inline-block w-3 h-3 border-2 border-[#68B1EB] border-t-transparent rounded-full animate-spin"></div>
-                                    Сохранение...
-                                </span>
-                            ) : text.trim() ? (
-                                <span className="text-green-600">✓ Черновик сохранен</span>
-                            ) : (
-                                <span>Введите ответ</span>
-                            )}
-                        </div>
-
-                        <Button
-                            onClick={handleSubmit}
-                            disabled={!text.trim() || submitMutation.isPending}
-                            className="px-4 py-2 bg-gradient-to-r from-[#68B1EB] to-[#63ABE6] text-white text-sm font-medium rounded-xl hover:opacity-90 transition-opacity disabled:opacity-50 disabled:cursor-not-allowed"
-                        >
-                            {submitMutation.isPending ? 'Отправка...' : 'Сдать задание'}
-                        </Button>
-                    </div>
+                    {/* Кнопка отправки */}
+                    <button
+                        onClick={handleSubmit}
+                        disabled={!text.trim() || submitMutation.isPending}
+                        style={{
+                            width: '100%',
+                            padding: '14px 24px',
+                            background: text.trim() && !submitMutation.isPending
+                                ? 'linear-gradient(90deg, rgba(34, 34, 34, 0.6) 0%, rgba(117, 117, 117, 0.6) 100%)'
+                                : '#E6E6E6',
+                            backdropFilter: 'blur(30px)',
+                            WebkitBackdropFilter: 'blur(30px)',
+                            borderRadius: 32,
+                            border: 'none',
+                            fontFamily: 'Nunito, sans-serif',
+                            fontWeight: text.trim() && !submitMutation.isPending ? 700 : 400,
+                            fontSize: 16,
+                            lineHeight: '140%',
+                            color: text.trim() && !submitMutation.isPending ? '#fff' : '#ADADAD',
+                            cursor: text.trim() && !submitMutation.isPending ? 'pointer' : 'not-allowed',
+                            transition: 'all 0.2s',
+                        }}
+                    >
+                        {submitMutation.isPending ? 'Отправка...' : 'Отправить'}
+                    </button>
                 </div>
             )}
         </div>
@@ -322,27 +387,103 @@ interface BlockItemProps {
 }
 
 export const BlockItem = ({ block, initialState, childBlocks = [], assignmentData, userId, lessonId }: BlockItemProps) => {
-    const [collapsed, setCollapsed] = useState(initialState);
+    const [isOpen, setIsOpen] = useState(false); // Изначально закрыт
 
     // Проверяем, является ли блок заданием (по названию)
     const isAssignment = block.title?.toLowerCase().includes('задание');
 
+    // Определяем статус задания
+    const getAssignmentStatus = () => {
+        if (!isAssignment || !assignmentData?.submission) return null;
+
+        const status = assignmentData.submission.status;
+        if (status === 'approved') {
+            return 'Выполнено';
+        }
+        if (status === 'pending_review' || status === 'submitted') {
+            return 'На проверке';
+        }
+        if (status === 'rejected') {
+            return 'Доработка';
+        }
+        return null;
+    };
+
+    const assignmentStatus = getAssignmentStatus();
+
     return (
-        <div className={'mb-6 flex flex-col gap-3'}>
-            <div onClick={() => setCollapsed((prev) => !prev)} className={'flex items-center gap-2 cursor-pointer'}>
-                <img src={'/arrow-right.svg'} className={clsx('w-3 h-3 duration-200', collapsed && 'rotate-90')} alt={''} />
-                <h3 className={'font-bold text-lg'}>{block.title}</h3>
-                {/* Индикатор статуса задания */}
-                {isAssignment && assignmentData?.submission && (
-                    <span className="ml-auto">
-                        {assignmentData.submission.status === 'approved' && <Check className="w-4 h-4 text-green-600" />}
-                        {assignmentData.submission.status === 'pending_review' && <Clock className="w-4 h-4 text-yellow-600" />}
-                        {assignmentData.submission.status === 'rejected' && <XCircle className="w-4 h-4 text-red-600" />}
-                    </span>
+        <div>
+            {/* Заголовок секции */}
+            <div
+                onClick={() => setIsOpen((prev) => !prev)}
+                style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'space-between',
+                    cursor: 'pointer',
+                    padding: '8px 0',
+                }}
+            >
+                <div style={{ display: 'flex', alignItems: 'center' }}>
+                    {/* Стрелка-треугольник */}
+                    <svg
+                        width="7"
+                        height="12"
+                        viewBox="0 0 7 12"
+                        fill="none"
+                        style={{
+                            transform: isOpen ? 'rotate(90deg)' : 'rotate(0deg)',
+                            transition: 'transform 0.2s ease',
+                            marginRight: 10,
+                        }}
+                    >
+                        <path
+                            d="M1 1L6 6L1 11"
+                            stroke="#222222"
+                            strokeWidth="1.5"
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                        />
+                    </svg>
+
+                    {/* Заголовок */}
+                    <h3
+                        style={{
+                            fontFamily: 'Nunito, sans-serif',
+                            fontWeight: 600,
+                            fontSize: 16,
+                            lineHeight: '100%',
+                            color: '#222222',
+                            margin: 0,
+                        }}
+                    >
+                        {block.title}
+                    </h3>
+                </div>
+
+                {/* Статус задания справа */}
+                {assignmentStatus && (
+                    <div
+                        style={{
+                            backgroundColor: 'rgba(0, 0, 0, 0.43)',
+                            backdropFilter: 'blur(30px)',
+                            WebkitBackdropFilter: 'blur(30px)',
+                            color: '#fff',
+                            fontFamily: 'Nunito, sans-serif',
+                            fontWeight: 600,
+                            fontSize: 14,
+                            lineHeight: '120%',
+                            padding: '4px 12px',
+                            borderRadius: 32,
+                        }}
+                    >
+                        {assignmentStatus}
+                    </div>
                 )}
             </div>
-            {collapsed && (
-                <div className={'flex flex-col gap-6'}>
+
+            {isOpen && (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 16, marginTop: 12 }}>
                     <BlockContent block={block} key={block.id} />
                     {childBlocks.map((childBlock) => (
                         <BlockContent block={childBlock} key={childBlock.id} />
@@ -850,246 +991,122 @@ const LessonPage: React.FC = () => {
 
     // Функция рендера результатов проверки задания
     const renderSubmissionResult = (submission: any) => {
-        const status = submission.status;
-        const points = submission.points_awarded || 0;
         const feedback = submission.feedback_text;
         const reviewedAt = submission.reviewed_at;
         const reviewerName = submission.reviewer?.first_name;
-
-        // Определяем конфигурацию по статусу
-        const getStatusConfig = () => {
-            switch (status) {
-                case 'approved':
-                    return {
-                        icon: '✅',
-                        title: `Задание принято! +${points} баллов`,
-                        titleColor: '#22c55e', // зеленый
-                        showFeedback: true,
-                        showRetryButton: false,
-                    };
-                case 'rejected':
-                    return {
-                        icon: '❌',
-                        title: 'Задание требует доработки',
-                        titleColor: '#ef4444', // красный
-                        showFeedback: true,
-                        showRetryButton: true,
-                    };
-                default: // submitted, pending_review
-                    return {
-                        icon: '⏳',
-                        title: 'Задание на проверке',
-                        titleColor: '#3b82f6', // синий
-                        showFeedback: false,
-                        showRetryButton: false,
-                    };
-            }
-        };
-
-        const config = getStatusConfig();
+        const showFeedback = submission.status === 'approved' || submission.status === 'rejected';
 
         return (
-
-            <div>
-                {/* Заголовок с иконкой и статусом */}
-                {/*<div style={{
-                    fontWeight: 700,
-                    fontSize: '20px',
-                    lineHeight: '1.2',
-                    color: config.titleColor,
-                    marginBottom: '16px',
-                }}>
-                    {config.icon} {config.title}
-                </div>*/}
-
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
                 {/* Ваш ответ */}
                 {submission.content_text && (
-                    <div style={{ marginBottom: '16px' }}>
-                        <p style={{
-                            fontSize: '14px',
-                            fontWeight: 600,
-                            color: '#666666',
-                            marginBottom: '8px',
-                        }}>
-                            Ваш ответ:
-                        </p>
-                        <div style={{
-                            fontSize: '16px',
-                            lineHeight: '1.5',
-                            color: '#666666',
-                            whiteSpace: 'pre-wrap',
-                            wordBreak: 'break-word',
-                            overflowWrap: 'break-word',
-                        }}>
-                            {submission.content_text}
-                        </div>
-                    </div>
-                )}
-
-                {/* Прикрепленный файл */}
-                {submission.file_url && (
-                    <div style={{ marginBottom: '16px' }}>
-                        {(() => {
-                            const fileName = decodeURIComponent(submission.file_url.substring(submission.file_url.lastIndexOf('/') + 1));
-                            const extension = fileName.split('.').pop()?.toLowerCase() || '';
-                            const fileIcon =
-                                (['jpg', 'jpeg', 'png', 'gif', 'webp', 'svg', 'bmp'].includes(extension)) ? '🖼️' :
-                                    (['mp3', 'wav', 'aac', 'flac', 'm4a'].includes(extension)) ? '🎵' :
-                                        (extension === 'pdf') ? '📄' :
-                                            (['doc', 'docx'].includes(extension)) ? '📝' : '📎';
-
-                            return (
-                                <a
-                                    href={submission.file_url}
-                                    target="_blank"
-                                    rel="noopener noreferrer"
-                                    style={{
-                                        fontSize: '16px',
-                                        color: '#4e9bff',
-                                        textDecoration: 'none',
-                                        display: 'flex',
-                                        alignItems: 'center',
-                                        gap: '8px',
-                                    }}
-                                >
-                                    <span>{fileIcon}</span>
-                                    <span>{fileName}</span>
-                                </a>
-                            );
-                        })()}
-                    </div>
-                )}
-
-                {/* Комментарий куратора (для approved/rejected) */}
-                {config.showFeedback && feedback && (
-                    <div style={{ marginBottom: '16px' }}>
-                        <p style={{
-                            fontSize: '14px',
-                            fontWeight: 600,
-                            color: '#666666',
-                            marginBottom: '8px',
-                        }}>
-                            💬 Комментарий куратора:
-                        </p>
-                        <div style={{
-                            fontSize: '16px',
-                            lineHeight: '1.5',
-                            color: '#666666',
-                            whiteSpace: 'pre-wrap',
-                            wordBreak: 'break-word',
-                            overflowWrap: 'break-word',
-                            fontStyle: 'italic',
-                        }}>
-                            "{feedback}"
-                        </div>
-                    </div>
-                )}
-
-                {/* Информация о проверке (для approved/rejected) */}
-                {config.showFeedback && (reviewerName || reviewedAt) && (
-                    <div style={{ marginBottom: '16px' }}>
-                        {reviewerName && (
-                            <p style={{
-                                fontSize: '14px',
-                                color: '#666666',
-                                margin: '4px 0',
-                            }}>
-                                👤 Проверил: {reviewerName}
-                            </p>
-                        )}
-                        {reviewedAt && (
-                            <p style={{
-                                fontSize: '14px',
-                                color: '#666666',
-                                margin: '4px 0',
-                            }}>
-                                📅 {new Date(reviewedAt).toLocaleDateString('ru-RU')}
-                            </p>
-                        )}
-                    </div>
-                )}
-
-                {/* Мотивирующий текст для pending_review */}
-                {!config.showFeedback && (
-                    <div style={{ marginBottom: '16px' }}>
-                        <p style={{
-                            fontSize: '16px',
-                            lineHeight: '1.5',
-                            color: '#666666',
-                            fontStyle: 'italic',
-                        }}>
-                            💭 Ожидайте результата проверки
-                        </p>
-                    </div>
-                )}
-
-                {/* Кнопка пересдачи для rejected */}
-                {config.showRetryButton && (
-                    <div style={{ marginBottom: '16px' }}>
-                        {!isRetryingSubmission ? (
-                            <>
-                                <Ripple className="rounded-3xl overflow-hidden">
-                                    <Button
-                                        variant="black"
-                                        onClick={handleRetrySubmission}
-                                        className={"w-full font-bold leading-5 text-white py-2 px-4 rounded-3xl text-center bg-[linear-gradient(135deg,_rgba(255,220,80)_0%,_rgba(255,180,30)_100%)]"}
-                                        size="lg"
-                                        style={{
-                                            marginBottom: '12px',
-                                        }}
-                                    >
-                                        Попробовать снова
-                                    </Button>
-                                </Ripple>
-                                <p style={{
-                                    fontSize: '14px',
-                                    color: '#666666',
-                                    textAlign: 'center',
-                                    fontStyle: 'italic',
-                                }}>
-                                    Нажмите, чтобы исправить задание
-                                </p>
-                            </>
-                        ) : (
-                            <>
-                                <Ripple className="rounded-3xl overflow-hidden">
-                                    <Button
-                                        variant="black"
-                                        onClick={handleCancelRetry}
-                                        className={"w-full font-bold leading-5 text-white py-2 px-4 rounded-3xl text-center bg-[linear-gradient(135deg,_rgba(255,107,107)_0%,_rgba(255,82,82)_100%)]"}
-                                        size="lg"
-                                        style={{
-                                            marginBottom: '12px',
-                                        }}
-                                    >
-                                        Отменить исправление
-                                    </Button>
-                                </Ripple>
-                                <p style={{
-                                    fontSize: '14px',
-                                    color: '#666666',
-                                    textAlign: 'center',
-                                    fontStyle: 'italic',
-                                }}>
-                                    Форма для исправления появилась ниже
-                                </p>
-                            </>
-                        )}
-                    </div>
-                )}
-
-                {/* Кнопка возврата к ступени */}
-                {state.lesson && typeof state.lesson.stage_id === 'number' && (
-                    <Ripple className="rounded-3xl overflow-hidden">
-                        <Button
-                            variant="black"
-                            onClick={() => state.lesson && navigate(`/library/stage/${state.lesson.stage_id}`)}
-                            className={"w-full font-bold leading-5 text-white py-2 px-4 rounded-3xl text-center bg-[linear-gradient(135deg,rgba(141,197,241,0.4)_-48.61%,#63ABE6_105.56%),linear-gradient(91.99deg,#F3F3F3_0%,#EAEAEA_100%)]"}
-                            size="lg"
+                    <div
+                        style={{
+                            backgroundColor: '#fff',
+                            borderRadius: 16,
+                            padding: 16,
+                        }}
+                    >
+                        <p
+                            style={{
+                                fontFamily: 'Nunito, sans-serif',
+                                fontWeight: 600,
+                                fontSize: 16,
+                                lineHeight: '100%',
+                                color: '#222222',
+                                margin: 0,
+                                marginBottom: 12,
+                            }}
                         >
-                            Вернуться ко всем урокам ступени
-                        </Button>
-                    </Ripple>
+                            Ваш ответ
+                        </p>
+                        <p
+                            style={{
+                                fontFamily: 'Nunito, sans-serif',
+                                fontWeight: 400,
+                                fontSize: 14,
+                                lineHeight: '140%',
+                                color: 'rgba(0, 0, 0, 0.48)',
+                                margin: 0,
+                                whiteSpace: 'pre-wrap',
+                                wordBreak: 'break-word',
+                            }}
+                        >
+                            {submission.content_text}
+                        </p>
+                    </div>
+                )}
+
+                {/* Комментарий куратора */}
+                {showFeedback && feedback && (
+                    <div
+                        style={{
+                            backgroundColor: '#fff',
+                            borderRadius: 16,
+                            padding: 16,
+                        }}
+                    >
+                        <p
+                            style={{
+                                fontFamily: 'Nunito, sans-serif',
+                                fontWeight: 600,
+                                fontSize: 16,
+                                lineHeight: '100%',
+                                color: '#222222',
+                                margin: 0,
+                                marginBottom: 12,
+                            }}
+                        >
+                            Комментарий куратора
+                        </p>
+                        <p
+                            style={{
+                                fontFamily: 'Nunito, sans-serif',
+                                fontWeight: 400,
+                                fontSize: 14,
+                                lineHeight: '140%',
+                                color: 'rgba(0, 0, 0, 0.48)',
+                                margin: 0,
+                                whiteSpace: 'pre-wrap',
+                                wordBreak: 'break-word',
+                            }}
+                        >
+                            {feedback}
+                        </p>
+                        {/* Информация о проверке */}
+                        {(reviewerName || reviewedAt) && (
+                            <div style={{ marginTop: 12, display: 'flex', gap: 16 }}>
+                                {reviewerName && (
+                                    <p
+                                        style={{
+                                            fontFamily: 'Nunito, sans-serif',
+                                            fontWeight: 500,
+                                            fontSize: 12,
+                                            lineHeight: '14px',
+                                            color: 'rgba(0, 0, 0, 0.48)',
+                                            margin: 0,
+                                        }}
+                                    >
+                                        {reviewerName}
+                                    </p>
+                                )}
+                                {reviewedAt && (
+                                    <p
+                                        style={{
+                                            fontFamily: 'Nunito, sans-serif',
+                                            fontWeight: 500,
+                                            fontSize: 12,
+                                            lineHeight: '14px',
+                                            color: 'rgba(0, 0, 0, 0.48)',
+                                            margin: 0,
+                                        }}
+                                    >
+                                        {new Date(reviewedAt).toLocaleDateString('ru-RU')}
+                                    </p>
+                                )}
+                            </div>
+                        )}
+                    </div>
                 )}
             </div>
         );
@@ -1106,8 +1123,34 @@ const LessonPage: React.FC = () => {
         return (
             <Page>
                 <div className="profile-loading">
-                    <div className="profile-loading-spinner" aria-hidden="true" />
-                    <p>Загрузка урока...</p>
+                    <img
+                        src="/coin3.png"
+                        alt="Loading"
+                        style={{
+                            width: 128,
+                            height: 128,
+                            animation: 'coin3dSpin 1s linear infinite',
+                        }}
+                    />
+                    <style>{`
+                        @keyframes coin3dSpin {
+                            0% { transform: rotateY(0deg); }
+                            100% { transform: rotateY(360deg); }
+                        }
+                        @keyframes dotAnimation {
+                            0%, 20% { opacity: 0; }
+                            40% { opacity: 1; }
+                            100% { opacity: 1; }
+                        }
+                        .loading-dots span {
+                            opacity: 0;
+                            animation: dotAnimation 1.5s infinite;
+                        }
+                        .loading-dots span:nth-child(1) { animation-delay: 0s; }
+                        .loading-dots span:nth-child(2) { animation-delay: 0.3s; }
+                        .loading-dots span:nth-child(3) { animation-delay: 0.6s; }
+                    `}</style>
+                    <p>Загрузка урока<span className="loading-dots"><span>.</span><span>.</span><span>.</span></span></p>
                 </div>
             </Page>
         );
@@ -1155,61 +1198,148 @@ const LessonPage: React.FC = () => {
     const showSubmissionForm = hasAssignment && (!isAssignmentSubmitted || isRetryAllowed);
 
 
+    // Вычисляем номер недели из order_num урока (7 дней = 1 неделя)
+    const weekNumber = Math.ceil((state.lesson.order_num || 1) / 7);
+
     return (
         <Page back={true} showTabBar={false}>
-            <div className={'text-black'}>
-                <img
-                    src={buildFileUrl(state.lesson.cover_image_path) || '/test.png'}
-                    className={'w-full h-[193px] object-cover'}
-                    style={{
-                        borderRadius: '0 0 24px 24px', // Скругление только снизу как в Figma
-                    }}
-                    alt={state.lesson.name}
-                />
-                <div className={'p-4 flex flex-col gap-2'}>
-                    <p className={'font-bold text-xl'}>{state.lesson.name}</p>
-                    <div className={'flex flex-wrap gap-1'}>
-                        <p className={'rounded-full px-2 py-1 text-white text-xs font-medium bg-[linear-gradient(135deg,_rgba(141,197,241)_-48.61%,_#63ABE6_105.56%)]'}>День {state.lesson.order_num}</p>
+            <div className={'text-black'} style={{ backgroundImage: `url(${Background1})`, backgroundSize: '120%', backgroundPosition: 'top', backgroundAttachment: 'fixed', backgroundRepeat: 'no-repeat', minHeight: '100vh' }}>
+                {/* Обложка урока с бейджами внутри */}
+                <div style={{ position: 'relative' }}>
+                    <img
+                        src={buildFileUrl(state.lesson.cover_image_path) || dayBackground}
+                        className={'w-full h-[193px] object-cover'}
+                        style={{
+                            borderRadius: '0 0 32px 32px',
+                        }}
+                        alt={state.lesson.name}
+                    />
 
-                        {/* Отображаем статус урока только после загрузки пользовательских данных */}
-                        {!state.userDataLoading && (() => {
-                            const status = getLessonPageStatus();
-                            return (
-                                <p className={`rounded-full px-2 py-1 text-white text-xs font-medium ${status.bgClass}`}>
-                                    {status.text}
-                                </p>
-                            );
-                        })()}
+                    {/* Бейджи внутри картинки */}
+                    <div
+                        style={{
+                            position: 'absolute',
+                            bottom: 14,
+                            left: 16,
+                            right: 16,
+                            display: 'flex',
+                            flexWrap: 'wrap',
+                            gap: 8,
+                        }}
+                    >
+                        {/* Бейдж Неделя */}
+                        <div
+                            style={{
+                                backgroundColor: 'rgba(0, 0, 0, 0.43)',
+                                backdropFilter: 'blur(30px)',
+                                WebkitBackdropFilter: 'blur(30px)',
+                                borderRadius: 32,
+                                padding: '4px 12px',
+                                color: '#fff',
+                                fontFamily: 'Nunito, sans-serif',
+                                fontWeight: 600,
+                                fontSize: 14,
+                                lineHeight: '120%',
+                            }}
+                        >
+                            Неделя {weekNumber}
+                        </div>
 
-                        {/* Отображаем дедлайн если есть */}
+                        {/* Бейдж День */}
+                        <div
+                            style={{
+                                backgroundColor: 'rgba(0, 0, 0, 0.43)',
+                                backdropFilter: 'blur(30px)',
+                                WebkitBackdropFilter: 'blur(30px)',
+                                borderRadius: 32,
+                                padding: '4px 12px',
+                                color: '#fff',
+                                fontFamily: 'Nunito, sans-serif',
+                                fontWeight: 600,
+                                fontSize: 14,
+                                lineHeight: '120%',
+                            }}
+                        >
+                            День {state.lesson.order_num}
+                        </div>
+
+                        {/* Бейдж Дедлайн */}
                         {state.lesson.deadline_at && (
-                            <p className={'rounded-full px-2 py-1 text-white text-xs font-medium bg-gray-600'}>
+                            <div
+                                style={{
+                                    backgroundColor: 'rgba(255, 255, 255, 0.8)',
+                                    backdropFilter: 'blur(30px)',
+                                    WebkitBackdropFilter: 'blur(30px)',
+                                    borderRadius: 32,
+                                    padding: '4px 12px',
+                                    color: '#000',
+                                    fontFamily: 'Nunito, sans-serif',
+                                    fontWeight: 600,
+                                    fontSize: 14,
+                                    lineHeight: '120%',
+                                }}
+                            >
                                 До {formatDeadline(state.lesson.deadline_at)}
-                            </p>
+                            </div>
                         )}
                     </div>
-                    {/* Прогресс по заданиям урока */}
-                    {state.totalAssignments > 0 && (
-                        <div className={'flex flex-col gap-2 mt-2'}>
-                            <div className={'flex items-center justify-between'}>
-                                <p className={'text-sm font-medium'}>Прогресс по заданиям</p>
-                                <p className={'text-sm text-[#8C8C8C]'}>{state.completedAssignments} из {state.totalAssignments}</p>
-                            </div>
-                            <div className={'w-full h-2 bg-gray-200 rounded-full overflow-hidden'}>
-                                <div
-                                    className={'h-full bg-green-500 rounded-full transition-all duration-300'}
-                                    style={{ width: `${state.totalAssignments > 0 ? (state.completedAssignments / state.totalAssignments) * 100 : 0}%` }}
-                                />
-                            </div>
-                        </div>
-                    )}
                 </div>
-                <div className={'p-4 mb-16'}>
+
+                {/* Прогресс по заданиям урока */}
+                {state.totalAssignments > 0 && (
+                    <div style={{ padding: '16px', margin: '16px', backgroundColor: 'rgba(255, 255, 255, 0.8)', borderRadius: 20 }}>
+                        {/* Верхняя часть: Выполнено слева, счётчик справа */}
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 6 }}>
+                            <p
+                                style={{
+                                    fontFamily: 'Nunito, sans-serif',
+                                    fontWeight: 500,
+                                    fontSize: 12,
+                                    lineHeight: '14px',
+                                    color: 'rgba(0, 0, 0, 0.48)',
+                                    margin: 0,
+                                }}
+                            >
+                                Выполнено
+                            </p>
+                            <p
+                                style={{
+                                    fontFamily: 'Nunito, sans-serif',
+                                    fontWeight: 500,
+                                    fontSize: 12,
+                                    lineHeight: '14px',
+                                    color: 'rgba(0, 0, 0, 0.48)',
+                                    margin: 0,
+                                }}
+                            >
+                                {state.completedAssignments}/{state.totalAssignments}
+                            </p>
+                        </div>
+                        {/* Полосы прогресса */}
+                        <div style={{ display: 'flex', gap: 4 }}>
+                            {Array.from({ length: state.totalAssignments }).map((_, index) => (
+                                <div
+                                    key={index}
+                                    style={{
+                                        flex: 1,
+                                        height: 6,
+                                        borderRadius: 12,
+                                        backgroundColor: index < state.completedAssignments ? 'rgba(0, 0, 0, 0.3)' : '#E6E6E6',
+                                        backdropFilter: index < state.completedAssignments ? 'blur(30px)' : 'none',
+                                        WebkitBackdropFilter: index < state.completedAssignments ? 'blur(30px)' : 'none',
+                                    }}
+                                />
+                            ))}
+                        </div>
+                    </div>
+                )}
+                {/* Блоки контента - каждый в своей карточке */}
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 20, padding: '0 16px 16px 16px' }}>
                     {(() => {
                         // Группируем блоки: блоки без заголовков попадают в предыдущий блок с заголовком
                         const groupedBlocks: Array<{ parent: LessonBlock, children: LessonBlock[] }> = [];
                         let currentGroup: { parent: LessonBlock, children: LessonBlock[] } | null = null;
-                        
+
                         state.lesson.blocks.forEach((block) => {
                             if (block.title && block.title.trim() !== '') {
                                 // Блок с заголовком - начинаем новую группу
@@ -1224,7 +1354,7 @@ const LessonPage: React.FC = () => {
                                 groupedBlocks.push({ parent: block, children: [] });
                             }
                         });
-                        
+
                         return groupedBlocks.map((group, i) => {
                             if (group.parent.title && group.parent.title.trim() !== '') {
                                 // Проверяем, является ли блок заданием и находим соответствующие данные
@@ -1238,30 +1368,48 @@ const LessonPage: React.FC = () => {
                                     );
                                 }
 
-                                // Блок с заголовком - используем BlockItem
+                                // Блок с заголовком - используем BlockItem в отдельной карточке
                                 return (
-                                    <BlockItem
+                                    <div
                                         key={group.parent.id}
-                                        block={group.parent}
-                                        initialState={i === 0}
-                                        childBlocks={group.children}
-                                        assignmentData={assignmentData}
-                                        userId={supabaseUser?.id}
-                                        lessonId={lessonId ? parseInt(lessonId) : undefined}
-                                    />
+                                        style={{
+                                            backgroundColor: 'rgba(255, 255, 255, 0.8)',
+                                            backdropFilter: 'blur(20px)',
+                                            WebkitBackdropFilter: 'blur(20px)',
+                                            borderRadius: 16,
+                                            padding: 16,
+                                        }}
+                                    >
+                                        <BlockItem
+                                            block={group.parent}
+                                            initialState={i === 0}
+                                            childBlocks={group.children}
+                                            assignmentData={assignmentData}
+                                            userId={supabaseUser?.id}
+                                            lessonId={lessonId ? parseInt(lessonId) : undefined}
+                                        />
+                                    </div>
                                 );
                             } else {
-                                // Блок без заголовка и без группы - отображаем просто контент
-                                return <BlockContent block={group.parent} key={group.parent.id} />;
+                                // Блок без заголовка и без группы - отображаем просто контент в карточке
+                                return (
+                                    <div
+                                        key={group.parent.id}
+                                        style={{
+                                            backgroundColor: 'rgba(255, 255, 255, 0.8)',
+                                            backdropFilter: 'blur(20px)',
+                                            WebkitBackdropFilter: 'blur(20px)',
+                                            borderRadius: 16,
+                                            padding: 16,
+                                        }}
+                                    >
+                                        <BlockContent block={group.parent} />
+                                    </div>
+                                );
                             }
                         });
                     })()}
                 </div>
-                {state.submission && (
-                    <div className={'p-4 pb-8'}>
-                        {renderSubmissionResult(state.submission)}
-                    </div>
-                )}
 
                 {/* Блок завершенного урока без задания */}
                 {!hasAssignment && isLessonCompleted && state.progress && (

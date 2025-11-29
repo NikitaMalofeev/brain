@@ -2,31 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/lib/supabase/client';
 import { LessonBlock } from '@/lib/supabase/types';
-import { buildFileUrl } from '@/lib/supabase/supabaseStorageService';
 import { MarkdownContent } from './MarkdownContent';
-
-// Функция для преобразования текста с ссылками
-function linkifyText(text: string): React.ReactNode[] {
-  const urlRegex = /(https?:\/\/[^\s]+)/g;
-  const parts = text.split(urlRegex);
-  
-  return parts.map((part, index) => {
-    if (part.match(urlRegex)) {
-      return (
-        <a
-          key={index}
-          href={part}
-          target="_blank"
-          rel="noopener noreferrer"
-          style={{ color: '#007AFF', textDecoration: 'underline' }}
-        >
-          {part}
-        </a>
-      );
-    }
-    return part;
-  });
-}
 
 interface MaterialBlockProps {
   block: LessonBlock;
@@ -95,16 +71,6 @@ const MaterialBlock: React.FC<MaterialBlockProps> = ({ block }) => {
     }
   };
 
-  const getMaterialTypeLabel = (type: string) => {
-    switch (type) {
-      case 'video': return 'Видео';
-      case 'audio': return 'Аудио';
-      case 'article': return 'Статья';
-      case 'link': return 'Ссылка';
-      case 'file': return 'Файл';
-      default: return 'Материал';
-    }
-  };
 
   if (loading) {
     return (
@@ -129,43 +95,92 @@ const MaterialBlock: React.FC<MaterialBlockProps> = ({ block }) => {
   }
 
   return (
-    <div className="flex flex-col gap-3">
-      {/* Кнопка материала */}
-      <div 
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+      {/* Кнопка материала - новый дизайн */}
+      <div
         onClick={handleMaterialClick}
-        className="flex items-center gap-4 p-4 bg-white border border-gray-200 rounded-2xl cursor-pointer hover:bg-gray-50 transition-colors duration-200 shadow-sm"
+        style={{
+          display: 'flex',
+          alignItems: 'center',
+          gap: 12,
+          padding: '12px 16px',
+          backgroundColor: '#F5F5F5',
+          borderRadius: 16,
+          cursor: 'pointer',
+          transition: 'background-color 0.2s',
+        }}
       >
-        {/* Обложка материала */}
-        <div className="flex-shrink-0">
-          {material.cover_image_path ? (
-            <img
-              src={buildFileUrl(material.cover_image_path) || ''}
-              alt={material.name}
-              className="w-16 h-16 object-cover rounded-xl"
-            />
+        {/* Иконка типа материала */}
+        <div
+          style={{
+            width: 40,
+            height: 40,
+            borderRadius: 12,
+            backgroundColor: material.material_type === 'audio' ? '#E8F4FD' : '#F0F0F0',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            flexShrink: 0,
+          }}
+        >
+          {material.material_type === 'audio' ? (
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#4A90D9" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z" />
+              <path d="M19 10v2a7 7 0 0 1-14 0v-2" />
+              <line x1="12" y1="19" x2="12" y2="23" />
+              <line x1="8" y1="23" x2="16" y2="23" />
+            </svg>
+          ) : material.material_type === 'video' ? (
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#4A90D9" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <polygon points="23 7 16 12 23 17 23 7" />
+              <rect x="1" y="5" width="15" height="14" rx="2" ry="2" />
+            </svg>
           ) : (
-            <div className="w-16 h-16 bg-gradient-to-br from-blue-100 to-blue-200 rounded-xl flex items-center justify-center">
-              <span className="text-2xl">{getMaterialTypeIcon(material.material_type)}</span>
-            </div>
+            <span style={{ fontSize: 18 }}>{getMaterialTypeIcon(material.material_type)}</span>
           )}
         </div>
 
-        {/* Информация о материале */}
-        <div className="flex-1 min-w-0">
-          <div className="flex items-center gap-2 mb-1">
-            <span className="text-sm text-gray-500">{getMaterialTypeIcon(material.material_type)}</span>
-            <span className="text-sm text-gray-500">{getMaterialTypeLabel(material.material_type)}</span>
-          </div>
-          <h4 className="font-semibold text-gray-900 truncate">{material.name}</h4>
+        {/* Название материала */}
+        <div style={{ flex: 1, minWidth: 0 }}>
+          <p
+            style={{
+              fontFamily: 'Nunito, sans-serif',
+              fontWeight: 600,
+              fontSize: 14,
+              lineHeight: '120%',
+              color: '#000',
+              margin: 0,
+              overflow: 'hidden',
+              textOverflow: 'ellipsis',
+              whiteSpace: 'nowrap',
+            }}
+          >
+            {material.name}
+          </p>
           {material.description && (
-            <p className="text-sm text-gray-600 mt-1 line-clamp-2">{material.description}</p>
+            <p
+              style={{
+                fontFamily: 'Nunito, sans-serif',
+                fontWeight: 400,
+                fontSize: 12,
+                lineHeight: '120%',
+                color: '#8C8C8C',
+                margin: 0,
+                marginTop: 4,
+                overflow: 'hidden',
+                textOverflow: 'ellipsis',
+                whiteSpace: 'nowrap',
+              }}
+            >
+              {material.description}
+            </p>
           )}
         </div>
 
-        {/* Иконка перехода */}
-        <div className="flex-shrink-0">
-          <svg className="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+        {/* Стрелка */}
+        <div style={{ flexShrink: 0 }}>
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#8C8C8C" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <path d="M9 18l6-6-6-6" />
           </svg>
         </div>
       </div>

@@ -1,7 +1,10 @@
 import React from 'react';
 import { motion } from 'framer-motion';
-import { MapPin, X } from 'lucide-react';
 import { clsx } from 'clsx';
+import roadmapBg from '@/shared/assets/images/roadmap.png';
+import roadmapUserMark from '@/shared/assets/icons/roadmapUserMark.svg';
+import roadmapDarkMark from '@/shared/assets/icons/roadmapDarkMark.svg';
+import roadmapWhiteMark from '@/shared/assets/icons/roadmapWhiteMark.svg';
 
 interface Stage {
   stage_id: number;
@@ -11,17 +14,19 @@ interface Stage {
   total_lessons: number;
   completed_lessons: number;
   unlocked_lessons?: number;
+  unlock_day?: number;
+  module_id?: string;
 }
 
 interface RoadMapProps {
   stages: Stage[];
-  onStageClick?: (stageId: number) => void;
+  onStageClick?: (stageId: number, moduleId?: string) => void;
   isGuest?: boolean;
   onGuestBlock?: () => void;
   userPhotoUrl?: string;
   currentWeek?: number;
   totalWeeks?: number;
-  onClose?: () => void;
+  streamStartDate?: string;
 }
 
 /**
@@ -36,8 +41,20 @@ const RoadMap: React.FC<RoadMapProps> = ({
   userPhotoUrl,
   currentWeek = 1,
   totalWeeks = 9,
-  onClose
+  streamStartDate,
 }) => {
+  // Рассчитываем сколько дней прошло с начала потока
+  const getDaysSinceStreamStart = () => {
+    if (!streamStartDate) return 0;
+    const startDate = new Date(streamStartDate);
+    const now = new Date();
+    const diffTime = now.getTime() - startDate.getTime();
+    const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
+    return Math.max(0, diffDays);
+  };
+
+  const daysSinceStart = getDaysSinceStreamStart();
+
   // Определить текущий активный этап (первый незавершенный разблокированный)
   const currentStageIndex = stages.findIndex(
     (stage) =>
@@ -75,106 +92,128 @@ const RoadMap: React.FC<RoadMapProps> = ({
     return (unlockedLessons / stage.total_lessons) * 100;
   };
 
-  // Рассчитать количество дней для модуля (примерно 21 день на модуль)
+  // Сортируем модули по unlock_day для правильного расчёта длительности
+  const sortedStages = [...stages].sort((a, b) => (a.unlock_day || 0) - (b.unlock_day || 0));
+
+  // Рассчитать количество дней для модуля
   const getDaysForModule = (index: number) => {
-    // Базовые дни для каждого модуля
-    const baseDays = [21, 14, 7, 21];
-    return baseDays[index % baseDays.length];
+    const sortedIndex = sortedStages.findIndex(s => s.stage_id === stages[index]?.stage_id);
+    if (sortedIndex === -1) return 20;
+
+    const currentUnlockDay = sortedStages[sortedIndex]?.unlock_day || 0;
+    const nextUnlockDay = sortedStages[sortedIndex + 1]?.unlock_day;
+
+    if (nextUnlockDay !== undefined) {
+      return nextUnlockDay - currentUnlockDay;
+    }
+
+    return 20;
   };
 
-  // Прогресс недель
-  const weekProgress = totalWeeks > 0 ? (currentWeek / totalWeeks) * 100 : 0;
+  // Общее количество дней обучения
+  const calculateTotalDays = () => {
+    if (stages.length === 0) return 0;
+
+    const lastModule = sortedStages[sortedStages.length - 1];
+    const lastModuleIndex = stages.findIndex(s => s.stage_id === lastModule.stage_id);
+    const lastModuleDuration = getDaysForModule(lastModuleIndex);
+
+    return (lastModule.unlock_day || 0) + lastModuleDuration;
+  };
+
+  const totalDays = calculateTotalDays();
+  const calculatedTotalWeeks = Math.ceil(totalDays / 7) || totalWeeks;
+  const weekProgress = calculatedTotalWeeks > 0 ? (currentWeek / calculatedTotalWeeks) * 100 : 0;
 
   return (
-    <div className="relative min-h-screen bg-gradient-to-b from-gray-100 to-gray-200 overflow-hidden">
-      {/* Фоновая дорога */}
-      <div className="absolute inset-0 overflow-hidden">
-        <svg
-          className="absolute w-full h-full"
-          viewBox="0 0 400 900"
-          preserveAspectRatio="xMidYMid slice"
-        >
-          {/* Основная дорога */}
-          <path
-            d="M 200 50
-               Q 320 150 280 250
-               Q 240 350 300 450
-               Q 360 550 280 650
-               Q 200 750 250 850"
-            fill="none"
-            stroke="rgba(150, 200, 255, 0.3)"
-            strokeWidth="60"
-            strokeLinecap="round"
-          />
-          {/* Светящаяся центральная линия */}
-          <path
-            d="M 200 50
-               Q 320 150 280 250
-               Q 240 350 300 450
-               Q 360 550 280 650
-               Q 200 750 250 850"
-            fill="none"
-            stroke="rgba(180, 220, 255, 0.5)"
-            strokeWidth="20"
-            strokeLinecap="round"
-          />
-          {/* Яркая центральная линия */}
-          <path
-            d="M 200 50
-               Q 320 150 280 250
-               Q 240 350 300 450
-               Q 360 550 280 650
-               Q 200 750 250 850"
-            fill="none"
-            stroke="rgba(255, 255, 255, 0.8)"
-            strokeWidth="4"
-            strokeLinecap="round"
-          />
-        </svg>
-      </div>
+    <div
+      className="relative min-h-screen overflow-hidden"
+      style={{
+        backgroundImage: `url(${roadmapBg})`,
+        backgroundSize: 'cover',
+        backgroundPosition: 'center',
+        backgroundRepeat: 'no-repeat',
+        borderRadius: 32,
+        marginTop: 40,
+      }}
+    >
 
       {/* Контент */}
-      <div className="relative z-10 p-4 pt-6">
-        {/* Кнопка закрытия */}
-        {onClose && (
-          <button
-            onClick={onClose}
-            className="absolute top-4 left-4 flex items-center gap-2 bg-gray-800/80 text-white px-3 py-2 rounded-full text-sm"
-          >
-            <X className="w-4 h-4" />
-            Закрыть
-          </button>
-        )}
+      <div className="relative z-10 flex flex-col min-h-screen">
 
         {/* Прогресс недель */}
-        <div className="mt-16 mb-8 px-2">
+        <div style={{ paddingLeft: 32, paddingRight: 32, paddingTop: 58, marginBottom: 32 }}>
           <div className="flex items-center justify-between mb-2">
-            <span className="text-sm text-gray-600">Обучение</span>
-            <span className="text-sm font-medium text-gray-800">
-              Неделя {currentWeek} / {totalWeeks}
+            <span
+              style={{
+                fontFamily: 'Nunito, sans-serif',
+                fontWeight: 400,
+                fontSize: 12,
+                lineHeight: '100%',
+                color: '#222222',
+              }}
+            >
+              Неделя
+            </span>
+            <span
+              style={{
+                fontFamily: 'Nunito, sans-serif',
+                fontWeight: 400,
+                fontSize: 13,
+                lineHeight: '100%',
+                color: '#222222',
+              }}
+            >
+              {currentWeek} / {calculatedTotalWeeks}
             </span>
           </div>
-          <div className="w-full h-2 bg-gray-300 rounded-full overflow-hidden">
+          <div
+            style={{
+              width: '100%',
+              height: 6,
+              borderRadius: 100,
+              background: '#0000004D',
+              backdropFilter: 'blur(30px)',
+              WebkitBackdropFilter: 'blur(30px)',
+              overflow: 'hidden',
+            }}
+          >
             <motion.div
               initial={{ width: 0 }}
               animate={{ width: `${weekProgress}%` }}
               transition={{ duration: 0.8, ease: 'easeOut' }}
-              className="h-full bg-blue-400 rounded-full"
+              style={{
+                height: '100%',
+                background: '#FFFFFF',
+                borderRadius: 100,
+              }}
             />
           </div>
         </div>
 
         {/* Модули */}
-        <div className="relative space-y-8 pb-20">
+        <div className="relative flex flex-col-reverse" style={{ marginTop: 'auto', paddingBottom: 60 }}>
           {stages.map((stage, index) => {
             const status = getStageStatus(stage, index);
             const isLocked = status === 'locked';
             const isCurrent = status === 'current';
-            const progressPercent = getProgressPercentage(stage);
-            const days = getDaysForModule(index);
+            const isActive = !isLocked;
+            const moduleDuration = getDaysForModule(index);
 
-            // Позиция карточки (чередование лево/право)
-            const isLeft = index % 2 === 0;
+            const moduleUnlockDay = stage.unlock_day || 0;
+            const daysIntoModule = Math.max(0, daysSinceStart - moduleUnlockDay);
+            const displayDays = isActive ? Math.min(daysIntoModule, moduleDuration) : moduleDuration;
+            const daysProgressPercent = moduleDuration > 0 ? (displayDays / moduleDuration) * 100 : 0;
+
+            // Позиция карточки (чередование лево/право, первый справа)
+            const isLeft = index % 2 !== 0;
+
+            // Выбор маркера в зависимости от статуса
+            const getMarkerIcon = () => {
+              if (isCurrent) return roadmapUserMark;
+              if (isLocked) return roadmapDarkMark;
+              return roadmapWhiteMark;
+            };
 
             return (
               <motion.div
@@ -182,117 +221,166 @@ const RoadMap: React.FC<RoadMapProps> = ({
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: index * 0.1 }}
-                className={clsx(
-                  'relative flex',
-                  isLeft ? 'justify-start' : 'justify-end'
-                )}
+                className="relative flex items-center justify-center"
+                style={{ minHeight: 80 }}
               >
+                {/* Пунктирная линия от карточки к центру */}
+                <div
+                  className="absolute top-1/2 -translate-y-1/2"
+                  style={{
+                    left: isLeft ? 'auto' : '50%',
+                    right: isLeft ? '50%' : 'auto',
+                    width: 40,
+                    height: 2,
+                    borderTop: '2px dashed rgba(255, 255, 255, 0.6)',
+                  }}
+                />
+
+                {/* Маркер на дороге (в центре) */}
+                <div
+                  className="absolute left-1/2 top-1/2"
+                  style={{
+                    zIndex: 15,
+                    transform: 'translate(-50%, -100%)',
+                  }}
+                >
+                  {isCurrent && userPhotoUrl ? (
+                    <div style={{ position: 'relative', width: 48, height: 48 }}>
+                      <img
+                        src={roadmapUserMark}
+                        alt="marker"
+                        style={{ width: 48, height: 48 }}
+                      />
+                      <img
+                        src={userPhotoUrl}
+                        alt="user"
+                        style={{
+                          position: 'absolute',
+                          top: '50%',
+                          left: '50%',
+                          transform: 'translate(-50%, calc(-50% - 2px))',
+                          width: 27,
+                          height: 27,
+                          borderRadius: '50%',
+                          objectFit: 'cover',
+                          border: '1px solid #FFFFFF',
+                        }}
+                      />
+                    </div>
+                  ) : (
+                    <img
+                      src={getMarkerIcon()}
+                      alt="marker"
+                      style={{ width: 24, height: 24 }}
+                    />
+                  )}
+                </div>
+
                 {/* Карточка модуля */}
                 <div
-                  className={clsx(
-                    'relative flex items-center gap-3 bg-white rounded-2xl shadow-lg p-3 pr-4 max-w-[280px] cursor-pointer transition-all',
-                    isLocked && 'opacity-50',
-                    isCurrent && 'ring-2 ring-blue-400'
-                  )}
+                  className="relative flex items-center gap-3 rounded-2xl shadow-lg p-3 pr-4 cursor-pointer transition-all"
+                  style={{
+                    maxWidth: 165,
+                    marginLeft: isLeft ? 0 : 'auto',
+                    marginRight: isLeft ? 'auto' : 0,
+                    transform: isLeft ? 'translateX(20px)' : 'translateX(-20px)',
+                    background: isActive ? 'rgba(255, 255, 255, 0.8)' : 'rgba(0, 0, 0, 0.3)',
+                    backdropFilter: isLocked ? 'blur(30px)' : 'none',
+                    WebkitBackdropFilter: isLocked ? 'blur(30px)' : 'none',
+                  }}
                   onClick={() => {
                     if (isGuest) {
                       onGuestBlock?.();
                       return;
                     }
                     if (!isLocked && onStageClick) {
-                      onStageClick(stage.stage_id);
+                      onStageClick(stage.stage_id, stage.module_id);
                     }
                   }}
                 >
-                  {/* Аватар пользователя для текущего модуля */}
-                  {isCurrent && userPhotoUrl && (
-                    <div className="absolute -left-10 top-1/2 -translate-y-1/2">
-                      <img
-                        src={userPhotoUrl}
-                        alt="Вы"
-                        className="w-8 h-8 rounded-full border-2 border-white shadow-md"
-                      />
-                    </div>
-                  )}
-
                   {/* Контент карточки */}
                   <div className="flex-1 min-w-0">
-                    <h3 className={clsx(
-                      'font-semibold text-sm truncate',
-                      isLocked ? 'text-gray-400' : 'text-gray-900'
-                    )}>
+                    <h3
+                      className="truncate"
+                      style={{
+                        fontFamily: 'Nunito, sans-serif',
+                        fontWeight: 600,
+                        fontSize: 14,
+                        lineHeight: '120%',
+                        color: isActive ? '#000000' : '#FFFFFF',
+                      }}
+                    >
                       {stage.stage_name}
                     </h3>
-                    <p className={clsx(
-                      'text-xs',
-                      isLocked ? 'text-gray-400' : 'text-gray-500'
-                    )}>
+                    <p
+                      style={{
+                        fontFamily: 'Nunito, sans-serif',
+                        fontWeight: 500,
+                        fontSize: 12,
+                        lineHeight: '14px',
+                        color: isActive ? '#888888' : '#FFFFFF',
+                      }}
+                    >
                       {stage.total_lessons} уроков
                     </p>
                   </div>
 
                   {/* Круг прогресса */}
-                  <div className="relative w-12 h-12 flex-shrink-0">
+                  <div className="relative w-11 h-11 flex-shrink-0">
                     <svg className="w-full h-full -rotate-90">
-                      {/* Фон круга */}
                       <circle
-                        cx="24"
-                        cy="24"
-                        r="20"
-                        fill="none"
-                        stroke={isLocked ? '#e5e7eb' : '#f3f4f6'}
-                        strokeWidth="4"
+                        cx="22"
+                        cy="22"
+                        r="18"
+                        fill={isLocked ? '#FFFFFF' : 'none'}
+                        stroke="#E6E6E6"
+                        strokeWidth="3"
                       />
-                      {/* Прогресс */}
-                      {!isLocked && (
+                      {isActive && (
                         <motion.circle
-                          cx="24"
-                          cy="24"
-                          r="20"
+                          cx="22"
+                          cy="22"
+                          r="18"
                           fill="none"
-                          stroke="#60a5fa"
-                          strokeWidth="4"
+                          stroke="rgba(0, 0, 0, 0.3)"
+                          strokeWidth="3"
                           strokeLinecap="round"
-                          initial={{ strokeDashoffset: 126 }}
+                          initial={{ strokeDashoffset: 113 }}
                           animate={{
-                            strokeDashoffset: 126 - (126 * progressPercent) / 100
+                            strokeDashoffset: 113 - (113 * daysProgressPercent) / 100
                           }}
                           transition={{ delay: index * 0.1 + 0.3, duration: 0.5 }}
-                          strokeDasharray="126"
+                          strokeDasharray="113"
                         />
                       )}
                     </svg>
-                    {/* Текст дней */}
                     <div className="absolute inset-0 flex flex-col items-center justify-center">
-                      <span className={clsx(
-                        'text-sm font-bold leading-none',
-                        isLocked ? 'text-gray-400' : 'text-gray-800'
-                      )}>
-                        {days}
+                      <span
+                        style={{
+                          fontFamily: 'Nunito, sans-serif',
+                          fontWeight: 500,
+                          fontSize: 12,
+                          lineHeight: '14px',
+                          textAlign: 'center',
+                          color: isActive ? '#222222' : '#ADADAD',
+                        }}
+                      >
+                        {displayDays}
                       </span>
-                      <span className={clsx(
-                        'text-[8px]',
-                        isLocked ? 'text-gray-400' : 'text-gray-500'
-                      )}>
-                        {days === 1 ? 'день' : days < 5 ? 'дня' : 'дней'}
+                      <span
+                        style={{
+                          fontFamily: 'Nunito, sans-serif',
+                          fontWeight: 500,
+                          fontSize: 8,
+                          lineHeight: '10px',
+                          textAlign: 'center',
+                          color: isActive ? '#222222' : '#ADADAD',
+                        }}
+                      >
+                        {displayDays === 1 ? 'день' : displayDays < 5 ? 'дня' : 'дней'}
                       </span>
                     </div>
                   </div>
-                </div>
-
-                {/* Маркер на дороге */}
-                <div
-                  className={clsx(
-                    'absolute top-1/2 -translate-y-1/2',
-                    isLeft ? 'right-[30%]' : 'left-[30%]'
-                  )}
-                >
-                  <MapPin
-                    className={clsx(
-                      'w-5 h-5',
-                      isLocked ? 'text-gray-300' : 'text-blue-400'
-                    )}
-                  />
                 </div>
               </motion.div>
             );

@@ -12,6 +12,8 @@ import { Ripple } from '@/components/ui/Ripple/Ripple';
 import GuestBlockedModal from '@/components/GuestBlockedModal';
 import { buildFileUrl } from '@/lib/supabase/supabaseStorageService';
 import { clsx } from 'clsx';
+import TooltipIcon from '@/shared/assets/icons/tooltip.svg';
+import Background1 from '@/shared/assets/images/background1.png';
 
 // Удаляем текст в квадратных скобках из названия
 const cleanName = (name: string) => name.replace(/\s*\[.*?\]/g, '').trim();
@@ -34,21 +36,37 @@ const itemVariants = {
 };
 
 /**
- * Хук для получения названия модуля
+ * Хук для получения данных модуля (название, описание, order_num)
+ * Получаем через course_stages с join на stream_modules (обходим RLS)
  */
-function useModuleName(moduleId: string | undefined) {
+function useModuleInfo(moduleId: string | undefined) {
     return useQuery({
-        queryKey: ['module-name', moduleId],
+        queryKey: ['module-info', moduleId],
         queryFn: async () => {
             if (!moduleId || !supabase) return null;
 
+            // Получаем данные модуля через join от course_stages
             const { data } = await supabase
-                .from('stream_modules')
-                .select('name')
-                .eq('id', moduleId)
+                .from('course_stages')
+                .select(`
+                    stream_modules!inner(
+                        id,
+                        name,
+                        order_num
+                    )
+                `)
+                .eq('stream_module_id', moduleId)
+                .limit(1)
                 .single();
 
-            return data?.name || null;
+            if (!data?.stream_modules) return null;
+
+            const moduleData = data.stream_modules as any;
+            return {
+                name: moduleData.name,
+                description: null, // stream_modules не имеет description
+                order_num: moduleData.order_num,
+            };
         },
         enabled: !!moduleId,
         staleTime: 10 * 60 * 1000,
@@ -190,6 +208,7 @@ const ModuleStagesPage: React.FC = () => {
     const { moduleId } = useParams<{ moduleId: string }>();
     const navigate = useNavigate();
     const [showGuestModal, setShowGuestModal] = useState(false);
+    const [showInfoModal, setShowInfoModal] = useState(false);
 
     const initDataSignal = useSignal(initDataState);
     const { supabaseUser, loading: userLoading } = useSupabaseUser(initDataSignal);
@@ -197,8 +216,17 @@ const ModuleStagesPage: React.FC = () => {
 
     const { data: stages, isLoading: stagesLoading, error: stagesError } = useModuleStages(moduleId || null);
 
-    // Получаем название модуля
-    const { data: moduleName } = useModuleName(moduleId);
+    // Получаем данные модуля (название, описание, order_num)
+    const { data: moduleInfo, isLoading: moduleInfoLoading, error: moduleInfoError } = useModuleInfo(moduleId);
+    console.log('🔍 [DEBUG] moduleId:', moduleId);
+    console.log('🔍 [DEBUG] moduleInfo:', moduleInfo);
+    console.log('🔍 [DEBUG] moduleInfoLoading:', moduleInfoLoading);
+    console.log('🔍 [DEBUG] moduleInfoError:', moduleInfoError);
+    const moduleName = moduleInfo?.name;
+    const moduleDescription = moduleInfo?.description;
+    const moduleOrderNum = moduleInfo?.order_num || 1;
+    // Используем локальную картинку как на MainPage: /step11.png, /step22.png и т.д.
+    const moduleCoverUrl = `/step${moduleOrderNum}${moduleOrderNum}.png`;
 
     // Получаем данные о доступе к модулю
     const { data: accessData, isLoading: accessLoading } = useModuleAccessData(supabaseUser?.id, moduleId);
@@ -206,7 +234,7 @@ const ModuleStagesPage: React.FC = () => {
     const moduleUnlockOffset = accessData?.moduleUnlockOffset || 0;
 
     // Получаем прогресс по заданиям модуля
-    const { data: progressData } = useModuleAssignmentsProgress(supabaseUser?.id, moduleId);
+    const { data: progressData, isLoading: progressLoading } = useModuleAssignmentsProgress(supabaseUser?.id, moduleId);
     const totalAssignments = progressData?.totalAssignments || 0;
     const completedAssignments = progressData?.completedAssignments || 0;
     const assignmentsProgressPercent = totalAssignments > 0 ? (completedAssignments / totalAssignments) * 100 : 0;
@@ -238,7 +266,7 @@ const ModuleStagesPage: React.FC = () => {
         });
     }, [stages, streamStartDate, moduleUnlockOffset]);
 
-    const loading = userLoading || stagesLoading || accessLoading;
+    const loading = userLoading || stagesLoading || accessLoading || moduleInfoLoading;
 
     const handleStageClick = (lessonId: number, isUnlocked: boolean) => {
         if (isGuest) {
@@ -255,8 +283,34 @@ const ModuleStagesPage: React.FC = () => {
         return (
             <Page showTabBar={false}>
                 <div className="profile-loading">
-                    <div className="profile-loading-spinner" aria-hidden="true" />
-                    <p>Загрузка ступеней...</p>
+                    <img
+                        src="/coin3.png"
+                        alt="Loading"
+                        style={{
+                            width: 128,
+                            height: 128,
+                            animation: 'coin3dSpin 1s linear infinite',
+                        }}
+                    />
+                    <style>{`
+                        @keyframes coin3dSpin {
+                            0% { transform: rotateY(0deg); }
+                            100% { transform: rotateY(360deg); }
+                        }
+                        @keyframes dotAnimation {
+                            0%, 20% { opacity: 0; }
+                            40% { opacity: 1; }
+                            100% { opacity: 1; }
+                        }
+                        .loading-dots span {
+                            opacity: 0;
+                            animation: dotAnimation 1.5s infinite;
+                        }
+                        .loading-dots span:nth-child(1) { animation-delay: 0s; }
+                        .loading-dots span:nth-child(2) { animation-delay: 0.3s; }
+                        .loading-dots span:nth-child(3) { animation-delay: 0.6s; }
+                    `}</style>
+                    <p>Загрузка ступеней<span className="loading-dots"><span>.</span><span>.</span><span>.</span></span></p>
                 </div>
             </Page>
         );
@@ -291,39 +345,88 @@ const ModuleStagesPage: React.FC = () => {
     // Название модуля из хука или fallback (очищенное от скобок)
     const displayModuleName = cleanName(moduleName || 'Модуль');
 
+    // Прогресс для полосы - синхронизируем с заданиями если они есть
+    // Начинаем с 0 пока данные загружаются, чтобы не было анимации назад
+    const progressPercent = progressLoading
+        ? 0
+        : (totalAssignments > 0
+            ? assignmentsProgressPercent
+            : (totalStages > 0 ? (unlockedStages / totalStages) * 100 : 0));
+
     return (
         <Page showTabBar={false}>
-            <div className="bg-[url('/bg3.jpg')] min-h-full bg-cover bg-top text-black">
+            <div className="min-h-full text-black pt-4 px-4 pb-4" style={{ backgroundImage: `url(${Background1})`, backgroundSize: '120%', backgroundPosition: 'top', backgroundAttachment: 'fixed', backgroundRepeat: 'no-repeat' }}>
                 {/* Белая карточка с заголовком и прогрессом */}
-                <div className="bg-white rounded-2xl mx-4 mt-4 p-4 flex flex-col gap-3">
-                    <div className="flex items-center gap-2">
-                        <p className="font-bold text-xl">{displayModuleName}</p>
-                        <Ripple className="rounded-full overflow-hidden">
-                            <div className="cursor-pointer w-5 h-5 flex items-center justify-center">
-                                <span className="text-gray-400 text-sm">ⓘ</span>
-                            </div>
-                        </Ripple>
+                <div
+                    className="p-4 flex flex-col"
+                    style={{
+                        backgroundColor: '#FFFFFFCC',
+                        borderRadius: 20,
+                    }}
+                >
+                    {/* Заголовок с иконкой */}
+                    <div style={{ display: 'flex', alignItems: 'center', marginBottom: 4 }}>
+                        <p
+                            style={{
+                                fontFamily: 'Nunito, sans-serif',
+                                fontWeight: 600,
+                                fontSize: 20,
+                                lineHeight: '100%',
+                                color: '#000',
+                                margin: 0,
+                            }}
+                        >
+                            {displayModuleName}
+                        </p>
+                        <img
+                            src={TooltipIcon}
+                            alt="info"
+                            style={{ width: 16, height: 16, marginLeft: 8, cursor: 'pointer' }}
+                            onClick={() => setShowInfoModal(true)}
+                        />
                     </div>
-                    <p className="text-sm text-[#8C8C8C]">
+                    {/* Описание прогресса */}
+                    <p
+                        style={{
+                            fontFamily: 'Nunito, sans-serif',
+                            fontWeight: 400,
+                            fontSize: 14,
+                            lineHeight: '120%',
+                            color: '#000',
+                            marginBottom: 12,
+                        }}
+                    >
                         {totalAssignments > 0
                             ? `Прогресс по заданиям: ${completedAssignments} из ${totalAssignments}`
                             : `${totalStages} ${totalStages === 1 ? 'ступень' : totalStages < 5 ? 'ступени' : 'ступеней'}`
                         }
                     </p>
-                    {/* Прогресс-бар из сегментов */}
-                    <div className="flex items-center gap-1 w-full">
-                        {stages.map((_, i) => (
-                            <div key={i} className={clsx("flex-1 h-1 rounded-full", {
-                                "bg-[#68B1EB]": i < unlockedStages,
-                                "bg-[#E5E5E5]": i >= unlockedStages
-                            })} />
-                        ))}
+                    {/* Прогресс-бар слитный */}
+                    <div
+                        style={{
+                            width: '100%',
+                            height: 6,
+                            backgroundColor: 'rgba(255, 255, 255, 0.8)',
+                            borderRadius: 12,
+                            overflow: 'hidden',
+                        }}
+                    >
+                        <div
+                            style={{
+                                width: `${progressPercent}%`,
+                                height: '100%',
+                                backgroundColor: '#0000004D',
+                                borderRadius: 12,
+                                transition: 'width 0.3s ease',
+                            }}
+                        />
                     </div>
                 </div>
 
                 {/* Сетка ступеней 2 колонки */}
                 <motion.div
-                    className="p-4 grid grid-cols-2 gap-3"
+                    className="grid grid-cols-2"
+                    style={{ gap: 8, marginTop: 16 }}
                     variants={listVariants}
                     initial="hidden"
                     animate="show"
@@ -346,35 +449,93 @@ const ModuleStagesPage: React.FC = () => {
                                     style={{ touchAction: 'manipulation' }}
                                     className="w-full"
                                 >
-                                    <Ripple className="rounded-2xl overflow-hidden w-full shadow-sm">
+                                    <Ripple className="rounded-3xl overflow-hidden w-full shadow-sm">
                                         <div
                                             onClick={() => firstLesson && handleStageClick(firstLesson.id, isUnlocked)}
                                             className="flex flex-col w-full bg-white cursor-pointer"
                                         >
                                             {/* Изображение с бейджами */}
-                                            <div className="relative w-full aspect-[4/3]">
+                                            <div className="relative w-full" style={{ maxHeight: 140, overflow: 'hidden' }}>
                                                 <img
                                                     src={coverUrl}
                                                     alt={stage.name}
-                                                    className={clsx('w-full h-full object-cover', !isUnlocked && 'brightness-75')}
+                                                    className="w-full h-full object-cover"
                                                     onError={(e) => { e.currentTarget.src = '/test.png'; }}
                                                 />
-
-                                                {/* Бейдж с номером недели - левый верхний угол */}
-                                                <div className="absolute top-2 left-2 bg-[#A89080]/90 text-white text-[10px] font-medium px-2 py-1 rounded-md">
-                                                    Неделя {weekNumber}
-                                                </div>
-
-                                                {/* Бейдж "Не доступно" с замком - для заблокированных */}
+                                                {/* Затемнение для заблокированных */}
                                                 {!isUnlocked && (
-                                                    <div className="absolute bottom-2 left-2 bg-[#8C8C8C]/90 text-white text-[10px] font-medium px-2 py-1 rounded-md flex items-center gap-1">
-                                                        <span>Не доступно</span>
-                                                        <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                                                            <rect x="3" y="11" width="18" height="11" rx="2" ry="2"/>
-                                                            <path d="M7 11V7a5 5 0 0 1 10 0v4"/>
-                                                        </svg>
-                                                    </div>
+                                                    <div
+                                                        style={{
+                                                            position: 'absolute',
+                                                            top: 0,
+                                                            left: 0,
+                                                            right: 0,
+                                                            bottom: 0,
+                                                            backgroundColor: '#0000007A',
+                                                        }}
+                                                    />
                                                 )}
+
+                                                {/* Бейджи в одном flex-контейнере */}
+                                                <div
+                                                    style={{
+                                                        position: 'absolute',
+                                                        top: 12,
+                                                        left: 12,
+                                                        display: 'flex',
+                                                        flexDirection: 'column',
+                                                        gap: 12,
+                                                        zIndex: 10,
+                                                        isolation: 'isolate',
+                                                    }}
+                                                >
+                                                    {/* Бейдж с номером недели */}
+                                                    <div
+                                                        style={{
+                                                            backgroundColor: 'rgba(0, 0, 0, 0.3)',
+                                                            backdropFilter: 'blur(30px)',
+                                                            WebkitBackdropFilter: 'blur(30px)',
+                                                            borderRadius: 32,
+                                                            padding: '4px 12px',
+                                                            color: '#fff',
+                                                            fontFamily: 'Nunito, sans-serif',
+                                                            fontWeight: 600,
+                                                            fontSize: 14,
+                                                            lineHeight: '120%',
+                                                            width: 'fit-content',
+                                                        }}
+                                                    >
+                                                        Неделя {weekNumber}
+                                                    </div>
+
+                                                    {/* Бейдж "Не доступно" с замком - для заблокированных */}
+                                                    {!isUnlocked && (
+                                                        <div
+                                                            style={{
+                                                                backgroundColor: '#ADADAD',
+                                                                backdropFilter: 'blur(30px)',
+                                                                WebkitBackdropFilter: 'blur(30px)',
+                                                                borderRadius: 32,
+                                                                padding: '4px 8px',
+                                                                color: '#fff',
+                                                                fontFamily: 'Nunito, sans-serif',
+                                                                fontWeight: 600,
+                                                                fontSize: 14,
+                                                                lineHeight: '120%',
+                                                                display: 'flex',
+                                                                alignItems: 'center',
+                                                                gap: 4,
+                                                                width: 'fit-content',
+                                                            }}
+                                                        >
+                                                            <span>Не доступно</span>
+                                                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                                                <rect x="3" y="11" width="18" height="11" rx="2" ry="2" />
+                                                                <path d="M7 11V7a5 5 0 0 1 10 0v4" />
+                                                            </svg>
+                                                        </div>
+                                                    )}
+                                                </div>
                                             </div>
 
                                             {/* День с открытия модуля снизу */}
@@ -398,6 +559,115 @@ const ModuleStagesPage: React.FC = () => {
                 title="Ступени доступны только ученикам"
                 description="Зарегистрируйтесь для доступа"
             />
+
+            {/* Модалка с информацией о модуле */}
+            {showInfoModal && (
+                <motion.div
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    exit={{ opacity: 0 }}
+                    onClick={() => setShowInfoModal(false)}
+                    style={{
+                        position: 'fixed',
+                        top: 0,
+                        left: 0,
+                        right: 0,
+                        bottom: 0,
+                        backgroundColor: 'rgba(0, 0, 0, 0.5)',
+                        backdropFilter: 'blur(4px)',
+                        display: 'flex',
+                        flexDirection: 'column',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        zIndex: 1000,
+                        padding: 24,
+                    }}
+                >
+                    {/* Карточка модалки */}
+                    <motion.div
+                        initial={{ scale: 0.9, opacity: 0 }}
+                        animate={{ scale: 1, opacity: 1 }}
+                        onClick={(e) => e.stopPropagation()}
+                        style={{
+                            backgroundColor: '#fff',
+                            borderRadius: 20,
+                            padding: 16,
+                            maxWidth: 300,
+                            width: '100%',
+                            display: 'flex',
+                            flexDirection: 'column',
+                            alignItems: 'center',
+                        }}
+                    >
+                        {/* Картинка модуля */}
+                        <img
+                            src={moduleCoverUrl}
+                            alt={displayModuleName}
+                            style={{
+                                width: '100%',
+                                aspectRatio: '16/9',
+                                objectFit: 'cover',
+                                borderRadius: 12,
+                                marginBottom: 16,
+                            }}
+                            onError={(e) => { e.currentTarget.src = '/test.png'; }}
+                        />
+                        {/* Название */}
+                        <p
+                            style={{
+                                fontFamily: 'Nunito, sans-serif',
+                                fontWeight: 700,
+                                fontSize: 18,
+                                color: '#000',
+                                textAlign: 'center',
+                                margin: 0,
+                                marginBottom: 8,
+                            }}
+                        >
+                            {displayModuleName}
+                        </p>
+                        {/* Описание */}
+                        {moduleDescription && (
+                            <p
+                                style={{
+                                    fontFamily: 'Nunito, sans-serif',
+                                    fontWeight: 400,
+                                    fontSize: 14,
+                                    color: '#8C8C8C',
+                                    textAlign: 'center',
+                                    margin: 0,
+                                }}
+                            >
+                                {moduleDescription}
+                            </p>
+                        )}
+                    </motion.div>
+
+                    {/* Кнопка закрытия */}
+                    <motion.button
+                        initial={{ scale: 0.9, opacity: 0 }}
+                        animate={{ scale: 1, opacity: 1 }}
+                        onClick={() => setShowInfoModal(false)}
+                        style={{
+                            marginTop: 16,
+                            width: 40,
+                            height: 40,
+                            borderRadius: '50%',
+                            background: 'linear-gradient(109.65deg, #E1C1F4 13.64%, #B862EA 124.92%)',
+                            border: 'none',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            cursor: 'pointer',
+                        }}
+                    >
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                            <line x1="18" y1="6" x2="6" y2="18" />
+                            <line x1="6" y1="6" x2="18" y2="18" />
+                        </svg>
+                    </motion.button>
+                </motion.div>
+            )}
         </Page>
     );
 };

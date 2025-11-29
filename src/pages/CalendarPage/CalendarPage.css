@@ -90,7 +90,21 @@
 .calendar-events-list {
   display: flex;
   flex-direction: column;
-  gap: 16px;
+  gap: 12px;
+}
+
+/* Группа событий по дате */
+.calendar-event-group {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.calendar-event-group-title {
+  font-size: 18px;
+  font-weight: 600;
+  color: #000;
+  margin: 0;
 }
 
 .calendar-events-empty,

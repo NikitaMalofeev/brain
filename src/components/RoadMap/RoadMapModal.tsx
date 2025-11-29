@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import RoadMap from './RoadMap';
 
@@ -39,6 +39,18 @@ const RoadMapModal: React.FC<RoadMapModalProps> = ({
   currentWeek = 1,
   totalWeeks = 9,
 }) => {
+  // Блокировка скролла при открытии модалки
+  useEffect(() => {
+    if (isOpen) {
+      document.body.style.overflow = 'hidden';
+    } else {
+      document.body.style.overflow = '';
+    }
+    return () => {
+      document.body.style.overflow = '';
+    };
+  }, [isOpen]);
+
   const handleStageClick = (stageId: number) => {
     if (onStageClick) {
       onStageClick(stageId);
@@ -54,17 +66,20 @@ const RoadMapModal: React.FC<RoadMapModalProps> = ({
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
           className="fixed inset-0 z-50 overflow-y-auto"
+          style={{ backgroundColor: '#FFFFFF' }}
+          onClick={onClose}
         >
-          <RoadMap
-            stages={stages}
-            onStageClick={handleStageClick}
-            isGuest={isGuest}
-            onGuestBlock={onGuestBlock}
-            userPhotoUrl={userPhotoUrl}
-            currentWeek={currentWeek}
-            totalWeeks={totalWeeks}
-            onClose={onClose}
-          />
+          <div onClick={(e) => e.stopPropagation()}>
+            <RoadMap
+              stages={stages}
+              onStageClick={handleStageClick}
+              isGuest={isGuest}
+              onGuestBlock={onGuestBlock}
+              userPhotoUrl={userPhotoUrl}
+              currentWeek={currentWeek}
+              totalWeeks={totalWeeks}
+            />
+          </div>
         </motion.div>
       )}
     </AnimatePresence>

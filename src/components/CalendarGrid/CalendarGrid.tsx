@@ -2,10 +2,18 @@ import React, { useState, useMemo } from 'react';
 import { clsx } from 'clsx';
 import './CalendarGrid.css';
 
+interface ModulePeriod {
+  moduleId: string;
+  moduleName: string;
+  color: string;
+  startDate: string;
+  endDate: string;
+}
+
 interface CalendarGridProps {
   currentDate: Date;
   selectedDate: Date | null;
-  events: Array<{ event_date: string; module_color: string | null; module_name?: string | null }>;
+  events: Array<{ event_date: string; module_color: string | null; module_name?: string | null; module_id?: string | null }>;
   onDateClick: (date: Date) => void;
   onPrevMonth: () => void;
   onNextMonth: () => void;
@@ -25,6 +33,14 @@ const CalendarGrid: React.FC<CalendarGridProps> = ({
 }) => {
   const [showLegend, setShowLegend] = useState(false);
 
+  // Форматируем дату в YYYY-MM-DD без учёта часового пояса
+  const formatDateLocal = (date: Date): string => {
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const day = String(date.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
+  };
+
   // Получаем уникальные модули для легенды
   const moduleColors = useMemo(() => {
     const colorMap = new Map<string, string>();
@@ -35,6 +51,64 @@ const CalendarGrid: React.FC<CalendarGridProps> = ({
     });
     return Array.from(colorMap.entries()).map(([color, name]) => ({ color, name }));
   }, [events]);
+
+  // Вычисляем периоды модулей из событий
+  const modulePeriods = useMemo((): ModulePeriod[] => {
+    const periodMap = new Map<string, ModulePeriod>();
+
+    events.forEach((event) => {
+      if (!event.module_id || !event.module_color) return;
+
+      const existing = periodMap.get(event.module_id);
+      if (existing) {
+        // Обновляем min/max даты
+        if (event.event_date < existing.startDate) {
+          existing.startDate = event.event_date;
+        }
+        if (event.event_date > existing.endDate) {
+          existing.endDate = event.event_date;
+        }
+      } else {
+        periodMap.set(event.module_id, {
+          moduleId: event.module_id,
+          moduleName: event.module_name || '',
+          color: event.module_color,
+          startDate: event.event_date,
+          endDate: event.event_date,
+        });
+      }
+    });
+
+    return Array.from(periodMap.values());
+  }, [events]);
+
+  // Получить цвет обводки для даты (от модуля в периоде которого она находится)
+  const getModuleBorderColor = (date: Date): string | null => {
+    const dateStr = formatDateLocal(date);
+
+    for (const period of modulePeriods) {
+      if (dateStr >= period.startDate && dateStr <= period.endDate) {
+        return period.color;
+      }
+    }
+    return null;
+  };
+
+  // Определить позицию даты в периоде модуля (для скругления углов)
+  const getDatePositionInPeriod = (date: Date): { isStart: boolean; isEnd: boolean; isInPeriod: boolean } => {
+    const dateStr = formatDateLocal(date);
+
+    for (const period of modulePeriods) {
+      if (dateStr >= period.startDate && dateStr <= period.endDate) {
+        return {
+          isStart: dateStr === period.startDate,
+          isEnd: dateStr === period.endDate,
+          isInPeriod: true,
+        };
+      }
+    }
+    return { isStart: false, isEnd: false, isInPeriod: false };
+  };
 
   // Получаем информацию о месяце
   const year = currentDate.getFullYear();
@@ -65,27 +139,10 @@ const CalendarGrid: React.FC<CalendarGridProps> = ({
     days.push(new Date(year, month, day));
   }
 
-  // Форматируем дату в YYYY-MM-DD без учёта часового пояса
-  const formatDateLocal = (date: Date): string => {
-    const year = date.getFullYear();
-    const month = String(date.getMonth() + 1).padStart(2, '0');
-    const day = String(date.getDate()).padStart(2, '0');
-    return `${year}-${month}-${day}`;
-  };
-
   // Проверяем есть ли события на эту дату
   const hasEventsOnDate = (date: Date): boolean => {
     const dateStr = formatDateLocal(date);
     return events.some((event) => event.event_date === dateStr);
-  };
-
-  // Получаем цвета модулей для даты
-  const getModuleColorsForDate = (date: Date): string[] => {
-    const dateStr = formatDateLocal(date);
-    const colors = events
-      .filter((event) => event.event_date === dateStr && event.module_color)
-      .map((event) => event.module_color as string);
-    return [...new Set(colors)]; // Уникальные цвета
   };
 
   // Проверяем является ли дата сегодняшней
@@ -209,39 +266,37 @@ const CalendarGrid: React.FC<CalendarGridProps> = ({
             return <div key={`empty-${index}`} className="calendar-day-empty" />;
           }
 
-          const moduleColors = getModuleColorsForDate(date);
           const hasEvents = hasEventsOnDate(date);
+          const moduleBorderColor = getModuleBorderColor(date);
+          const position = getDatePositionInPeriod(date);
+          const todayDate = isToday(date);
 
           return (
             <div
               key={date.toISOString()}
               className={clsx('calendar-day', {
-                'calendar-day-today': isToday(date),
+                'calendar-day-today': todayDate,
                 'calendar-day-selected': isSelected(date),
                 'calendar-day-has-events': hasEvents,
+                'calendar-day-in-period': position.isInPeriod,
+                'calendar-day-period-start': position.isStart,
+                'calendar-day-period-end': position.isEnd,
               })}
               onClick={() => onDateClick(date)}
+              style={moduleBorderColor ? {
+                '--module-border-color': moduleBorderColor,
+              } as React.CSSProperties : undefined}
             >
+              {/* Белая обводка для сегодняшнего дня */}
+              {todayDate && (
+                <div className="calendar-day-today-ring" />
+              )}
+
               <span className="calendar-day-number">{date.getDate()}</span>
 
-              {/* Индикаторы событий (цветные точки) */}
+              {/* Индикатор события - чёрный кружок */}
               {hasEvents && (
-                <div className="calendar-day-indicators">
-                  {moduleColors.length > 0 ? (
-                    moduleColors.slice(0, 3).map((color, idx) => (
-                      <div
-                        key={idx}
-                        className="calendar-day-indicator"
-                        style={{ backgroundColor: color }}
-                      />
-                    ))
-                  ) : (
-                    <div
-                      className="calendar-day-indicator"
-                      style={{ backgroundColor: '#007AFF' }}
-                    />
-                  )}
-                </div>
+                <div className="calendar-day-indicator" />
               )}
             </div>
           );
