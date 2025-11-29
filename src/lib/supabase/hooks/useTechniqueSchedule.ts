@@ -246,3 +246,66 @@ export const useUserTechniqueAccess = (userId: string | null) => {
     enabled: !!userId,
   });
 };
+
+/**
+ * Хук для получения техники по модулю и дню (release_day)
+ * Используется на странице урока для показа связанной техники
+ * Требует stream_id и tariff_id для корректной фильтрации
+ */
+export const useTechniqueByModuleAndDay = (
+  moduleId: string | null,
+  day: number | null,
+  streamId?: string | null,
+  tariffId?: string | null
+) => {
+  return useQuery({
+    queryKey: ['technique-by-module-day', moduleId, day, streamId, tariffId],
+    queryFn: async () => {
+      console.log('useTechniqueByModuleAndDay called with:', { moduleId, day, streamId, tariffId });
+
+      if (!moduleId || !day || !supabase) {
+        console.log('useTechniqueByModuleAndDay skipped - missing params:', { moduleId, day, hasSupabase: !!supabase });
+        return null;
+      }
+
+      logger.debug('Fetching technique by module and day', { moduleId, day, streamId, tariffId });
+
+      // Строим запрос с учётом stream_id и tariff_id (если переданы)
+      let query = supabase
+        .from('module_materials')
+        .select(`
+          *,
+          material:materials(
+            id,
+            name,
+            description,
+            cover_image_path,
+            material_type,
+            duration_seconds
+          )
+        `)
+        .eq('module_id', moduleId)
+        .eq('release_day', day);
+
+      // Добавляем фильтры по stream_id и tariff_id если переданы
+      if (streamId) {
+        query = query.eq('stream_id', streamId);
+      }
+      if (tariffId) {
+        query = query.eq('tariff_id', tariffId);
+      }
+
+      const { data, error } = await query.maybeSingle();
+
+      console.log('module_materials query result:', { data, error });
+
+      if (error) {
+        logger.error('Error fetching technique by module and day', { error });
+        throw error;
+      }
+
+      return data;
+    },
+    enabled: !!moduleId && !!day,
+  });
+};

@@ -21,6 +21,7 @@ import TokenErrorPage from '@/pages/TokenErrorPage/TokenErrorPage';
 import TechniquesPage from '@/pages/TechniquesPage/TechniquesPage';
 import TechniquePlayerPage from '@/pages/TechniquesPage/TechniquePlayerPage';
 import CalendarPage from '@/pages/CalendarPage/CalendarPage';
+import EventPage from '@/pages/EventPage/EventPage';
 import RoadMapPage from '@/pages/RoadMapPage/RoadMapPage';
 
 export const routers = [
@@ -59,6 +60,10 @@ export const routers = [
   {
     path: '/calendar',
     Component: CalendarPage
+  },
+  {
+    path: '/calendar/event/:id',
+    Component: EventPage
   },
   {
     path: '/roadmap',

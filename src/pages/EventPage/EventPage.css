@@ -1,0 +1,115 @@
+.event-page {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  background: #fff;
+}
+
+.event-page-error {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 60vh;
+}
+
+.event-page-error p {
+  font-family: 'Nunito', sans-serif;
+  font-size: 16px;
+  color: #8E8E93;
+}
+
+/* Обложка */
+.event-page-cover {
+  width: 100%;
+  aspect-ratio: 16 / 10;
+  overflow: hidden;
+  border-bottom-left-radius: 32px;
+  border-bottom-right-radius: 32px;
+}
+
+.event-page-cover img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+/* Контент */
+.event-page-content {
+  display: flex;
+  flex-direction: column;
+  padding: 16px;
+  flex: 1;
+}
+
+/* Дата */
+.event-page-date {
+  font-family: 'Nunito', sans-serif;
+  font-weight: 400;
+  font-size: 16px;
+  line-height: 140%;
+  letter-spacing: 0;
+  color: #000;
+}
+
+/* Время */
+.event-page-time {
+  font-family: 'Nunito', sans-serif;
+  font-weight: 400;
+  font-size: 16px;
+  line-height: 140%;
+  letter-spacing: 0;
+  color: #000;
+}
+
+/* Заголовок */
+.event-page-title {
+  font-family: 'Nunito', sans-serif;
+  font-weight: 600;
+  font-size: 20px;
+  line-height: 100%;
+  letter-spacing: 0;
+  color: #000;
+  margin: 12px 0 0 0;
+}
+
+/* Описание */
+.event-page-description {
+  font-family: 'Nunito', sans-serif;
+  font-weight: 400;
+  font-size: 16px;
+  line-height: 140%;
+  letter-spacing: 0;
+  color: #000;
+  margin: 8px 0 0 0;
+}
+
+/* Футер с кнопкой */
+.event-page-footer {
+  position: fixed;
+  bottom: 20px;
+  left: 16px;
+  right: 16px;
+  max-width: 568px;
+  margin: 0 auto;
+}
+
+.event-page-button {
+  width: 100%;
+  padding: 16px;
+  background: linear-gradient(90deg, rgba(34, 34, 34, 0.6) 0%, rgba(117, 117, 117, 0.6) 100%);
+  border: none;
+  border-radius: 32px;
+  font-family: 'Nunito', sans-serif;
+  font-weight: 400;
+  font-size: 16px;
+  line-height: 140%;
+  letter-spacing: 0;
+  color: #fff;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.event-page-button:active {
+  transform: scale(0.98);
+  opacity: 0.9;
+}

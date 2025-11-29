@@ -8,6 +8,7 @@ import { useNavigate } from 'react-router-dom';
 import { Page } from '@/components/Page';
 import { useSupabaseUser } from '@/lib/supabase/hooks/useSupabaseUser';
 import AuthStatusIndicator from '@/components/AuthStatusIndicator';
+import LoadingSpinner from '@/components/LoadingSpinner/LoadingSpinner';
 import './ProfileMain.css';
 
 export const ProfileMain: FC = () => {
@@ -47,10 +48,7 @@ export const ProfileMain: FC = () => {
   if (loading) {
     return (
       <Page>
-        <div className="profile-loading">
-          <div className="profile-loading-spinner" aria-hidden="true" />
-          <p>Загрузка профиля...</p>
-        </div>
+        <LoadingSpinner />
       </Page>
     );
   }

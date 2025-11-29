@@ -1,6 +1,7 @@
 import {Page} from "@/components";
 import {useQuery} from "@tanstack/react-query";
 import {supabase} from "@/lib/supabase/client.ts";
+import LoadingSpinner from '@/components/LoadingSpinner/LoadingSpinner';
 
 export const FaqPage = () => {
     const {data, isLoading} = useQuery({
@@ -24,10 +25,7 @@ export const FaqPage = () => {
     if(isLoading){
         return (
             <Page>
-                <div className="profile-loading">
-                    <div className="profile-loading-spinner" aria-hidden="true" />
-                    <p>Загрузка чатов...</p>
-                </div>
+                <LoadingSpinner />
             </Page>
         )
     }

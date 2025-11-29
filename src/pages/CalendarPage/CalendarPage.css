@@ -1,22 +1,23 @@
 .calendar-page {
   display: flex;
   flex-direction: column;
-  gap: 20px;
-  padding: 16px;
-  padding-bottom: 100px;
+  padding: 0 16px 16px 16px;
   min-height: 100vh;
-  background: #F5F5F7;
 }
 
 .calendar-page-header {
   display: flex;
   flex-direction: column;
   gap: 8px;
+  padding: 16px 0;
 }
 
 .calendar-page-title {
-  font-size: 28px;
+  font-family: 'Nunito', sans-serif;
+  font-size: 20px;
   font-weight: 700;
+  line-height: 100%;
+  letter-spacing: 0;
   color: #000;
   margin: 0;
 }
@@ -37,22 +38,6 @@
   gap: 16px;
 }
 
-.calendar-loading-spinner {
-  width: 40px;
-  height: 40px;
-  border: 3px solid #E5E5EA;
-  border-top-color: #007AFF;
-  border-radius: 50%;
-  animation: spin 1s linear infinite;
-}
-
-@keyframes spin {
-  to {
-    transform: rotate(360deg);
-  }
-}
-
-.calendar-loading p,
 .calendar-error p {
   font-size: 16px;
   color: #8E8E93;
@@ -64,14 +49,11 @@
   color: #FF3B30 !important;
 }
 
-.calendar-events-section {
-  min-height: 300px;
-}
-
 .calendar-events-container {
   display: flex;
   flex-direction: column;
-  gap: 16px;
+  gap: 24px;
+  margin-top: 12px;
 }
 
 .calendar-events-header {
@@ -101,9 +83,12 @@
 }
 
 .calendar-event-group-title {
-  font-size: 18px;
-  font-weight: 600;
-  color: #000;
+  font-family: 'Nunito', sans-serif;
+  font-size: 20px;
+  font-weight: 500;
+  line-height: 120%;
+  letter-spacing: 0.0024em;
+  color: #000000;
   margin: 0;
 }
 
@@ -128,7 +113,10 @@
 .calendar-no-events {
   text-align: center;
   padding: 40px 20px;
-  background: white;
+  margin-top: 16px;
+  background: rgba(255, 255, 255, 0.8);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
   border-radius: 20px;
 }
 
@@ -142,7 +130,6 @@
 @media (max-width: 360px) {
   .calendar-page {
     padding: 12px;
-    padding-bottom: 100px;
   }
 
   .calendar-page-title {

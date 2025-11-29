@@ -22,8 +22,11 @@ import ReactMarkdown from 'react-markdown';
 import GuestBlockedModal from '@/components/GuestBlockedModal';
 import dayBackground from '@/shared/assets/images/dayBackground.png';
 import Background1 from '@/shared/assets/images/background1.png';
+import whiteOkIcon from '@/shared/assets/icons/whiteOk.svg';
 import { Check, Clock, XCircle } from 'lucide-react';
 import { useAssignmentsWithProgress, useSaveAssignmentDraft, useSubmitAssignment } from '@/lib/supabase/hooks/useAssignments';
+import { useTechniqueByModuleAndDay } from '@/lib/supabase/hooks/useTechniqueSchedule';
+import LoadingSpinner from '@/components/LoadingSpinner/LoadingSpinner';
 
 interface LessonPageState {
     lesson: LessonWithBlocks | null;
@@ -35,6 +38,8 @@ interface LessonPageState {
     // Прогресс по заданиям урока
     totalAssignments: number;
     completedAssignments: number;
+    // Для связи с техниками
+    moduleId: string | null;
 }
 
 // Функция для преобразования URL в тексте в кликабельные ссылки
@@ -130,6 +135,7 @@ const AssignmentForm: React.FC<AssignmentFormProps> = ({ assignmentId, userId, l
     const [text, setText] = useState(initialText);
     const [isSaving, setIsSaving] = useState(false);
     const [saveTimeoutId, setSaveTimeoutId] = useState<NodeJS.Timeout | null>(null);
+    const [showSuccessMessage, setShowSuccessMessage] = useState(false);
 
     const saveDraftMutation = useSaveAssignmentDraft();
     const submitMutation = useSubmitAssignment();
@@ -190,6 +196,11 @@ const AssignmentForm: React.FC<AssignmentFormProps> = ({ assignmentId, userId, l
                 onSuccess: () => {
                     logger.debug('Assignment submitted', { assignmentId });
                     setText('');
+                    setShowSuccessMessage(true);
+                    // Скрыть сообщение через 5 секунд
+                    setTimeout(() => {
+                        setShowSuccessMessage(false);
+                    }, 5000);
                 },
                 onError: () => {
                     alert('Ошибка при сдаче задания. Попробуйте еще раз.');
@@ -323,7 +334,7 @@ const AssignmentForm: React.FC<AssignmentFormProps> = ({ assignmentId, userId, l
             )}
 
             {/* Поле ввода (если можно редактировать) */}
-            {canEdit && (
+            {canEdit && !showSuccessMessage && (
                 <div>
                     <textarea
                         value={text}
@@ -371,6 +382,37 @@ const AssignmentForm: React.FC<AssignmentFormProps> = ({ assignmentId, userId, l
                     >
                         {submitMutation.isPending ? 'Отправка...' : 'Отправить'}
                     </button>
+                </div>
+            )}
+
+            {/* Сообщение об успешной отправке */}
+            {showSuccessMessage && (
+                <div
+                    style={{
+                        width: '100%',
+                        padding: '14px 24px',
+                        background: 'linear-gradient(90deg, rgba(34, 34, 34, 0.6) 0%, rgba(117, 117, 117, 0.6) 100%)',
+                        backdropFilter: 'blur(30px)',
+                        WebkitBackdropFilter: 'blur(30px)',
+                        borderRadius: 32,
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        gap: 8,
+                    }}
+                >
+                    <img src={whiteOkIcon} alt="ok" style={{ width: 20, height: 20 }} />
+                    <span
+                        style={{
+                            fontFamily: 'Nunito, sans-serif',
+                            fontWeight: 700,
+                            fontSize: 16,
+                            lineHeight: '140%',
+                            color: '#fff',
+                        }}
+                    >
+                        Ответ отправлен
+                    </span>
                 </div>
             )}
         </div>
@@ -525,6 +567,7 @@ const LessonPage: React.FC = () => {
         userDataLoading: true, // Изначально пользовательские данные загружаются
         totalAssignments: 0,
         completedAssignments: 0,
+        moduleId: null,
     });
 
     // Создаем Supabase-совместимого User
@@ -544,6 +587,26 @@ const LessonPage: React.FC = () => {
         supabaseUser?.id,
         lessonId ? parseInt(lessonId) : undefined
     );
+
+    // Загружаем технику для этого дня в модуле
+    const { data: techniqueData, isLoading: techniqueLoading, error: techniqueError } = useTechniqueByModuleAndDay(
+        state.moduleId,
+        state.lesson?.order_num || null,
+        streamInfo?.streamId || null,
+        streamInfo?.tariffId || null
+    );
+
+    // Отладочные логи для техники
+    console.log('Technique debug:', {
+        moduleId: state.moduleId,
+        orderNum: state.lesson?.order_num,
+        streamId: streamInfo?.streamId,
+        tariffId: streamInfo?.tariffId,
+        techniqueData,
+        techniqueLoading,
+        techniqueError,
+    });
+
 
     useEffect(() => {
         if (supabaseUser) {
@@ -577,12 +640,16 @@ const LessonPage: React.FC = () => {
             setState(prev => ({ ...prev, loading: true, error: null }));
 
             try {
-                // Получаем урок с блоками
+                // Получаем урок с блоками и stage (для получения module_id)
                 const { data: lessonData, error: lessonError } = await supabase
                     .from('lessons')
                     .select(`
             *,
-            lesson_blocks (*)
+            lesson_blocks (*),
+            stage:course_stages (
+              id,
+              stream_module_id
+            )
           `)
                     .eq('id', lessonId)
                     .single();
@@ -636,11 +703,21 @@ const LessonPage: React.FC = () => {
                     blocks: sortedBlocks,
                 };
 
+                // Получаем module_id из stage
+                const moduleId = (lessonData as any).stage?.stream_module_id || null;
+                console.log('Lesson data stage:', {
+                    stage: (lessonData as any).stage,
+                    stream_module_id: (lessonData as any).stage?.stream_module_id,
+                    moduleId,
+                    order_num: lessonData.order_num,
+                });
+
                 // Обновляем состояние с уроком - урок грузится независимо от пользователя
                 setState(prev => ({
                     ...prev,
                     lesson,
                     loading: false,
+                    moduleId,
                 }));
 
                 logger.debug('Lesson data loaded', { lessonId, blocksCount: sortedBlocks.length });
@@ -1122,36 +1199,7 @@ const LessonPage: React.FC = () => {
     if (loading) {
         return (
             <Page>
-                <div className="profile-loading">
-                    <img
-                        src="/coin3.png"
-                        alt="Loading"
-                        style={{
-                            width: 128,
-                            height: 128,
-                            animation: 'coin3dSpin 1s linear infinite',
-                        }}
-                    />
-                    <style>{`
-                        @keyframes coin3dSpin {
-                            0% { transform: rotateY(0deg); }
-                            100% { transform: rotateY(360deg); }
-                        }
-                        @keyframes dotAnimation {
-                            0%, 20% { opacity: 0; }
-                            40% { opacity: 1; }
-                            100% { opacity: 1; }
-                        }
-                        .loading-dots span {
-                            opacity: 0;
-                            animation: dotAnimation 1.5s infinite;
-                        }
-                        .loading-dots span:nth-child(1) { animation-delay: 0s; }
-                        .loading-dots span:nth-child(2) { animation-delay: 0.3s; }
-                        .loading-dots span:nth-child(3) { animation-delay: 0.6s; }
-                    `}</style>
-                    <p>Загрузка урока<span className="loading-dots"><span>.</span><span>.</span><span>.</span></span></p>
-                </div>
+                <LoadingSpinner />
             </Page>
         );
     }
@@ -1410,6 +1458,121 @@ const LessonPage: React.FC = () => {
                         });
                     })()}
                 </div>
+
+                {/* Техника дня - если есть техника для этого дня в модуле */}
+                {techniqueData?.material && (
+                    <div style={{ padding: '0 16px 20px 16px' }}>
+                        <div
+                            onClick={() => navigate(`/techniques/${techniqueData.material.id}`)}
+                            style={{
+                                backgroundColor: 'rgba(255, 255, 255, 0.8)',
+                                backdropFilter: 'blur(20px)',
+                                WebkitBackdropFilter: 'blur(20px)',
+                                borderRadius: 16,
+                                padding: 16,
+                                cursor: 'pointer',
+                                display: 'flex',
+                                alignItems: 'center',
+                                gap: 12,
+                            }}
+                        >
+                            {/* Обложка техники */}
+                            <div
+                                style={{
+                                    width: 56,
+                                    height: 56,
+                                    borderRadius: 12,
+                                    overflow: 'hidden',
+                                    flexShrink: 0,
+                                    backgroundColor: '#E6E6E6',
+                                }}
+                            >
+                                {techniqueData.material.cover_image_path ? (
+                                    <img
+                                        src={buildFileUrl(techniqueData.material.cover_image_path) || ''}
+                                        alt={techniqueData.material.name}
+                                        style={{
+                                            width: '100%',
+                                            height: '100%',
+                                            objectFit: 'cover',
+                                        }}
+                                    />
+                                ) : (
+                                    <div
+                                        style={{
+                                            width: '100%',
+                                            height: '100%',
+                                            display: 'flex',
+                                            alignItems: 'center',
+                                            justifyContent: 'center',
+                                            backgroundColor: '#E8F4FD',
+                                        }}
+                                    >
+                                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#4A90D9" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                            <path d="M9 18V5l12-2v13" />
+                                            <circle cx="6" cy="18" r="3" />
+                                            <circle cx="18" cy="16" r="3" />
+                                        </svg>
+                                    </div>
+                                )}
+                            </div>
+
+                            {/* Информация о технике */}
+                            <div style={{ flex: 1, minWidth: 0 }}>
+                                <p
+                                    style={{
+                                        fontFamily: 'Nunito, sans-serif',
+                                        fontWeight: 500,
+                                        fontSize: 12,
+                                        lineHeight: '14px',
+                                        color: 'rgba(0, 0, 0, 0.48)',
+                                        margin: 0,
+                                        marginBottom: 4,
+                                    }}
+                                >
+                                    Техника дня
+                                </p>
+                                <p
+                                    style={{
+                                        fontFamily: 'Nunito, sans-serif',
+                                        fontWeight: 600,
+                                        fontSize: 16,
+                                        lineHeight: '100%',
+                                        color: '#222222',
+                                        margin: 0,
+                                        overflow: 'hidden',
+                                        textOverflow: 'ellipsis',
+                                        whiteSpace: 'nowrap',
+                                    }}
+                                >
+                                    {techniqueData.material.name}
+                                </p>
+                                {techniqueData.material.duration_seconds && (
+                                    <p
+                                        style={{
+                                            fontFamily: 'Nunito, sans-serif',
+                                            fontWeight: 400,
+                                            fontSize: 12,
+                                            lineHeight: '14px',
+                                            color: 'rgba(0, 0, 0, 0.48)',
+                                            margin: 0,
+                                            marginTop: 4,
+                                        }}
+                                    >
+                                        {Math.floor(techniqueData.material.duration_seconds / 60)} мин
+                                    </p>
+                                )}
+                            </div>
+
+                            {/* Стрелка */}
+                            <div style={{ flexShrink: 0 }}>
+                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#8C8C8C" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                    <path d="M9 18l6-6-6-6" />
+                                </svg>
+                            </div>
+                        </div>
+                    </div>
+                )}
 
                 {/* Блок завершенного урока без задания */}
                 {!hasAssignment && isLessonCompleted && state.progress && (

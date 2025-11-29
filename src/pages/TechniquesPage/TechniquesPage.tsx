@@ -11,6 +11,7 @@ import TechniqueCard from '@/components/TechniqueCard/TechniqueCard';
 import { motion, AnimatePresence } from 'framer-motion';
 import TechniqueBlockedModal from '@/components/TechniqueBlockedModal';
 import TabBar from '@/components/TabBar/TabBar';
+import LoadingSpinner from '@/components/LoadingSpinner/LoadingSpinner';
 
 // Типы табов
 type TabType = 'all' | 'mine';
@@ -255,10 +256,7 @@ const TechniquesPage: React.FC = () => {
               >
                 {loading ? (
                   <div className="flex items-center justify-center h-full min-h-[300px]">
-                    <div className="text-center">
-                      <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-white mb-2"></div>
-                      <p className="text-sm text-white/60">Загрузка...</p>
-                    </div>
+                    <LoadingSpinner size={64} />
                   </div>
                 ) : error ? (
                   <div className="flex items-center justify-center h-full min-h-[300px]">

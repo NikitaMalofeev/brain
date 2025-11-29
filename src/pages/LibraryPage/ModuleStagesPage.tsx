@@ -14,6 +14,7 @@ import { buildFileUrl } from '@/lib/supabase/supabaseStorageService';
 import { clsx } from 'clsx';
 import TooltipIcon from '@/shared/assets/icons/tooltip.svg';
 import Background1 from '@/shared/assets/images/background1.png';
+import LoadingSpinner from '@/components/LoadingSpinner/LoadingSpinner';
 
 // Удаляем текст в квадратных скобках из названия
 const cleanName = (name: string) => name.replace(/\s*\[.*?\]/g, '').trim();
@@ -282,36 +283,7 @@ const ModuleStagesPage: React.FC = () => {
     if (loading) {
         return (
             <Page showTabBar={false}>
-                <div className="profile-loading">
-                    <img
-                        src="/coin3.png"
-                        alt="Loading"
-                        style={{
-                            width: 128,
-                            height: 128,
-                            animation: 'coin3dSpin 1s linear infinite',
-                        }}
-                    />
-                    <style>{`
-                        @keyframes coin3dSpin {
-                            0% { transform: rotateY(0deg); }
-                            100% { transform: rotateY(360deg); }
-                        }
-                        @keyframes dotAnimation {
-                            0%, 20% { opacity: 0; }
-                            40% { opacity: 1; }
-                            100% { opacity: 1; }
-                        }
-                        .loading-dots span {
-                            opacity: 0;
-                            animation: dotAnimation 1.5s infinite;
-                        }
-                        .loading-dots span:nth-child(1) { animation-delay: 0s; }
-                        .loading-dots span:nth-child(2) { animation-delay: 0.3s; }
-                        .loading-dots span:nth-child(3) { animation-delay: 0.6s; }
-                    `}</style>
-                    <p>Загрузка ступеней<span className="loading-dots"><span>.</span><span>.</span><span>.</span></span></p>
-                </div>
+                <LoadingSpinner />
             </Page>
         );
     }

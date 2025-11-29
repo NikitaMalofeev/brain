@@ -19,7 +19,7 @@ export const tabBarThemes = {
         buttonBackground: 'transparent',
         buttonActiveBackground: 'linear-gradient(109.65deg, #E1C1F4 13.64%, #B862EA 124.92%)',
         buttonRadius: '50%',
-        buttonSize: { width: '48px', height: '48px' },
+        buttonSize: { width: '36px', height: '36px' },
         boxShadow: '0 -2px 10px rgba(0, 0, 0, 0.1)',
         useActiveIcons: true,
     },

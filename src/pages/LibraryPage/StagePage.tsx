@@ -16,6 +16,7 @@ import { Ripple } from '@/components/ui/Ripple/Ripple';
 import { motion } from 'framer-motion';
 import { clsx } from 'clsx';
 import { getNounPluralForm } from '@/helpers/pluralize';
+import LoadingSpinner from '@/components/LoadingSpinner/LoadingSpinner';
 
 const listVariants = {
     hidden: { opacity: 0 },
@@ -161,10 +162,7 @@ const StagePage: React.FC = () => {
     if (loading) {
         return (
             <Page>
-                <div className="profile-loading">
-                    <div className="profile-loading-spinner" aria-hidden="true" />
-                    <p>Загрузка прогресса по урокам...</p>
-                </div>
+                <LoadingSpinner />
             </Page>
         );
     }

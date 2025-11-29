@@ -7,6 +7,7 @@ interface UserStreamInfo {
   startDate: string;
   currentWeek: number;
   totalWeeks: number;
+  tariffId?: string | null;
 }
 
 /**
@@ -60,7 +61,9 @@ export function useUserStreamInfo(userId: string | null | undefined) {
       const { data: tariffData, error: tariffError } = await supabase
         .from('user_tariffs')
         .select(`
+          tariff_id,
           tariffs (
+            id,
             code
           )
         `)
@@ -90,6 +93,7 @@ export function useUserStreamInfo(userId: string | null | undefined) {
         startDate: stream.start_date,
         currentWeek: Math.min(currentWeek, totalWeeks), // Не больше общего количества
         totalWeeks,
+        tariffId: tariffData?.tariff_id || null,
       };
     },
     enabled: !!userId,

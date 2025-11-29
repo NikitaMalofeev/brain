@@ -84,6 +84,7 @@ const TabBar: FC<TabBarProps> = ({ className }) => {
                                 height: theme.buttonSize.height,
                                 borderRadius: theme.buttonRadius,
                                 background: isActiveBtn ? theme.buttonActiveBackground : theme.buttonBackground,
+                                border: isActiveBtn && 'buttonActiveBorder' in theme ? (theme as any).buttonActiveBorder : 'none',
                             }}
                         >
                             <AnimatePresence>

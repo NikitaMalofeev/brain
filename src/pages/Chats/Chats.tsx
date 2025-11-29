@@ -6,6 +6,7 @@ import { Ripple } from "@/components/ui/Ripple/Ripple";
 import { useSupabaseUser } from "@/lib/supabase/hooks/useSupabaseUser";
 import { useActiveTariff } from "@/lib/supabase/hooks/useActiveTariff";
 import { useSignal, initDataState } from "@telegram-apps/sdk-react";
+import LoadingSpinner from '@/components/LoadingSpinner/LoadingSpinner';
 
 // Интерфейс для чата из RPC функции get_available_chats_for_user
 interface AvailableChat {
@@ -72,10 +73,7 @@ export const Chats = () => {
     if (userLoading || tariffLoading || chatsLoading || userDataLoading) {
         return (
             <Page>
-                <div className="profile-loading">
-                    <div className="profile-loading-spinner" aria-hidden="true" />
-                    <p>Загрузка чатов...</p>
-                </div>
+                <LoadingSpinner />
             </Page>
         )
     }

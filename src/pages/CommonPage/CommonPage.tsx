@@ -9,6 +9,7 @@ import { Ripple } from "@/components/ui/Ripple/Ripple";
 import { useSupabaseUser } from "@/lib/supabase/hooks/useSupabaseUser";
 import { useActiveCourse } from "@/lib/supabase/hooks/useActiveCourse";
 import { useSignal, initDataState } from '@telegram-apps/sdk-react';
+import LoadingSpinner from '@/components/LoadingSpinner/LoadingSpinner';
 
 const tabs = [
     'Все',
@@ -74,10 +75,7 @@ export const CommonPage = () => {
     if (isLoading) {
         return (
             <Page back={false}>
-                <div className="profile-loading">
-                    <div className="profile-loading-spinner" aria-hidden="true" />
-                    <p>Загрузка материалов...</p>
-                </div>
+                <LoadingSpinner />
             </Page>
         )
     }

@@ -11,6 +11,7 @@ import GuestBlockedModal from '@/components/GuestBlockedModal';
 import TechniqueBlockedModal from '@/components/TechniqueBlockedModal';
 import { Ripple } from '@/components/ui/Ripple/Ripple';
 import { motion } from 'framer-motion';
+import LoadingSpinner from '@/components/LoadingSpinner/LoadingSpinner';
 
 /**
  * Страница проигрывателя техники (аудиопрактики)
@@ -173,12 +174,7 @@ const TechniquePlayerPage: React.FC = () => {
   if (loading) {
     return (
       <Page back>
-        <div className="flex items-center justify-center h-screen">
-          <div className="text-center">
-            <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-[#B862EA] mb-2"></div>
-            <p className="text-sm text-[#666]">Загрузка...</p>
-          </div>
-        </div>
+        <LoadingSpinner />
       </Page>
     );
   }

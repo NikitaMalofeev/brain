@@ -1,123 +1,27 @@
 .calendar-grid-container {
-  background: white;
+  background: rgba(255, 255, 255, 0.8);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
   border-radius: 24px;
   padding: 16px;
-  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.08);
   position: relative;
-}
-
-/* Легенда цветов */
-.calendar-legend-popup {
-  position: absolute;
-  top: 60px;
-  right: 16px;
-  background: white;
-  border-radius: 12px;
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
-  padding: 12px;
-  z-index: 10;
-  min-width: 180px;
-  animation: fadeIn 0.2s ease-out;
-}
-
-@keyframes fadeIn {
-  from {
-    opacity: 0;
-    transform: translateY(-8px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
-}
-
-.calendar-legend-header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  margin-bottom: 8px;
-  padding-bottom: 8px;
-  border-bottom: 1px solid #f0f0f0;
-}
-
-.calendar-legend-header h3 {
-  margin: 0;
-  font-size: 14px;
-  font-weight: 600;
-  color: #000;
-}
-
-.calendar-legend-close {
-  background: none;
-  border: none;
-  padding: 4px;
-  cursor: pointer;
-  color: #8e8e93;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  border-radius: 4px;
-}
-
-.calendar-legend-close:hover {
-  background: #f5f5f5;
-  color: #000;
-}
-
-.calendar-legend-list {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-}
-
-.calendar-legend-item {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-}
-
-.calendar-legend-color {
-  width: 12px;
-  height: 12px;
-  border-radius: 50%;
-  flex-shrink: 0;
-}
-
-.calendar-legend-item span {
-  font-size: 13px;
-  color: #333;
-}
-
-.calendar-legend-btn {
-  background: none;
-  border: none;
-  padding: 6px;
-  cursor: pointer;
-  color: #8e8e93;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  border-radius: 8px;
-  transition: all 0.2s;
-}
-
-.calendar-legend-btn:hover {
-  background: #f5f5f5;
-  color: #000;
 }
 
 .calendar-header {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  margin-bottom: 16px;
-  padding: 0 8px;
+  margin-bottom: 12px;
 }
 
 .calendar-title {
-  font-size: 18px;
-  font-weight: 600;
-  color: #000;
+  font-family: 'Nunito', sans-serif;
+  font-size: 20px;
+  font-weight: 400;
+  line-height: 20px;
+  letter-spacing: 0.0024em;
+  text-align: center;
+  color: #222222;
   margin: 0;
 }
 
@@ -126,27 +30,31 @@
   border: none;
   padding: 8px;
   cursor: pointer;
-  color: #666;
+  color: #222222;
   display: flex;
   align-items: center;
   justify-content: center;
-  border-radius: 8px;
-  transition: all 0.2s;
+  transition: opacity 0.2s;
 }
 
 .calendar-nav-btn:hover {
-  background: #f5f5f5;
-  color: #000;
+  opacity: 0.7;
 }
 
 .calendar-nav-btn:active {
   transform: scale(0.95);
 }
 
+.calendar-nav-btn svg {
+  width: 7px;
+  height: 14px;
+}
+
 .calendar-grid {
   display: grid;
   grid-template-columns: repeat(7, 1fr);
-  gap: 4px;
+  row-gap: 4px;
+  column-gap: 0;
 }
 
 .calendar-day-name {
@@ -165,21 +73,17 @@
 .calendar-day {
   aspect-ratio: 1;
   display: flex;
-  flex-direction: column;
   align-items: center;
   justify-content: center;
-  gap: 2px;
   cursor: pointer;
-  transition: all 0.2s;
+  transition: background 0.2s;
   position: relative;
-  padding: 4px;
-  /* Для обводки модулей */
-  border: 1px solid transparent;
-  margin: -0.5px; /* Компенсация бордера для плотной сетки */
+  /* Бордеры по умолчанию прозрачные */
+  border: 0 solid var(--module-border-color, transparent);
 }
 
 .calendar-day:hover {
-  background: rgba(0, 0, 0, 0.05);
+  background: rgba(255, 255, 255, 0.8);
 }
 
 .calendar-day-number {
@@ -188,28 +92,41 @@
   color: #000;
 }
 
-/* Даты в периоде модуля - обводка цветом модуля */
-.calendar-day-in-period {
-  border-color: var(--module-border-color, transparent);
+/* Бордеры для дней в периоде модуля - только на внешних краях */
+.calendar-day-border-top {
   border-top-width: 1px;
+}
+
+.calendar-day-border-bottom {
   border-bottom-width: 1px;
 }
 
-/* Начало периода - скругление слева */
-.calendar-day-period-start {
+.calendar-day-border-left {
   border-left-width: 1px;
+}
+
+.calendar-day-border-right {
+  border-right-width: 1px;
+}
+
+/* Скругления углов */
+.calendar-day-corner-tl {
   border-top-left-radius: 20px;
+}
+
+.calendar-day-corner-tr {
+  border-top-right-radius: 20px;
+}
+
+.calendar-day-corner-bl {
   border-bottom-left-radius: 20px;
 }
 
-/* Конец периода - скругление справа */
-.calendar-day-period-end {
-  border-right-width: 1px;
-  border-top-right-radius: 20px;
+.calendar-day-corner-br {
   border-bottom-right-radius: 20px;
 }
 
-/* Сегодняшний день - белая круглая обводка */
+/* Сегодняшний день - белый фон */
 .calendar-day-today {
   position: relative;
 }
@@ -217,14 +134,20 @@
 .calendar-day-today-ring {
   position: absolute;
   inset: 2px;
-  border: 2px solid #fff;
+  background: #fff;
   border-radius: 50%;
-  box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.1);
   pointer-events: none;
 }
 
 .calendar-day-today .calendar-day-number {
   font-weight: 500;
+  position: relative;
+  z-index: 1;
+}
+
+.calendar-day-today .calendar-day-indicator {
+  position: relative;
+  z-index: 1;
 }
 
 /* Выбранный день */
@@ -239,8 +162,12 @@
 
 /* Индикатор события - чёрный кружок */
 .calendar-day-indicator {
-  width: 4px;
-  height: 4px;
+  position: absolute;
+  bottom: 4px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 6px;
+  height: 6px;
   border-radius: 50%;
   background-color: #000;
 }
@@ -249,13 +176,5 @@
 @media (max-width: 360px) {
   .calendar-day-number {
     font-size: 12px;
-  }
-
-  .calendar-grid {
-    gap: 2px;
-  }
-
-  .calendar-day {
-    border-radius: 8px;
   }
 }

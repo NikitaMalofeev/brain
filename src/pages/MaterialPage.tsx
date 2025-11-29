@@ -8,6 +8,7 @@ import { getKinescopeId } from "@/components/LessonContent/VideoBlock.tsx";
 import { buildFileUrl } from "@/lib/supabase/supabaseStorageService";
 import NewPlayer from "@/components/NewPlayer/NewPlayer.tsx";
 import { MaterialBlock } from "@/components/LessonContent";
+import LoadingSpinner from "@/components/LoadingSpinner/LoadingSpinner";
 
 const BlockRenderer = ({ block }: { block: LessonBlock }) => {
     switch (block.block_type) {
@@ -95,10 +96,7 @@ export const MaterialPage = () => {
     if (isLoading || isLoadingBlocks) {
         return (
             <Page>
-                <div className="profile-loading">
-                    <div className="profile-loading-spinner" aria-hidden="true" />
-                    <p>Загрузка контента...</p>
-                </div>
+                <LoadingSpinner />
             </Page>
         )
     }

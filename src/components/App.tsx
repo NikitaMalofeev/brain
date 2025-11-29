@@ -12,6 +12,7 @@ import TokenErrorPage from '@/pages/TokenErrorPage/TokenErrorPage';
 import { AppMotionProvider } from '@/animations/motionConfig';
 import TabBar from '@/components/TabBar/TabBar';
 import IFrameSplash from '@/components/IFrameSplash';
+import LoadingSpinner from '@/components/LoadingSpinner/LoadingSpinner';
 
 function AppContent({ showSplash }: { showSplash: boolean }) {
     const lp = useMemo(() => retrieveLaunchParams(), []);
@@ -78,12 +79,7 @@ function AppContent({ showSplash }: { showSplash: boolean }) {
         return null; // Сплэш будет показан в App() компоненте
     } else if (isAppLoading && !showSplash) {
         // Если сплэш уже показали, но данные еще грузятся - показываем обычную загрузку
-        return (
-            <div className="profile-loading">
-                <div className="profile-loading-spinner" aria-hidden="true" />
-                <p>Загрузка приложения...</p>
-            </div>
-        );
+        return <LoadingSpinner />;
     }
 
     // Если нет активного тарифа И нет токенов для активации - блокируем доступ

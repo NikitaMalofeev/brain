@@ -9,6 +9,7 @@ import { useSupabaseUser } from "@/lib/supabase/hooks";
 import { useQuery } from "@tanstack/react-query";
 import { Ripple } from "@/components/ui/Ripple/Ripple";
 import { buildFileUrl } from "@/lib/supabase/supabaseStorageService";
+import LoadingSpinner from '@/components/LoadingSpinner/LoadingSpinner';
 
 export const HelpPage = () => {
     const initDataState = useSignal(_initDataState);
@@ -48,10 +49,7 @@ export const HelpPage = () => {
     if (!supabaseUser?.id || !data || isLoadingCurator || isLoading) {
         return (
             <Page>
-                <div className="profile-loading">
-                    <div className="profile-loading-spinner" aria-hidden="true" />
-                    <p>Загрузка кураторов...</p>
-                </div>
+                <LoadingSpinner />
             </Page>
         )
     }

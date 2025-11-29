@@ -3,10 +3,15 @@ import { Page } from '@/components/Page';
 import { useSupabaseUser } from '@/lib/supabase/hooks/useSupabaseUser';
 import { useGuestStatus } from '@/lib/supabase/hooks/useIsGuest';
 import { useCalendarEvents, CalendarEvent } from '@/lib/supabase/hooks/useCalendar';
+import { useUserStreamModules } from '@/lib/supabase/hooks/useUserStreamModules';
 import { useSignal, initDataState } from '@telegram-apps/sdk-react';
-import CalendarGrid from '@/components/CalendarGrid/CalendarGrid';
+import { useQuery } from '@tanstack/react-query';
+import { supabase } from '@/lib/supabase/client';
+import CalendarGrid, { ModulePeriod } from '@/components/CalendarGrid/CalendarGrid';
 import EventCard from '@/components/EventCard/EventCard';
 import { motion } from 'framer-motion';
+import Background1 from '@/shared/assets/images/background1.png';
+import LoadingSpinner from '@/components/LoadingSpinner/LoadingSpinner';
 import './CalendarPage.css';
 
 // Группировка событий по дате
@@ -35,6 +40,63 @@ const CalendarPage: React.FC = () => {
     isLoading: eventsLoading,
     error: eventsError,
   } = useCalendarEvents(supabaseUser?.id, selectedMonth);
+
+  // Получаем модули пользователя
+  const { modules } = useUserStreamModules(supabaseUser?.id);
+
+  // Получаем дату начала потока пользователя
+  const { data: streamStartDate } = useQuery({
+    queryKey: ['user-stream-start-date', supabaseUser?.id],
+    queryFn: async () => {
+      if (!supabaseUser?.id || !supabase) return null;
+
+      const { data } = await supabase
+        .from('user_stream_enrollments')
+        .select('streams(start_date)')
+        .eq('user_id', supabaseUser.id)
+        .single();
+
+      return (data?.streams as any)?.start_date || null;
+    },
+    enabled: !!supabaseUser?.id,
+    staleTime: 10 * 60 * 1000,
+  });
+
+  // Вычисляем периоды модулей
+  const modulePeriods = useMemo((): ModulePeriod[] => {
+    if (!modules || modules.length === 0 || !streamStartDate) return [];
+
+    const startDate = new Date(streamStartDate);
+    const sortedModules = [...modules].sort((a, b) => a.module_order_num - b.module_order_num);
+
+    return sortedModules.map((module, index) => {
+      // Дата начала модуля = start_date потока + unlock_day - 1
+      const moduleStart = new Date(startDate);
+      moduleStart.setDate(moduleStart.getDate() + (module.unlock_day || 0));
+
+      // Дата окончания = начало следующего модуля - 1 день, или +6 дней если последний
+      let moduleEnd: Date;
+      if (index < sortedModules.length - 1) {
+        const nextModule = sortedModules[index + 1];
+        moduleEnd = new Date(startDate);
+        moduleEnd.setDate(moduleEnd.getDate() + (nextModule.unlock_day || 0) - 1);
+      } else {
+        // Последний модуль - добавляем 6 дней (неделя)
+        moduleEnd = new Date(moduleStart);
+        moduleEnd.setDate(moduleEnd.getDate() + 6);
+      }
+
+      const formatDate = (d: Date) => d.toISOString().split('T')[0];
+
+      return {
+        moduleId: module.module_id,
+        moduleName: module.module_name,
+        color: module.module_color || '#007AFF',
+        startDate: formatDate(moduleStart),
+        endDate: formatDate(moduleEnd),
+      };
+    });
+  }, [modules, streamStartDate]);
 
   // Общее состояние загрузки
   const loading = userLoading || guestCheckLoading || eventsLoading;
@@ -94,10 +156,7 @@ const CalendarPage: React.FC = () => {
   if (loading) {
     return (
       <Page>
-        <div className="calendar-loading">
-          <div className="calendar-loading-spinner" />
-          <p>Загрузка календаря...</p>
-        </div>
+        <LoadingSpinner />
       </Page>
     );
   }
@@ -115,7 +174,15 @@ const CalendarPage: React.FC = () => {
 
   return (
     <Page back={false}>
-      <div className="calendar-page">
+      <div
+        className="calendar-page"
+        style={{
+          backgroundImage: `url(${Background1})`,
+          backgroundSize: 'cover',
+          backgroundPosition: 'top center',
+          backgroundRepeat: 'no-repeat',
+        }}
+      >
         {/* Заголовок */}
         <div className="calendar-page-header">
           <h1 className="calendar-page-title">Календарь</h1>
@@ -131,6 +198,7 @@ const CalendarPage: React.FC = () => {
           currentDate={selectedMonth}
           selectedDate={selectedDate}
           events={events || []}
+          modulePeriods={modulePeriods}
           onDateClick={handleDateClick}
           onPrevMonth={handlePrevMonth}
           onNextMonth={handleNextMonth}

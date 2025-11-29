@@ -42,18 +42,32 @@ export interface Stream {
  * Хук для получения событий календаря пользователя на указанный месяц
  */
 export function useCalendarEvents(userId: string | undefined, month: Date) {
+  // Используем только год и месяц для ключа кэша (локальное время)
+  const year = month.getFullYear();
+  const monthNum = month.getMonth() + 1;
+  const monthKey = `${year}-${monthNum}`;
+
+  // Форматируем дату без UTC конвертации
+  const formatLocalDate = (date: Date): string => {
+    const y = date.getFullYear();
+    const m = String(date.getMonth() + 1).padStart(2, '0');
+    const d = String(date.getDate()).padStart(2, '0');
+    return `${y}-${m}-${d}`;
+  };
+
   return useQuery({
-    queryKey: ['calendar-events', userId, month.toISOString()],
+    queryKey: ['calendar-events', userId, monthKey],
     queryFn: async (): Promise<CalendarEvent[]> => {
       if (!userId || !supabase) {
         return [];
       }
 
-      logger.debug('Fetching calendar events', { userId, month: month.toISOString() });
+      const monthDateStr = formatLocalDate(month);
+      logger.debug('Fetching calendar events', { userId, month: monthDateStr });
 
       const { data, error } = await supabase.rpc('get_user_calendar_events', {
         p_user_id: userId,
-        p_month: month.toISOString().split('T')[0], // YYYY-MM-DD
+        p_month: monthDateStr,
       });
 
       if (error) {

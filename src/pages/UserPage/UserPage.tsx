@@ -15,6 +15,7 @@ import {useUserStreamModules} from '@/lib/supabase/hooks/useUserStreamModules';
 import {motion} from "framer-motion";
 import {useGuestStatus} from '@/lib/supabase/hooks/useIsGuest';
 import GuestBlockedModal from '@/components/GuestBlockedModal';
+import LoadingSpinner from '@/components/LoadingSpinner/LoadingSpinner';
 
 const links = [{
     link: '/chats',
@@ -155,10 +156,7 @@ export const UserPage = () => {
     if (loading || stagesLoading) {
         return (
             <Page back={false}>
-                <div className="profile-loading">
-                    <div className="profile-loading-spinner" aria-hidden="true"/>
-                    <p>Загрузка профиля...</p>
-                </div>
+                <LoadingSpinner />
             </Page>
         );
     }

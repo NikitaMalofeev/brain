@@ -2,8 +2,8 @@ import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { CalendarEvent } from '@/lib/supabase/hooks/useCalendar';
-import { clsx } from 'clsx';
 import GuestBlockedModal from '@/components/GuestBlockedModal';
+import EventCardImage from '@/shared/assets/images/eventCard.png';
 import './EventCard.css';
 
 interface EventCardProps {
@@ -13,31 +13,10 @@ interface EventCardProps {
 
 /**
  * Карточка события календаря
- * Отображает информацию о событии и кнопку действия
  */
 const EventCard: React.FC<EventCardProps> = ({ event, isGuest = false }) => {
   const navigate = useNavigate();
   const [showGuestModal, setShowGuestModal] = useState(false);
-
-  // Форматирование даты
-  const formatDate = (dateStr: string): string => {
-    const date = new Date(dateStr);
-    const months = [
-      'января',
-      'февраля',
-      'марта',
-      'апреля',
-      'мая',
-      'июня',
-      'июля',
-      'августа',
-      'сентября',
-      'октября',
-      'ноября',
-      'декабря',
-    ];
-    return `${date.getDate()} ${months[date.getMonth()]}`;
-  };
 
   // Форматирование времени
   const formatTime = (timeStr: string | null): string => {
@@ -45,47 +24,40 @@ const EventCard: React.FC<EventCardProps> = ({ event, isGuest = false }) => {
     return timeStr.substring(0, 5); // HH:MM
   };
 
-  // Определение типа события для бейджа
-  const getEventTypeBadge = () => {
+  // Определение типа события для бейджа - берём из event_type
+  const getEventTypeLabel = () => {
     switch (event.event_type) {
       case 'zoom':
-        return { label: 'Онлайн', color: '#4CAF50' };
+        return 'Zoom вебинар';
       case 'offline':
-        return { label: 'Оффлайн', color: '#FF9800' };
+        return 'Оффлайн встреча';
       case 'lesson_unlock':
-        return { label: 'Урок', color: '#2196F3' };
+        return 'Открытие урока';
       case 'material_unlock':
-        return { label: 'Материал', color: '#9C27B0' };
+        return 'Открытие материала';
       case 'technique_unlock':
-        return { label: 'Техника', color: '#E91E63' };
+        return 'Открытие техники';
       default:
-        return { label: 'Событие', color: '#757575' };
+        return 'Событие';
     }
   };
 
-  const eventTypeBadge = getEventTypeBadge();
-
   // Обработчик действия
   const handleAction = () => {
-    // Для гостей показываем модалку
     if (isGuest && !event.can_access) {
       setShowGuestModal(true);
       return;
     }
 
-    // Если нет доступа (не гость, но недоступно по тарифу) - не делаем ничего,
-    // кнопка повышения тарифа отображается отдельно
     if (!event.can_access) {
       return;
     }
 
-    // Навигация в зависимости от типа события
     switch (event.event_type) {
       case 'zoom':
       case 'offline':
-        if (event.external_url) {
-          window.open(event.external_url, '_blank');
-        }
+        // Переход на страницу события
+        navigate(`/calendar/event/${event.event_id}`, { state: { event } });
         break;
       case 'lesson_unlock':
         if (event.lesson_id) {
@@ -106,124 +78,37 @@ const EventCard: React.FC<EventCardProps> = ({ event, isGuest = false }) => {
   };
 
   return (
-    <motion.div
-      layout
-      initial={{ opacity: 0, y: 20 }}
-      animate={{ opacity: 1, y: 0 }}
-      exit={{ opacity: 0, y: -20 }}
-      className="event-card"
-    >
-      {/* Обложка события */}
-      {event.cover_image && (
+    <>
+      <motion.div
+        layout
+        initial={{ opacity: 0, y: 10 }}
+        animate={{ opacity: 1, y: 0 }}
+        className="event-card"
+        onClick={handleAction}
+      >
+        {/* Обложка слева */}
         <div className="event-card-cover">
-          <img src={event.cover_image} alt={event.title} />
+          <img src={event.cover_image || EventCardImage} alt={event.title} />
         </div>
-      )}
 
-      <div className="event-card-content">
-        {/* Бейджи */}
-        <div className="event-card-badges">
-          {/* Модуль */}
-          {event.module_name && (
-            <div
-              className="event-card-badge"
-              style={{ backgroundColor: event.module_color || '#757575' }}
-            >
-              {event.module_name}
-            </div>
-          )}
-
-          {/* Тип события */}
-          <div
-            className="event-card-badge"
-            style={{ backgroundColor: eventTypeBadge.color }}
-          >
-            {eventTypeBadge.label}
+        {/* Контент */}
+        <div className="event-card-content">
+          {/* Тег типа события */}
+          <div className="event-card-tag">
+            {getEventTypeLabel()}
           </div>
+
+          {/* Название */}
+          <h3 className="event-card-title">{event.title}</h3>
         </div>
 
-        {/* Заголовок */}
-        <h3 className="event-card-title">{event.title}</h3>
-
-        {/* Описание */}
-        {event.description && (
-          <p className="event-card-description">{event.description}</p>
-        )}
-
-        {/* Дата и время */}
-        <div className="event-card-datetime">
-          <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
-            <path
-              d="M12.6667 2.66667H3.33333C2.59695 2.66667 2 3.26362 2 4V13.3333C2 14.0697 2.59695 14.6667 3.33333 14.6667H12.6667C13.403 14.6667 14 14.0697 14 13.3333V4C14 3.26362 13.403 2.66667 12.6667 2.66667Z"
-              stroke="currentColor"
-              strokeWidth="1.5"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-            />
-            <path
-              d="M10.6667 1.33334V4.00001"
-              stroke="currentColor"
-              strokeWidth="1.5"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-            />
-            <path
-              d="M5.33333 1.33334V4.00001"
-              stroke="currentColor"
-              strokeWidth="1.5"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-            />
-            <path
-              d="M2 6.66667H14"
-              stroke="currentColor"
-              strokeWidth="1.5"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-            />
-          </svg>
-          <span>
-            {formatDate(event.event_date)}
-            {event.event_time && `, ${formatTime(event.event_time)}`}
-          </span>
-        </div>
-
-        {/* Кнопка действия */}
-        {event.can_access ? (
-          <button
-            className="event-card-action"
-            onClick={handleAction}
-          >
-            {event.event_type === 'zoom' || event.event_type === 'offline' ? 'Перейти' : 'Открыть'}
-          </button>
-        ) : isGuest ? (
-          <button
-            className="event-card-action event-card-action-disabled"
-            onClick={handleAction}
-          >
-            Недоступно гостям
-          </button>
-        ) : (
-          <div className="event-card-tariff-block">
-            <div className="event-card-tariff-message">
-              <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
-                <path d="M8 14C11.3137 14 14 11.3137 14 8C14 4.68629 11.3137 2 8 2C4.68629 2 2 4.68629 2 8C2 11.3137 4.68629 14 8 14Z" stroke="currentColor" strokeWidth="1.5"/>
-                <path d="M8 5V8" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/>
-                <circle cx="8" cy="11" r="0.5" fill="currentColor"/>
-              </svg>
-              <span>Недоступно на вашем тарифе</span>
-            </div>
-            <a
-              href="https://t.me/brainprogramming_sales"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="event-card-upgrade-btn"
-            >
-              Повысить тариф
-            </a>
+        {/* Время справа */}
+        {event.event_time && (
+          <div className="event-card-time">
+            {formatTime(event.event_time)}
           </div>
         )}
-      </div>
+      </motion.div>
 
       {/* Модалка для гостей */}
       <GuestBlockedModal
@@ -231,7 +116,7 @@ const EventCard: React.FC<EventCardProps> = ({ event, isGuest = false }) => {
         onClose={() => setShowGuestModal(false)}
         ctaUrl="https://brainprogramming.ru/enroll"
       />
-    </motion.div>
+    </>
   );
 };
 
