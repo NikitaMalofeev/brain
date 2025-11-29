@@ -8,6 +8,7 @@ export interface SearchResult {
     module_id: string;
     module_name: string;
     module_unlock_day: number;
+    unlock_date: string | null; // Дата открытия в формате ISO
     is_unlocked: boolean;
     lesson_id: number;
     matched_in: string[]; // Где найдено совпадение: ['stage_name', 'block: Введение', ...]
@@ -151,7 +152,14 @@ export function useGlobalSearch(
                 const moduleUnlockDay = moduleUnlockMap.get(stage.stream_module_id) || 0;
                 const isModuleUnlocked = currentDay >= moduleUnlockDay;
                 const moduleName = (stage.stream_modules as any)?.name || 'Неизвестный модуль';
-                const firstLesson = stage.lessons?.[0];
+
+                // Сортируем уроки по order_num чтобы найти первый урок
+                const sortedLessons = [...(stage.lessons || [])].sort((a, b) => (a.order_num || 0) - (b.order_num || 0));
+                const firstLesson = sortedLessons[0];
+
+                // Урок разблокирован если модуль открыт И прошло достаточно дней с учётом open_day_offset урока
+                const lessonUnlockDay = moduleUnlockDay + (firstLesson?.open_day_offset || 0);
+                const isLessonUnlocked = currentDay >= lessonUnlockDay;
 
                 const matchedIn: string[] = [];
 
@@ -196,14 +204,23 @@ export function useGlobalSearch(
 
                 // Если есть совпадения - добавляем ступень в результаты
                 if (matchedIn.length > 0) {
+                    // Вычисляем дату открытия урока
+                    let unlockDate: string | null = null;
+                    if (!isLessonUnlocked) {
+                        const unlockDateObj = new Date(streamStartDate);
+                        unlockDateObj.setDate(unlockDateObj.getDate() + lessonUnlockDay);
+                        unlockDate = unlockDateObj.toISOString();
+                    }
+
                     resultsMap.set(stage.id, {
                         stage_id: stage.id,
                         stage_name: stage.name,
                         stage_cover_image_path: stage.cover_image_path,
                         module_id: stage.stream_module_id,
                         module_name: moduleName,
-                        module_unlock_day: moduleUnlockDay,
-                        is_unlocked: isModuleUnlocked,
+                        module_unlock_day: lessonUnlockDay,
+                        unlock_date: unlockDate,
+                        is_unlocked: isLessonUnlocked,
                         lesson_id: firstLesson?.id || 0,
                         matched_in: matchedIn,
                     });

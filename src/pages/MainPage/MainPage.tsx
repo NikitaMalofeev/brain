@@ -211,15 +211,25 @@ export const MainPage = () => {
                                         Найдено: {searchResults.length} результатов
                                     </motion.p>
                                     {searchResults.map((result, i) => (
-                                        <motion.div
+                                        <div
                                             key={`${result.stage_id}-${result.block_id || 'stage'}-${i}`}
-                                            variants={itemVariants}
+                                            onClick={() => {
+                                                if (!result.is_unlocked) {
+                                                    setShowGuestModal(true);
+                                                    return;
+                                                }
+                                                // Принудительная навигация с перезагрузкой
+                                                const url = `${window.location.origin}${window.location.pathname}#/library/lesson/${result.lesson_id}`;
+                                                window.location.assign(url);
+                                                window.location.reload();
+                                            }}
+                                            className="cursor-pointer active:scale-[0.98] transition-transform"
                                         >
                                             <SearchResultCard
                                                 result={result}
                                                 onDisabledClick={() => setShowGuestModal(true)}
                                             />
-                                        </motion.div>
+                                        </div>
                                     ))}
                                 </>
                             ) : (
