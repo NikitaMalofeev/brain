@@ -5,7 +5,7 @@ import {
     useSignal,
 } from '@telegram-apps/sdk-react';
 import { Link } from "react-router-dom";
-import { Page } from "@/components";
+import { Page } from "@/components/Page";
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/lib/supabase/client';
 import { Ripple } from '@/components/ui/Ripple/Ripple';

@@ -1,5 +1,5 @@
 import React from 'react';
-import { Page } from '@/components';
+import { Page } from '@/components/Page';
 import { useSupabaseUser, useUserStreamInfo, useUserStreamModules } from '@/lib/supabase/hooks';
 import { initDataState, useSignal } from '@telegram-apps/sdk-react';
 import { useGuestStatus } from '@/lib/supabase/hooks/useIsGuest';

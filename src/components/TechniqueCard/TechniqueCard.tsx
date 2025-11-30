@@ -63,7 +63,7 @@ const TechniqueCard: React.FC<TechniqueCardProps> = ({ technique, onClick }) => 
         </div>
 
         {/* Контент - бейдж, название и описание */}
-        <div className="flex-1 min-w-0 flex flex-col" style={{ maxWidth: '70%' }}>
+        <div className="flex-1 min-w-0 flex flex-col" style={{ maxWidth: 'calc(100% - 130px)' }}>
           {/* Бейдж модуля */}
           {available_from_module && (
             <span
@@ -76,13 +76,14 @@ const TechniqueCard: React.FC<TechniqueCardProps> = ({ technique, onClick }) => 
 
           {/* Название */}
           <h3
-            className="text-white line-clamp-2 mb-1"
+            className="text-white line-clamp-2 mb-4"
             style={{
               fontFamily: 'Inter',
               fontWeight: 400,
               fontSize: '16px',
               lineHeight: '20px',
               letterSpacing: '0.24%',
+              maxWidth: '80%',
             }}
           >
             {title}

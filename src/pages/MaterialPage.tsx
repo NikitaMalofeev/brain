@@ -1,5 +1,5 @@
 import { useParams } from "react-router-dom";
-import { Page } from "@/components";
+import { Page } from "@/components/Page";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/lib/supabase/client.ts";
 import { LessonBlock } from "@/lib/supabase/types.ts";

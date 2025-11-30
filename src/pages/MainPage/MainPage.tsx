@@ -1,4 +1,4 @@
-import { Page } from "@/components";
+import { Page } from "@/components/Page";
 import { useSupabaseUser, useUserStreamInfo, useUserStreamModules, useFirstIncompleteLesson } from "@/lib/supabase/hooks";
 import { initDataState, useSignal } from "@telegram-apps/sdk-react";
 import { Link, useNavigate } from "react-router-dom";

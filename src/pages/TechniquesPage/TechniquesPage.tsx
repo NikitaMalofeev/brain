@@ -44,6 +44,7 @@ const TechniquesPage: React.FC = () => {
 
   // Получаем техники с фильтрацией
   const {
+    techniques,
     availableTechniques,
     lockedTechniques,
     myTechniques,
@@ -55,6 +56,9 @@ const TechniquesPage: React.FC = () => {
     error,
   } = useTechniquesFiltered(supabaseUser?.id);
 
+  // Debug: логируем пакеты
+  console.log('🎯 [DEBUG] bundleGroups:', bundleGroups);
+  console.log('🎯 [DEBUG] techniques with bundle:', techniques?.filter(t => t.bundle_id || t.user_access_source === 'bundle'));
 
   // Общее состояние загрузки
   const loading = userLoading || guestCheckLoading || techniquesLoading;
@@ -165,10 +169,18 @@ const TechniquesPage: React.FC = () => {
 
   return (
     <Page back={false}>
+      <style>{`
+        .page-container .content-wrapper {
+          background-color: transparent !important;
+        }
+        .page-container {
+          background-color: transparent !important;
+        }
+      `}</style>
       <div
         className="flex flex-col min-h-screen pb-4"
         style={{
-          backgroundImage: 'url(/library-page-background.png)',
+          backgroundImage: 'url(/background2.png)',
           backgroundSize: 'cover',
           backgroundPosition: 'center',
           backgroundAttachment: 'fixed',
@@ -181,7 +193,10 @@ const TechniquesPage: React.FC = () => {
         </div>
 
         {/* Единый блок с табами и контентом на всю ширину */}
-        <div className="rounded-[32px] overflow-hidden flex-1">
+        <div
+          className="rounded-[32px] overflow-hidden flex-1"
+          style={{ backdropFilter: 'blur(12px)' }}
+        >
           {/* Табы внутри блока */}
           <div className="flex items-end">
             {/* Левый таб */}
@@ -192,42 +207,34 @@ const TechniquesPage: React.FC = () => {
                 activeTab === 'all'
                   ? {
                     background: '#0000004D',
-                    backdropFilter: 'blur(30px)',
                     color: 'white',
                     borderTopLeftRadius: '32px',
                   }
                   : {
                     background: '#FFFFFF33',
-                    color: '#0000004D',
+                    color: 'white',
                   }
               }
             >
               Все техники
             </button>
 
-            {/* SVG квадрат между табами - синусоида */}
+            {/* SVG квадрат между табами - две дуги по формуле */}
             <svg
               width="40"
               height="40"
               viewBox="0 0 40 40"
               fill="none"
               className="flex-shrink-0 self-end"
+              style={{
+                display: 'block',
+                transform: activeTab === 'mine' ? 'scaleX(-1)' : 'none',
+              }}
             >
-              {activeTab === 'all' ? (
-                <>
-                  {/* Тёмная часть - нижняя сторона */}
-                  <path d="M40 40C14 40 26 0 0 0V40H40Z" fill="#0000004D" />
-                  {/* Светлая часть - верхняя сторона */}
-                  <path d="M40 40C14 40 26 0 0 0H40V40Z" fill="#FFFFFF33" />
-                </>
-              ) : (
-                <>
-                  {/* Светлая часть - нижняя сторона */}
-                  <path d="M0 40C26 40 14 0 40 0V40H0Z" fill="#FFFFFF33" />
-                  {/* Тёмная часть - верхняя сторона */}
-                  <path d="M0 40C26 40 14 0 40 0H0V40Z" fill="#0000004D" />
-                </>
-              )}
+              {/* Тёмная часть - активный таб (слева) */}
+              <path d="M40 40A26 26 0 0 1 20 20A26 26 0 0 0 0 0V40H40Z" fill="#0000004D" />
+              {/* Светлая часть - неактивный таб (справа) */}
+              <path d="M40 40A26 26 0 0 1 20 20A26 26 0 0 0 0 0H40V40Z" fill="#FFFFFF33" />
             </svg>
 
             {/* Правый таб */}
@@ -238,13 +245,12 @@ const TechniquesPage: React.FC = () => {
                 activeTab === 'mine'
                   ? {
                     background: '#0000004D',
-                    backdropFilter: 'blur(30px)',
                     color: 'white',
                     borderTopRightRadius: '32px',
                   }
                   : {
                     background: '#FFFFFF33',
-                    color: '#0000004D',
+                    color: 'white',
                   }
               }
             >
@@ -257,7 +263,6 @@ const TechniquesPage: React.FC = () => {
             className="min-h-[500px] p-4"
             style={{
               background: '#0000004D',
-              backdropFilter: 'blur(30px)',
               borderTopLeftRadius: activeTab === 'mine' ? '32px' : '0px',
               borderTopRightRadius: activeTab === 'all' ? '32px' : '0px',
             }}
@@ -294,12 +299,21 @@ const TechniquesPage: React.FC = () => {
                   <div className="flex flex-col gap-4">
                     {activeTab === 'all' ? (
                       <>
-                        {/* Секция "Мои" - техники к которым есть доступ (не из пакетов) */}
-                        {myTechniques.length > 0 && (
+                        {/* Секция "Мои" - техники к которым есть доступ (включая пакеты) */}
+                        {(myTechniques.length > 0 || bundleGroups.length > 0) && (
                           <div>
                             <h2 className="text-[20px] font-semibold text-white mb-3 leading-none tracking-normal">Мои</h2>
                             <div className="flex flex-col gap-3">
+                              {/* Обычные техники */}
                               {myTechniques.map((technique) => (
+                                <TechniqueCard
+                                  key={technique.id}
+                                  technique={technique}
+                                  onClick={() => handleTechniqueClick(technique.id)}
+                                />
+                              ))}
+                              {/* Техники из пакетов */}
+                              {bundleGroups.flatMap((bundle) => bundle.techniques).map((technique) => (
                                 <TechniqueCard
                                   key={technique.id}
                                   technique={technique}
@@ -309,24 +323,6 @@ const TechniquesPage: React.FC = () => {
                             </div>
                           </div>
                         )}
-
-                        {/* Секции пакетов */}
-                        {bundleGroups.map((bundle) => (
-                          <div key={bundle.bundleId}>
-                            <h2 className="text-[20px] font-semibold text-white mb-3 leading-none tracking-normal">
-                              Пакет «{bundle.bundleName}»
-                            </h2>
-                            <div className="flex flex-col gap-3">
-                              {bundle.techniques.map((technique) => (
-                                <TechniqueCard
-                                  key={technique.id}
-                                  technique={technique}
-                                  onClick={() => handleTechniqueClick(technique.id)}
-                                />
-                              ))}
-                            </div>
-                          </div>
-                        ))}
 
                         {/* Секция "Модули" - техники из модулей, заблокированные по времени */}
                         {moduleTechniques.length > 0 && (
@@ -386,12 +382,21 @@ const TechniquesPage: React.FC = () => {
                     ) : (
                       /* Таб "Мои техники" - группируем по секциям */
                       <div className="flex flex-col gap-4">
-                        {/* Секция "Мои" - техники с прямым доступом или из модулей */}
-                        {myTechniques.length > 0 && (
+                        {/* Секция "Мои" - техники с прямым доступом и из пакетов */}
+                        {(myTechniques.length > 0 || bundleGroups.length > 0) && (
                           <div>
                             <h2 className="text-[20px] font-semibold text-white mb-3 leading-none tracking-normal">Мои</h2>
                             <div className="flex flex-col gap-3">
+                              {/* Обычные техники */}
                               {myTechniques.map((technique) => (
+                                <TechniqueCard
+                                  key={technique.id}
+                                  technique={technique}
+                                  onClick={() => handleTechniqueClick(technique.id)}
+                                />
+                              ))}
+                              {/* Техники из пакетов */}
+                              {bundleGroups.flatMap((bundle) => bundle.techniques).map((technique) => (
                                 <TechniqueCard
                                   key={technique.id}
                                   technique={technique}
@@ -401,24 +406,6 @@ const TechniquesPage: React.FC = () => {
                             </div>
                           </div>
                         )}
-
-                        {/* Секции пакетов */}
-                        {bundleGroups.map((bundle) => (
-                          <div key={bundle.bundleId}>
-                            <h2 className="text-[20px] font-semibold text-white mb-3 leading-none tracking-normal">
-                              Пакет «{bundle.bundleName}»
-                            </h2>
-                            <div className="flex flex-col gap-3">
-                              {bundle.techniques.map((technique) => (
-                                <TechniqueCard
-                                  key={technique.id}
-                                  technique={technique}
-                                  onClick={() => handleTechniqueClick(technique.id)}
-                                />
-                              ))}
-                            </div>
-                          </div>
-                        ))}
 
                         {/* Секция "Бесплатные" */}
                         {myFreeTechniques.length > 0 && (

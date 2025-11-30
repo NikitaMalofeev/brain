@@ -1,4 +1,4 @@
-import { Page } from "@/components";
+import { Page } from "@/components/Page";
 import { Link } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/lib/supabase/client.ts";

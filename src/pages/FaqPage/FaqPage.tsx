@@ -1,4 +1,4 @@
-import {Page} from "@/components";
+import { Page } from "@/components/Page";
 import {useQuery} from "@tanstack/react-query";
 import {supabase} from "@/lib/supabase/client.ts";
 import LoadingSpinner from '@/components/LoadingSpinner/LoadingSpinner';
