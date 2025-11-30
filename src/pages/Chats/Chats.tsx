@@ -83,7 +83,7 @@ export const Chats = () => {
         return (
             <Page>
                 <div className={'flex flex-col gap-2 text-black min-h-[calc(100vh-60px)] pb-8'}>
-                    <h2 className={'font-bold text-xl p-4 pt-24'}>Чаты обучения</h2>
+                    <h2 className={'font-bold text-xl p-4 pt-4'}>Чаты обучения</h2>
                     <div className={'relative overflow-hidden bg-[url("/bg3.jpg")] bg-cover bg-top p-4 rounded-t-3xl flex-1 flex flex-col gap-3'}>
                         <div className={'flex flex-col gap-3 relative z-[2] items-center justify-center text-white'}>
                             <p className="text-lg font-semibold">Необходима авторизация</p>
@@ -100,7 +100,7 @@ export const Chats = () => {
         return (
             <Page>
                 <div className={'flex flex-col gap-2 text-black min-h-[calc(100vh-60px)] pb-8'}>
-                    <h2 className={'font-bold text-xl p-4 pt-24'}>Чаты обучения</h2>
+                    <h2 className={'font-bold text-xl p-4 pt-4'}>Чаты обучения</h2>
                     <div className={'relative overflow-hidden bg-[url("/bg3.jpg")] bg-cover bg-top p-4 rounded-t-3xl flex-1 flex flex-col gap-3'}>
                         <div className={'flex flex-col gap-3 relative z-[2] items-center justify-center text-white'}>
                             <p className="text-lg font-semibold">Ошибка загрузки</p>
@@ -115,7 +115,7 @@ export const Chats = () => {
     return (
         <Page>
             <div className={'flex flex-col gap-2 text-black min-h-[calc(100vh-60px)] pb-8'}>
-                <h2 className={'font-bold text-xl p-4 pt-24'}>Чаты обучения</h2>
+                <h2 className={'font-bold text-xl p-4 pt-4'}>Чаты обучения</h2>
                 <div className={'relative overflow-hidden bg-[url("/bg3.jpg")] bg-cover bg-top p-4 rounded-t-3xl flex-1 flex flex-col gap-3'}>
                     <img src={'/bg-chat.png'} alt={''}
                         className={'bg-breathe-6 absolute left-0 -bottom-6'} />
@@ -149,9 +149,9 @@ export const Chats = () => {
                                 <Link className={'p-4 rounded-3xl bg-white/40 border border-white/20 backdrop-blur-md flex items-center justify-between gap-3 block'}
                                     to={userData.personal_chat_link}>
                                     <div className={'flex items-center gap-3'}>
-                                    <div className={'min-w-[48px] h-[48px] bg-[url("/sphere-faq.png")] bg-[length:200%] bg-center rounded-full'}>
+                                        <div className={'min-w-[48px] h-[48px] bg-[url("/sphere-faq.png")] bg-[length:200%] bg-center rounded-full'}>
 
-</div>
+                                        </div>
                                         <div className={'flex flex-col gap-1'}>
                                             <p className={' font-semibold'}>Чат десятки</p>
                                             {/* <p className={'text-sm font-medium text-[#9F9F9F]'}>

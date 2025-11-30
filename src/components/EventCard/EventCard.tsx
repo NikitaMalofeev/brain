@@ -44,7 +44,8 @@ const EventCard: React.FC<EventCardProps> = ({ event, isGuest = false }) => {
 
   // Обработчик действия
   const handleAction = () => {
-    if (isGuest && !event.can_access) {
+    // Для гостей ВСЕГДА показываем модалку
+    if (isGuest) {
       setShowGuestModal(true);
       return;
     }
@@ -77,13 +78,16 @@ const EventCard: React.FC<EventCardProps> = ({ event, isGuest = false }) => {
     }
   };
 
+  // Для гостей показываем заблюренную карточку
+  const isBlurred = isGuest;
+
   return (
     <>
       <motion.div
         layout
         initial={{ opacity: 0, y: 10 }}
         animate={{ opacity: 1, y: 0 }}
-        className="event-card"
+        className={`event-card ${isBlurred ? 'event-card-blurred' : ''}`}
         onClick={handleAction}
       >
         {/* Обложка слева */}
@@ -102,18 +106,45 @@ const EventCard: React.FC<EventCardProps> = ({ event, isGuest = false }) => {
           <h3 className="event-card-title">{event.title}</h3>
         </div>
 
-        {/* Время справа */}
-        {event.event_time && (
-          <div className="event-card-time">
-            {formatTime(event.event_time)}
+        {/* Время справа или замочек для гостей */}
+        {isBlurred ? (
+          <div className="event-card-lock">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <path
+                d="M19 11H5C3.89543 11 3 11.8954 3 13V20C3 21.1046 3.89543 22 5 22H19C20.1046 22 21 21.1046 21 20V13C21 11.8954 20.1046 11 19 11Z"
+                stroke="#666"
+                strokeWidth="2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              />
+              <path
+                d="M7 11V7C7 5.67392 7.52678 4.40215 8.46447 3.46447C9.40215 2.52678 10.6739 2 12 2C13.3261 2 14.5979 2.52678 15.5355 3.46447C16.4732 4.40215 17 5.67392 17 7V11"
+                stroke="#666"
+                strokeWidth="2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              />
+            </svg>
           </div>
+        ) : (
+          event.event_time && (
+            <div className="event-card-time">
+              {formatTime(event.event_time)}
+            </div>
+          )
         )}
+
+        {/* Оверлей блюра для гостей */}
+        {isBlurred && <div className="event-card-blur-overlay" />}
       </motion.div>
 
       {/* Модалка для гостей */}
       <GuestBlockedModal
         isOpen={showGuestModal}
         onClose={() => setShowGuestModal(false)}
+        title="Доступно только ученикам"
+        description="Станьте учеником, чтобы получить полный доступ к календарю событий"
+        ctaText="Стать учеником"
         ctaUrl="https://brainprogramming.ru/enroll"
       />
     </>

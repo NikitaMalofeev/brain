@@ -23,6 +23,12 @@ import {
     useAssignBundleToUser,
     useRemoveBundleFromUser
 } from '@/lib/supabase/hooks/useBundles';
+import {
+    useUserSpecialBundleTechniques,
+    useMarkSpecialTechniquePaid,
+    useUnmarkSpecialTechniquePaid,
+    groupTechniquesBySpecialBundle,
+} from '@/lib/supabase/hooks/useSpecialBundles';
 
 interface StudentCardProps {
     studentId: string;
@@ -54,6 +60,14 @@ const StudentCard: React.FC<StudentCardProps> = ({ studentId, onBack, currentUse
     const { data: userBundles } = useUserBundles(studentId);
     const assignBundleMutation = useAssignBundleToUser();
     const removeBundleMutation = useRemoveBundleFromUser();
+
+    // Специальные пакеты
+    const { data: userSpecialBundleTechniques } = useUserSpecialBundleTechniques(studentId);
+    const markPaidMutation = useMarkSpecialTechniquePaid();
+    const unmarkPaidMutation = useUnmarkSpecialTechniquePaid();
+    const specialBundleGroups = userSpecialBundleTechniques
+        ? groupTechniquesBySpecialBundle(userSpecialBundleTechniques)
+        : [];
 
     // Cостояние для модального окна назначения куратором
     const [isPromoteModalOpen, setIsPromoteModalOpen] = useState(false);
@@ -220,10 +234,28 @@ const StudentCard: React.FC<StudentCardProps> = ({ studentId, onBack, currentUse
 
         try {
             await removeFromStreamMutation.mutateAsync(studentId);
+            setSelectedStreamId('');
             alert('Студент удален из потока');
         } catch (error) {
             console.error('Ошибка при удалении из потока:', error);
             alert('Ошибка при удалении из потока');
+        }
+    };
+
+    // Новая система: удалить тариф студента
+    const handleRemoveTariff = async () => {
+        if (!window.confirm('Вы уверены, что хотите сбросить тариф студента?')) {
+            return;
+        }
+
+        try {
+            await removeTariffMutation.mutateAsync(studentId);
+            setSelectedTariffId('');
+            await loadStudentDetails(studentId);
+            alert('Тариф студента сброшен');
+        } catch (error) {
+            console.error('Ошибка при сбросе тарифа:', error);
+            alert('Ошибка при сбросе тарифа');
         }
     };
 
@@ -858,6 +890,23 @@ const StudentCard: React.FC<StudentCardProps> = ({ studentId, onBack, currentUse
                         >
                             {assigningTariff ? 'Назначение...' : 'Назначить'}
                         </button>
+                        {basicInfo.current_tariff_id && (
+                            <button
+                                className="admin-button"
+                                style={{
+                                    fontSize: '14px',
+                                    padding: '8px 16px',
+                                    height: '36px',
+                                    minWidth: '100px',
+                                    flexShrink: 0,
+                                    backgroundColor: '#dc3545'
+                                }}
+                                onClick={handleRemoveTariff}
+                                disabled={removeTariffMutation.isPending}
+                            >
+                                {removeTariffMutation.isPending ? 'Сброс...' : 'Сбросить'}
+                            </button>
+                        )}
                     </div>
                 </div>
 
@@ -955,6 +1004,118 @@ const StudentCard: React.FC<StudentCardProps> = ({ studentId, onBack, currentUse
                         </div>
                     )}
                 </div>
+
+                {/* Специальные пакеты */}
+                {specialBundleGroups.length > 0 && (
+                    <div className="form-group">
+                        <label style={{ fontSize: '14px', fontWeight: '600', marginBottom: '8px', display: 'block' }}>
+                            Специальные пакеты (с оплатой за каждую технику):
+                        </label>
+                        {specialBundleGroups.map(group => (
+                            <div
+                                key={group.bundleId}
+                                style={{
+                                    marginBottom: '16px',
+                                    padding: '12px',
+                                    backgroundColor: '#f9f0ff',
+                                    borderRadius: '8px',
+                                    border: '1px solid #d3adf7'
+                                }}
+                            >
+                                <div style={{
+                                    fontWeight: '600',
+                                    marginBottom: '12px',
+                                    color: '#722ed1',
+                                    fontSize: '14px'
+                                }}>
+                                    🎁 {group.bundleName}
+                                </div>
+                                <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                                    {group.techniques.map((tech, index) => {
+                                        const statusIcon = tech.is_available ? '✅' : tech.is_time_unlocked ? '🔓' : '🔒';
+                                        const unlockDate = new Date(tech.unlock_date).toLocaleDateString('ru-RU');
+                                        const daysUntil = Math.ceil(
+                                            (new Date(tech.unlock_date).getTime() - Date.now()) / (1000 * 60 * 60 * 24)
+                                        );
+
+                                        return (
+                                            <div
+                                                key={tech.technique_id}
+                                                style={{
+                                                    display: 'flex',
+                                                    alignItems: 'center',
+                                                    justifyContent: 'space-between',
+                                                    padding: '8px 12px',
+                                                    backgroundColor: tech.is_available ? '#f6ffed' : '#fff',
+                                                    borderRadius: '6px',
+                                                    border: `1px solid ${tech.is_available ? '#b7eb8f' : '#d9d9d9'}`
+                                                }}
+                                            >
+                                                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                                                    <span style={{ fontSize: '16px' }}>{statusIcon}</span>
+                                                    <span style={{ fontWeight: '500' }}>
+                                                        #{tech.technique_position} {tech.technique_name}
+                                                    </span>
+                                                    {index > 0 && (
+                                                        <span style={{ fontSize: '11px', color: '#999' }}>
+                                                            (через {tech.delay_days} дн. после предыдущей)
+                                                        </span>
+                                                    )}
+                                                </div>
+                                                <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                                                    {/* Информация о дате */}
+                                                    <span style={{ fontSize: '12px', color: '#666' }}>
+                                                        {tech.is_time_unlocked
+                                                            ? `Открыта ${unlockDate}`
+                                                            : daysUntil > 0
+                                                            ? `Через ${daysUntil} дн. (${unlockDate})`
+                                                            : `С ${unlockDate}`}
+                                                    </span>
+
+                                                    {/* Чекбокс оплаты */}
+                                                    <label style={{ display: 'flex', alignItems: 'center', gap: '6px', cursor: 'pointer' }}>
+                                                        <input
+                                                            type="checkbox"
+                                                            checked={tech.is_paid}
+                                                            onChange={async (e) => {
+                                                                try {
+                                                                    if (e.target.checked) {
+                                                                        await markPaidMutation.mutateAsync({
+                                                                            user_id: studentId,
+                                                                            special_bundle_id: tech.special_bundle_id,
+                                                                            technique_position: tech.technique_position,
+                                                                            paid_by: currentUser?.id,
+                                                                        });
+                                                                    } else {
+                                                                        await unmarkPaidMutation.mutateAsync({
+                                                                            user_id: studentId,
+                                                                            special_bundle_id: tech.special_bundle_id,
+                                                                            technique_position: tech.technique_position,
+                                                                        });
+                                                                    }
+                                                                } catch (err: any) {
+                                                                    alert(err?.message || 'Ошибка');
+                                                                }
+                                                            }}
+                                                            disabled={markPaidMutation.isPending || unmarkPaidMutation.isPending}
+                                                            style={{ width: '16px', height: '16px', cursor: 'pointer' }}
+                                                        />
+                                                        <span style={{
+                                                            fontSize: '12px',
+                                                            color: tech.is_paid ? '#52c41a' : '#faad14',
+                                                        }}>
+                                                            {tech.is_paid ? 'Оплачено' : 'Не оплачено'}
+                                                        </span>
+                                                    </label>
+                                                </div>
+                                            </div>
+                                        );
+                                    })}
+                                </div>
+                            </div>
+                        ))}
+                    </div>
+                )}
 
                 {/* Выбор роли пользователя */}
                 {currentUser?.role === 'admin' && (

@@ -42,12 +42,12 @@ const itemVariants = {
 
 export const CommonPage = () => {
     const [currentTab, setCurrentTab] = useState<number>(0);
-    
+
     // Получаем информацию о пользователе
     const initDataSignal = useSignal(initDataState);
     const { supabaseUser } = useSupabaseUser(initDataSignal);
     const { activeCourse } = useActiveCourse(supabaseUser?.id);
-    
+
     const { data, isLoading } = useQuery({
         queryFn: async () => {
             // 1) Формируем запрос, вызываем .select(...).maybeSingle()/.then()/.throwOnError()
@@ -55,9 +55,9 @@ export const CommonPage = () => {
 
             // Если нет активного курса, возвращаем пустой массив
             if (!activeCourse?.course_id) return []
-            
+
             const now = new Date().toISOString();
-            
+
             const { data, error } = await supabase.from('materials')
                 .select('*')
                 .eq('course_id', activeCourse.course_id)
@@ -82,7 +82,7 @@ export const CommonPage = () => {
     return (
         <Page back={false}>
             <motion.div
-                className={'flex flex-col min-h-[calc(100vh-60px)] text-black pt-24'}
+                className={'flex flex-col min-h-[calc(100vh-60px)] text-black pt-4'}
             >
                 <motion.div
                     className={'p-4 flex flex-col gap-2'}

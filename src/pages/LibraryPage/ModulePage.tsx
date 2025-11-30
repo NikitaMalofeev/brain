@@ -172,7 +172,7 @@ const ModulePage: React.FC = () => {
   return (
     <Page showTabBar={false}>
       <div className="text-black min-h-full">
-        <div className="bg-white p-4 flex flex-col gap-3 p-4 pt-24">
+        <div className="bg-white p-4 flex flex-col gap-3 p-4 pt-4">
           <div className="flex items-center justify-between">
             <div className="flex flex-col">
               <p className="font-bold text-xl">{moduleDetails.module_name}</p>

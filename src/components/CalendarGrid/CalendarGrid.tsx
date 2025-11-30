@@ -1,5 +1,6 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { clsx } from 'clsx';
+import GuestBlockedModal from '@/components/GuestBlockedModal';
 import './CalendarGrid.css';
 
 export interface ModulePeriod {
@@ -18,6 +19,7 @@ interface CalendarGridProps {
   onDateClick: (date: Date) => void;
   onPrevMonth: () => void;
   onNextMonth: () => void;
+  isGuest?: boolean;
 }
 
 /**
@@ -32,7 +34,10 @@ const CalendarGrid: React.FC<CalendarGridProps> = ({
   onDateClick,
   onPrevMonth,
   onNextMonth,
+  isGuest = false,
 }) => {
+  const [showGuestModal, setShowGuestModal] = useState(false);
+
   // Форматируем дату в YYYY-MM-DD без учёта часового пояса
   const formatDateLocal = (date: Date): string => {
     const year = date.getFullYear();
@@ -185,6 +190,20 @@ const CalendarGrid: React.FC<CalendarGridProps> = ({
     );
   };
 
+  // Обработчик клика по дню
+  const handleDayClick = (date: Date) => {
+    const hasEvents = hasEventsOnDate(date);
+
+    // Если гость и есть события - показываем модалку
+    if (isGuest && hasEvents) {
+      setShowGuestModal(true);
+      return;
+    }
+
+    // Иначе обычное поведение
+    onDateClick(date);
+  };
+
   // Название месяца
   const monthNames = [
     'Январь',
@@ -266,7 +285,7 @@ const CalendarGrid: React.FC<CalendarGridProps> = ({
                 },
                 ...borderClasses
               )}
-              onClick={() => onDateClick(date)}
+              onClick={() => handleDayClick(date)}
               style={moduleColor ? {
                 '--module-border-color': moduleColor,
               } as React.CSSProperties : undefined}
@@ -286,6 +305,16 @@ const CalendarGrid: React.FC<CalendarGridProps> = ({
           );
         })}
       </div>
+
+      {/* Модалка для гостей */}
+      <GuestBlockedModal
+        isOpen={showGuestModal}
+        onClose={() => setShowGuestModal(false)}
+        title="Доступно только ученикам"
+        description="Станьте учеником, чтобы получить полный доступ к календарю событий"
+        ctaText="Стать учеником"
+        ctaUrl="https://brainprogramming.ru/enroll"
+      />
     </div>
   );
 };

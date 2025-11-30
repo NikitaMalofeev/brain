@@ -27,6 +27,7 @@ import CalendarEventsManager from './components/CalendarEventsManager/CalendarEv
 import { UnifiedCoursesManager } from './components/CoursesManager';
 import { ModulesManager } from './components/ModulesManager';
 import BundlesManager from './components/BundlesManager/BundlesManager';
+import SpecialBundlesManager from './components/SpecialBundlesManager/SpecialBundlesManager';
 
 // Состояние для навигации по сабмитам
 interface SubmissionsNavigationState {
@@ -39,6 +40,7 @@ const sectionToPath: Record<AdminSection, string> = {
   courses: 'courses',
   materials: 'materials',
   bundles: 'bundles',
+  'special-bundles': 'special-bundles',
   streams: 'streams',
   modules: 'modules',
   tariffs: 'tariffs',
@@ -370,6 +372,8 @@ const AdminPageNew: React.FC = () => {
         return <MaterialsManager />;
       case 'bundles':
         return <BundlesManager />;
+      case 'special-bundles':
+        return <SpecialBundlesManager />;
       case 'streams':
         return <StreamsManager />;
       case 'modules':

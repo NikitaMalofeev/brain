@@ -119,7 +119,7 @@ const LibraryPage: React.FC = () => {
                 </div>
             </div>
             <div className={'relative min-h-screen overflow-hidden bg-[url("/bg2.jpg")] bg-cover'}>
-                <div className={'flex flex-col gap-3 items-center py-6 pt-24'}>
+                <div className={'flex flex-col gap-3 items-center py-6 pt-4'}>
                     {stages.map((stage, i) => (
                         <div key={stage.stage_id} className={`w-[95%] ${stage.is_unlocked ? "cursor-pointer transition duration-200 ease-in hover:scale-105" : "pointer-events-none"}`}>
                             <StageCard

@@ -90,3 +90,38 @@
   font-weight: 400;
   color: #000;
 }
+
+/* Стили для гостей - заблюренная карточка */
+.event-card-blurred {
+  position: relative;
+}
+
+.event-card-blurred .event-card-content,
+.event-card-blurred .event-card-cover {
+  filter: blur(4px);
+  opacity: 0.7;
+}
+
+.event-card-blur-overlay {
+  position: absolute;
+  inset: 0;
+  background: rgba(255, 255, 255, 0.3);
+  pointer-events: none;
+  border-radius: 20px;
+}
+
+/* Замочек для гостей */
+.event-card-lock {
+  position: absolute;
+  top: 50%;
+  right: 16px;
+  transform: translateY(-50%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  background: rgba(255, 255, 255, 0.9);
+  border-radius: 50%;
+  z-index: 1;
+}

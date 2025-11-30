@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
+import { useQueryClient } from '@tanstack/react-query';
 import { FileUploader, FileUploaderRef } from '@/components/FileUploader/FileUploader';
 import { buildFileUrl } from '@/lib/supabase/supabaseStorageService';
 import { deleteFile } from '@/lib/supabase/supabaseStorageService';
@@ -30,6 +31,7 @@ interface Material {
     unlock_condition_type?: 'after_material' | 'after_duration' | null;
     unlock_condition_value?: any | null;
     is_standalone?: boolean;
+    is_special?: boolean; // Для специальных пакетов
 
     created_at: string; // timestamptz
     updated_at: string; // timestamptz
@@ -68,6 +70,7 @@ interface MaterialFormData {
     unlock_condition_material_id: string;
     unlock_condition_duration_days: number;
     is_standalone: boolean;
+    is_special: boolean; // Для специальных пакетов
 }
 
 interface BlockFormData {
@@ -80,6 +83,7 @@ interface BlockFormData {
 }
 
 const MaterialsManager: React.FC = () => {
+    const queryClient = useQueryClient();
     const fileUploaderRef = useRef<FileUploaderRef>(null);
     const tariffsAdmin = useTariffsAdmin();
     const coursesAdmin = useCoursesAdmin();
@@ -136,6 +140,7 @@ const MaterialsManager: React.FC = () => {
         unlock_condition_material_id: '',
         unlock_condition_duration_days: 30,
         is_standalone: false,
+        is_special: false,
     });
 
     // Состояние для выбранных тарифов
@@ -321,6 +326,7 @@ const MaterialsManager: React.FC = () => {
                 unlock_condition_material_id: material.unlock_condition_value?.material_id || '',
                 unlock_condition_duration_days: material.unlock_condition_value?.duration_days || 30,
                 is_standalone: material.is_standalone || false,
+                is_special: material.is_special || false,
             });
         } else {
             setEditingMaterial(null);
@@ -344,6 +350,7 @@ const MaterialsManager: React.FC = () => {
                 unlock_condition_material_id: '',
                 unlock_condition_duration_days: 30,
                 is_standalone: false,
+                is_special: false,
             });
         }
         setMaterialModalOpen(true);
@@ -392,6 +399,7 @@ const MaterialsManager: React.FC = () => {
                     }
                     : null,
                 is_standalone: materialForm.is_standalone,
+                is_special: materialForm.is_special,
             };
 
             let materialId: string;
@@ -440,6 +448,9 @@ const MaterialsManager: React.FC = () => {
                     created_at: new Date().toISOString()
                 }].sort((a, b) => a.order_num - b.order_num));
             }
+
+            // Инвалидируем кэш специальных техник (для SpecialBundlesManager)
+            queryClient.invalidateQueries({ queryKey: ['special-techniques-for-bundles'] });
 
             // Сразу закрываем модальное окно
             handleCloseMaterialModal();
@@ -1368,54 +1379,6 @@ const MaterialsManager: React.FC = () => {
                             </div>
 
                             <div className="form-group">
-                                <label>Тип условия разблокировки</label>
-                                <select
-                                    className="admin-input"
-                                    value={materialForm.unlock_condition_type || ''}
-                                    onChange={(e) => setMaterialForm({
-                                        ...materialForm,
-                                        unlock_condition_type: e.target.value ? e.target.value as 'after_material' | 'after_duration' : null
-                                    })}
-                                >
-                                    <option value="">Нет условий</option>
-                                    <option value="after_material">После получения другого материала</option>
-                                    <option value="after_duration">Через время (задержка)</option>
-                                </select>
-                            </div>
-
-                            {materialForm.unlock_condition_type === 'after_material' && (
-                                <div className="form-group">
-                                    <label>ID предыдущего материала</label>
-                                    <input
-                                        type="text"
-                                        className="admin-input"
-                                        value={materialForm.unlock_condition_material_id}
-                                        onChange={(e) => setMaterialForm({ ...materialForm, unlock_condition_material_id: e.target.value })}
-                                        placeholder="UUID материала"
-                                    />
-                                    <small style={{ color: '#666', fontSize: '12px' }}>
-                                        Материал откроется после получения указанного материала
-                                    </small>
-                                </div>
-                            )}
-
-                            {materialForm.unlock_condition_type === 'after_duration' && (
-                                <div className="form-group">
-                                    <label>Задержка (дни)</label>
-                                    <input
-                                        type="number"
-                                        className="admin-input"
-                                        value={materialForm.unlock_condition_duration_days}
-                                        onChange={(e) => setMaterialForm({ ...materialForm, unlock_condition_duration_days: parseInt(e.target.value) || 30 })}
-                                        placeholder="30"
-                                    />
-                                    <small style={{ color: '#666', fontSize: '12px' }}>
-                                        Материал откроется через указанное количество дней
-                                    </small>
-                                </div>
-                            )}
-
-                            <div className="form-group">
                                 <label className="checkbox-inline" style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                                     <input
                                         type="checkbox"
@@ -1427,6 +1390,21 @@ const MaterialsManager: React.FC = () => {
                                 </label>
                                 <small style={{ color: '#666', fontSize: '12px', display: 'block', marginTop: '4px' }}>
                                     Если отмечено, материал доступен независимо от модулей
+                                </small>
+                            </div>
+
+                            <div className="form-group">
+                                <label className="checkbox-inline" style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                                    <input
+                                        type="checkbox"
+                                        className="admin-checkbox"
+                                        checked={materialForm.is_special}
+                                        onChange={(e) => setMaterialForm({ ...materialForm, is_special: e.target.checked })}
+                                    />
+                                    <span>Специальная техника</span>
+                                </label>
+                                <small style={{ color: '#666', fontSize: '12px', display: 'block', marginTop: '4px' }}>
+                                    Если отмечено, техника может быть добавлена в специальные пакеты
                                 </small>
                             </div>
 

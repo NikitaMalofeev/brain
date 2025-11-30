@@ -22,12 +22,20 @@ import {
   SearchOutlined,
   DownOutlined,
   UpOutlined,
+  GiftOutlined,
 } from '@ant-design/icons';
 import {
   useAddTechniqueToTariffModule,
   useRemoveTechniqueFromTariffModule,
   TariffModuleConfig,
 } from '@/lib/supabase/hooks/useTariffConfiguration';
+import {
+  useSpecialBundles,
+  useSpecialBundlePlacements,
+  usePlaceSpecialBundle,
+  useRemoveSpecialBundlePlacement,
+  SpecialBundle,
+} from '@/lib/supabase/hooks/useSpecialBundles';
 
 const { Text } = Typography;
 
@@ -92,10 +100,15 @@ const TariffModuleMaterialsManager: React.FC<TariffModuleMaterialsManagerProps> 
   moduleDurationDays,
 }) => {
   const [draggedMaterial, setDraggedMaterial] = useState<Material | null>(null);
+  const [draggedSpecialBundle, setDraggedSpecialBundle] = useState<SpecialBundle | null>(null);
   const [searchQuery, setSearchQuery] = useState<string>('');
   const [addMaterialModal, setAddMaterialModal] = useState<{
     materialId: string;
     materialName: string;
+  } | null>(null);
+  const [addSpecialBundleModal, setAddSpecialBundleModal] = useState<{
+    bundleId: string;
+    bundleName: string;
   } | null>(null);
   const [unlockDay, setUnlockDay] = useState<number>(0);
   const [activeDays, setActiveDays] = useState<number | null>(null);
@@ -108,6 +121,32 @@ const TariffModuleMaterialsManager: React.FC<TariffModuleMaterialsManagerProps> 
   const { data: moduleMaterials, isLoading } = useModuleMaterials(module.tariff_stream_module_id);
   const addMaterialMutation = useAddTechniqueToTariffModule();
   const removeMaterialMutation = useRemoveTechniqueFromTariffModule();
+
+  // Специальные пакеты
+  const { data: specialBundles } = useSpecialBundles();
+  const { data: specialBundlePlacements } = useSpecialBundlePlacements(module.tariff_stream_module_id);
+  const placeSpecialBundleMutation = usePlaceSpecialBundle();
+  const removeSpecialBundlePlacementMutation = useRemoveSpecialBundlePlacement();
+
+  // Доступные специальные пакеты (которые ещё не размещены в этом модуле)
+  const availableSpecialBundles = useMemo(() => {
+    if (!specialBundles) return [];
+    if (!specialBundlePlacements) return specialBundles;
+    const placedIds = new Set(specialBundlePlacements.map(p => p.special_bundle_id));
+    return specialBundles.filter(b => !placedIds.has(b.id));
+  }, [specialBundles, specialBundlePlacements]);
+
+  // Специальные пакеты сгруппированные по дням
+  const specialBundlesByDay = useMemo(() => {
+    if (!specialBundlePlacements) return {};
+    const result: Record<number, typeof specialBundlePlacements> = {};
+    for (const placement of specialBundlePlacements) {
+      const day = placement.start_unlock_offset_days || 0;
+      if (!result[day]) result[day] = [];
+      result[day].push(placement);
+    }
+    return result;
+  }, [specialBundlePlacements]);
 
   // Доступные материалы (которые ещё не добавлены в модуль)
   const availableMaterials = useMemo(() => {
@@ -143,7 +182,8 @@ const TariffModuleMaterialsManager: React.FC<TariffModuleMaterialsManagerProps> 
     return result;
   }, [moduleMaterials]);
 
-  const isMutating = addMaterialMutation.isPending || removeMaterialMutation.isPending;
+  const isMutating = addMaterialMutation.isPending || removeMaterialMutation.isPending ||
+    placeSpecialBundleMutation.isPending || removeSpecialBundlePlacementMutation.isPending;
 
   const formatDuration = (seconds: number) => {
     const mins = Math.floor(seconds / 60);
@@ -156,6 +196,17 @@ const TariffModuleMaterialsManager: React.FC<TariffModuleMaterialsManagerProps> 
   };
 
   const handleDrop = (day: number) => {
+    // Если перетаскиваем специальный пакет
+    if (draggedSpecialBundle) {
+      setAddSpecialBundleModal({
+        bundleId: draggedSpecialBundle.id,
+        bundleName: draggedSpecialBundle.name,
+      });
+      setUnlockDay(day);
+      setDraggedSpecialBundle(null);
+      return;
+    }
+    // Если перетаскиваем материал
     if (!draggedMaterial) return;
     setAddMaterialModal({
       materialId: draggedMaterial.id,
@@ -164,6 +215,35 @@ const TariffModuleMaterialsManager: React.FC<TariffModuleMaterialsManagerProps> 
     setUnlockDay(day);
     setActiveDays(null);
     setDraggedMaterial(null);
+  };
+
+  const handleConfirmAddSpecialBundle = async () => {
+    if (!addSpecialBundleModal) return;
+    if (unlockDay < 0 || unlockDay >= moduleDaysCount) {
+      message.error(`День должен быть от 0 до ${moduleDaysCount - 1}`);
+      return;
+    }
+    try {
+      await placeSpecialBundleMutation.mutateAsync({
+        special_bundle_id: addSpecialBundleModal.bundleId,
+        tariff_stream_module_id: module.tariff_stream_module_id,
+        start_unlock_offset_days: unlockDay,
+      });
+      message.success('Специальный пакет размещён');
+      setAddSpecialBundleModal(null);
+      setUnlockDay(0);
+    } catch (err: any) {
+      message.error(err?.message || 'Ошибка при размещении');
+    }
+  };
+
+  const handleRemoveSpecialBundlePlacement = async (placementId: string) => {
+    try {
+      await removeSpecialBundlePlacementMutation.mutateAsync(placementId);
+      message.success('Специальный пакет удалён');
+    } catch (err: any) {
+      message.error(err?.message || 'Ошибка при удалении');
+    }
   };
 
   const handleConfirmAddMaterial = async () => {
@@ -226,47 +306,90 @@ const TariffModuleMaterialsManager: React.FC<TariffModuleMaterialsManagerProps> 
         )}
 
         <Row gutter={24}>
-          {/* Доступные материалы */}
+          {/* Доступные материалы и специальные пакеты */}
           <Col span={6}>
-            <Card size="small" title="Доступные материалы">
-              <Input
-                placeholder="Поиск по названию"
-                prefix={<SearchOutlined />}
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                style={{ marginBottom: 12 }}
-                allowClear
-              />
-              {isLoading ? (
-                <Spin />
-              ) : availableMaterials.length === 0 ? (
-                <Empty description="Все материалы добавлены" />
-              ) : filteredMaterials.length === 0 ? (
-                <Empty description="Нет результатов" />
-              ) : (
-                <Space direction="vertical" style={{ width: '100%' }}>
-                  {filteredMaterials.map((material) => (
-                    <Card
-                      key={material.id}
-                      size="small"
-                      draggable
-                      onDragStart={() => setDraggedMaterial(material)}
-                      onDragEnd={() => setDraggedMaterial(null)}
-                      style={{ cursor: 'grab' }}
-                      bodyStyle={{ padding: 8 }}
-                    >
-                      <Space>
-                        <DragOutlined />
-                        {material.material_type === 'audio' ? '🎵' : '🎬'}
-                        <Text ellipsis style={{ maxWidth: 120 }}>
-                          {material.name}
-                        </Text>
-                      </Space>
-                    </Card>
-                  ))}
-                </Space>
+            <Space direction="vertical" style={{ width: '100%' }} size="middle">
+              {/* Специальные пакеты */}
+              {availableSpecialBundles.length > 0 && (
+                <Card
+                  size="small"
+                  title={
+                    <Space>
+                      <GiftOutlined style={{ color: '#722ed1' }} />
+                      <span>Спец. пакеты</span>
+                    </Space>
+                  }
+                  style={{ borderColor: '#722ed1' }}
+                >
+                  <Space direction="vertical" style={{ width: '100%' }}>
+                    {availableSpecialBundles.map((bundle) => (
+                      <Card
+                        key={bundle.id}
+                        size="small"
+                        draggable
+                        onDragStart={() => setDraggedSpecialBundle(bundle)}
+                        onDragEnd={() => setDraggedSpecialBundle(null)}
+                        style={{
+                          cursor: 'grab',
+                          background: '#f9f0ff',
+                          borderColor: '#722ed1',
+                        }}
+                        bodyStyle={{ padding: 8 }}
+                      >
+                        <Space>
+                          <DragOutlined style={{ color: '#722ed1' }} />
+                          <GiftOutlined style={{ color: '#722ed1' }} />
+                          <Text ellipsis style={{ maxWidth: 100, color: '#722ed1' }}>
+                            {bundle.name}
+                          </Text>
+                        </Space>
+                      </Card>
+                    ))}
+                  </Space>
+                </Card>
               )}
-            </Card>
+
+              {/* Материалы */}
+              <Card size="small" title="Доступные материалы">
+                <Input
+                  placeholder="Поиск по названию"
+                  prefix={<SearchOutlined />}
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  style={{ marginBottom: 12 }}
+                  allowClear
+                />
+                {isLoading ? (
+                  <Spin />
+                ) : availableMaterials.length === 0 ? (
+                  <Empty description="Все материалы добавлены" />
+                ) : filteredMaterials.length === 0 ? (
+                  <Empty description="Нет результатов" />
+                ) : (
+                  <Space direction="vertical" style={{ width: '100%' }}>
+                    {filteredMaterials.map((material) => (
+                      <Card
+                        key={material.id}
+                        size="small"
+                        draggable
+                        onDragStart={() => setDraggedMaterial(material)}
+                        onDragEnd={() => setDraggedMaterial(null)}
+                        style={{ cursor: 'grab' }}
+                        bodyStyle={{ padding: 8 }}
+                      >
+                        <Space>
+                          <DragOutlined />
+                          {material.material_type === 'audio' ? '🎵' : '🎬'}
+                          <Text ellipsis style={{ maxWidth: 120 }}>
+                            {material.name}
+                          </Text>
+                        </Space>
+                      </Card>
+                    ))}
+                  </Space>
+                )}
+              </Card>
+            </Space>
           </Col>
 
           {/* Сетка дней */}
@@ -279,7 +402,13 @@ const TariffModuleMaterialsManager: React.FC<TariffModuleMaterialsManagerProps> 
                   gap: 8,
                 }}
               >
-                {Array.from({ length: moduleDaysCount }, (_, i) => i).map((day) => (
+                {Array.from({ length: moduleDaysCount }, (_, i) => i).map((day) => {
+                  const hasMaterials = materialsByDay[day]?.length > 0;
+                  const hasSpecialBundles = specialBundlesByDay[day]?.length > 0;
+                  const hasContent = hasMaterials || hasSpecialBundles;
+                  const isDragging = draggedMaterial || draggedSpecialBundle;
+
+                  return (
                   <div
                     key={day}
                     onDragOver={(e) => e.preventDefault()}
@@ -293,15 +422,15 @@ const TariffModuleMaterialsManager: React.FC<TariffModuleMaterialsManagerProps> 
                       padding: 8,
                       borderRadius: 6,
                       border: `2px solid ${
-                        draggedMaterial
-                          ? '#1890ff'
-                          : materialsByDay[day]?.length
+                        isDragging
+                          ? draggedSpecialBundle ? '#722ed1' : '#1890ff'
+                          : hasContent
                           ? '#722ed1'
                           : '#d9d9d9'
                       }`,
-                      background: draggedMaterial
-                        ? '#e6f7ff'
-                        : materialsByDay[day]?.length
+                      background: isDragging
+                        ? draggedSpecialBundle ? '#f9f0ff' : '#e6f7ff'
+                        : hasContent
                         ? '#f9f0ff'
                         : '#fafafa',
                     }}
@@ -310,7 +439,7 @@ const TariffModuleMaterialsManager: React.FC<TariffModuleMaterialsManagerProps> 
                       День {day + 1}
                     </Text>
                     {/* Иконка удаления в правом верхнем углу */}
-                    {materialsByDay[day]?.length > 0 && (
+                    {hasMaterials && (
                       <Popconfirm
                         title={`Удалить ${materialsByDay[day].length > 1 ? 'все материалы' : 'материал'}?`}
                         onConfirm={() => {
@@ -404,13 +533,94 @@ const TariffModuleMaterialsManager: React.FC<TariffModuleMaterialsManagerProps> 
                         </Card>
                       );
                     })}
+
+                    {/* Специальные пакеты в этом дне */}
+                    {specialBundlesByDay[day]?.map((placement) => (
+                      <Card
+                        key={placement.id}
+                        size="small"
+                        style={{
+                          marginTop: 4,
+                          background: '#f9f0ff',
+                          borderColor: '#722ed1',
+                        }}
+                        bodyStyle={{ padding: 8 }}
+                      >
+                        <Space style={{ width: '100%', justifyContent: 'space-between' }}>
+                          <Space size={4}>
+                            <GiftOutlined style={{ color: '#722ed1' }} />
+                            <Text
+                              style={{
+                                fontSize: 12,
+                                fontWeight: 500,
+                                color: '#722ed1',
+                              }}
+                            >
+                              {placement.special_bundle?.name}
+                            </Text>
+                          </Space>
+                          <Popconfirm
+                            title="Удалить специальный пакет?"
+                            onConfirm={() => handleRemoveSpecialBundlePlacement(placement.id)}
+                            okText="Да"
+                            cancelText="Нет"
+                          >
+                            <DeleteOutlined
+                              style={{
+                                fontSize: 12,
+                                color: '#ff4d4f',
+                                cursor: 'pointer',
+                              }}
+                            />
+                          </Popconfirm>
+                        </Space>
+                      </Card>
+                    ))}
                   </div>
-                ))}
+                  );
+                })}
               </div>
             </Card>
           </Col>
         </Row>
       </Space>
+
+      {/* Modal для добавления специального пакета */}
+      <Modal
+        title="Разместить специальный пакет"
+        open={!!addSpecialBundleModal}
+        onOk={handleConfirmAddSpecialBundle}
+        onCancel={() => {
+          setAddSpecialBundleModal(null);
+          setUnlockDay(0);
+        }}
+        confirmLoading={isMutating}
+        okText="Разместить"
+        cancelText="Отмена"
+      >
+        <Space direction="vertical" style={{ width: '100%' }} size="large">
+          <div>
+            <Text strong>Специальный пакет:</Text>{' '}
+            <Text style={{ color: '#722ed1' }}>{addSpecialBundleModal?.bundleName}</Text>
+          </div>
+
+          <div>
+            <Text strong>День открытия первой техники:</Text>
+            <InputNumber
+              min={1}
+              max={moduleDaysCount}
+              value={unlockDay + 1}
+              onChange={(value) => setUnlockDay((value || 1) - 1)}
+              style={{ width: '100%', marginTop: 8 }}
+              placeholder={`От 1 до ${moduleDaysCount}`}
+            />
+            <Text type="secondary" style={{ fontSize: 12, display: 'block', marginTop: 4 }}>
+              Первая техника из пакета откроется на {unlockDay + 1} день модуля.
+              Последующие техники откроются автоматически по заданным интервалам.
+            </Text>
+          </div>
+        </Space>
+      </Modal>
 
       {/* Modal для добавления материала */}
       <Modal
@@ -434,15 +644,15 @@ const TariffModuleMaterialsManager: React.FC<TariffModuleMaterialsManagerProps> 
           <div>
             <Text strong>День открытия материала:</Text>
             <InputNumber
-              min={0}
-              max={moduleDaysCount - 1}
-              value={unlockDay}
-              onChange={(value) => setUnlockDay(value || 0)}
+              min={1}
+              max={moduleDaysCount}
+              value={unlockDay + 1}
+              onChange={(value) => setUnlockDay((value || 1) - 1)}
               style={{ width: '100%', marginTop: 8 }}
-              placeholder={`От 0 до ${moduleDaysCount - 1}`}
+              placeholder={`От 1 до ${moduleDaysCount}`}
             />
             <Text type="secondary" style={{ fontSize: 12, display: 'block', marginTop: 4 }}>
-              Материал откроется на {unlockDay} день после начала доступа к модулю
+              Материал откроется на {unlockDay + 1} день модуля
             </Text>
           </div>
 

@@ -202,6 +202,7 @@ const CalendarPage: React.FC = () => {
           onDateClick={handleDateClick}
           onPrevMonth={handlePrevMonth}
           onNextMonth={handleNextMonth}
+          isGuest={isGuest}
         />
 
         {/* Список всех событий месяца */}

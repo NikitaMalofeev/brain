@@ -19,6 +19,7 @@ import {
   KeyOutlined,
   ScheduleOutlined,
   InboxOutlined,
+  GiftOutlined,
 } from '@ant-design/icons';
 import type { MenuProps } from 'antd';
 
@@ -30,6 +31,7 @@ export type AdminSection =
   | 'courses'
   | 'materials'
   | 'bundles'
+  | 'special-bundles'
   // Справочники
   | 'streams'
   | 'modules'
@@ -84,6 +86,7 @@ const AdminSidebar: React.FC<AdminSidebarProps> = ({
     getItem('Материалы', 'directories', <AppstoreOutlined />, [
       getItem('Техники', 'materials', <BookOutlined />),
       getItem('Пакеты', 'bundles', <InboxOutlined />),
+      getItem('Спец. пакеты', 'special-bundles', <GiftOutlined />),
       getItem('Потоки', 'streams', <CalendarOutlined />),
       getItem('Модули', 'modules', <BuildOutlined />),
       getItem('Тарифы', 'tariffs', <DollarOutlined />),
@@ -115,7 +118,7 @@ const AdminSidebar: React.FC<AdminSidebarProps> = ({
   const handleMenuClick: MenuProps['onClick'] = (e) => {
     // Проверяем что это конечный пункт меню (не группа)
     const validSections: AdminSection[] = [
-      'courses', 'materials', 'bundles', 'streams', 'modules', 'tariffs',
+      'courses', 'materials', 'bundles', 'special-bundles', 'streams', 'modules', 'tariffs',
       'students', 'curators', 'submissions', 'chats', 'faq', 'broadcasts',
       'tokens', 'calendar'
     ];
@@ -131,6 +134,7 @@ const AdminSidebar: React.FC<AdminSidebarProps> = ({
       courses: '',
       materials: 'directories',
       bundles: 'directories',
+      'special-bundles': 'directories',
       streams: 'directories',
       modules: 'directories',
       tariffs: 'directories',

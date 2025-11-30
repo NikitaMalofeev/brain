@@ -6,13 +6,14 @@ import { TechniqueWithAccess } from '@/lib/supabase/types';
 export interface TechniqueCardProps {
   technique: TechniqueWithAccess;
   onClick: () => void;
+  isGuest?: boolean;
 }
 
 /**
  * Карточка техники (аудиопрактики)
  * Отображает превью техники с обложкой, названием, описанием и статусом доступа
  */
-const TechniqueCard: React.FC<TechniqueCardProps> = ({ technique, onClick }) => {
+const TechniqueCard: React.FC<TechniqueCardProps> = ({ technique, onClick, isGuest = false }) => {
   const {
     title,
     description,
@@ -30,8 +31,9 @@ const TechniqueCard: React.FC<TechniqueCardProps> = ({ technique, onClick }) => 
   // Техника заблокирована если:
   // 1. Нет доступа И is_unlocked = false (техника из модуля, ещё не разблокирована по времени)
   // 2. Нет доступа И нельзя купить И не бесплатная
+  // 3. Для гостей - все техники к покупке тоже показываем как заблокированные (с замочком)
   const isLocked = !has_access && status !== 'free' && (
-    is_unlocked === false || (!can_purchase && !is_unlocked)
+    is_unlocked === false || (!can_purchase && !is_unlocked) || (isGuest && can_purchase)
   );
 
   return (
