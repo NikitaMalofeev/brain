@@ -9,6 +9,7 @@ import {
   useDeleteModuleLesson,
 } from '@/lib/supabase/hooks/useModuleLessons';
 import { Lesson } from '@/lib/supabase/types';
+import { TariffTechniqueConfig } from '@/lib/supabase/hooks/useTariffConfiguration';
 import BlocksManager from '../BlocksManager/BlocksManager';
 
 const { TextArea } = Input;
@@ -16,18 +17,22 @@ const { Text } = Typography;
 
 interface ModuleLessonsManagerProps {
   streamModuleId: string;
+  tariffStreamModuleId?: string;
   streamId: string;
   courseId: string;
   moduleName: string;
   moduleDurationDays?: number;
+  moduleTechniques?: TariffTechniqueConfig[];
 }
 
 const ModuleLessonsManager: React.FC<ModuleLessonsManagerProps> = ({
   streamModuleId,
+  tariffStreamModuleId,
   streamId,
   courseId,
   moduleName,
   moduleDurationDays,
+  moduleTechniques,
 }) => {
   const [lessonForm] = Form.useForm();
   const [lessonModalVisible, setLessonModalVisible] = useState(false);
@@ -242,6 +247,9 @@ const ModuleLessonsManager: React.FC<ModuleLessonsManagerProps> = ({
         stageId={selectedLessonForBlocks.stage_id || 0}
         lessonId={selectedLessonForBlocks.id}
         onBack={() => setSelectedLessonForBlocks(null)}
+        streamModuleId={streamModuleId}
+        openDayOffset={selectedLessonForBlocks.open_day_offset}
+        moduleTechniques={moduleTechniques}
       />
     );
   }

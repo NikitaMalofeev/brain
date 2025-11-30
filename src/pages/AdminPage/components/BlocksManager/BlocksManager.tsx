@@ -15,6 +15,7 @@ interface BlockModalData {
     content_text: string;
     content_url: string;
     material_id?: string;
+    technique_id?: string; // ID техники привязанной к блоку
     order_num: number;
 }
 
@@ -25,15 +26,35 @@ interface Material {
     material_type: 'video' | 'audio' | 'article' | 'link' | 'file';
 }
 
+// Техника (из module_materials)
+interface Technique {
+    id: string;
+    name: string;
+    description?: string | null;
+    material_type: string;
+}
+
+// Тип для техники из TariffTechniqueConfig
+interface TechniqueFromModule {
+    technique_id: string;
+    technique_title: string;
+    unlock_offset_days: number;
+}
+
 export interface BlocksManagerProps {
     courseId: string;
     stageId: number;
     lessonId: number;
     onBack: () => void;
+    // Новые пропсы для фильтрации техник по дню открытия
+    streamModuleId?: string;
+    openDayOffset?: number | null;
+    // Техники из модуля (уже загружены из TariffModuleConfig)
+    moduleTechniques?: TechniqueFromModule[];
 }
 
 // Компонент для управления блоками урока
-const BlocksManager: React.FC<BlocksManagerProps> = ({ courseId, stageId, lessonId, onBack }) => {
+const BlocksManager: React.FC<BlocksManagerProps> = ({ courseId, stageId, lessonId, onBack, streamModuleId, openDayOffset, moduleTechniques }) => {
     const { blocks, loading, error, refetch, createBlock, updateBlock, deleteBlock } = useBlocksAdmin(lessonId);
     const [updateLoading, setUpdateLoading] = useState<boolean>(false);
     const [updateError, setUpdateError] = useState<string | null>(null);
@@ -63,7 +84,11 @@ const BlocksManager: React.FC<BlocksManagerProps> = ({ courseId, stageId, lesson
     // Состояние для материалов
     const [materials, setMaterials] = useState<Material[]>([]);
     const [materialsLoading, setMaterialsLoading] = useState(false);
-    
+
+    // Состояние для техник (доступных для добавления к блоку)
+    const [techniques, setTechniques] = useState<Technique[]>([]);
+    const [techniquesLoading, setTechniquesLoading] = useState(false);
+
     // Состояние для предпросмотра markdown в модалке
     const [showMarkdownPreview, setShowMarkdownPreview] = useState(false);
 
@@ -86,6 +111,7 @@ const BlocksManager: React.FC<BlocksManagerProps> = ({ courseId, stageId, lesson
             content_text: '',
             content_url: '',
             material_id: '',
+            technique_id: '',
             order_num: nextOrder,
         });
         setModalMode('add');
@@ -103,6 +129,7 @@ const BlocksManager: React.FC<BlocksManagerProps> = ({ courseId, stageId, lesson
             content_text: block.content_text || '',
             content_url: block.content_url || '',
             material_id: block.material_id || '',
+            technique_id: block.technique_id || '',
             order_num: block.order_num,
         });
         setModalMode('edit');
@@ -122,6 +149,7 @@ const BlocksManager: React.FC<BlocksManagerProps> = ({ courseId, stageId, lesson
             content_text: '',
             content_url: '',
             material_id: '',
+            technique_id: '',
             order_num: 1,
         });
     };
@@ -129,22 +157,62 @@ const BlocksManager: React.FC<BlocksManagerProps> = ({ courseId, stageId, lesson
     // Ref для FileUploader
     const fileUploaderRef = useRef<FileUploaderRef>(null);
 
-    // Загрузка материалов
+    // Загрузка материалов (техник) для этого модуля и дня
     const loadMaterials = async () => {
-        if (!supabase || !courseId) return;
-        
+        if (!supabase) return;
+
         try {
             setMaterialsLoading(true);
-            const { data, error } = await supabase
-                .from('materials')
-                .select('id, name, description, material_type, release_date')
-                .eq('course_id', courseId)
-                .lte('release_date', new Date().toISOString()) // Только материалы с датой открытия <= текущей
-                .order('release_date', { ascending: true })
-                .order('name', { ascending: true });
 
-            if (error) throw error;
-            setMaterials(data || []);
+            // Если есть streamModuleId и openDayOffset - загружаем техники из module_materials
+            // которые назначены на этот день в этом модуле
+            if (streamModuleId && openDayOffset !== null && openDayOffset !== undefined) {
+                console.log('Loading techniques for module and day:', { streamModuleId, openDayOffset });
+
+                const { data, error } = await supabase
+                    .from('module_materials')
+                    .select(`
+                        id,
+                        release_day,
+                        material:materials(
+                            id,
+                            name,
+                            description,
+                            material_type
+                        )
+                    `)
+                    .eq('module_id', streamModuleId)
+                    .eq('release_day', openDayOffset);
+
+                if (error) throw error;
+
+                // Преобразуем данные в формат Material[]
+                const materialsFromModule = (data || [])
+                    .filter(item => item.material)
+                    .map(item => ({
+                        id: (item.material as any).id,
+                        name: (item.material as any).name,
+                        description: (item.material as any).description,
+                        material_type: (item.material as any).material_type,
+                    }));
+
+                console.log('Loaded techniques for day:', materialsFromModule);
+                setMaterials(materialsFromModule);
+            } else if (courseId) {
+                // Fallback: загружаем все материалы курса (старая логика)
+                const { data, error } = await supabase
+                    .from('materials')
+                    .select('id, name, description, material_type, release_date')
+                    .eq('course_id', courseId)
+                    .lte('release_date', new Date().toISOString())
+                    .order('release_date', { ascending: true })
+                    .order('name', { ascending: true });
+
+                if (error) throw error;
+                setMaterials(data || []);
+            } else {
+                setMaterials([]);
+            }
         } catch (err: any) {
             console.error('Ошибка загрузки материалов:', err);
         } finally {
@@ -152,10 +220,35 @@ const BlocksManager: React.FC<BlocksManagerProps> = ({ courseId, stageId, lesson
         }
     };
 
-    // Загружаем материалы при монтировании компонента или изменении курса
+    // Загружаем материалы при монтировании или изменении параметров
     useEffect(() => {
         loadMaterials();
-    }, [courseId]);
+    }, [courseId, streamModuleId, openDayOffset]);
+
+    // Фильтруем техники из переданного массива по дню открытия
+    useEffect(() => {
+        console.log('=== Filtering techniques ===');
+        console.log('Props:', { openDayOffset, moduleTechniques });
+
+        if (!moduleTechniques || openDayOffset === null || openDayOffset === undefined) {
+            console.log('SKIP: No moduleTechniques or openDayOffset');
+            setTechniques([]);
+            return;
+        }
+
+        // Фильтруем техники которые открываются в этот день (unlock_offset_days совпадает с open_day_offset урока)
+        const filtered = moduleTechniques
+            .filter(t => t.unlock_offset_days === openDayOffset)
+            .map(t => ({
+                id: t.technique_id,
+                name: t.technique_title,
+                description: null,
+                material_type: 'audio', // Техники обычно audio
+            }));
+
+        console.log('Filtered techniques for day', openDayOffset, ':', filtered);
+        setTechniques(filtered);
+    }, [moduleTechniques, openDayOffset]);
 
     // Сохранить блок
     const saveBlock = async () => {
@@ -221,6 +314,7 @@ const BlocksManager: React.FC<BlocksManagerProps> = ({ courseId, stageId, lesson
                     content_text: modalData.content_text?.trim() || '',
                     content_url: finalContentUrl,
                     material_id: modalData.material_id || undefined,
+                    technique_id: modalData.technique_id || undefined,
                     order_num: modalData.order_num,
                 });
             } else {
@@ -231,6 +325,7 @@ const BlocksManager: React.FC<BlocksManagerProps> = ({ courseId, stageId, lesson
                     content_text: modalData.content_text?.trim() || '',
                     content_url: finalContentUrl,
                     material_id: modalData.material_id || undefined,
+                    technique_id: modalData.technique_id || undefined,
                     order_num: modalData.order_num,
                 });
             }
@@ -374,6 +469,15 @@ const BlocksManager: React.FC<BlocksManagerProps> = ({ courseId, stageId, lesson
     const renderBlockContent = (block: any) => {
         const hasText = block.content_text && block.content_text.trim();
         const hasUrl = block.content_url && block.content_url.trim();
+        const hasTechnique = block.technique_id;
+        const techniqueName = hasTechnique ? techniques.find(t => t.id === block.technique_id)?.name : null;
+
+        // Компонент для отображения привязанной техники
+        const TechniqueTag = () => hasTechnique ? (
+            <div style={{ display: 'inline-block', background: '#f6ffed', color: '#52c41a', padding: '2px 8px', borderRadius: 4, fontSize: 11, marginTop: 4 }}>
+                🎯 {techniqueName || 'Техника'}
+            </div>
+        ) : null;
 
         switch (block.block_type) {
             case 'text':
@@ -383,6 +487,7 @@ const BlocksManager: React.FC<BlocksManagerProps> = ({ courseId, stageId, lesson
                             (block.content_text.substring(0, 100) + (block.content_text.length > 100 ? '...' : ''))
                             : <span className="empty-value">Нет текста</span>
                         }
+                        <TechniqueTag />
                     </div>
                 );
             case 'video':
@@ -391,6 +496,7 @@ const BlocksManager: React.FC<BlocksManagerProps> = ({ courseId, stageId, lesson
                         {hasUrl && <div>🎥 {block.content_url.substring(0, 40)}...</div>}
                         {hasText && <div>📝 {block.content_text.substring(0, 60)}...</div>}
                         {!hasUrl && !hasText && <span className="empty-value">Нет контента</span>}
+                        <TechniqueTag />
                     </div>
                 );
             case 'audio':
@@ -399,6 +505,7 @@ const BlocksManager: React.FC<BlocksManagerProps> = ({ courseId, stageId, lesson
                         {hasUrl && <div>🔊 {block.content_url.substring(0, 40)}...</div>}
                         {hasText && <div>📝 {block.content_text.substring(0, 60)}...</div>}
                         {!hasUrl && !hasText && <span className="empty-value">Нет контента</span>}
+                        <TechniqueTag />
                     </div>
                 );
             case 'image':
@@ -407,6 +514,7 @@ const BlocksManager: React.FC<BlocksManagerProps> = ({ courseId, stageId, lesson
                         {hasUrl && <div>🖼️ {block.content_url.substring(0, 40)}...</div>}
                         {hasText && <div>📝 {block.content_text.substring(0, 60)}...</div>}
                         {!hasUrl && !hasText && <span className="empty-value">Нет контента</span>}
+                        <TechniqueTag />
                     </div>
                 );
             case 'pdf':
@@ -415,6 +523,7 @@ const BlocksManager: React.FC<BlocksManagerProps> = ({ courseId, stageId, lesson
                         {hasUrl && <div>📄 {block.content_url.substring(0, 40)}...</div>}
                         {hasText && <div>📝 {block.content_text.substring(0, 60)}...</div>}
                         {!hasUrl && !hasText && <span className="empty-value">Нет контента</span>}
+                        <TechniqueTag />
                     </div>
                 );
             case 'material':
@@ -424,6 +533,7 @@ const BlocksManager: React.FC<BlocksManagerProps> = ({ courseId, stageId, lesson
                         <div>📚 {materialName}</div>
                         {hasText && <div>📝 {block.content_text.substring(0, 60)}...</div>}
                         {!hasText && <span className="empty-value">Нет описания</span>}
+                        <TechniqueTag />
                     </div>
                 );
             default:
@@ -452,7 +562,10 @@ const BlocksManager: React.FC<BlocksManagerProps> = ({ courseId, stageId, lesson
                 const hasVideoText = modalData.content_text && modalData.content_text.trim();
                 return hasVideoUrl || hasVideoText;
             case 'material':
-                // Для material блока нужен выбранный материал
+                // Для material блока нужен выбранный материал и урок должен быть назначен на день
+                if (!streamModuleId || openDayOffset === null || openDayOffset === undefined) {
+                    return false; // Нельзя добавить технику если урок не назначен на день
+                }
                 return modalData.material_id && modalData.material_id.trim().length > 0;
             case 'audio':
             case 'image':
@@ -678,34 +791,62 @@ const BlocksManager: React.FC<BlocksManagerProps> = ({ courseId, stageId, lesson
                                 </div>
                             </div>
                         ) : modalData.block_type === 'material' ? (
-                            // Для material блока - выбор материала + описание
+                            // Для material блока - выбор техники, доступной в этот день модуля
                             <>
                                 <div className="form-group">
-                                    <label>Выберите материал:</label>
-                                    <select
-                                        className="admin-input"
-                                        value={modalData.material_id || ''}
-                                        onChange={(e) => setModalData({ ...modalData, material_id: e.target.value })}
-                                        disabled={materialsLoading}
-                                    >
-                                        <option value="">Выберите материал из библиотеки...</option>
-                                        {materials.map((material) => (
-                                            <option key={material.id} value={material.id}>
-                                                {material.name} ({material.material_type})
-                                            </option>
-                                        ))}
-                                    </select>
-                                    {materialsLoading && <div className="text-sm text-gray-500">Загрузка материалов...</div>}
+                                    <label>
+                                        Выберите технику
+                                        {openDayOffset !== null && openDayOffset !== undefined && (
+                                            <span style={{ color: '#888', fontWeight: 'normal' }}> (день {openDayOffset})</span>
+                                        )}
+                                        :
+                                    </label>
+                                    {streamModuleId && openDayOffset !== null && openDayOffset !== undefined ? (
+                                        <>
+                                            <select
+                                                className="admin-input"
+                                                value={modalData.material_id || ''}
+                                                onChange={(e) => setModalData({ ...modalData, material_id: e.target.value })}
+                                                disabled={materialsLoading}
+                                            >
+                                                <option value="">Выберите технику...</option>
+                                                {materials.map((material) => (
+                                                    <option key={material.id} value={material.id}>
+                                                        {material.name} ({material.material_type})
+                                                    </option>
+                                                ))}
+                                            </select>
+                                            {materialsLoading && <div style={{ fontSize: '12px', color: '#888', marginTop: '4px' }}>Загрузка техник...</div>}
+                                            {!materialsLoading && materials.length === 0 && (
+                                                <div style={{ fontSize: '12px', color: '#f5222d', marginTop: '4px' }}>
+                                                    ⚠️ Нет техник назначенных на день {openDayOffset} в этом модуле.
+                                                    Добавьте технику в расписание модуля.
+                                                </div>
+                                            )}
+                                            <small style={{ color: 'var(--admin-text-secondary)', marginTop: '8px', display: 'block' }}>
+                                                💡 Отображаются только техники, назначенные на день {openDayOffset} в расписании модуля
+                                            </small>
+                                        </>
+                                    ) : (
+                                        <div style={{ padding: '12px', background: '#fff7e6', borderRadius: '8px', border: '1px solid #ffd591' }}>
+                                            <div style={{ color: '#ad6800', fontSize: '14px' }}>
+                                                ⚠️ Для добавления техники урок должен быть назначен на определённый день модуля.
+                                            </div>
+                                            <div style={{ color: '#8c8c8c', fontSize: '12px', marginTop: '4px' }}>
+                                                Установите "День открытия" урока в настройках урока.
+                                            </div>
+                                        </div>
+                                    )}
                                 </div>
 
                                 <div className="form-group">
-                                    <label>Описание материала (опционально):</label>
+                                    <label>Описание (опционально):</label>
                                     <textarea
                                         className="admin-input"
                                         value={modalData.content_text}
                                         onChange={(e) => setModalData({ ...modalData, content_text: e.target.value })}
                                         rows={3}
-                                        placeholder="Введите описание материала..."
+                                        placeholder="Введите описание..."
                                         style={{ resize: 'vertical' }}
                                     />
                                 </div>
@@ -794,6 +935,39 @@ const BlocksManager: React.FC<BlocksManagerProps> = ({ courseId, stageId, lesson
                                     />
                                 </div>
                             </>
+                        )}
+
+                        {/* Поле для привязки техники к блоку (для любого типа блока) */}
+                        {streamModuleId && openDayOffset !== null && openDayOffset !== undefined && (
+                            <div className="form-group" style={{ marginTop: 16, padding: 12, background: '#f6ffed', borderRadius: 8, border: '1px solid #b7eb8f' }}>
+                                <label style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                                    <span>🎯 Привязать технику</span>
+                                    <span style={{ color: '#888', fontWeight: 'normal', fontSize: 12 }}>(день {openDayOffset})</span>
+                                </label>
+                                <select
+                                    className="admin-input"
+                                    value={modalData.technique_id || ''}
+                                    onChange={(e) => setModalData({ ...modalData, technique_id: e.target.value })}
+                                    disabled={techniquesLoading}
+                                    style={{ marginTop: 8 }}
+                                >
+                                    <option value="">Без техники</option>
+                                    {techniques.map((technique) => (
+                                        <option key={technique.id} value={technique.id}>
+                                            {technique.name} ({technique.material_type})
+                                        </option>
+                                    ))}
+                                </select>
+                                {techniquesLoading && <div style={{ fontSize: 12, color: '#888', marginTop: 4 }}>Загрузка техник...</div>}
+                                {!techniquesLoading && techniques.length === 0 && (
+                                    <div style={{ fontSize: 12, color: '#faad14', marginTop: 4 }}>
+                                        Нет техник назначенных на день {openDayOffset}
+                                    </div>
+                                )}
+                                <small style={{ color: '#52c41a', marginTop: 8, display: 'block', fontSize: 11 }}>
+                                    💡 Техника будет показана пользователю при просмотре этого блока
+                                </small>
+                            </div>
                         )}
 
                         <div className="form-actions">

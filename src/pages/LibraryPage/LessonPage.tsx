@@ -10,7 +10,7 @@ import { useAppContext } from '@/contexts/AppContext';
 import { logger } from '@/lib/logger';
 import { supabase } from '@/lib/supabase/client';
 import { LessonWithBlocks, LessonBlock, Submission, LessonProgress } from '@/lib/supabase/types';
-import { VideoBlock, DocumentBlock, ImageBlock, MaterialBlock } from '@/components/LessonContent';
+import { VideoBlock, DocumentBlock, ImageBlock, MaterialBlock, TechniqueInBlock } from '@/components/LessonContent';
 import { MarkdownContent } from '@/components/LessonContent/MarkdownContent';
 import { Button } from '@/components/ui/button';
 import { getDeadlineStatus, formatDeadline } from '@/helpers/deadlineUtils';
@@ -67,59 +67,66 @@ function linkifyText(text: string): React.ReactNode[] {
 }
 
 function BlockContent({ block }: { block: LessonBlock }) {
-    switch (block.block_type) {
-        case 'text':
-            return (
-                <MarkdownContent content={block.content_text || ''} />
-            );
+    // Основной контент блока
+    const renderMainContent = () => {
+        switch (block.block_type) {
+            case 'text':
+                return (
+                    <MarkdownContent content={block.content_text || ''} />
+                );
 
-        case 'video':
-            return (
-                <div className={'flex flex-col gap-3'}>
-                    <VideoBlock block={block} />
-                    {block.content_text && (
-                        <MarkdownContent content={block.content_text} className="mt-4" />
-                    )}
-                </div>
-            );
-
-        case 'audio':
-            const audioWaveformData = block.meta_json?.audio_data;
-            return <div className={'flex flex-col gap-3'}>
-                {block.content_url && <NewPlayer
-                    audioUrl={buildFileUrl(block.content_url) || ''}
-                    waveformData={audioWaveformData}
-                />}
-                {block.content_text && <MarkdownContent content={block.content_text} className="mt-4" />}
-            </div>
-
-
-        case 'image':
-            // Используем новый компонент ImageBlock
-            return <ImageBlock block={block} />;
-
-        case 'pdf':
-            // Используем новый компонент PdfBlock
-            return <DocumentBlock
-                block={block} />;
-
-        case 'material':
-            // Используем новый компонент MaterialBlock
-            return <MaterialBlock block={block} />;
-
-        default:
-            return (
-                <div className={'flex flex-col gap-3'}>
-                    <div style={{
-                        color: '#6d6d6d',
-                        textAlign: 'center',
-                        padding: '20px',
-                    }}>
-                        ❓ Неизвестный тип контента: {block.block_type}
+            case 'video':
+                return (
+                    <div className={'flex flex-col gap-3'}>
+                        <VideoBlock block={block} />
+                        {block.content_text && (
+                            <MarkdownContent content={block.content_text} className="mt-4" />
+                        )}
                     </div>
+                );
+
+            case 'audio':
+                const audioWaveformData = block.meta_json?.audio_data;
+                return <div className={'flex flex-col gap-3'}>
+                    {block.content_url && <NewPlayer
+                        audioUrl={buildFileUrl(block.content_url) || ''}
+                        waveformData={audioWaveformData}
+                    />}
+                    {block.content_text && <MarkdownContent content={block.content_text} className="mt-4" />}
                 </div>
-            );
-    }
+
+
+            case 'image':
+                return <ImageBlock block={block} />;
+
+            case 'pdf':
+                return <DocumentBlock block={block} />;
+
+            case 'material':
+                return <MaterialBlock block={block} />;
+
+            default:
+                return (
+                    <div className={'flex flex-col gap-3'}>
+                        <div style={{
+                            color: '#6d6d6d',
+                            textAlign: 'center',
+                            padding: '20px',
+                        }}>
+                            ❓ Неизвестный тип контента: {block.block_type}
+                        </div>
+                    </div>
+                );
+        }
+    };
+
+    return (
+        <div>
+            {renderMainContent()}
+            {/* Показываем привязанную технику если есть */}
+            {block.technique_id && <TechniqueInBlock techniqueId={block.technique_id} />}
+        </div>
+    );
 }
 
 // Компонент формы сдачи задания (встроенный в BlockItem)

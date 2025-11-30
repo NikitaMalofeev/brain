@@ -3,5 +3,6 @@ export { default as AudioBlock } from './AudioBlock';
 export { default as ImageBlock } from './ImageBlock';
 export { default as DocumentBlock } from './DocumentBlock';
 export { default as MaterialBlock } from './MaterialBlock';
+export { default as TechniqueInBlock } from './TechniqueInBlock';
 export { default as FixedSubmissionForm } from './FixedSubmissionForm';
 export { MarkdownContent } from './MarkdownContent'; 

@@ -183,59 +183,73 @@ const TechniquesPage: React.FC = () => {
         {/* Единый блок с табами и контентом на всю ширину */}
         <div className="rounded-[32px] overflow-hidden flex-1">
           {/* Табы внутри блока */}
-          <div className="flex relative">
-            {TABS.map((tab, index) => (
-              <button
-                key={tab.id}
-                onClick={() => setActiveTab(tab.id)}
-                className={`
-                  flex-1 py-2.5 font-medium text-sm whitespace-nowrap transition-all relative z-10
-                  ${activeTab === tab.id
-                    ? 'text-white rounded-t-[32px]'
-                    : ''
+          <div className="flex items-end">
+            {/* Левый таб */}
+            <button
+              onClick={() => setActiveTab('all')}
+              className="flex-1 py-2.5 font-medium text-sm whitespace-nowrap transition-all"
+              style={
+                activeTab === 'all'
+                  ? {
+                    background: '#0000004D',
+                    backdropFilter: 'blur(30px)',
+                    color: 'white',
+                    borderTopLeftRadius: '32px',
                   }
-                `}
-                style={
-                  activeTab === tab.id
-                    ? {
-                      background: '#0000004D',
-                      backdropFilter: 'blur(30px)',
-                    }
-                    : {
-                      background: '#FFFFFF33',
-                      color: '#0000004D',
-                    }
-                }
-              >
-                {tab.label}
+                  : {
+                    background: '#FFFFFF33',
+                    color: '#0000004D',
+                  }
+              }
+            >
+              Все техники
+            </button>
 
-                {/* Фигура для левого таба когда правый активен */}
-                {activeTab !== tab.id && index === 0 && activeTab === 'mine' && (
-                  <div
-                    className="absolute w-[32px] h-[32px] z-0"
-                    style={{
-                      right: '-4px',
-                      bottom: '0',
-                      background: 'radial-gradient(circle at top left, transparent 32px, #0000004D 32px)',
-                      backdropFilter: 'blur(30px)',
-                    }}
-                  />
-                )}
+            {/* SVG квадрат между табами - синусоида */}
+            <svg
+              width="40"
+              height="40"
+              viewBox="0 0 40 40"
+              fill="none"
+              className="flex-shrink-0 self-end"
+            >
+              {activeTab === 'all' ? (
+                <>
+                  {/* Тёмная часть - нижняя сторона */}
+                  <path d="M40 40C14 40 26 0 0 0V40H40Z" fill="#0000004D" />
+                  {/* Светлая часть - верхняя сторона */}
+                  <path d="M40 40C14 40 26 0 0 0H40V40Z" fill="#FFFFFF33" />
+                </>
+              ) : (
+                <>
+                  {/* Светлая часть - нижняя сторона */}
+                  <path d="M0 40C26 40 14 0 40 0V40H0Z" fill="#FFFFFF33" />
+                  {/* Тёмная часть - верхняя сторона */}
+                  <path d="M0 40C26 40 14 0 40 0H0V40Z" fill="#0000004D" />
+                </>
+              )}
+            </svg>
 
-                {/* Фигура для правого таба когда левый активен */}
-                {activeTab !== tab.id && index === 1 && activeTab === 'all' && (
-                  <div
-                    className="absolute w-[32px] h-[32px] z-0"
-                    style={{
-                      left: '-4px',
-                      bottom: '0',
-                      background: 'radial-gradient(circle at top right, transparent 32px, #0000004D 32px)',
-                      backdropFilter: 'blur(30px)',
-                    }}
-                  />
-                )}
-              </button>
-            ))}
+            {/* Правый таб */}
+            <button
+              onClick={() => setActiveTab('mine')}
+              className="flex-1 py-2.5 font-medium text-sm whitespace-nowrap transition-all"
+              style={
+                activeTab === 'mine'
+                  ? {
+                    background: '#0000004D',
+                    backdropFilter: 'blur(30px)',
+                    color: 'white',
+                    borderTopRightRadius: '32px',
+                  }
+                  : {
+                    background: '#FFFFFF33',
+                    color: '#0000004D',
+                  }
+              }
+            >
+              Мои техники
+            </button>
           </div>
 
           {/* Контент со статичным фоном */}
