@@ -419,8 +419,8 @@ const ModuleLessonsManager: React.FC<ModuleLessonsManagerProps> = ({
             <Card size="small" title="Расписание уроков по дням модуля">
               <div
                 style={{
-                  display: 'grid',
-                  gridTemplateColumns: 'repeat(7, 1fr)',
+                  display: 'flex',
+                  flexWrap: 'wrap',
                   gap: 8,
                 }}
               >
@@ -430,7 +430,11 @@ const ModuleLessonsManager: React.FC<ModuleLessonsManagerProps> = ({
                     onDragOver={(e) => e.preventDefault()}
                     onDrop={() => handleDropOnDay(day)}
                     style={{
+                      position: 'relative',
                       minHeight: 100,
+                      minWidth: 140,
+                      maxWidth: 200,
+                      flex: '1 1 140px',
                       padding: 8,
                       borderRadius: 6,
                       border: `2px solid ${
@@ -450,36 +454,39 @@ const ModuleLessonsManager: React.FC<ModuleLessonsManagerProps> = ({
                     <Text strong style={{ fontSize: 12 }}>
                       День {day}
                     </Text>
+                    {/* Иконка удаления в правом верхнем углу */}
+                    {lessonsByDay[day]?.length > 0 && (
+                      <Popconfirm
+                        title={`Убрать ${lessonsByDay[day].length > 1 ? 'все уроки' : 'урок'} из расписания?`}
+                        onConfirm={() => {
+                          lessonsByDay[day].forEach(lesson => handleUnscheduleLesson(lesson.id));
+                        }}
+                        okText="Да"
+                        cancelText="Нет"
+                      >
+                        <DeleteOutlined
+                          style={{
+                            position: 'absolute',
+                            top: 8,
+                            right: 8,
+                            fontSize: 14,
+                            color: '#ff4d4f',
+                            cursor: 'pointer',
+                          }}
+                        />
+                      </Popconfirm>
+                    )}
                     {lessonsByDay[day]?.map((lesson) => (
                       <Card
                         key={lesson.id}
                         size="small"
-                        style={{ marginTop: 4 }}
-                        bodyStyle={{ padding: 4 }}
+                        style={{ marginTop: 4, cursor: 'pointer' }}
+                        bodyStyle={{ padding: 6 }}
+                        onClick={() => handleOpenLessonModal(lesson)}
                       >
-                        <Space direction="vertical" size={2} style={{ width: '100%' }}>
-                          <Space size={2} style={{ width: '100%', justifyContent: 'space-between' }}>
-                            <Text ellipsis style={{ fontSize: 11, maxWidth: 70 }}>
-                              {lesson.name}
-                            </Text>
-                            <Space size={2}>
-                              <Button
-                                type="text"
-                                size="small"
-                                icon={<EditOutlined />}
-                                onClick={() => handleOpenLessonModal(lesson)}
-                              />
-                              <Popconfirm
-                                title="Убрать из расписания?"
-                                onConfirm={() => handleUnscheduleLesson(lesson.id)}
-                                okText="Да"
-                                cancelText="Нет"
-                              >
-                                <Button type="text" size="small" danger icon={<DeleteOutlined />} />
-                              </Popconfirm>
-                            </Space>
-                          </Space>
-                        </Space>
+                        <Text ellipsis style={{ fontSize: 11, maxWidth: 120 }}>
+                          {lesson.name}
+                        </Text>
                       </Card>
                     ))}
                   </div>

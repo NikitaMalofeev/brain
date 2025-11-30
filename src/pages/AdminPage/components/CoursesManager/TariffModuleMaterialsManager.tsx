@@ -11,7 +11,6 @@ import {
   InputNumber,
   Popconfirm,
   Modal,
-  Form,
   Row,
   Col,
   message,
@@ -21,6 +20,8 @@ import {
   DeleteOutlined,
   DragOutlined,
   SearchOutlined,
+  DownOutlined,
+  UpOutlined,
 } from '@ant-design/icons';
 import {
   useAddTechniqueToTariffModule,
@@ -34,6 +35,8 @@ interface Material {
   id: string;
   name: string;
   material_type: 'video' | 'audio';
+  description?: string | null;
+  duration_seconds?: number | null;
 }
 
 interface TariffModuleMaterial {
@@ -67,7 +70,7 @@ function useModuleMaterials(tariffStreamModuleId: string) {
           unlock_offset_days,
           active_days,
           order_num,
-          material:materials(id, name, material_type)
+          material:materials(id, name, material_type, description, duration_seconds)
         `)
         .eq('tariff_stream_module_id', tariffStreamModuleId)
         .order('unlock_offset_days', { ascending: true });
@@ -97,6 +100,7 @@ const TariffModuleMaterialsManager: React.FC<TariffModuleMaterialsManagerProps> 
   const [unlockDay, setUnlockDay] = useState<number>(0);
   const [activeDays, setActiveDays] = useState<number | null>(null);
   const [customModuleDays, setCustomModuleDays] = useState<number>(14);
+  const [expandedTechniqueId, setExpandedTechniqueId] = useState<string | null>(null);
 
   // Используем количество дней доступа к модулю из конфигурации тарифа или введенное значение
   const moduleDaysCount = moduleDurationDays || customModuleDays;
@@ -140,6 +144,16 @@ const TariffModuleMaterialsManager: React.FC<TariffModuleMaterialsManagerProps> 
   }, [moduleMaterials]);
 
   const isMutating = addMaterialMutation.isPending || removeMaterialMutation.isPending;
+
+  const formatDuration = (seconds: number) => {
+    const mins = Math.floor(seconds / 60);
+    const secs = seconds % 60;
+    return `${mins}:${secs.toString().padStart(2, '0')}`;
+  };
+
+  const handleToggleExpand = (id: string) => {
+    setExpandedTechniqueId(expandedTechniqueId === id ? null : id);
+  };
 
   const handleDrop = (day: number) => {
     if (!draggedMaterial) return;
@@ -260,8 +274,8 @@ const TariffModuleMaterialsManager: React.FC<TariffModuleMaterialsManagerProps> 
             <Card size="small" title="Дни модуля (когда открывается материал)">
               <div
                 style={{
-                  display: 'grid',
-                  gridTemplateColumns: 'repeat(7, 1fr)',
+                  display: 'flex',
+                  flexWrap: 'wrap',
                   gap: 8,
                 }}
               >
@@ -271,7 +285,11 @@ const TariffModuleMaterialsManager: React.FC<TariffModuleMaterialsManagerProps> 
                     onDragOver={(e) => e.preventDefault()}
                     onDrop={() => handleDrop(day)}
                     style={{
+                      position: 'relative',
                       minHeight: 100,
+                      minWidth: 140,
+                      maxWidth: 200,
+                      flex: '1 1 140px',
                       padding: 8,
                       borderRadius: 6,
                       border: `2px solid ${
@@ -289,40 +307,103 @@ const TariffModuleMaterialsManager: React.FC<TariffModuleMaterialsManagerProps> 
                     }}
                   >
                     <Text strong style={{ fontSize: 12 }}>
-                      День {day}
+                      День {day + 1}
                     </Text>
-                    {materialsByDay[day]?.map((mm) => (
-                      <Card
-                        key={mm.id}
-                        size="small"
-                        style={{ marginTop: 4 }}
-                        bodyStyle={{ padding: 4 }}
+                    {/* Иконка удаления в правом верхнем углу */}
+                    {materialsByDay[day]?.length > 0 && (
+                      <Popconfirm
+                        title={`Удалить ${materialsByDay[day].length > 1 ? 'все материалы' : 'материал'}?`}
+                        onConfirm={() => {
+                          materialsByDay[day].forEach(mm => handleRemoveMaterial(mm));
+                        }}
+                        okText="Да"
+                        cancelText="Нет"
                       >
-                        <Space direction="vertical" size={2} style={{ width: '100%' }}>
-                          <Space size={2} style={{ width: '100%', justifyContent: 'space-between' }}>
-                            <Space size={2}>
-                              {mm.material?.material_type === 'audio' ? '🎵' : '🎬'}
-                              <Text ellipsis style={{ fontSize: 11, maxWidth: 60 }}>
-                                {mm.material?.name}
-                              </Text>
+                        <DeleteOutlined
+                          style={{
+                            position: 'absolute',
+                            top: 8,
+                            right: 8,
+                            fontSize: 14,
+                            color: '#ff4d4f',
+                            cursor: 'pointer',
+                          }}
+                        />
+                      </Popconfirm>
+                    )}
+                    {materialsByDay[day]?.map((mm) => {
+                      const isExpanded = expandedTechniqueId === mm.id;
+                      return (
+                        <Card
+                          key={mm.id}
+                          size="small"
+                          style={{ marginTop: 4, cursor: 'pointer' }}
+                          bodyStyle={{ padding: 8 }}
+                          onClick={() => handleToggleExpand(mm.id)}
+                        >
+                          <Space direction="vertical" size={4} style={{ width: '100%' }}>
+                            {/* Заголовок с названием */}
+                            <Space size={4} style={{ width: '100%', justifyContent: 'space-between' }}>
+                              <Space size={4}>
+                                {mm.material?.material_type === 'audio' ? '🎵' : '🎬'}
+                                <Text
+                                  ellipsis={!isExpanded}
+                                  style={{
+                                    fontSize: 12,
+                                    maxWidth: isExpanded ? 'none' : 80,
+                                    fontWeight: 500,
+                                  }}
+                                >
+                                  {mm.material?.name}
+                                </Text>
+                              </Space>
+                              {isExpanded ? <UpOutlined style={{ fontSize: 10 }} /> : <DownOutlined style={{ fontSize: 10 }} />}
                             </Space>
-                            <Popconfirm
-                              title="Удалить материал?"
-                              onConfirm={() => handleRemoveMaterial(mm)}
-                              okText="Да"
-                              cancelText="Нет"
-                            >
-                              <Button type="text" size="small" danger icon={<DeleteOutlined />} />
-                            </Popconfirm>
+
+                            {/* Раскрытая информация */}
+                            {isExpanded && (
+                              <div style={{
+                                borderTop: '1px solid #e8e8e8',
+                                paddingTop: 8,
+                                marginTop: 4,
+                              }}>
+                                {/* Описание */}
+                                {mm.material?.description && (
+                                  <Text
+                                    type="secondary"
+                                    style={{
+                                      fontSize: 11,
+                                      display: 'block',
+                                      marginBottom: 6,
+                                      whiteSpace: 'pre-wrap',
+                                    }}
+                                  >
+                                    {mm.material.description}
+                                  </Text>
+                                )}
+
+                                {/* Мета информация */}
+                                <Space size={8} wrap>
+                                  <Text type="secondary" style={{ fontSize: 10 }}>
+                                    {mm.material?.material_type === 'audio' ? '🎵 Аудио' : '🎬 Видео'}
+                                  </Text>
+                                  {mm.material?.duration_seconds && (
+                                    <Text type="secondary" style={{ fontSize: 10 }}>
+                                      ⏱️ {formatDuration(mm.material.duration_seconds)}
+                                    </Text>
+                                  )}
+                                  {mm.active_days && (
+                                    <Text type="secondary" style={{ fontSize: 10 }}>
+                                      📅 {mm.active_days} дн.
+                                    </Text>
+                                  )}
+                                </Space>
+                              </div>
+                            )}
                           </Space>
-                          {mm.active_days && (
-                            <Text type="secondary" style={{ fontSize: 10 }}>
-                              Доступен {mm.active_days} дн.
-                            </Text>
-                          )}
-                        </Space>
-                      </Card>
-                    ))}
+                        </Card>
+                      );
+                    })}
                   </div>
                 ))}
               </div>
