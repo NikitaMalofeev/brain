@@ -38,7 +38,7 @@ const itemVariants = {
 
 /**
  * Хук для получения данных модуля (название, описание, order_num)
- * Получаем через course_stages с join на stream_modules (обходим RLS)
+ * Получаем напрямую из stream_modules
  */
 function useModuleInfo(moduleId: string | undefined) {
     return useQuery({
@@ -46,27 +46,19 @@ function useModuleInfo(moduleId: string | undefined) {
         queryFn: async () => {
             if (!moduleId || !supabase) return null;
 
-            // Получаем данные модуля через join от course_stages
-            const { data } = await supabase
-                .from('course_stages')
-                .select(`
-                    stream_modules!inner(
-                        id,
-                        name,
-                        order_num
-                    )
-                `)
-                .eq('stream_module_id', moduleId)
-                .limit(1)
+            // Получаем данные модуля напрямую
+            const { data, error } = await supabase
+                .from('stream_modules')
+                .select('id, name, order_num')
+                .eq('id', moduleId)
                 .single();
 
-            if (!data?.stream_modules) return null;
+            if (error || !data) return null;
 
-            const moduleData = data.stream_modules as any;
             return {
-                name: moduleData.name,
+                name: data.name,
                 description: null, // stream_modules не имеет description
-                order_num: moduleData.order_num,
+                order_num: data.order_num,
             };
         },
         enabled: !!moduleId,
@@ -137,6 +129,7 @@ function useModuleAccessData(userId: string | undefined, moduleId: string | unde
 
 /**
  * Хук для получения прогресса по заданиям модуля
+ * Теперь работает напрямую с уроками через stream_module_id
  */
 function useModuleAssignmentsProgress(userId: string | undefined, moduleId: string | undefined) {
     return useQuery({
@@ -146,23 +139,11 @@ function useModuleAssignmentsProgress(userId: string | undefined, moduleId: stri
                 return { totalAssignments: 0, completedAssignments: 0 };
             }
 
-            // Получаем все lesson_id из ступеней модуля
-            const { data: stagesData } = await supabase
-                .from('course_stages')
-                .select('id')
-                .eq('stream_module_id', moduleId);
-
-            if (!stagesData || stagesData.length === 0) {
-                return { totalAssignments: 0, completedAssignments: 0 };
-            }
-
-            const stageIds = stagesData.map(s => s.id);
-
-            // Получаем все уроки этих ступеней
+            // Получаем все уроки модуля напрямую через stream_module_id
             const { data: lessonsData } = await supabase
                 .from('lessons')
                 .select('id')
-                .in('stage_id', stageIds);
+                .eq('stream_module_id', moduleId);
 
             if (!lessonsData || lessonsData.length === 0) {
                 return { totalAssignments: 0, completedAssignments: 0 };

@@ -19,6 +19,6 @@ html, body, #root {
 
 /* Добавляем отступ только когда TabBar отображается */
 .page-container.with-tab-bar .content-wrapper {
-  /* 60px (высота TabBar) + safe-area-bottom (отступ для notch) */
-  padding-bottom: calc(60px + var(--safe-area-bottom, 0px));
+  /* Только высота TabBar - safe-area учитывается в самом TabBar */
+  padding-bottom: 60px;
 } 

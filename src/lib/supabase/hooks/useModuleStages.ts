@@ -5,15 +5,25 @@ import { CourseStage, Lesson } from '../types';
 
 /**
  * Хуки для управления ступенями (stages) и уроками внутри модулей потоков
+ *
+ * ПРИМЕЧАНИЕ: Эти хуки теперь работают напрямую с уроками через stream_module_id,
+ * обеспечивая обратную совместимость для существующих компонентов.
+ * Ступени (course_stages) deprecated и будут удалены в будущем.
  */
 
-// Ступень с уроками
-export interface StageWithLessons extends CourseStage {
+// Ступень с уроками - теперь это виртуальная обёртка над уроком
+export interface StageWithLessons extends Partial<CourseStage> {
+  id: number;
+  name: string;
+  description?: string | null;
+  order_num: number;
+  cover_image_path?: string | null;
   lessons: Lesson[];
 }
 
 /**
- * Получить ступени модуля с уроками (только привязанные к модулю)
+ * Получить уроки модуля как "ступени" (для обратной совместимости)
+ * Теперь работает напрямую с lessons через stream_module_id
  */
 export function useModuleStages(streamModuleId: string | null) {
   return useQuery({
@@ -21,25 +31,29 @@ export function useModuleStages(streamModuleId: string | null) {
     queryFn: async (): Promise<StageWithLessons[]> => {
       if (!streamModuleId || !supabase) return [];
 
-      logger.debug('Fetching stages for module', { streamModuleId });
+      logger.debug('Fetching lessons for module (as stages)', { streamModuleId });
 
-      const { data, error } = await supabase
-        .from('course_stages')
-        .select(`
-          *,
-          lessons (*)
-        `)
+      // Получаем уроки напрямую через stream_module_id
+      const { data: lessons, error } = await supabase
+        .from('lessons')
+        .select('*')
         .eq('stream_module_id', streamModuleId)
         .order('order_num', { ascending: true });
 
       if (error) {
-        logger.error('Error fetching module stages', { streamModuleId, error });
+        logger.error('Error fetching module lessons', { streamModuleId, error });
         throw error;
       }
 
-      return (data || []).map(stage => ({
-        ...stage,
-        lessons: stage.lessons || []
+      // Преобразуем каждый урок в "ступень" с одним уроком для обратной совместимости
+      // Это позволяет использовать существующие компоненты без изменений
+      return (lessons || []).map(lesson => ({
+        id: lesson.stage_id || lesson.id, // Используем stage_id если есть, иначе lesson.id
+        name: lesson.name,
+        description: lesson.description,
+        order_num: lesson.order_num,
+        cover_image_path: lesson.cover_image_path || null,
+        lessons: [lesson], // Каждая "ступень" содержит один урок
       }));
     },
     enabled: !!streamModuleId,

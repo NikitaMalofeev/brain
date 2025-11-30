@@ -89,7 +89,8 @@ export interface CourseStage extends TimestampFields {
 // Уроки (упрощенные, без полей сдачи)
 export interface Lesson extends TimestampFields {
   id: number;
-  stage_id: number; // FK к CourseStage
+  stage_id?: number | null; // FK к CourseStage (DEPRECATED - будет удалено)
+  stream_module_id?: string | null; // FK к StreamModule (новая архитектура - прямая связь)
   stream_id?: string; // FK к Stream (для копирования)
   name: string;
   description?: string;
@@ -99,8 +100,8 @@ export interface Lesson extends TimestampFields {
   estimated_duration_minutes?: number;
   open_at?: string; // Дата и время открытия урока
   deadline_at?: string; // Дедлайн сдачи задания
-  open_day_offset?: number; // Смещение в днях от открытия модуля
-  deadline_day_offset?: number; // Смещение дедлайна в днях от открытия модуля
+  open_day_offset?: number | null; // Смещение в днях от открытия модуля
+  deadline_day_offset?: number | null; // Смещение дедлайна в днях от открытия модуля
 }
 
 // Возможные типы блоков урока

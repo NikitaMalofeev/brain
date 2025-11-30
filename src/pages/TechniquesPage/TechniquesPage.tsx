@@ -244,6 +244,8 @@ const TechniquesPage: React.FC = () => {
             style={{
               background: '#0000004D',
               backdropFilter: 'blur(30px)',
+              borderTopLeftRadius: activeTab === 'mine' ? '32px' : '0px',
+              borderTopRightRadius: activeTab === 'all' ? '32px' : '0px',
             }}
           >
             <AnimatePresence mode="wait">

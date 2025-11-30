@@ -130,10 +130,33 @@ const CalendarGrid: React.FC<CalendarGridProps> = ({
     return classes;
   };
 
+  // Извлекает основной цвет из градиента или возвращает цвет как есть
+  const extractColorForBorder = (color: string | null): string | null => {
+    if (!color) return null;
+
+    // Если это градиент, извлекаем последний цвет (обычно основной)
+    if (color.includes('gradient')) {
+      // Ищем hex цвета в строке
+      const hexMatch = color.match(/#[A-Fa-f0-9]{6}/g);
+      if (hexMatch && hexMatch.length > 0) {
+        // Берём последний hex цвет (обычно он основной)
+        return hexMatch[hexMatch.length - 1];
+      }
+      // Если нет hex, ищем rgb/rgba
+      const rgbMatch = color.match(/rgba?\([^)]+\)/g);
+      if (rgbMatch && rgbMatch.length > 0) {
+        return rgbMatch[rgbMatch.length - 1];
+      }
+    }
+
+    return color;
+  };
+
   // Получить цвет модуля для даты
   const getModuleColor = (date: Date): string | null => {
     const dateStr = formatDateLocal(date);
-    return isDateInPeriod(dateStr).color;
+    const color = isDateInPeriod(dateStr).color;
+    return extractColorForBorder(color);
   };
 
   // Проверяем есть ли события на эту дату

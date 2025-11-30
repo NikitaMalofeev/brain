@@ -12,6 +12,7 @@ import {
   Input,
   InputNumber,
   ColorPicker,
+  Select,
   Space,
   Typography,
   Empty,
@@ -22,6 +23,14 @@ import {
   Row,
   Col,
 } from 'antd';
+
+// Предустановленные цвета для модулей
+const COLOR_PRESETS = [
+  { label: 'Голубой градиент', value: 'linear-gradient(135deg, rgba(141, 197, 241, 0.4) -48.61%, #63ABE6 105.56%)' },
+  { label: 'Золотой градиент', value: 'linear-gradient(180deg, #F1DA8D 0%, #B5A368 100%)' },
+  { label: 'Синий', value: '#89A3DF' },
+  { label: 'Светло-голубой', value: '#CCDCF8' },
+];
 import {
   PlusOutlined,
   EditOutlined,
@@ -148,7 +157,13 @@ const ModulesManager: React.FC = () => {
   const handleSave = async () => {
     try {
       const values = await form.validateFields();
-      const color = typeof values.color === 'string' ? values.color : values.color?.toHexString?.() || '#3B82F6';
+      // Поддержка градиентов и обычных цветов
+      let color = '#3B82F6';
+      if (typeof values.color === 'string') {
+        color = values.color;
+      } else if (values.color?.toHexString) {
+        color = values.color.toHexString();
+      }
 
       if (editingModule) {
         await updateModuleMutation.mutateAsync({
@@ -316,8 +331,36 @@ const ModulesManager: React.FC = () => {
           >
             <Input placeholder="Название модуля..." />
           </Form.Item>
-          <Form.Item name="color" label="Цвет">
-            <ColorPicker />
+          <Form.Item label="Цвет">
+            <Space direction="vertical" style={{ width: '100%' }}>
+              <Form.Item name="color" noStyle>
+                <Select
+                  placeholder="Выберите цвет из списка"
+                  options={COLOR_PRESETS}
+                  optionRender={(option) => (
+                    <Space>
+                      <div
+                        style={{
+                          width: 24,
+                          height: 24,
+                          borderRadius: 4,
+                          background: option.value as string,
+                          border: '1px solid #d9d9d9',
+                        }}
+                      />
+                      {option.label}
+                    </Space>
+                  )}
+                  style={{ width: '100%' }}
+                />
+              </Form.Item>
+              <Space>
+                <span style={{ color: '#666' }}>или выберите свой:</span>
+                <Form.Item name="color" noStyle>
+                  <ColorPicker />
+                </Form.Item>
+              </Space>
+            </Space>
           </Form.Item>
           <Form.Item name="order_num" label="Порядковый номер">
             <InputNumber min={1} style={{ width: '100%' }} />

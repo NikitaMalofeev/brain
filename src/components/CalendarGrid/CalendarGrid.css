@@ -78,18 +78,26 @@
   cursor: pointer;
   transition: background 0.2s;
   position: relative;
+  overflow: visible;
   /* Бордеры по умолчанию прозрачные */
   border: 0 solid var(--module-border-color, transparent);
 }
 
-.calendar-day:hover {
+.calendar-day:hover::before {
+  content: '';
+  position: absolute;
+  inset: 2px;
   background: rgba(255, 255, 255, 0.8);
+  border-radius: 50%;
+  z-index: 0;
 }
 
 .calendar-day-number {
   font-size: 14px;
   font-weight: 400;
   color: #000;
+  position: relative;
+  z-index: 1;
 }
 
 /* Бордеры для дней в периоде модуля - только на внешних краях */
@@ -162,14 +170,18 @@
 
 /* Индикатор события - чёрный кружок */
 .calendar-day-indicator {
-  position: absolute;
-  bottom: 4px;
-  left: 50%;
-  transform: translateX(-50%);
+  position: absolute !important;
+  bottom: 4px !important;
+  left: 50% !important;
+  right: auto !important;
+  transform: translateX(-50%) !important;
+  margin: 0 !important;
   width: 6px;
   height: 6px;
   border-radius: 50%;
   background-color: #000;
+  z-index: 1;
+  pointer-events: none;
 }
 
 /* Для очень маленьких экранов */
