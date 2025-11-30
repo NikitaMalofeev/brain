@@ -24,7 +24,7 @@ export const tabBarThemes = {
         useActiveIcons: true,
     },
     dark: {
-        background: '#0000007A',
+        background: '#0000004D',
         backdropFilter: 'blur(30px)',
         buttonBackground: 'transparent',
         buttonActiveBackground: '#0000004D',

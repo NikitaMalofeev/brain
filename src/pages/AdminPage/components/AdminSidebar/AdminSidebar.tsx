@@ -81,8 +81,8 @@ const AdminSidebar: React.FC<AdminSidebarProps> = ({
   // Полное меню для админа
   const adminMenuItems: MenuItem[] = [
     getItem('Курсы', 'courses', <ReadOutlined />),
-    getItem('Справочники', 'directories', <AppstoreOutlined />, [
-      getItem('Материалы', 'materials', <BookOutlined />),
+    getItem('Материалы', 'directories', <AppstoreOutlined />, [
+      getItem('Техники', 'materials', <BookOutlined />),
       getItem('Пакеты', 'bundles', <InboxOutlined />),
       getItem('Потоки', 'streams', <CalendarOutlined />),
       getItem('Модули', 'modules', <BuildOutlined />),

@@ -9,7 +9,6 @@ import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/lib/supabase/client';
 import CalendarGrid, { ModulePeriod } from '@/components/CalendarGrid/CalendarGrid';
 import EventCard from '@/components/EventCard/EventCard';
-import { motion } from 'framer-motion';
 import Background1 from '@/shared/assets/images/background1.png';
 import LoadingSpinner from '@/components/LoadingSpinner/LoadingSpinner';
 import './CalendarPage.css';
@@ -39,6 +38,7 @@ const CalendarPage: React.FC = () => {
     data: events,
     isLoading: eventsLoading,
     error: eventsError,
+    isPlaceholderData,
   } = useCalendarEvents(supabaseUser?.id, selectedMonth);
 
   // Получаем модули пользователя
@@ -98,8 +98,8 @@ const CalendarPage: React.FC = () => {
     });
   }, [modules, streamStartDate]);
 
-  // Общее состояние загрузки
-  const loading = userLoading || guestCheckLoading || eventsLoading;
+  // Начальная загрузка (только когда данных ещё нет совсем)
+  const initialLoading = userLoading || guestCheckLoading || (eventsLoading && !events);
 
   // Форматируем дату для отображения (например: "16 октября")
   const formatDateDisplay = (dateStr: string): string => {
@@ -153,7 +153,7 @@ const CalendarPage: React.FC = () => {
     setSelectedDate(date);
   };
 
-  if (loading) {
+  if (initialLoading) {
     return (
       <Page>
         <LoadingSpinner />
@@ -207,12 +207,7 @@ const CalendarPage: React.FC = () => {
         {/* Список всех событий месяца */}
         <div className="calendar-events-section">
           {eventsByDate.length > 0 ? (
-            <motion.div
-              key={`events-${selectedMonth.toISOString()}`}
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              className="calendar-events-container"
-            >
+            <div className="calendar-events-container">
               {eventsByDate.map((group) => (
                 <div key={group.date} className="calendar-event-group">
                   <h3 className="calendar-event-group-title">{group.dateFormatted}</h3>
@@ -223,9 +218,9 @@ const CalendarPage: React.FC = () => {
                   </div>
                 </div>
               ))}
-            </motion.div>
+            </div>
           ) : (
-            !loading && (
+            !eventsLoading && (
               <div className="calendar-no-events">
                 <p>На этот месяц нет запланированных событий</p>
               </div>

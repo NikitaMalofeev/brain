@@ -189,7 +189,7 @@ const TechniquesPage: React.FC = () => {
       >
         {/* Заголовок */}
         <div className="pt-4 pb-4 px-4">
-          <h1 className="text-[24px] font-semibold text-black leading-none tracking-normal">Библиотека</h1>
+          <h1 className="text-[24px] font-semibold text-white leading-none tracking-normal">Библиотека</h1>
         </div>
 
         {/* Единый блок с табами и контентом на всю ширину */}
@@ -258,19 +258,40 @@ const TechniquesPage: React.FC = () => {
             </button>
           </div>
 
-          {/* Контент со статичным фоном */}
-          <div
-            className="min-h-[500px] p-4"
-            style={{
-              background: '#0000004D',
-              borderTopLeftRadius: activeTab === 'mine' ? '32px' : '0px',
-              borderTopRightRadius: activeTab === 'all' ? '32px' : '0px',
-            }}
-          >
-            <AnimatePresence mode="wait">
-              <motion.div
-                key={activeTab}
-                initial={{ opacity: 0, y: 10 }}
+          {/* Контейнер для контента с заполнителем */}
+          <div className="relative">
+            {/* Заполнитель угла под неактивным табом - позади контента */}
+            <div
+              style={{
+                position: 'absolute',
+                top: 0,
+                width: '32px',
+                height: '32px',
+                background: '#FFFFFF33',
+                clipPath: activeTab === 'all'
+                  ? 'path("M32 0 L32 32 L0 32 A32 32 0 0 0 32 0")'
+                  : 'path("M0 0 A32 32 0 0 0 32 32 L0 32 L0 0")',
+                transform: 'rotate(180deg) scaleX(-1)',
+                ...(activeTab === 'all'
+                  ? { right: 0 }
+                  : { left: 0 }
+                ),
+              }}
+            />
+
+            {/* Контент со статичным фоном */}
+            <div
+              className="min-h-[500px] p-4 relative"
+              style={{
+                background: '#0000004D',
+                borderTopLeftRadius: activeTab === 'mine' ? '32px' : '0px',
+                borderTopRightRadius: activeTab === 'all' ? '32px' : '0px',
+              }}
+            >
+              <AnimatePresence mode="wait">
+                <motion.div
+                  key={activeTab}
+                  initial={{ opacity: 0, y: 10 }}
                 animate={{ opacity: 1, y: 0 }}
                 exit={{ opacity: 0, y: -10 }}
                 transition={{ duration: 0.2 }}
@@ -437,6 +458,7 @@ const TechniquesPage: React.FC = () => {
                 )}
               </motion.div>
             </AnimatePresence>
+            </div>
           </div>
         </div>
 

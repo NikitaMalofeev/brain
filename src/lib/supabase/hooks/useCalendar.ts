@@ -81,6 +81,7 @@ export function useCalendarEvents(userId: string | undefined, month: Date) {
     enabled: !!userId && !!supabase,
     staleTime: 5 * 60 * 1000, // 5 минут
     gcTime: 10 * 60 * 1000, // 10 минут в кэше
+    placeholderData: (previousData) => previousData, // Сохраняем предыдущие данные при загрузке новых
   });
 }
 
