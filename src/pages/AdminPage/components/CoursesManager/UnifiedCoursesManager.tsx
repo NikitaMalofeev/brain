@@ -936,10 +936,10 @@ const UnifiedCoursesManager: React.FC = () => {
               <Select
                 placeholder="+ Добавить модуль в тариф"
                 style={{ width: '100%' }}
-                onChange={(value) => {
+                onSelect={(value) => {
                   if (value) handleAddModule(value);
                 }}
-                value={null}
+                allowClear
               >
                 {availableModules.map((module) => (
                   <Select.Option key={module.id} value={module.id}>

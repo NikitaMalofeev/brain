@@ -36,9 +36,11 @@
 /* Панель управления */
 .audio-player-controls-panel {
   padding: 20px 16px 20px;
+  margin: 0 16px;
   background: rgba(0, 0, 0, 0.2);
   backdrop-filter: blur(50px);
   -webkit-backdrop-filter: blur(50px);
+  border-radius: 32px;
 }
 
 /* Лейбл модуля */

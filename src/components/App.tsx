@@ -1,22 +1,52 @@
-import { useMemo, useEffect, useState } from 'react';
-import { HashRouter, Navigate, Route, Routes, useLocation } from 'react-router-dom';
+import { useEffect, useState, useMemo } from 'react';
+import { HashRouter, Navigate, Route, Routes, useLocation, useNavigate } from 'react-router-dom';
 import { retrieveLaunchParams, useSignal, isMiniAppDark, initDataState } from '@telegram-apps/sdk-react';
 import { AppRoot } from '@telegram-apps/telegram-ui';
-import { AnimatePresence } from 'framer-motion';
 
 import { routers } from '@/navigation/routes.tsx';
 import Onboarding from "@/pages/Onboarding.tsx";
 import { ScrollToTop } from "@/ScrollToTop.tsx";
 import { useSupabaseUser, useActiveTariff, useRedeemToken, useFindTokenByTgId } from '@/lib/supabase/hooks';
-import TokenErrorPage from '@/pages/TokenErrorPage/TokenErrorPage';
 import { AppMotionProvider } from '@/animations/motionConfig';
 import TabBar from '@/components/TabBar/TabBar';
 import IFrameSplash from '@/components/IFrameSplash';
 import LoadingSpinner from '@/components/LoadingSpinner/LoadingSpinner';
+import { ErrorBoundary } from '@/components/ErrorBoundary';
+
+function PageErrorFallback({ error }: { error: unknown }) {
+    const navigate = useNavigate();
+    return (
+        <div style={{
+            display: 'flex',
+            flexDirection: 'column',
+            alignItems: 'center',
+            justifyContent: 'center',
+            padding: '40px 20px',
+            textAlign: 'center',
+            minHeight: '50vh'
+        }}>
+            <h2 style={{ marginBottom: '16px', color: '#333' }}>Произошла ошибка</h2>
+            <p style={{ marginBottom: '24px', color: '#666' }}>
+                {error instanceof Error ? error.message : 'Неизвестная ошибка'}
+            </p>
+            <button
+                onClick={() => navigate('/')}
+                style={{
+                    padding: '12px 24px',
+                    background: '#007AFF',
+                    color: 'white',
+                    border: 'none',
+                    borderRadius: '8px',
+                    cursor: 'pointer'
+                }}
+            >
+                На главную
+            </button>
+        </div>
+    );
+}
 
 function AppContent({ showSplash }: { showSplash: boolean }) {
-    const lp = useMemo(() => retrieveLaunchParams(), []);
-    const isDark = useSignal(isMiniAppDark);
     const initData = useSignal(initDataState);
     const location = useLocation();
 
@@ -27,6 +57,7 @@ function AppContent({ showSplash }: { showSplash: boolean }) {
 
     // Извлекаем start parameter согласно документации Telegram Mini Apps
     // https://docs.telegram-mini-apps.com/platform/start-parameter
+    const lp = retrieveLaunchParams();
     const accessToken = lp.tgWebAppStartParam || initData?.start_param;
 
     // Для поиска персональных токенов
@@ -100,13 +131,13 @@ function AppContent({ showSplash }: { showSplash: boolean }) {
     return (
         <div style={{ display: 'flex', flexDirection: 'column', flex: 1, position: 'relative' }}>
             <ScrollToTop />
-            <div style={{ flex: 1, position: 'relative' }}>
-                <AnimatePresence mode="wait" initial={false}>
-                    <Routes location={location} key={location.pathname}>
+            <div style={{ flex: 1, position: 'relative', overflow: 'hidden' }}>
+                <ErrorBoundary fallback={PageErrorFallback}>
+                    <Routes location={location}>
                         {routers.map((router) => <Route key={router.path} {...router} />)}
                         <Route path="*" element={<Navigate to="/" />} />
                     </Routes>
-                </AnimatePresence>
+                </ErrorBoundary>
             </div>
             {showTabBar && !showSplash && <TabBar />}
         </div>

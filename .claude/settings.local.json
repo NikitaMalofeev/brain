@@ -23,7 +23,8 @@
       "Bash(npx tsc:*)",
       "WebSearch",
       "Bash(git remote add:*)",
-      "Bash(git push:*)"
+      "Bash(git push:*)",
+      "Bash(xargs -I {} sh -c 'echo \"\"==== {} ====\"\" && head -30 \"\"{}\"\"')"
     ],
     "deny": [],
     "ask": []

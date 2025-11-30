@@ -1,10 +1,23 @@
-import React from 'react';
+import React, { useRef, useState, useEffect, useCallback } from 'react';
 import { motion } from 'framer-motion';
-import { clsx } from 'clsx';
 import roadmapBg from '@/shared/assets/images/roadmap.png';
 import roadmapUserMark from '@/shared/assets/icons/roadmapUserMark.svg';
 import roadmapDarkMark from '@/shared/assets/icons/roadmapDarkMark.svg';
 import roadmapWhiteMark from '@/shared/assets/icons/roadmapWhiteMark.svg';
+
+// Базовые размеры экрана для которых заданы координаты дороги
+const BASE_WIDTH = 400;
+const BASE_HEIGHT = 610;
+
+// Координаты точек на дороге (x, y в пикселях для базового размера 400x610)
+// y отсчитывается снизу вверх (0 = низ контейнера)
+// lineWidth - длина пунктирной линии в пикселях
+const ROAD_POINTS = [
+  { x: 200, y: 60, lineWidth: 60 },    // Модуль 0 - первый (снизу)
+  { x: 202, y: 170, lineWidth: 50 },   // Модуль 1 - второй
+  { x: 200, y: 285, lineWidth: 40 },   // Модуль 2 - предпоследний -10px, линия -20px
+  { x: 200, y: 360, lineWidth: 20 },   // Модуль 3 - последний (сверху) -40px
+];
 
 interface Stage {
   stage_id: number;
@@ -43,6 +56,47 @@ const RoadMap: React.FC<RoadMapProps> = ({
   totalWeeks = 9,
   streamStartDate,
 }) => {
+  const containerRef = useRef<HTMLDivElement>(null);
+  const [containerSize, setContainerSize] = useState({ width: BASE_WIDTH, height: BASE_HEIGHT });
+
+  // Отслеживаем размер контейнера
+  useEffect(() => {
+    const updateSize = () => {
+      if (containerRef.current) {
+        setContainerSize({
+          width: containerRef.current.offsetWidth,
+          height: containerRef.current.offsetHeight,
+        });
+      }
+    };
+
+    updateSize();
+
+    const resizeObserver = new ResizeObserver(updateSize);
+    if (containerRef.current) {
+      resizeObserver.observe(containerRef.current);
+    }
+
+    return () => resizeObserver.disconnect();
+  }, []);
+
+  // Функция для расчёта позиции маркера на дороге
+  const getMarkerPosition = useCallback((index: number) => {
+    // Если индекс выходит за границы массива точек, интерполируем
+    const pointIndex = Math.min(index, ROAD_POINTS.length - 1);
+    const point = ROAD_POINTS[pointIndex] || ROAD_POINTS[ROAD_POINTS.length - 1];
+
+    // Масштабируем координаты пропорционально текущему размеру контейнера
+    const scaleX = containerSize.width / BASE_WIDTH;
+    const scaleY = containerSize.height / BASE_HEIGHT;
+
+    return {
+      x: point.x * scaleX,
+      y: point.y * scaleY,
+      lineWidth: point.lineWidth || 50,
+    };
+  }, [containerSize]);
+
   // Рассчитываем сколько дней прошло с начала потока
   const getDaysSinceStreamStart = () => {
     if (!streamStartDate) return 0;
@@ -127,6 +181,7 @@ const RoadMap: React.FC<RoadMapProps> = ({
 
   return (
     <div
+      ref={containerRef}
       className="relative min-h-screen overflow-hidden"
       style={{
         backgroundImage: `url(${roadmapBg})`,
@@ -134,7 +189,7 @@ const RoadMap: React.FC<RoadMapProps> = ({
         backgroundPosition: 'center',
         backgroundRepeat: 'no-repeat',
         borderRadius: 32,
-        marginTop: 40,
+        marginTop: 0,
       }}
     >
 
@@ -191,8 +246,8 @@ const RoadMap: React.FC<RoadMapProps> = ({
           </div>
         </div>
 
-        {/* Модули */}
-        <div className="relative flex flex-col-reverse" style={{ marginTop: 'auto', paddingBottom: 60 }}>
+        {/* Модули - абсолютное позиционирование относительно контейнера */}
+        <div className="absolute inset-0" style={{ pointerEvents: 'none' }}>
           {stages.map((stage, index) => {
             const status = getStageStatus(stage, index);
             const isLocked = status === 'locked';
@@ -204,6 +259,9 @@ const RoadMap: React.FC<RoadMapProps> = ({
             const daysIntoModule = Math.max(0, daysSinceStart - moduleUnlockDay);
             const displayDays = isActive ? Math.min(daysIntoModule, moduleDuration) : moduleDuration;
             const daysProgressPercent = moduleDuration > 0 ? (displayDays / moduleDuration) * 100 : 0;
+
+            // Получаем динамическую позицию маркера на дороге
+            const markerPos = getMarkerPosition(index);
 
             // Позиция карточки (чередование лево/право, первый справа)
             const isLeft = index % 2 !== 0;
@@ -218,169 +276,207 @@ const RoadMap: React.FC<RoadMapProps> = ({
             return (
               <motion.div
                 key={stage.stage_id}
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
                 transition={{ delay: index * 0.1 }}
-                className="relative flex items-center justify-center"
-                style={{ minHeight: 80 }}
+                className="absolute"
+                style={{
+                  // Позиционируем от низа контейнера
+                  left: markerPos.x,
+                  bottom: markerPos.y,
+                  transform: 'translate(-50%, 50%)',
+                  pointerEvents: 'auto',
+                }}
               >
-                {/* Пунктирная линия от карточки к центру */}
-                <div
-                  className="absolute top-1/2 -translate-y-1/2"
-                  style={{
-                    left: isLeft ? 'auto' : '50%',
-                    right: isLeft ? '50%' : 'auto',
-                    width: 40,
-                    height: 2,
-                    borderTop: '2px dashed rgba(255, 255, 255, 0.6)',
-                  }}
-                />
-
-                {/* Маркер на дороге (в центре) */}
-                <div
-                  className="absolute left-1/2 top-1/2"
-                  style={{
-                    zIndex: 15,
-                    transform: 'translate(-50%, -100%)',
-                  }}
-                >
-                  {isCurrent && userPhotoUrl ? (
-                    <div style={{ position: 'relative', width: 48, height: 48 }}>
-                      <img
-                        src={roadmapUserMark}
-                        alt="marker"
-                        style={{ width: 48, height: 48 }}
-                      />
-                      <img
-                        src={userPhotoUrl}
-                        alt="user"
-                        style={{
-                          position: 'absolute',
-                          top: '50%',
-                          left: '50%',
-                          transform: 'translate(-50%, calc(-50% - 2px))',
-                          width: 27,
-                          height: 27,
-                          borderRadius: '50%',
-                          objectFit: 'cover',
-                          border: '1px solid #FFFFFF',
-                        }}
-                      />
-                    </div>
-                  ) : (
-                    <img
-                      src={getMarkerIcon()}
-                      alt="marker"
-                      style={{ width: 24, height: 24 }}
-                    />
-                  )}
-                </div>
 
                 {/* Карточка модуля */}
                 <div
-                  className="relative flex items-center gap-3 rounded-2xl shadow-lg p-3 pr-4 cursor-pointer transition-all"
+                  className="absolute"
                   style={{
-                    maxWidth: 165,
-                    marginLeft: isLeft ? 0 : 'auto',
-                    marginRight: isLeft ? 'auto' : 0,
-                    transform: isLeft ? 'translateX(20px)' : 'translateX(-20px)',
-                    background: isActive ? 'rgba(255, 255, 255, 0.8)' : 'rgba(0, 0, 0, 0.3)',
-                    backdropFilter: isLocked ? 'blur(30px)' : 'none',
-                    WebkitBackdropFilter: isLocked ? 'blur(30px)' : 'none',
-                  }}
-                  onClick={() => {
-                    if (isGuest) {
-                      onGuestBlock?.();
-                      return;
-                    }
-                    if (!isLocked && onStageClick) {
-                      onStageClick(stage.stage_id, stage.module_id);
-                    }
+                    top: '50%',
+                    transform: 'translateY(-50%)',
+                    left: isLeft ? 8 : 'auto',
+                    right: isLeft ? 'auto' : 8,
                   }}
                 >
-                  {/* Контент карточки */}
-                  <div className="flex-1 min-w-0">
-                    <h3
-                      className="truncate"
+                  {/* Пунктирная линия с маркером - абсолютно позиционирована */}
+                  <div
+                    style={{
+                      position: 'absolute',
+                      top: '50%',
+                      transform: 'translateY(-50%)',
+                      // Линия идёт от нужного края карточки к центру
+                      left: isLeft ? 'auto' : '100%',
+                      right: isLeft ? '100%' : 'auto',
+                      width: markerPos.lineWidth,
+                      height: 2,
+                    }}
+                  >
+                    {/* Пунктирная линия */}
+                    <div
                       style={{
-                        fontFamily: 'Nunito, sans-serif',
-                        fontWeight: 600,
-                        fontSize: 14,
-                        lineHeight: '120%',
-                        color: isActive ? '#000000' : '#FFFFFF',
+                        width: '100%',
+                        height: 2,
+                        borderTop: '2px dashed rgba(255, 255, 255, 0.6)',
                       }}
-                    >
-                      {stage.stage_name}
-                    </h3>
-                    <p
-                      style={{
-                        fontFamily: 'Nunito, sans-serif',
-                        fontWeight: 500,
-                        fontSize: 12,
-                        lineHeight: '14px',
-                        color: isActive ? '#888888' : '#FFFFFF',
-                      }}
-                    >
-                      {stage.total_lessons} уроков
-                    </p>
+                    />
+                    {/* Маркер на конце линии - absolute на краю */}
+                    {/* Четные (index % 2 === 0): top -10px, right -16px */}
+                    {/* Нечетные (index % 2 !== 0): top -10px, left -16px */}
+                    {isCurrent ? (
+                      <div
+                        style={{
+                          position: 'absolute',
+                          top: -44,
+                          left: index % 2 !== 0 ? -30 : 'auto',
+                          right: index % 2 === 0 ? -30 : 'auto',
+                          width: 48,
+                          height: 48,
+                        }}
+                      >
+                        <img
+                          src={roadmapUserMark}
+                          alt="marker"
+                          style={{ width: 48, height: 48 }}
+                        />
+                        {userPhotoUrl && (
+                          <img
+                            src={userPhotoUrl}
+                            alt="user"
+                            style={{
+                              position: 'absolute',
+                              top: '50%',
+                              left: '50%',
+                              transform: 'translate(-50%, calc(-50% - 2px))',
+                              width: 27,
+                              height: 27,
+                              borderRadius: '50%',
+                              objectFit: 'cover',
+                              border: '1px solid #FFFFFF',
+                            }}
+                          />
+                        )}
+                      </div>
+                    ) : (
+                      <img
+                        src={isLocked ? roadmapDarkMark : roadmapWhiteMark}
+                        alt="line marker"
+                        style={{
+                          position: 'absolute',
+                          top: -20,
+                          left: index % 2 !== 0 ? -16 : 'auto',
+                          right: index % 2 === 0 ? -16 : 'auto',
+                          width: 24,
+                          height: 24,
+                        }}
+                      />
+                    )}
                   </div>
 
-                  {/* Круг прогресса */}
-                  <div className="relative w-11 h-11 flex-shrink-0">
-                    <svg className="w-full h-full -rotate-90">
-                      <circle
-                        cx="22"
-                        cy="22"
-                        r="18"
-                        fill={isLocked ? '#FFFFFF' : 'none'}
-                        stroke="#E6E6E6"
-                        strokeWidth="3"
-                      />
-                      {isActive && (
-                        <motion.circle
-                          cx="22"
-                          cy="22"
-                          r="18"
-                          fill="none"
-                          stroke="rgba(0, 0, 0, 0.3)"
-                          strokeWidth="3"
-                          strokeLinecap="round"
-                          initial={{ strokeDashoffset: 113 }}
-                          animate={{
-                            strokeDashoffset: 113 - (113 * daysProgressPercent) / 100
-                          }}
-                          transition={{ delay: index * 0.1 + 0.3, duration: 0.5 }}
-                          strokeDasharray="113"
-                        />
-                      )}
-                    </svg>
-                    <div className="absolute inset-0 flex flex-col items-center justify-center">
-                      <span
+                  {/* Карточка модуля */}
+                  <div
+                    className="flex items-center gap-3 rounded-2xl shadow-lg p-3 pr-4 cursor-pointer transition-all"
+                    style={{
+                      maxWidth: 165,
+                      background: isActive ? 'rgba(255, 255, 255, 0.8)' : 'rgba(0, 0, 0, 0.3)',
+                      backdropFilter: isLocked ? 'blur(30px)' : 'none',
+                      WebkitBackdropFilter: isLocked ? 'blur(30px)' : 'none',
+                    }}
+                    onClick={() => {
+                      if (isGuest) {
+                        onGuestBlock?.();
+                        return;
+                      }
+                      if (!isLocked && onStageClick) {
+                        onStageClick(stage.stage_id, stage.module_id);
+                      }
+                    }}
+                  >
+                    {/* Контент карточки */}
+                    <div className="flex-1 min-w-0">
+                      <h3
+                        className="truncate"
+                        style={{
+                          fontFamily: 'Nunito, sans-serif',
+                          fontWeight: 600,
+                          fontSize: 14,
+                          lineHeight: '120%',
+                          color: isActive ? '#000000' : '#FFFFFF',
+                        }}
+                      >
+                        {stage.stage_name}
+                      </h3>
+                      <p
                         style={{
                           fontFamily: 'Nunito, sans-serif',
                           fontWeight: 500,
                           fontSize: 12,
                           lineHeight: '14px',
-                          textAlign: 'center',
-                          color: isActive ? '#222222' : '#ADADAD',
+                          color: isActive ? '#888888' : '#FFFFFF',
                         }}
                       >
-                        {displayDays}
-                      </span>
-                      <span
-                        style={{
-                          fontFamily: 'Nunito, sans-serif',
-                          fontWeight: 500,
-                          fontSize: 8,
-                          lineHeight: '10px',
-                          textAlign: 'center',
-                          color: isActive ? '#222222' : '#ADADAD',
-                        }}
-                      >
-                        {displayDays === 1 ? 'день' : displayDays < 5 ? 'дня' : 'дней'}
-                      </span>
+                        {stage.total_lessons} уроков
+                      </p>
+                    </div>
+
+                    {/* Круг прогресса */}
+                    <div className="relative w-11 h-11 flex-shrink-0">
+                      <svg className="w-full h-full -rotate-90">
+                        <circle
+                          cx="22"
+                          cy="22"
+                          r="18"
+                          fill={isLocked ? '#FFFFFF' : 'none'}
+                          stroke="#E6E6E6"
+                          strokeWidth="3"
+                        />
+                        {isActive && (
+                          <motion.circle
+                            cx="22"
+                            cy="22"
+                            r="18"
+                            fill="none"
+                            stroke="rgba(0, 0, 0, 0.3)"
+                            strokeWidth="3"
+                            strokeLinecap="round"
+                            initial={{ strokeDashoffset: 113 }}
+                            animate={{
+                              strokeDashoffset: 113 - (113 * daysProgressPercent) / 100
+                            }}
+                            transition={{ delay: index * 0.1 + 0.3, duration: 0.5 }}
+                            strokeDasharray="113"
+                          />
+                        )}
+                      </svg>
+                      <div className="absolute inset-0 flex flex-col items-center justify-center">
+                        <span
+                          style={{
+                            fontFamily: 'Nunito, sans-serif',
+                            fontWeight: 500,
+                            fontSize: 12,
+                            lineHeight: '14px',
+                            textAlign: 'center',
+                            color: isActive ? '#222222' : '#ADADAD',
+                          }}
+                        >
+                          {displayDays}
+                        </span>
+                        <span
+                          style={{
+                            fontFamily: 'Nunito, sans-serif',
+                            fontWeight: 500,
+                            fontSize: 8,
+                            lineHeight: '10px',
+                            textAlign: 'center',
+                            color: isActive ? '#222222' : '#ADADAD',
+                          }}
+                        >
+                          {displayDays === 1 ? 'день' : displayDays < 5 ? 'дня' : 'дней'}
+                        </span>
+                      </div>
                     </div>
                   </div>
+
                 </div>
               </motion.div>
             );

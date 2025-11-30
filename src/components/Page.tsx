@@ -1,7 +1,6 @@
 import { useNavigate, useLocation } from 'react-router-dom';
 import { type PropsWithChildren, useEffect, useRef } from 'react';
 import { SafeAreaFade } from '@/components/SafeAreaFade/SafeAreaFade';
-import { motion } from 'framer-motion';
 import { backButton, miniApp } from '@telegram-apps/sdk-react';
 import './Page.css';
 
@@ -115,18 +114,10 @@ export function Page({
   };
 
   return (
-    <motion.main
-      className={`max-w-[600px] mx-auto page-container  ${showTabBar ? 'with-tab-bar' : ''}`}
+    <main
+      className={`max-w-[600px] mx-auto page-container ${showTabBar ? 'with-tab-bar' : ''}`}
       style={{ ...containerStyle, backgroundColor: '#ffffff' }}
       ref={containerRef}
-      initial={{ opacity: 0, y: 10 }}
-      animate={{ opacity: 1, y: 0 }}
-      exit={{ opacity: 0, y: -10 }}
-      transition={{
-        type: 'tween',
-        ease: 'easeOut',
-        duration: 0.2
-      }}
     >
       <div
         className="content-wrapper"
@@ -134,14 +125,11 @@ export function Page({
           backgroundColor: '#ffffff',
           flex: 1,
           overflowY: 'auto',
-          // paddingBottom: showTabBar
-          //   ? 'calc(64px + env(safe-area-inset-bottom, 0px))'
-          //   : '0px',
         }}
       >
         {children}
       </div>
       {showSafeAreaFade && <SafeAreaFade />}
-    </motion.main>
+    </main>
   );
 }
