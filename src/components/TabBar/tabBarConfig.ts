@@ -25,6 +25,9 @@ export const tabBarThemes = {
     },
     dark: {
         background: '#0000004D',
+        backgroundImage: 'url(/background2.png)',
+        backgroundSize: '500%',
+        backgroundPosition: 'bottom center',
         backdropFilter: 'blur(30px)',
         buttonBackground: 'transparent',
         buttonActiveBackground: '#0000004D',

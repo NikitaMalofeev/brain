@@ -59,6 +59,10 @@ const TabBar: FC<TabBarProps> = ({ className }) => {
             aria-label="Основная навигация"
             style={{
                 background: theme.background,
+                backgroundImage: 'backgroundImage' in theme ? (theme as any).backgroundImage : undefined,
+                backgroundSize: 'backgroundSize' in theme ? (theme as any).backgroundSize : undefined,
+                backgroundPosition: 'backgroundPosition' in theme ? (theme as any).backgroundPosition : undefined,
+                backgroundRepeat: 'no-repeat',
                 backdropFilter: theme.backdropFilter,
                 boxShadow: theme.boxShadow,
                 paddingLeft: '12px',
