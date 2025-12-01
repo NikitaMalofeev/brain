@@ -922,6 +922,13 @@ const UnifiedCoursesManager: React.FC = () => {
                     moduleDurationDays={module.access_duration_days || undefined}
                     streamId={navigation.streamId!}
                     courseId={navigation.courseId!}
+                    allTariffModuleIds={configuration?.modules.map(m => m.tariff_stream_module_id) || []}
+                    allModulesInfo={configuration?.modules.map(m => ({
+                      tariff_stream_module_id: m.tariff_stream_module_id,
+                      order_num: m.order_num,
+                      access_duration_days: m.access_duration_days,
+                      unlock_offset_days: m.unlock_offset_days,
+                    })) || []}
                   />
                 </Panel>
               ))}

@@ -196,7 +196,7 @@ export function useRemoveModuleFromTariff() {
     onSuccess: async () => {
       await Promise.all([
         queryClient.invalidateQueries({ queryKey: ['tariff-configuration'], refetchType: 'active' }),
-        queryClient.invalidateQueries({ queryKey: ['tariff-module-materials'], refetchType: 'active' }),
+        queryClient.invalidateQueries({ queryKey: ['tariff-module-materials'] }),
       ]);
     },
   });
@@ -241,8 +241,8 @@ export function useAddTechniqueToTariffModule() {
     },
     onSuccess: async () => {
       await Promise.all([
-        queryClient.invalidateQueries({ queryKey: ['tariff-configuration'], refetchType: 'active' }),
-        queryClient.invalidateQueries({ queryKey: ['tariff-module-materials'], refetchType: 'active' }),
+        queryClient.invalidateQueries({ queryKey: ['tariff-configuration'] }),
+        queryClient.invalidateQueries({ queryKey: ['tariff-module-materials'] }),
       ]);
     },
   });
@@ -284,7 +284,7 @@ export function useUpdateTechniqueInTariffModule() {
     onSuccess: async () => {
       await Promise.all([
         queryClient.invalidateQueries({ queryKey: ['tariff-configuration'], refetchType: 'active' }),
-        queryClient.invalidateQueries({ queryKey: ['tariff-module-materials'], refetchType: 'active' }),
+        queryClient.invalidateQueries({ queryKey: ['tariff-module-materials'] }),
       ]);
     },
   });
@@ -315,7 +315,7 @@ export function useRemoveTechniqueFromTariffModule() {
     onSuccess: async () => {
       await Promise.all([
         queryClient.invalidateQueries({ queryKey: ['tariff-configuration'], refetchType: 'active' }),
-        queryClient.invalidateQueries({ queryKey: ['tariff-module-materials'], refetchType: 'active' }),
+        queryClient.invalidateQueries({ queryKey: ['tariff-module-materials'] }),
       ]);
     },
   });

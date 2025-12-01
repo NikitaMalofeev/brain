@@ -125,7 +125,7 @@ export const MainPage = () => {
                                     <Link to={'/points'} className="roadmap__link">
 
                                         <div className="flex gap-1 items-center">
-                                            <p className={'text-black font-semibold leading-4'}>{supabaseUser?.total_points}</p>
+                                            <p className={'text-black font-semibold leading-4'}>{isGuest ? '—' : supabaseUser?.total_points}</p>
                                             <img src={dnaIcon} alt="search" />
                                         </div>
                                     </Link>
@@ -180,7 +180,7 @@ export const MainPage = () => {
                 </motion.div>
 
                 <motion.div
-                    className="flex flex-col gap-4"
+                    className="flex flex-col gap-3"
                     variants={listVariants}
                     initial="hidden"
                     animate="show"

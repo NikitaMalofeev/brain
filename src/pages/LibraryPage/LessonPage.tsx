@@ -120,11 +120,20 @@ function BlockContent({ block }: { block: LessonBlock }) {
         }
     };
 
+    // Собираем все ID техник: сначала из technique_ids, затем fallback на technique_id
+    const techniqueIds = block.technique_ids && block.technique_ids.length > 0
+        ? block.technique_ids
+        : block.technique_id
+            ? [block.technique_id]
+            : [];
+
     return (
         <div>
             {renderMainContent()}
-            {/* Показываем привязанную технику если есть */}
-            {block.technique_id && <TechniqueInBlock techniqueId={block.technique_id} />}
+            {/* Показываем привязанные техники если есть */}
+            {techniqueIds.map((techId) => (
+                <TechniqueInBlock key={techId} techniqueId={techId} />
+            ))}
         </div>
     );
 }

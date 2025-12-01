@@ -3,9 +3,10 @@ import { FileUploader, type FileUploaderRef } from '@/components/FileUploader/Fi
 import { buildFileUrl } from '@/lib/supabase/supabaseStorageService';
 import { useBlocksAdmin } from '@/lib/supabase/hooks';
 import DraggableBlockRow from '../DraggableBlockRow';
-import { logger } from '@/lib/logger';
 import { supabase } from '@/lib/supabase/client';
 import ReactMarkdown from 'react-markdown';
+import { useQuery } from '@tanstack/react-query';
+import { useSpecialBundleTechniquesAcrossModules, ModuleInfo } from '@/lib/supabase/hooks/useSpecialBundles';
 
 // Типы для блоков
 interface BlockModalData {
@@ -15,7 +16,7 @@ interface BlockModalData {
     content_text: string;
     content_url: string;
     material_id?: string;
-    technique_id?: string; // ID техники привязанной к блоку
+    technique_ids?: string[]; // ID техник привязанных к блоку (множественный выбор)
     order_num: number;
 }
 
@@ -34,13 +35,6 @@ interface Technique {
     material_type: string;
 }
 
-// Тип для техники из TariffTechniqueConfig
-interface TechniqueFromModule {
-    technique_id: string;
-    technique_title: string;
-    unlock_offset_days: number;
-}
-
 export interface BlocksManagerProps {
     courseId: string;
     stageId: number;
@@ -48,13 +42,14 @@ export interface BlocksManagerProps {
     onBack: () => void;
     // Новые пропсы для фильтрации техник по дню открытия
     streamModuleId?: string;
+    tariffStreamModuleId?: string;
     openDayOffset?: number | null;
-    // Техники из модуля (уже загружены из TariffModuleConfig)
-    moduleTechniques?: TechniqueFromModule[];
+    // Информация о всех модулях для спец.пакетов
+    allModulesInfo?: ModuleInfo[];
 }
 
 // Компонент для управления блоками урока
-const BlocksManager: React.FC<BlocksManagerProps> = ({ courseId, stageId, lessonId, onBack, streamModuleId, openDayOffset, moduleTechniques }) => {
+const BlocksManager: React.FC<BlocksManagerProps> = ({ courseId, stageId, lessonId, onBack, streamModuleId, tariffStreamModuleId, openDayOffset, allModulesInfo }) => {
     const { blocks, loading, error, refetch, createBlock, updateBlock, deleteBlock } = useBlocksAdmin(lessonId);
     const [updateLoading, setUpdateLoading] = useState<boolean>(false);
     const [updateError, setUpdateError] = useState<string | null>(null);
@@ -81,13 +76,89 @@ const BlocksManager: React.FC<BlocksManagerProps> = ({ courseId, stageId, lesson
     const [localOrderValues, setLocalOrderValues] = useState<{ [key: number]: number }>({});
     const [orderUpdateTimeouts, setOrderUpdateTimeouts] = useState<{ [key: number]: NodeJS.Timeout }>({});
 
-    // Состояние для материалов
-    const [materials, setMaterials] = useState<Material[]>([]);
-    const [materialsLoading, setMaterialsLoading] = useState(false);
+    // Получаем техники спец.пакетов по всем модулям
+    const { data: specialBundleTechniques } = useSpecialBundleTechniquesAcrossModules(allModulesInfo || []);
 
-    // Состояние для техник (доступных для добавления к блоку)
-    const [techniques, setTechniques] = useState<Technique[]>([]);
-    const [techniquesLoading, setTechniquesLoading] = useState(false);
+    // Логируем входные параметры
+    console.log('=== [BlocksManager] COMPONENT RENDER ===');
+    console.log('[BlocksManager] Props:', {
+        tariffStreamModuleId,
+        openDayOffset,
+        streamModuleId,
+        lessonId,
+        courseId
+    });
+
+    // Загружаем техники через React Query для автоматической инвалидации кэша
+    const queryEnabled = !!tariffStreamModuleId && openDayOffset !== null && openDayOffset !== undefined;
+    console.log('[BlocksManager] Query enabled:', queryEnabled);
+
+    const { data: materialsFromQuery, isLoading: materialsLoading } = useQuery({
+        queryKey: ['tariff-module-materials', tariffStreamModuleId, openDayOffset],
+        queryFn: async () => {
+            console.log('=== [BlocksManager] useQuery EXECUTING ===');
+            console.log('[BlocksManager] Params:', { tariffStreamModuleId, openDayOffset });
+
+            const { data, error } = await supabase
+                .from('tariff_module_materials')
+                .select(`
+                    id,
+                    unlock_offset_days,
+                    material:materials(
+                        id,
+                        name,
+                        description,
+                        material_type
+                    )
+                `)
+                .eq('tariff_stream_module_id', tariffStreamModuleId)
+                .eq('unlock_offset_days', openDayOffset);
+
+            console.log('[BlocksManager] Raw DB response:', { data, error });
+
+            if (error) throw error;
+
+            // Преобразуем данные в формат Material[]
+            const materialsFromModule = (data || [])
+                .filter(item => item.material)
+                .map(item => ({
+                    id: (item.material as any).id,
+                    name: (item.material as any).name,
+                    description: (item.material as any).description,
+                    material_type: (item.material as any).material_type,
+                }));
+
+            console.log('[BlocksManager] Techniques from tariff_module_materials:', materialsFromModule);
+            return materialsFromModule;
+        },
+        enabled: !!tariffStreamModuleId && openDayOffset !== null && openDayOffset !== undefined,
+    });
+
+    // Комбинируем техники из tariff_module_materials и спец.пакетов
+    const techniques = React.useMemo(() => {
+        const result: Technique[] = [...(materialsFromQuery || [])];
+
+        // Добавляем техники из спец.пакетов для этого дня
+        // day_in_target_module и openDayOffset оба 1-indexed
+        if (specialBundleTechniques && tariffStreamModuleId && openDayOffset !== null && openDayOffset !== undefined) {
+            const specialForDay = specialBundleTechniques
+                .filter(t => t.target_module_id === tariffStreamModuleId && t.day_in_target_module === openDayOffset)
+                .map(t => ({
+                    id: t.technique_id,
+                    name: `[СП] ${t.technique?.name || 'Техника'}`,
+                    description: `Из пакета "${t.special_bundle_name}"`,
+                    material_type: t.technique?.material_type || 'audio',
+                }));
+            console.log('[BlocksManager] Special techniques for this day:', specialForDay);
+            result.push(...specialForDay);
+        }
+
+        console.log('[BlocksManager] FINAL techniques list:', result);
+        return result;
+    }, [materialsFromQuery, specialBundleTechniques, tariffStreamModuleId, openDayOffset]);
+
+    // Для обратной совместимости (используется в renderBlockContent)
+    const materials = techniques;
 
     // Состояние для предпросмотра markdown в модалке
     const [showMarkdownPreview, setShowMarkdownPreview] = useState(false);
@@ -111,7 +182,7 @@ const BlocksManager: React.FC<BlocksManagerProps> = ({ courseId, stageId, lesson
             content_text: '',
             content_url: '',
             material_id: '',
-            technique_id: '',
+            technique_ids: [],
             order_num: nextOrder,
         });
         setModalMode('add');
@@ -122,6 +193,14 @@ const BlocksManager: React.FC<BlocksManagerProps> = ({ courseId, stageId, lesson
 
     // Открыть модал для редактирования
     const openEditModal = (block: any) => {
+        // Поддержка как старого формата (technique_id), так и нового (technique_ids)
+        let techniqueIds: string[] = [];
+        if (block.technique_ids && Array.isArray(block.technique_ids)) {
+            techniqueIds = block.technique_ids;
+        } else if (block.technique_id) {
+            techniqueIds = [block.technique_id];
+        }
+
         setModalData({
             id: block.id,
             title: block.title || '',
@@ -129,7 +208,7 @@ const BlocksManager: React.FC<BlocksManagerProps> = ({ courseId, stageId, lesson
             content_text: block.content_text || '',
             content_url: block.content_url || '',
             material_id: block.material_id || '',
-            technique_id: block.technique_id || '',
+            technique_ids: techniqueIds,
             order_num: block.order_num,
         });
         setModalMode('edit');
@@ -149,106 +228,13 @@ const BlocksManager: React.FC<BlocksManagerProps> = ({ courseId, stageId, lesson
             content_text: '',
             content_url: '',
             material_id: '',
-            technique_id: '',
+            technique_ids: [],
             order_num: 1,
         });
     };
 
     // Ref для FileUploader
     const fileUploaderRef = useRef<FileUploaderRef>(null);
-
-    // Загрузка материалов (техник) для этого модуля и дня
-    const loadMaterials = async () => {
-        if (!supabase) return;
-
-        try {
-            setMaterialsLoading(true);
-
-            // Если есть streamModuleId и openDayOffset - загружаем техники из module_materials
-            // которые назначены на этот день в этом модуле
-            if (streamModuleId && openDayOffset !== null && openDayOffset !== undefined) {
-                console.log('Loading techniques for module and day:', { streamModuleId, openDayOffset });
-
-                const { data, error } = await supabase
-                    .from('module_materials')
-                    .select(`
-                        id,
-                        release_day,
-                        material:materials(
-                            id,
-                            name,
-                            description,
-                            material_type
-                        )
-                    `)
-                    .eq('module_id', streamModuleId)
-                    .eq('release_day', openDayOffset);
-
-                if (error) throw error;
-
-                // Преобразуем данные в формат Material[]
-                const materialsFromModule = (data || [])
-                    .filter(item => item.material)
-                    .map(item => ({
-                        id: (item.material as any).id,
-                        name: (item.material as any).name,
-                        description: (item.material as any).description,
-                        material_type: (item.material as any).material_type,
-                    }));
-
-                console.log('Loaded techniques for day:', materialsFromModule);
-                setMaterials(materialsFromModule);
-            } else if (courseId) {
-                // Fallback: загружаем все материалы курса (старая логика)
-                const { data, error } = await supabase
-                    .from('materials')
-                    .select('id, name, description, material_type, release_date')
-                    .eq('course_id', courseId)
-                    .lte('release_date', new Date().toISOString())
-                    .order('release_date', { ascending: true })
-                    .order('name', { ascending: true });
-
-                if (error) throw error;
-                setMaterials(data || []);
-            } else {
-                setMaterials([]);
-            }
-        } catch (err: any) {
-            console.error('Ошибка загрузки материалов:', err);
-        } finally {
-            setMaterialsLoading(false);
-        }
-    };
-
-    // Загружаем материалы при монтировании или изменении параметров
-    useEffect(() => {
-        loadMaterials();
-    }, [courseId, streamModuleId, openDayOffset]);
-
-    // Фильтруем техники из переданного массива по дню открытия
-    useEffect(() => {
-        console.log('=== Filtering techniques ===');
-        console.log('Props:', { openDayOffset, moduleTechniques });
-
-        if (!moduleTechniques || openDayOffset === null || openDayOffset === undefined) {
-            console.log('SKIP: No moduleTechniques or openDayOffset');
-            setTechniques([]);
-            return;
-        }
-
-        // Фильтруем техники которые открываются в этот день (unlock_offset_days совпадает с open_day_offset урока)
-        const filtered = moduleTechniques
-            .filter(t => t.unlock_offset_days === openDayOffset)
-            .map(t => ({
-                id: t.technique_id,
-                name: t.technique_title,
-                description: null,
-                material_type: 'audio', // Техники обычно audio
-            }));
-
-        console.log('Filtered techniques for day', openDayOffset, ':', filtered);
-        setTechniques(filtered);
-    }, [moduleTechniques, openDayOffset]);
 
     // Сохранить блок
     const saveBlock = async () => {
@@ -305,6 +291,11 @@ const BlocksManager: React.FC<BlocksManagerProps> = ({ courseId, stageId, lesson
                 }
             }
 
+            // Сохраняем выбранные техники
+            const techniqueIds = modalData.technique_ids || [];
+            // Для обратной совместимости: если выбрана одна техника, также сохраняем в technique_id
+            const techniqueId = techniqueIds.length > 0 ? techniqueIds[0] : undefined;
+
             if (modalMode === 'add') {
                 // Просто создаем новый блок без проверки конфликтов
                 await createBlock({
@@ -314,7 +305,8 @@ const BlocksManager: React.FC<BlocksManagerProps> = ({ courseId, stageId, lesson
                     content_text: modalData.content_text?.trim() || '',
                     content_url: finalContentUrl,
                     material_id: modalData.material_id || undefined,
-                    technique_id: modalData.technique_id || undefined,
+                    technique_id: techniqueId,
+                    technique_ids: techniqueIds.length > 0 ? techniqueIds : undefined,
                     order_num: modalData.order_num,
                 });
             } else {
@@ -325,7 +317,8 @@ const BlocksManager: React.FC<BlocksManagerProps> = ({ courseId, stageId, lesson
                     content_text: modalData.content_text?.trim() || '',
                     content_url: finalContentUrl,
                     material_id: modalData.material_id || undefined,
-                    technique_id: modalData.technique_id || undefined,
+                    technique_id: techniqueId,
+                    technique_ids: techniqueIds.length > 0 ? techniqueIds : [],
                     order_num: modalData.order_num,
                 });
             }
@@ -469,13 +462,27 @@ const BlocksManager: React.FC<BlocksManagerProps> = ({ courseId, stageId, lesson
     const renderBlockContent = (block: any) => {
         const hasText = block.content_text && block.content_text.trim();
         const hasUrl = block.content_url && block.content_url.trim();
-        const hasTechnique = block.technique_id;
-        const techniqueName = hasTechnique ? techniques.find(t => t.id === block.technique_id)?.name : null;
 
-        // Компонент для отображения привязанной техники
-        const TechniqueTag = () => hasTechnique ? (
-            <div style={{ display: 'inline-block', background: '#f6ffed', color: '#52c41a', padding: '2px 8px', borderRadius: 4, fontSize: 11, marginTop: 4 }}>
-                🎯 {techniqueName || 'Техника'}
+        // Поддержка как старого формата (technique_id), так и нового (technique_ids)
+        let techniqueIds: string[] = [];
+        if (block.technique_ids && Array.isArray(block.technique_ids)) {
+            techniqueIds = block.technique_ids;
+        } else if (block.technique_id) {
+            techniqueIds = [block.technique_id];
+        }
+        const hasTechniques = techniqueIds.length > 0;
+
+        // Компонент для отображения привязанных техник
+        const TechniqueTag = () => hasTechniques ? (
+            <div style={{ marginTop: 4 }}>
+                {techniqueIds.map(techId => {
+                    const techniqueName = techniques.find(t => t.id === techId)?.name || 'Техника';
+                    return (
+                        <div key={techId} style={{ display: 'inline-block', background: '#f6ffed', color: '#52c41a', padding: '2px 8px', borderRadius: 4, fontSize: 11, marginRight: 4, marginBottom: 2 }}>
+                            🎯 {techniqueName}
+                        </div>
+                    );
+                })}
             </div>
         ) : null;
 
@@ -937,35 +944,61 @@ const BlocksManager: React.FC<BlocksManagerProps> = ({ courseId, stageId, lesson
                             </>
                         )}
 
-                        {/* Поле для привязки техники к блоку (для любого типа блока) */}
+                        {/* Поле для привязки техник к блоку (для любого типа блока) */}
                         {streamModuleId && openDayOffset !== null && openDayOffset !== undefined && (
                             <div className="form-group" style={{ marginTop: 16, padding: 12, background: '#f6ffed', borderRadius: 8, border: '1px solid #b7eb8f' }}>
                                 <label style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                                    <span>🎯 Привязать технику</span>
+                                    <span>🎯 Привязать техники</span>
                                     <span style={{ color: '#888', fontWeight: 'normal', fontSize: 12 }}>(день {openDayOffset})</span>
                                 </label>
-                                <select
-                                    className="admin-input"
-                                    value={modalData.technique_id || ''}
-                                    onChange={(e) => setModalData({ ...modalData, technique_id: e.target.value })}
-                                    disabled={techniquesLoading}
-                                    style={{ marginTop: 8 }}
-                                >
-                                    <option value="">Без техники</option>
-                                    {techniques.map((technique) => (
-                                        <option key={technique.id} value={technique.id}>
-                                            {technique.name} ({technique.material_type})
-                                        </option>
-                                    ))}
-                                </select>
-                                {techniquesLoading && <div style={{ fontSize: 12, color: '#888', marginTop: 4 }}>Загрузка техник...</div>}
-                                {!techniquesLoading && techniques.length === 0 && (
-                                    <div style={{ fontSize: 12, color: '#faad14', marginTop: 4 }}>
+                                {materialsLoading && <div style={{ fontSize: 12, color: '#888', marginTop: 4 }}>Загрузка техник...</div>}
+                                {!materialsLoading && techniques.length === 0 && (
+                                    <div style={{ fontSize: 12, color: '#faad14', marginTop: 8 }}>
                                         Нет техник назначенных на день {openDayOffset}
                                     </div>
                                 )}
+                                {!materialsLoading && techniques.length > 0 && (
+                                    <div style={{ marginTop: 8, maxHeight: 200, overflowY: 'auto' }}>
+                                        {techniques.map((technique) => {
+                                            const isChecked = modalData.technique_ids?.includes(technique.id) || false;
+                                            return (
+                                                <label
+                                                    key={technique.id}
+                                                    style={{
+                                                        display: 'flex',
+                                                        alignItems: 'center',
+                                                        gap: 8,
+                                                        padding: '6px 8px',
+                                                        borderRadius: 4,
+                                                        cursor: 'pointer',
+                                                        background: isChecked ? '#d9f7be' : 'transparent',
+                                                        marginBottom: 4,
+                                                    }}
+                                                >
+                                                    <input
+                                                        type="checkbox"
+                                                        checked={isChecked}
+                                                        onChange={(e) => {
+                                                            const currentIds = modalData.technique_ids || [];
+                                                            if (e.target.checked) {
+                                                                setModalData({ ...modalData, technique_ids: [...currentIds, technique.id] });
+                                                            } else {
+                                                                setModalData({ ...modalData, technique_ids: currentIds.filter(id => id !== technique.id) });
+                                                            }
+                                                        }}
+                                                        style={{ width: 16, height: 16 }}
+                                                    />
+                                                    <span style={{ fontSize: 13 }}>
+                                                        {technique.name}
+                                                        <span style={{ color: '#888', marginLeft: 4 }}>({technique.material_type})</span>
+                                                    </span>
+                                                </label>
+                                            );
+                                        })}
+                                    </div>
+                                )}
                                 <small style={{ color: '#52c41a', marginTop: 8, display: 'block', fontSize: 11 }}>
-                                    💡 Техника будет показана пользователю при просмотре этого блока
+                                    💡 Выбранные техники будут показаны пользователю при просмотре этого блока
                                 </small>
                             </div>
                         )}

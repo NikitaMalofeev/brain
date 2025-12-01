@@ -412,6 +412,319 @@ export function useSpecialBundlePlacements(tariffStreamModuleId: string | null) 
 }
 
 /**
+ * Техника спец.пакета с рассчитанным днём открытия
+ */
+export interface SpecialBundleTechniqueWithDay {
+  id: string;
+  technique_id: string;
+  technique_position: number;
+  delay_days: number;
+  calculated_day: number; // Рассчитанный день в модуле (0-indexed)
+  special_bundle_id: string;
+  special_bundle_name: string;
+  placement_id: string;
+  technique?: {
+    id: string;
+    name: string;
+    cover_image: string | null;
+    material_type: 'video' | 'audio';
+  };
+}
+
+/**
+ * Получение размещений с техниками и рассчитанными днями открытия
+ */
+export function useSpecialBundlePlacementsWithTechniques(tariffStreamModuleId: string | null) {
+  return useQuery({
+    queryKey: ['special-bundle-placements-with-techniques', tariffStreamModuleId],
+    queryFn: async (): Promise<SpecialBundleTechniqueWithDay[]> => {
+      if (!tariffStreamModuleId || !supabase) return [];
+
+      // Получаем размещения
+      const { data: placements, error: placementsError } = await supabase
+        .from('special_bundle_placements')
+        .select(`
+          id,
+          special_bundle_id,
+          start_unlock_offset_days,
+          special_bundle:special_bundles(id, name)
+        `)
+        .eq('tariff_stream_module_id', tariffStreamModuleId);
+
+      if (placementsError) {
+        logger.error('Error fetching placements', { tariffStreamModuleId, placementsError });
+        throw placementsError;
+      }
+
+      if (!placements || placements.length === 0) return [];
+
+      // Получаем техники для всех размещённых пакетов
+      const bundleIds = placements.map(p => p.special_bundle_id);
+      const { data: techniques, error: techniquesError } = await supabase
+        .from('special_bundle_techniques')
+        .select(`
+          id,
+          special_bundle_id,
+          technique_id,
+          technique_position,
+          delay_days,
+          technique:materials(id, name, cover_image_path, material_type)
+        `)
+        .in('special_bundle_id', bundleIds)
+        .order('technique_position', { ascending: true });
+
+      if (techniquesError) {
+        logger.error('Error fetching techniques', { bundleIds, techniquesError });
+        throw techniquesError;
+      }
+
+      // Группируем техники по пакетам
+      const techniquesByBundle = new Map<string, typeof techniques>();
+      for (const tech of techniques || []) {
+        if (!techniquesByBundle.has(tech.special_bundle_id)) {
+          techniquesByBundle.set(tech.special_bundle_id, []);
+        }
+        techniquesByBundle.get(tech.special_bundle_id)!.push(tech);
+      }
+
+      // Рассчитываем дни для каждой техники
+      const result: SpecialBundleTechniqueWithDay[] = [];
+
+      for (const placement of placements) {
+        const bundleTechniques = techniquesByBundle.get(placement.special_bundle_id) || [];
+        let cumulativeDelay = 0;
+
+        for (const tech of bundleTechniques) {
+          // Первая техника (position 1) открывается в start_unlock_offset_days
+          // Последующие техники добавляют свои delay_days к накопленной задержке
+          if (tech.technique_position === 1) {
+            cumulativeDelay = 0;
+          } else {
+            cumulativeDelay += tech.delay_days;
+          }
+
+          const calculatedDay = placement.start_unlock_offset_days + cumulativeDelay;
+
+          result.push({
+            id: tech.id,
+            technique_id: tech.technique_id,
+            technique_position: tech.technique_position,
+            delay_days: tech.delay_days,
+            calculated_day: calculatedDay,
+            special_bundle_id: tech.special_bundle_id,
+            special_bundle_name: (placement.special_bundle as any)?.name || '',
+            placement_id: placement.id,
+            technique: tech.technique ? {
+              id: (tech.technique as any).id,
+              name: (tech.technique as any).name,
+              cover_image: (tech.technique as any).cover_image_path,
+              material_type: (tech.technique as any).material_type,
+            } : undefined,
+          });
+        }
+      }
+
+      return result;
+    },
+    enabled: !!tariffStreamModuleId,
+  });
+}
+
+/**
+ * Информация о модуле для расчёта расположения техник
+ */
+export interface ModuleInfo {
+  tariff_stream_module_id: string;
+  order_num: number;
+  access_duration_days: number | null;
+  unlock_offset_days: number;
+}
+
+/**
+ * Техника спец.пакета с рассчитанным целевым модулем и днём
+ */
+export interface SpecialBundleTechniqueAcrossModules extends SpecialBundleTechniqueWithDay {
+  target_module_id: string; // ID модуля где техника должна отображаться
+  day_in_target_module: number; // День в целевом модуле (0-indexed)
+  source_module_id: string; // ID модуля где размещён пакет
+}
+
+/**
+ * Получение техник спец.пакетов с расчётом целевого модуля
+ * Учитывает что техника может выходить за пределы модуля и попадать в следующие
+ */
+export function useSpecialBundleTechniquesAcrossModules(modules: ModuleInfo[]) {
+  return useQuery({
+    queryKey: ['special-bundle-techniques-across-modules', modules.map(m => m.tariff_stream_module_id).join(',')],
+    queryFn: async (): Promise<SpecialBundleTechniqueAcrossModules[]> => {
+      if (!modules.length || !supabase) return [];
+
+      const moduleIds = modules.map(m => m.tariff_stream_module_id);
+
+      // Получаем все размещения по всем модулям
+      const { data: placements, error: placementsError } = await supabase
+        .from('special_bundle_placements')
+        .select(`
+          id,
+          special_bundle_id,
+          tariff_stream_module_id,
+          start_unlock_offset_days,
+          special_bundle:special_bundles(id, name)
+        `)
+        .in('tariff_stream_module_id', moduleIds);
+
+      if (placementsError) {
+        logger.error('Error fetching placements across modules', { moduleIds, placementsError });
+        throw placementsError;
+      }
+
+      if (!placements || placements.length === 0) return [];
+
+      // Получаем техники для всех размещённых пакетов
+      const bundleIds = [...new Set(placements.map(p => p.special_bundle_id))];
+      const { data: techniques, error: techniquesError } = await supabase
+        .from('special_bundle_techniques')
+        .select(`
+          id,
+          special_bundle_id,
+          technique_id,
+          technique_position,
+          delay_days,
+          technique:materials(id, name, cover_image_path, material_type)
+        `)
+        .in('special_bundle_id', bundleIds)
+        .order('technique_position', { ascending: true });
+
+      if (techniquesError) {
+        logger.error('Error fetching techniques', { bundleIds, techniquesError });
+        throw techniquesError;
+      }
+
+      // Группируем техники по пакетам
+      const techniquesByBundle = new Map<string, typeof techniques>();
+      for (const tech of techniques || []) {
+        if (!techniquesByBundle.has(tech.special_bundle_id)) {
+          techniquesByBundle.set(tech.special_bundle_id, []);
+        }
+        techniquesByBundle.get(tech.special_bundle_id)!.push(tech);
+      }
+
+      // Сортируем модули по order_num
+      const sortedModules = [...modules].sort((a, b) => a.order_num - b.order_num);
+
+      // Создаём карту модулей для быстрого доступа
+      const moduleById = new Map(modules.map(m => [m.tariff_stream_module_id, m]));
+
+      // Рассчитываем для каждой техники целевой модуль и день
+      const result: SpecialBundleTechniqueAcrossModules[] = [];
+
+      for (const placement of placements) {
+        const sourceModule = moduleById.get(placement.tariff_stream_module_id);
+        if (!sourceModule) continue;
+
+        const bundleTechniques = techniquesByBundle.get(placement.special_bundle_id) || [];
+        let cumulativeDelay = 0;
+
+        for (const tech of bundleTechniques) {
+          // Рассчитываем накопленную задержку
+          if (tech.technique_position === 1) {
+            cumulativeDelay = 0;
+          } else {
+            cumulativeDelay += tech.delay_days;
+          }
+
+          // Абсолютный день в исходном модуле (от начала модуля)
+          const absoluteDayInSourceModule = placement.start_unlock_offset_days + cumulativeDelay;
+
+          // Находим целевой модуль и день в нём
+          let targetModule = sourceModule;
+          let dayInTargetModule = absoluteDayInSourceModule;
+          let remainingDays = absoluteDayInSourceModule;
+
+          // Находим индекс исходного модуля
+          const sourceModuleIndex = sortedModules.findIndex(m => m.tariff_stream_module_id === sourceModule.tariff_stream_module_id);
+
+          // Проходим по модулям начиная с исходного
+          for (let i = sourceModuleIndex; i < sortedModules.length; i++) {
+            const currentModule = sortedModules[i];
+            const moduleDays = currentModule.access_duration_days || 999; // Если не задано - считаем бесконечным
+
+            if (remainingDays < moduleDays) {
+              // Техника попадает в этот модуль
+              targetModule = currentModule;
+              dayInTargetModule = remainingDays;
+              break;
+            } else {
+              // Переносим на следующий модуль
+              remainingDays -= moduleDays;
+            }
+          }
+
+          result.push({
+            id: tech.id,
+            technique_id: tech.technique_id,
+            technique_position: tech.technique_position,
+            delay_days: tech.delay_days,
+            calculated_day: absoluteDayInSourceModule,
+            special_bundle_id: tech.special_bundle_id,
+            special_bundle_name: (placement.special_bundle as any)?.name || '',
+            placement_id: placement.id,
+            technique: tech.technique ? {
+              id: (tech.technique as any).id,
+              name: (tech.technique as any).name,
+              cover_image: (tech.technique as any).cover_image_path,
+              material_type: (tech.technique as any).material_type,
+            } : undefined,
+            target_module_id: targetModule.tariff_stream_module_id,
+            day_in_target_module: dayInTargetModule,
+            source_module_id: placement.tariff_stream_module_id,
+          });
+        }
+      }
+
+      return result;
+    },
+    enabled: modules.length > 0,
+  });
+}
+
+/**
+ * Получение всех размещений специальных пакетов для списка модулей тарифа
+ * Используется для проверки, какие пакеты уже размещены в любом модуле тарифа
+ */
+export function useAllSpecialBundlePlacementsForTariff(tariffStreamModuleIds: string[]) {
+  return useQuery({
+    queryKey: ['special-bundle-placements-all', tariffStreamModuleIds],
+    queryFn: async (): Promise<SpecialBundlePlacementWithDetails[]> => {
+      if (!tariffStreamModuleIds.length || !supabase) return [];
+
+      const { data, error } = await supabase
+        .from('special_bundle_placements')
+        .select(`
+          id,
+          special_bundle_id,
+          tariff_stream_module_id,
+          start_unlock_offset_days,
+          created_at,
+          special_bundle:special_bundles(id, name, description, order_num)
+        `)
+        .in('tariff_stream_module_id', tariffStreamModuleIds);
+
+      if (error) {
+        logger.error('Error fetching all special bundle placements', { tariffStreamModuleIds, error });
+        throw error;
+      }
+
+      return (data || []).map(item => ({
+        ...item,
+        special_bundle: item.special_bundle as any
+      }));
+    },
+    enabled: tariffStreamModuleIds.length > 0,
+  });
+}
+
+/**
  * Размещение специального пакета в модуле
  */
 export function usePlaceSpecialBundle() {
@@ -446,6 +759,8 @@ export function usePlaceSpecialBundle() {
     },
     onSuccess: async () => {
       await queryClient.invalidateQueries({ queryKey: ['special-bundle-placements'], refetchType: 'active' });
+      await queryClient.invalidateQueries({ queryKey: ['special-bundle-techniques-across-modules'], refetchType: 'active' });
+      await queryClient.invalidateQueries({ queryKey: ['special-bundle-placements-all'], refetchType: 'active' });
     },
   });
 }
@@ -474,6 +789,8 @@ export function useRemoveSpecialBundlePlacement() {
     },
     onSuccess: async () => {
       await queryClient.invalidateQueries({ queryKey: ['special-bundle-placements'], refetchType: 'active' });
+      await queryClient.invalidateQueries({ queryKey: ['special-bundle-techniques-across-modules'], refetchType: 'active' });
+      await queryClient.invalidateQueries({ queryKey: ['special-bundle-placements-all'], refetchType: 'active' });
     },
   });
 }

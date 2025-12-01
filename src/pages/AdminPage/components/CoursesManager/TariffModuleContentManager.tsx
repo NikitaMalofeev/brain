@@ -3,6 +3,7 @@ import { Segmented } from 'antd';
 import TariffModuleMaterialsManager from './TariffModuleMaterialsManager';
 import TariffModuleLessonsManager from './TariffModuleLessonsManager';
 import { TariffModuleConfig } from '@/lib/supabase/hooks/useTariffConfiguration';
+import { ModuleInfo } from '@/lib/supabase/hooks/useSpecialBundles';
 
 interface Material {
   id: string;
@@ -16,6 +17,8 @@ interface TariffModuleContentManagerProps {
   moduleDurationDays?: number;
   streamId: string;
   courseId: string;
+  allTariffModuleIds: string[]; // Все ID модулей тарифа для проверки размещений спец.пакетов
+  allModulesInfo: ModuleInfo[]; // Информация о всех модулях для расчёта расположения техник
 }
 
 type ContentType = 'techniques' | 'lessons';
@@ -26,6 +29,8 @@ const TariffModuleContentManager: React.FC<TariffModuleContentManagerProps> = ({
   moduleDurationDays,
   streamId,
   courseId,
+  allTariffModuleIds,
+  allModulesInfo,
 }) => {
   const [contentType, setContentType] = useState<ContentType>('techniques');
 
@@ -50,6 +55,8 @@ const TariffModuleContentManager: React.FC<TariffModuleContentManagerProps> = ({
           module={module}
           allMaterials={allMaterials}
           moduleDurationDays={moduleDurationDays}
+          allTariffModuleIds={allTariffModuleIds}
+          allModulesInfo={allModulesInfo}
         />
       ) : (
         <TariffModuleLessonsManager
@@ -59,7 +66,7 @@ const TariffModuleContentManager: React.FC<TariffModuleContentManagerProps> = ({
           courseId={courseId}
           moduleName={module.module_name}
           moduleDurationDays={moduleDurationDays}
-          moduleTechniques={module.techniques}
+          allModulesInfo={allModulesInfo}
         />
       )}
     </div>

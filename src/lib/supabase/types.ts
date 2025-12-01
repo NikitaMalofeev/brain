@@ -135,7 +135,8 @@ export interface LessonBlock extends TimestampFields {
   content_text?: string; // Для text-блоков и assignment_instruction
   content_url?: string; // Для файлов/медиа
   material_id?: string; // Для material-блоков - ссылка на материал
-  technique_id?: string; // ID техники привязанной к блоку (показывается при совпадении дней)
+  technique_id?: string; // ID техники привязанной к блоку (deprecated, используй technique_ids)
+  technique_ids?: string[]; // Массив ID техник привязанных к блоку
   meta_json?: Record<string, any> & AudioMetadata; // Дополнительные поля с типизацией для аудио
 }
 

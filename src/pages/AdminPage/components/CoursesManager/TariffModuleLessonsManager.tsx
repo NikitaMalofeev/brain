@@ -9,7 +9,7 @@ import {
   useDeleteModuleLesson,
 } from '@/lib/supabase/hooks/useModuleLessons';
 import { Lesson } from '@/lib/supabase/types';
-import { TariffTechniqueConfig } from '@/lib/supabase/hooks/useTariffConfiguration';
+import { ModuleInfo } from '@/lib/supabase/hooks/useSpecialBundles';
 import BlocksManager from '../BlocksManager/BlocksManager';
 
 const { TextArea } = Input;
@@ -22,7 +22,7 @@ interface ModuleLessonsManagerProps {
   courseId: string;
   moduleName: string;
   moduleDurationDays?: number;
-  moduleTechniques?: TariffTechniqueConfig[];
+  allModulesInfo?: ModuleInfo[]; // Информация о всех модулях для спец.пакетов
 }
 
 const ModuleLessonsManager: React.FC<ModuleLessonsManagerProps> = ({
@@ -32,7 +32,7 @@ const ModuleLessonsManager: React.FC<ModuleLessonsManagerProps> = ({
   courseId,
   moduleName,
   moduleDurationDays,
-  moduleTechniques,
+  allModulesInfo,
 }) => {
   const [lessonForm] = Form.useForm();
   const [lessonModalVisible, setLessonModalVisible] = useState(false);
@@ -248,8 +248,9 @@ const ModuleLessonsManager: React.FC<ModuleLessonsManagerProps> = ({
         lessonId={selectedLessonForBlocks.id}
         onBack={() => setSelectedLessonForBlocks(null)}
         streamModuleId={streamModuleId}
+        tariffStreamModuleId={tariffStreamModuleId}
         openDayOffset={selectedLessonForBlocks.open_day_offset}
-        moduleTechniques={moduleTechniques}
+        allModulesInfo={allModulesInfo}
       />
     );
   }

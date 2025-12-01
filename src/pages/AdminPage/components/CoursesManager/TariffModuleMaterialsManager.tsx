@@ -32,9 +32,13 @@ import {
 import {
   useSpecialBundles,
   useSpecialBundlePlacements,
+  useSpecialBundleTechniquesAcrossModules,
+  useAllSpecialBundlePlacementsForTariff,
   usePlaceSpecialBundle,
   useRemoveSpecialBundlePlacement,
   SpecialBundle,
+  SpecialBundleTechniqueAcrossModules,
+  ModuleInfo,
 } from '@/lib/supabase/hooks/useSpecialBundles';
 
 const { Text } = Typography;
@@ -61,6 +65,8 @@ interface TariffModuleMaterialsManagerProps {
   module: TariffModuleConfig;
   allMaterials: Material[];
   moduleDurationDays?: number; // Количество дней доступа к модулю
+  allTariffModuleIds: string[]; // Все ID модулей тарифа для проверки размещений спец.пакетов
+  allModulesInfo: ModuleInfo[]; // Информация о всех модулях для расчёта расположения техник
 }
 
 // Хук для получения материалов модуля тарифа
@@ -98,6 +104,8 @@ const TariffModuleMaterialsManager: React.FC<TariffModuleMaterialsManagerProps> 
   module,
   allMaterials,
   moduleDurationDays,
+  allTariffModuleIds,
+  allModulesInfo,
 }) => {
   const [draggedMaterial, setDraggedMaterial] = useState<Material | null>(null);
   const [draggedSpecialBundle, setDraggedSpecialBundle] = useState<SpecialBundle | null>(null);
@@ -110,7 +118,7 @@ const TariffModuleMaterialsManager: React.FC<TariffModuleMaterialsManagerProps> 
     bundleId: string;
     bundleName: string;
   } | null>(null);
-  const [unlockDay, setUnlockDay] = useState<number>(0);
+  const [unlockDay, setUnlockDay] = useState<number>(1);
   const [activeDays, setActiveDays] = useState<number | null>(null);
   const [customModuleDays, setCustomModuleDays] = useState<number>(14);
   const [expandedTechniqueId, setExpandedTechniqueId] = useState<string | null>(null);
@@ -125,23 +133,45 @@ const TariffModuleMaterialsManager: React.FC<TariffModuleMaterialsManagerProps> 
   // Специальные пакеты
   const { data: specialBundles } = useSpecialBundles();
   const { data: specialBundlePlacements } = useSpecialBundlePlacements(module.tariff_stream_module_id);
+  // Получаем техники спец.пакетов по ВСЕМ модулям с расчётом целевого модуля
+  const { data: allTechniquesAcrossModules } = useSpecialBundleTechniquesAcrossModules(allModulesInfo);
+  // Получаем размещения по ВСЕМ модулям тарифа для проверки, что пакет уже размещен
+  const { data: allTariffPlacements } = useAllSpecialBundlePlacementsForTariff(allTariffModuleIds);
   const placeSpecialBundleMutation = usePlaceSpecialBundle();
   const removeSpecialBundlePlacementMutation = useRemoveSpecialBundlePlacement();
 
-  // Доступные специальные пакеты (которые ещё не размещены в этом модуле)
+  // Доступные специальные пакеты (которые ещё не размещены НИ В ОДНОМ модуле тарифа)
   const availableSpecialBundles = useMemo(() => {
     if (!specialBundles) return [];
-    if (!specialBundlePlacements) return specialBundles;
-    const placedIds = new Set(specialBundlePlacements.map(p => p.special_bundle_id));
+    if (!allTariffPlacements) return specialBundles;
+    // Собираем ID всех размещённых пакетов по всему тарифу
+    const placedIds = new Set(allTariffPlacements.map(p => p.special_bundle_id));
     return specialBundles.filter(b => !placedIds.has(b.id));
-  }, [specialBundles, specialBundlePlacements]);
+  }, [specialBundles, allTariffPlacements]);
 
-  // Специальные пакеты сгруппированные по дням
+  // Техники спец.пакетов для ТЕКУЩЕГО модуля, сгруппированные по дням
+  // Если day_in_target_module = 0, считаем как день 1
+  const specialBundleTechniquesByDay = useMemo(() => {
+    if (!allTechniquesAcrossModules) return {};
+    const result: Record<number, SpecialBundleTechniqueAcrossModules[]> = {};
+    // Фильтруем только техники, которые должны отображаться в текущем модуле
+    for (const tech of allTechniquesAcrossModules) {
+      if (tech.target_module_id === module.tariff_stream_module_id) {
+        const day = tech.day_in_target_module || 1;
+        if (!result[day]) result[day] = [];
+        result[day].push(tech);
+      }
+    }
+    return result;
+  }, [allTechniquesAcrossModules, module.tariff_stream_module_id]);
+
+  // Карточки спец.пакетов (для отображения заголовка в дне старта - только для пакетов размещённых в ЭТОМ модуле)
+  // Если start_unlock_offset_days = 0, считаем как день 1
   const specialBundlesByDay = useMemo(() => {
     if (!specialBundlePlacements) return {};
     const result: Record<number, typeof specialBundlePlacements> = {};
     for (const placement of specialBundlePlacements) {
-      const day = placement.start_unlock_offset_days || 0;
+      const day = placement.start_unlock_offset_days || 1;
       if (!result[day]) result[day] = [];
       result[day].push(placement);
     }
@@ -169,18 +199,21 @@ const TariffModuleMaterialsManager: React.FC<TariffModuleMaterialsManagerProps> 
   }, [availableMaterials, searchQuery]);
 
   // Материалы сгруппированные по дням
+  // unlock_offset_days: старые данные могут быть 0-indexed, новые 1-indexed
+  // Если 0 - считаем как день 1
   const materialsByDay = useMemo(() => {
     if (!moduleMaterials) return {};
     const result: Record<number, TariffModuleMaterial[]> = {};
     for (const mm of moduleMaterials) {
-      const day = mm.unlock_offset_days || 0;
+      const day = mm.unlock_offset_days || 1;
       if (!result[day]) result[day] = [];
       result[day].push(mm);
     }
-    console.log('📅 [DEBUG] materialsByDay:', result);
-    console.log('📅 [DEBUG] scheduled materials count:', moduleMaterials.length);
+    console.log('📅 [TariffMaterialsGrid] tariff_stream_module_id:', module.tariff_stream_module_id);
+    console.log('📅 [TariffMaterialsGrid] materialsByDay:', result);
+    console.log('📅 [TariffMaterialsGrid] ALL moduleMaterials from DB:', moduleMaterials);
     return result;
-  }, [moduleMaterials]);
+  }, [moduleMaterials, module.tariff_stream_module_id]);
 
   const isMutating = addMaterialMutation.isPending || removeMaterialMutation.isPending ||
     placeSpecialBundleMutation.isPending || removeSpecialBundlePlacementMutation.isPending;
@@ -219,8 +252,8 @@ const TariffModuleMaterialsManager: React.FC<TariffModuleMaterialsManagerProps> 
 
   const handleConfirmAddSpecialBundle = async () => {
     if (!addSpecialBundleModal) return;
-    if (unlockDay < 0 || unlockDay >= moduleDaysCount) {
-      message.error(`День должен быть от 0 до ${moduleDaysCount - 1}`);
+    if (unlockDay < 1 || unlockDay > moduleDaysCount) {
+      message.error(`День должен быть от 1 до ${moduleDaysCount}`);
       return;
     }
     try {
@@ -231,7 +264,7 @@ const TariffModuleMaterialsManager: React.FC<TariffModuleMaterialsManagerProps> 
       });
       message.success('Специальный пакет размещён');
       setAddSpecialBundleModal(null);
-      setUnlockDay(0);
+      setUnlockDay(1);
     } catch (err: any) {
       message.error(err?.message || 'Ошибка при размещении');
     }
@@ -248,8 +281,8 @@ const TariffModuleMaterialsManager: React.FC<TariffModuleMaterialsManagerProps> 
 
   const handleConfirmAddMaterial = async () => {
     if (!addMaterialModal) return;
-    if (unlockDay < 0 || unlockDay >= moduleDaysCount) {
-      message.error(`День должен быть от 0 до ${moduleDaysCount - 1}`);
+    if (unlockDay < 1 || unlockDay > moduleDaysCount) {
+      message.error(`День должен быть от 1 до ${moduleDaysCount}`);
       return;
     }
     if (activeDays !== null && activeDays < 1) {
@@ -266,7 +299,7 @@ const TariffModuleMaterialsManager: React.FC<TariffModuleMaterialsManagerProps> 
       });
       message.success('Материал добавлен');
       setAddMaterialModal(null);
-      setUnlockDay(0);
+      setUnlockDay(1);
       setActiveDays(null);
     } catch (err: any) {
       message.error(err?.message || 'Ошибка при добавлении');
@@ -402,10 +435,11 @@ const TariffModuleMaterialsManager: React.FC<TariffModuleMaterialsManagerProps> 
                   gap: 8,
                 }}
               >
-                {Array.from({ length: moduleDaysCount }, (_, i) => i).map((day) => {
+                {Array.from({ length: moduleDaysCount }, (_, i) => i + 1).map((day) => {
                   const hasMaterials = materialsByDay[day]?.length > 0;
-                  const hasSpecialBundles = specialBundlesByDay[day]?.length > 0;
-                  const hasContent = hasMaterials || hasSpecialBundles;
+                  const hasSpecialBundleTechniques = specialBundleTechniquesByDay[day]?.length > 0;
+                  const hasSpecialBundleStart = specialBundlesByDay[day]?.length > 0;
+                  const hasContent = hasMaterials || hasSpecialBundleTechniques;
                   const isDragging = draggedMaterial || draggedSpecialBundle;
 
                   return (
@@ -436,7 +470,7 @@ const TariffModuleMaterialsManager: React.FC<TariffModuleMaterialsManagerProps> 
                     }}
                   >
                     <Text strong style={{ fontSize: 12 }}>
-                      День {day + 1}
+                      День {day}
                     </Text>
                     {/* Иконка удаления в правом верхнем углу */}
                     {hasMaterials && (
@@ -534,26 +568,26 @@ const TariffModuleMaterialsManager: React.FC<TariffModuleMaterialsManagerProps> 
                       );
                     })}
 
-                    {/* Специальные пакеты в этом дне */}
-                    {specialBundlesByDay[day]?.map((placement) => (
+                    {/* Заголовок спец.пакета (только в дне старта) с кнопкой удаления */}
+                    {hasSpecialBundleStart && specialBundlesByDay[day]?.map((placement) => (
                       <Card
-                        key={placement.id}
+                        key={`header-${placement.id}`}
                         size="small"
                         style={{
                           marginTop: 4,
-                          background: '#f9f0ff',
+                          background: '#722ed1',
                           borderColor: '#722ed1',
                         }}
-                        bodyStyle={{ padding: 8 }}
+                        bodyStyle={{ padding: 6 }}
                       >
                         <Space style={{ width: '100%', justifyContent: 'space-between' }}>
                           <Space size={4}>
-                            <GiftOutlined style={{ color: '#722ed1' }} />
+                            <GiftOutlined style={{ color: '#fff' }} />
                             <Text
                               style={{
-                                fontSize: 12,
-                                fontWeight: 500,
-                                color: '#722ed1',
+                                fontSize: 11,
+                                fontWeight: 600,
+                                color: '#fff',
                               }}
                             >
                               {placement.special_bundle?.name}
@@ -568,11 +602,56 @@ const TariffModuleMaterialsManager: React.FC<TariffModuleMaterialsManagerProps> 
                             <DeleteOutlined
                               style={{
                                 fontSize: 12,
-                                color: '#ff4d4f',
+                                color: '#fff',
                                 cursor: 'pointer',
                               }}
                             />
                           </Popconfirm>
+                        </Space>
+                      </Card>
+                    ))}
+
+                    {/* Техники спец.пакетов в этом дне */}
+                    {specialBundleTechniquesByDay[day]?.map((tech) => (
+                      <Card
+                        key={tech.id}
+                        size="small"
+                        style={{
+                          marginTop: 4,
+                          background: '#f9f0ff',
+                          borderColor: '#d3adf7',
+                        }}
+                        bodyStyle={{ padding: 8 }}
+                      >
+                        <Space direction="vertical" size={2} style={{ width: '100%' }}>
+                          <Space size={4}>
+                            <GiftOutlined style={{ color: '#722ed1', fontSize: 10 }} />
+                            <Text
+                              style={{
+                                fontSize: 10,
+                                color: '#722ed1',
+                              }}
+                            >
+                              {tech.special_bundle_name}
+                            </Text>
+                          </Space>
+                          <Space size={4}>
+                            {tech.technique?.material_type === 'audio' ? '🎵' : '🎬'}
+                            <Text
+                              ellipsis
+                              style={{
+                                fontSize: 12,
+                                maxWidth: 100,
+                                fontWeight: 500,
+                              }}
+                            >
+                              {tech.technique?.name}
+                            </Text>
+                          </Space>
+                          <Text type="secondary" style={{ fontSize: 10 }}>
+                            #{tech.technique_position}
+                            {tech.delay_days > 0 && ` (+${tech.delay_days} дн.)`}
+                          </Text>
                         </Space>
                       </Card>
                     ))}
@@ -592,7 +671,7 @@ const TariffModuleMaterialsManager: React.FC<TariffModuleMaterialsManagerProps> 
         onOk={handleConfirmAddSpecialBundle}
         onCancel={() => {
           setAddSpecialBundleModal(null);
-          setUnlockDay(0);
+          setUnlockDay(1);
         }}
         confirmLoading={isMutating}
         okText="Разместить"
@@ -629,7 +708,7 @@ const TariffModuleMaterialsManager: React.FC<TariffModuleMaterialsManagerProps> 
         onOk={handleConfirmAddMaterial}
         onCancel={() => {
           setAddMaterialModal(null);
-          setUnlockDay(0);
+          setUnlockDay(1);
           setActiveDays(null);
         }}
         confirmLoading={isMutating}
