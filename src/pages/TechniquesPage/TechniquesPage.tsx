@@ -243,10 +243,13 @@ const TechniquesPage: React.FC = () => {
               height="40"
               viewBox="0 0 40 40"
               fill="none"
+              shapeRendering="crispEdges"
               className="flex-shrink-0 self-end"
               style={{
                 display: 'block',
                 transform: activeTab === 'mine' ? 'scaleX(-1)' : 'none',
+                marginLeft: '-1px',
+                marginRight: '-1px',
               }}
             >
               {/* Тёмная часть - активный таб (слева) */}

@@ -83,14 +83,14 @@ export default function TechniqueBlockedModal({
             animate={{ y: 0 }}
             exit={{ y: '100%' }}
             transition={{ type: 'spring', damping: 30, stiffness: 300 }}
-            className="fixed left-0 right-0 z-50 flex flex-col items-center gap-4"
+            className="fixed left-0 right-0 bottom-0 z-50 flex flex-col items-center gap-4"
             style={{
-              bottom: `${bottomOffset}px`,
               background: '#0000007A',
               backdropFilter: 'blur(30px)',
               borderTopLeftRadius: '32px',
               borderTopRightRadius: '32px',
               padding: '20px',
+              paddingBottom: `${bottomOffset}px`,
             }}
             onClick={(e) => e.stopPropagation()}
           >
