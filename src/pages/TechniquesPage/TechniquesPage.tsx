@@ -216,7 +216,7 @@ const TechniquesPage: React.FC = () => {
           style={{ backdropFilter: 'blur(12px)' }}
         >
           {/* Табы внутри блока */}
-          <div className="flex items-end">
+          <div className="relative flex items-end">
             {/* Левый таб */}
             <button
               onClick={() => setActiveTab('all')}
@@ -237,26 +237,8 @@ const TechniquesPage: React.FC = () => {
               Все техники
             </button>
 
-            {/* SVG квадрат между табами - две дуги по формуле */}
-            {/* Увеличиваем ширину SVG на 2px (по 1px с каждой стороны) чтобы закрыть субпиксельные зазоры */}
-            <svg
-              width="42"
-              height="40"
-              viewBox="0 0 42 40"
-              fill="none"
-              className="flex-shrink-0 self-end"
-              style={{
-                display: 'block',
-                transform: activeTab === 'mine' ? 'scaleX(-1)' : 'none',
-                marginLeft: '-1px',
-                marginRight: '-1px',
-              }}
-            >
-              {/* Тёмная часть - активный таб (слева) - растянута на 1px влево */}
-              <path d="M41 40A26 26 0 0 1 21 20A26 26 0 0 0 1 0H0V40H41Z" fill="#0000004D" />
-              {/* Светлая часть - неактивный таб (справа) - растянута на 1px вправо */}
-              <path d="M41 40A26 26 0 0 1 21 20A26 26 0 0 0 1 0H42V40H41Z" fill="#FFFFFF33" />
-            </svg>
+            {/* Спейсер для SVG - занимает место в потоке */}
+            <div style={{ width: '40px', height: '40px', flexShrink: 0 }} />
 
             {/* Правый таб */}
             <button
@@ -277,6 +259,26 @@ const TechniquesPage: React.FC = () => {
             >
               Мои техники
             </button>
+
+            {/* SVG абсолютно позиционированный по центру, перекрывает границы табов */}
+            <svg
+              width="44"
+              height="40"
+              viewBox="0 0 44 40"
+              fill="none"
+              style={{
+                position: 'absolute',
+                left: '50%',
+                bottom: 0,
+                transform: `translateX(-50%)${activeTab === 'mine' ? ' scaleX(-1)' : ''}`,
+                pointerEvents: 'none',
+              }}
+            >
+              {/* Тёмная часть - активный таб (слева) */}
+              <path d="M42 40A26 26 0 0 1 22 20A26 26 0 0 0 2 0H0V40H42Z" fill="#0000004D" />
+              {/* Светлая часть - неактивный таб (справа) */}
+              <path d="M42 40A26 26 0 0 1 22 20A26 26 0 0 0 2 0H44V40H42Z" fill="#FFFFFF33" />
+            </svg>
           </div>
 
           {/* Контейнер для контента с заполнителем */}

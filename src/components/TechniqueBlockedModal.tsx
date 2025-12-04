@@ -1,4 +1,4 @@
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
 
 interface TechniqueBlockedModalProps {
@@ -24,6 +24,33 @@ export default function TechniqueBlockedModal({
   buttonText = 'Купить',
   onButtonClick,
 }: TechniqueBlockedModalProps) {
+  const [bottomOffset, setBottomOffset] = useState(80); // 60px TabBar + 20px padding
+
+  // Получаем safe-area-bottom из CSS переменной или из Telegram SDK
+  useEffect(() => {
+    const updateBottomOffset = () => {
+      // Пробуем получить из CSS переменной
+      const cssVar = getComputedStyle(document.documentElement).getPropertyValue('--safe-area-bottom').trim();
+      const safeAreaFromCSS = cssVar ? parseInt(cssVar, 10) : 0;
+
+      // Пробуем получить из Telegram WebApp
+      const tgSafeArea = (window as any).Telegram?.WebApp?.safeAreaInset?.bottom || 0;
+      const tgContentSafeArea = (window as any).Telegram?.WebApp?.contentSafeAreaInset?.bottom || 0;
+
+      // Берём максимальное значение из всех источников
+      const safeArea = Math.max(safeAreaFromCSS, tgSafeArea, tgContentSafeArea);
+
+      // 60px TabBar + 20px базовый padding + safe-area
+      setBottomOffset(60 + 20 + safeArea);
+    };
+
+    updateBottomOffset();
+
+    // Слушаем изменения viewport
+    window.addEventListener('resize', updateBottomOffset);
+    return () => window.removeEventListener('resize', updateBottomOffset);
+  }, []);
+
   // Блокируем скролл body при открытии модалки
   useEffect(() => {
     if (isOpen) {
@@ -63,7 +90,7 @@ export default function TechniqueBlockedModal({
               borderTopLeftRadius: '32px',
               borderTopRightRadius: '32px',
               padding: '20px',
-              paddingBottom: 'calc(60px + 20px + var(--safe-area-bottom, 0px))',
+              paddingBottom: `${bottomOffset}px`,
             }}
             onClick={(e) => e.stopPropagation()}
           >
