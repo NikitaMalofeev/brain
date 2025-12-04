@@ -26,29 +26,47 @@ export default function TechniqueBlockedModal({
 }: TechniqueBlockedModalProps) {
   const [bottomOffset, setBottomOffset] = useState(80); // 60px TabBar + 20px padding
 
-  // Получаем safe-area-bottom из CSS переменной или из Telegram SDK
+  // Получаем safe-area-bottom из CSS переменной (устанавливается AppWrapper через события Telegram)
   useEffect(() => {
     const updateBottomOffset = () => {
-      // Пробуем получить из CSS переменной
+      // Получаем из CSS переменной (устанавливается AppWrapper)
       const cssVar = getComputedStyle(document.documentElement).getPropertyValue('--safe-area-bottom').trim();
-      const safeAreaFromCSS = cssVar ? parseInt(cssVar, 10) : 0;
-
-      // Пробуем получить из Telegram WebApp
-      const tgSafeArea = (window as any).Telegram?.WebApp?.safeAreaInset?.bottom || 0;
-      const tgContentSafeArea = (window as any).Telegram?.WebApp?.contentSafeAreaInset?.bottom || 0;
-
-      // Берём максимальное значение из всех источников
-      const safeArea = Math.max(safeAreaFromCSS, tgSafeArea, tgContentSafeArea);
+      const safeAreaFromCSS = cssVar ? parseInt(cssVar, 10) || 0 : 0;
 
       // 60px TabBar + 20px базовый padding + safe-area
-      setBottomOffset(60 + 20 + safeArea);
+      setBottomOffset(60 + 20 + safeAreaFromCSS);
     };
 
     updateBottomOffset();
 
-    // Слушаем изменения viewport
+    // Слушаем те же события что и AppWrapper для обновления safe-area
+    const handleSafeAreaEvent = (event: MessageEvent) => {
+      try {
+        if (!event.data) return;
+        const data = typeof event.data === 'string' ? JSON.parse(event.data) : event.data;
+        if (data.eventType === 'safe_area_changed' && data.eventData) {
+          const bottom = data.eventData.bottom;
+          if (typeof bottom === 'number') {
+            setBottomOffset(60 + 20 + bottom);
+          }
+        }
+      } catch {
+        // Ignore parsing errors
+      }
+    };
+
+    window.addEventListener('message', handleSafeAreaEvent);
     window.addEventListener('resize', updateBottomOffset);
-    return () => window.removeEventListener('resize', updateBottomOffset);
+
+    // Проверяем периодически на случай если событие уже прошло
+    const intervalId = setInterval(updateBottomOffset, 1000);
+    setTimeout(() => clearInterval(intervalId), 5000); // Останавливаем через 5 секунд
+
+    return () => {
+      window.removeEventListener('message', handleSafeAreaEvent);
+      window.removeEventListener('resize', updateBottomOffset);
+      clearInterval(intervalId);
+    };
   }, []);
 
   // Блокируем скролл body при открытии модалки

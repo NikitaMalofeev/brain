@@ -128,9 +128,9 @@ const TechniquesPage: React.FC = () => {
     if (technique.unlock_condition_type === 'after_duration' && technique.unlock_condition_value) {
       const durationDays = technique.unlock_condition_value.duration_days || 0;
       const durationText = durationDays === 30 ? '1 месяц' :
-                          durationDays === 60 ? '2 месяца' :
-                          durationDays === 90 ? '3 месяца' :
-                          `${durationDays} дней`;
+        durationDays === 60 ? '2 месяца' :
+          durationDays === 90 ? '3 месяца' :
+            `${durationDays} дней`;
       setModalDescription(`Становится доступной к покупке через ${durationText} после регистрации в программе`);
       return;
     }
@@ -238,7 +238,7 @@ const TechniquesPage: React.FC = () => {
             </button>
 
             {/* Спейсер для SVG - занимает место в потоке */}
-            <div style={{ width: '40px', height: '40px', flexShrink: 0 }} />
+            <div style={{ width: '44px', height: '40px', flexShrink: 0 }} />
 
             {/* Правый таб */}
             <button
@@ -315,261 +315,261 @@ const TechniquesPage: React.FC = () => {
                 <motion.div
                   key={activeTab}
                   initial={{ opacity: 0, y: 10 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, y: -10 }}
-                transition={{ duration: 0.2 }}
-              >
-                {loading ? (
-                  <div className="flex items-center justify-center h-full min-h-[300px]">
-                    <LoadingSpinner size={64} />
-                  </div>
-                ) : error ? (
-                  <div className="flex items-center justify-center h-full min-h-[300px]">
-                    <div className="text-center">
-                      <p className="text-sm text-red-300">Ошибка загрузки техник</p>
-                      <p className="text-xs text-white/60 mt-1">{error.message}</p>
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: -10 }}
+                  transition={{ duration: 0.2 }}
+                >
+                  {loading ? (
+                    <div className="flex items-center justify-center h-full min-h-[300px]">
+                      <LoadingSpinner size={64} />
                     </div>
-                  </div>
-                ) : (activeTab === 'mine' && (isGuest ? (bundleGroups.length === 0 && myFreeTechniques.length === 0) : (myTechniques.length === 0 && bundleGroups.length === 0 && availableSpecialTechniques.length === 0 && myFreeTechniques.length === 0 && moduleTechniques.length === 0))) ? (
-                  <div className="flex items-center justify-center h-full min-h-[300px]">
-                    <div className="text-center">
-                      <p className="text-sm text-white/60">
-                        {isGuest && 'Станьте учеником, чтобы получить доступ к техникам'}
-                        {!isGuest && 'У вас пока нет техник'}
-                      </p>
-                    </div>
-                  </div>
-                ) : (
-                  <div className="flex flex-col gap-4">
-                    {activeTab === 'all' ? (
-                      <>
-                        {/* Секция "Мои" - техники к которым есть доступ (включая обычные пакеты, модули и ВСЕ техники из специальных пакетов) */}
-                        {/* Для гостей: показываем только обычные пакеты (bundleGroups), скрываем модули и специальные пакеты */}
-                        {!isGuest && (myTechniques.length > 0 || bundleGroups.length > 0 || moduleTechniques.length > 0 || userSpecialBundleTechniques && userSpecialBundleTechniques.length > 0) && (
-                          <div>
-                            <h2 className="text-[20px] font-semibold text-white mb-3 leading-none tracking-normal">Мои</h2>
-                            <div className="flex flex-col gap-3">
-                              {/* Обычные техники (исключая те, что в спец.пакетах) */}
-                              {myTechniques.filter(t => !specialBundleTechniqueIds.has(t.id)).map((technique) => (
-                                <TechniqueCard
-                                  key={technique.id}
-                                  technique={technique}
-                                  onClick={() => handleTechniqueClick(technique.id)}
-                                />
-                              ))}
-                              {/* Техники из обычных пакетов (исключая те, что в спец.пакетах) */}
-                              {bundleGroups.flatMap((bundle) => bundle.techniques).filter(t => !specialBundleTechniqueIds.has(t.id)).map((technique) => (
-                                <TechniqueCard
-                                  key={technique.id}
-                                  technique={technique}
-                                  onClick={() => handleTechniqueClick(technique.id)}
-                                />
-                              ))}
-                              {/* Техники из модулей (исключая те, что в спец.пакетах) */}
-                              {moduleTechniques.filter(t => !specialBundleTechniqueIds.has(t.id)).map((technique) => (
-                                <TechniqueCard
-                                  key={`module-${technique.id}`}
-                                  technique={technique}
-                                  onClick={() => handleTechniqueClick(technique.id)}
-                                />
-                              ))}
-                              {/* ВСЕ техники из специальных пакетов (доступные и заблокированные) */}
-                              {userSpecialBundleTechniques?.map((tech) => (
-                                <TechniqueCard
-                                  key={`special-${tech.technique_id}`}
-                                  technique={{
-                                    id: tech.technique_id,
-                                    title: tech.technique_name,
-                                    description: tech.technique_description,
-                                    cover_image: tech.technique_cover,
-                                    has_access: tech.is_available,
-                                    is_unlocked: tech.is_time_unlocked,
-                                    can_purchase: false,
-                                    status: 'paid',
-                                  } as TechniqueWithAccess}
-                                  onClick={() => {
-                                    if (tech.is_available) {
-                                      navigate(`/techniques/${tech.technique_id}`);
-                                    } else {
-                                      const isFirstTechnique = tech.technique_position === 1;
-                                      setModalTitle(`Техника «${tech.technique_name}» недоступна`);
-                                      setModalDescription(
-                                        !tech.is_time_unlocked
-                                          ? `Откроется ${new Date(tech.unlock_date).toLocaleDateString('ru-RU')}${tech.previous_technique_name ? ` после техники «${tech.previous_technique_name}»` : ''}${!isFirstTechnique ? ' и оплаты' : ''}.`
-                                          : !tech.is_paid
-                                          ? `Время ожидания прошло, требуется оплата для доступа.`
-                                          : ``
-                                      );
-                                      setShowBlockedModal(true);
-                                    }
-                                  }}
-                                />
-                              ))}
-                            </div>
-                          </div>
-                        )}
-
-                        {/* Секция "Мои" для гостей - только обычные пакеты */}
-                        {isGuest && bundleGroups.length > 0 && (
-                          <div>
-                            <h2 className="text-[20px] font-semibold text-white mb-3 leading-none tracking-normal">Мои</h2>
-                            <div className="flex flex-col gap-3">
-                              {bundleGroups.flatMap((bundle) => bundle.techniques).map((technique) => (
-                                <TechniqueCard
-                                  key={technique.id}
-                                  technique={technique}
-                                  onClick={() => handleTechniqueClick(technique.id)}
-                                />
-                              ))}
-                            </div>
-                          </div>
-                        )}
-
-                        {/* Секция "К покупке" - платные техники доступные к покупке */}
-                        {availableTechniques.length > 0 && (
-                          <div>
-                            <h2 className="text-[20px] font-semibold text-white mb-3 leading-none tracking-normal">К покупке</h2>
-                            <div className="flex flex-col gap-3">
-                              {availableTechniques.map((technique) => (
-                                <TechniqueCard
-                                  key={technique.id}
-                                  technique={technique}
-                                  onClick={() => handleTechniqueClick(technique.id)}
-                                  isGuest={isGuest}
-                                />
-                              ))}
-                            </div>
-                          </div>
-                        )}
-
-                        {/* Секция "Бесплатные" */}
-                        {freeTechniques.length > 0 && (
-                          <div>
-                            <h2 className="text-[20px] font-semibold text-white mb-3 leading-none tracking-normal">Бесплатные</h2>
-                            <div className="flex flex-col gap-3">
-                              {freeTechniques.map((technique) => (
-                                <TechniqueCard
-                                  key={technique.id}
-                                  technique={technique}
-                                  onClick={() => handleTechniqueClick(technique.id)}
-                                />
-                              ))}
-                            </div>
-                          </div>
-                        )}
-
-                        {/* Если нет ни одной техники */}
-                        {(isGuest
-                          ? (bundleGroups.length === 0 && availableTechniques.length === 0 && freeTechniques.length === 0)
-                          : (myTechniques.length === 0 && bundleGroups.length === 0 && moduleTechniques.length === 0 && availableTechniques.length === 0 && freeTechniques.length === 0 && (!userSpecialBundleTechniques || userSpecialBundleTechniques.length === 0))
-                        ) && (
-                          <div className="flex items-center justify-center h-full min-h-[300px]">
-                            <p className="text-sm text-white/60">Нет доступных техник</p>
-                          </div>
-                        )}
-                      </>
-                    ) : (
-                      /* Таб "Мои техники" - только доступные техники */
-                      <div className="flex flex-col gap-4">
-                        {/* Секция "Мои" для учеников - техники с прямым доступом, из пакетов, модулей и доступные из спец.пакетов */}
-                        {!isGuest && (myTechniques.length > 0 || bundleGroups.length > 0 || availableSpecialTechniques.length > 0 || moduleTechniques.length > 0) && (
-                          <div>
-                            <h2 className="text-[20px] font-semibold text-white mb-3 leading-none tracking-normal">Мои</h2>
-                            <div className="flex flex-col gap-3">
-                              {/* Обычные техники (исключая те, что в спец.пакетах) */}
-                              {myTechniques.filter(t => !specialBundleTechniqueIds.has(t.id)).map((technique) => (
-                                <TechniqueCard
-                                  key={technique.id}
-                                  technique={technique}
-                                  onClick={() => handleTechniqueClick(technique.id)}
-                                />
-                              ))}
-                              {/* Техники из обычных пакетов (исключая те, что в спец.пакетах) */}
-                              {bundleGroups.flatMap((bundle) => bundle.techniques).filter(t => !specialBundleTechniqueIds.has(t.id)).map((technique) => (
-                                <TechniqueCard
-                                  key={technique.id}
-                                  technique={technique}
-                                  onClick={() => handleTechniqueClick(technique.id)}
-                                />
-                              ))}
-                              {/* Доступные техники из специальных пакетов (оплачены и разблокированы) */}
-                              {availableSpecialTechniques.map((tech) => (
-                                <TechniqueCard
-                                  key={`special-mine-${tech.technique_id}`}
-                                  technique={{
-                                    id: tech.technique_id,
-                                    title: tech.technique_name,
-                                    description: tech.technique_description,
-                                    cover_image: tech.technique_cover,
-                                    has_access: true,
-                                    is_unlocked: true,
-                                    can_purchase: false,
-                                    status: 'paid',
-                                  } as TechniqueWithAccess}
-                                  onClick={() => navigate(`/techniques/${tech.technique_id}`)}
-                                />
-                              ))}
-                              {/* Техники из модулей (исключая те, что в спец.пакетах) */}
-                              {moduleTechniques.filter(t => !specialBundleTechniqueIds.has(t.id)).map((technique) => (
-                                <TechniqueCard
-                                  key={`module-mine-${technique.id}`}
-                                  technique={technique}
-                                  onClick={() => handleTechniqueClick(technique.id)}
-                                />
-                              ))}
-                            </div>
-                          </div>
-                        )}
-
-                        {/* Секция "Мои" для гостей - только обычные пакеты */}
-                        {isGuest && bundleGroups.length > 0 && (
-                          <div>
-                            <h2 className="text-[20px] font-semibold text-white mb-3 leading-none tracking-normal">Мои</h2>
-                            <div className="flex flex-col gap-3">
-                              {bundleGroups.flatMap((bundle) => bundle.techniques).map((technique) => (
-                                <TechniqueCard
-                                  key={technique.id}
-                                  technique={technique}
-                                  onClick={() => handleTechniqueClick(technique.id)}
-                                />
-                              ))}
-                            </div>
-                          </div>
-                        )}
-
-                        {/* Секция "Бесплатные" */}
-                        {myFreeTechniques.length > 0 && (
-                          <div>
-                            <h2 className="text-[20px] font-semibold text-white mb-3 leading-none tracking-normal">Бесплатные</h2>
-                            <div className="flex flex-col gap-3">
-                              {myFreeTechniques.map((technique) => (
-                                <TechniqueCard
-                                  key={technique.id}
-                                  technique={technique}
-                                  onClick={() => handleTechniqueClick(technique.id)}
-                                />
-                              ))}
-                            </div>
-                          </div>
-                        )}
-
-                        {/* Если нет ни одной техники */}
-                        {(isGuest
-                          ? (bundleGroups.length === 0 && myFreeTechniques.length === 0)
-                          : (myTechniques.length === 0 && bundleGroups.length === 0 && availableSpecialTechniques.length === 0 && moduleTechniques.length === 0 && myFreeTechniques.length === 0)
-                        ) && (
-                          <div className="flex items-center justify-center h-full min-h-[300px]">
-                            <p className="text-sm text-white/60">
-                              {isGuest ? 'Станьте учеником, чтобы получить доступ к техникам' : 'У вас пока нет техник'}
-                            </p>
-                          </div>
-                        )}
+                  ) : error ? (
+                    <div className="flex items-center justify-center h-full min-h-[300px]">
+                      <div className="text-center">
+                        <p className="text-sm text-red-300">Ошибка загрузки техник</p>
+                        <p className="text-xs text-white/60 mt-1">{error.message}</p>
                       </div>
-                    )}
-                  </div>
-                )}
-              </motion.div>
-            </AnimatePresence>
+                    </div>
+                  ) : (activeTab === 'mine' && (isGuest ? (bundleGroups.length === 0 && myFreeTechniques.length === 0) : (myTechniques.length === 0 && bundleGroups.length === 0 && availableSpecialTechniques.length === 0 && myFreeTechniques.length === 0 && moduleTechniques.length === 0))) ? (
+                    <div className="flex items-center justify-center h-full min-h-[300px]">
+                      <div className="text-center">
+                        <p className="text-sm text-white/60">
+                          {isGuest && 'Станьте учеником, чтобы получить доступ к техникам'}
+                          {!isGuest && 'У вас пока нет техник'}
+                        </p>
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="flex flex-col gap-4">
+                      {activeTab === 'all' ? (
+                        <>
+                          {/* Секция "Мои" - техники к которым есть доступ (включая обычные пакеты, модули и ВСЕ техники из специальных пакетов) */}
+                          {/* Для гостей: показываем только обычные пакеты (bundleGroups), скрываем модули и специальные пакеты */}
+                          {!isGuest && (myTechniques.length > 0 || bundleGroups.length > 0 || moduleTechniques.length > 0 || userSpecialBundleTechniques && userSpecialBundleTechniques.length > 0) && (
+                            <div>
+                              <h2 className="text-[20px] font-semibold text-white mb-3 leading-none tracking-normal">Мои</h2>
+                              <div className="flex flex-col gap-3">
+                                {/* Обычные техники (исключая те, что в спец.пакетах) */}
+                                {myTechniques.filter(t => !specialBundleTechniqueIds.has(t.id)).map((technique) => (
+                                  <TechniqueCard
+                                    key={technique.id}
+                                    technique={technique}
+                                    onClick={() => handleTechniqueClick(technique.id)}
+                                  />
+                                ))}
+                                {/* Техники из обычных пакетов (исключая те, что в спец.пакетах) */}
+                                {bundleGroups.flatMap((bundle) => bundle.techniques).filter(t => !specialBundleTechniqueIds.has(t.id)).map((technique) => (
+                                  <TechniqueCard
+                                    key={technique.id}
+                                    technique={technique}
+                                    onClick={() => handleTechniqueClick(technique.id)}
+                                  />
+                                ))}
+                                {/* Техники из модулей (исключая те, что в спец.пакетах) */}
+                                {moduleTechniques.filter(t => !specialBundleTechniqueIds.has(t.id)).map((technique) => (
+                                  <TechniqueCard
+                                    key={`module-${technique.id}`}
+                                    technique={technique}
+                                    onClick={() => handleTechniqueClick(technique.id)}
+                                  />
+                                ))}
+                                {/* ВСЕ техники из специальных пакетов (доступные и заблокированные) */}
+                                {userSpecialBundleTechniques?.map((tech) => (
+                                  <TechniqueCard
+                                    key={`special-${tech.technique_id}`}
+                                    technique={{
+                                      id: tech.technique_id,
+                                      title: tech.technique_name,
+                                      description: tech.technique_description,
+                                      cover_image: tech.technique_cover,
+                                      has_access: tech.is_available,
+                                      is_unlocked: tech.is_time_unlocked,
+                                      can_purchase: false,
+                                      status: 'paid',
+                                    } as TechniqueWithAccess}
+                                    onClick={() => {
+                                      if (tech.is_available) {
+                                        navigate(`/techniques/${tech.technique_id}`);
+                                      } else {
+                                        const isFirstTechnique = tech.technique_position === 1;
+                                        setModalTitle(`Техника «${tech.technique_name}» недоступна`);
+                                        setModalDescription(
+                                          !tech.is_time_unlocked
+                                            ? `Откроется ${new Date(tech.unlock_date).toLocaleDateString('ru-RU')}${tech.previous_technique_name ? ` после техники «${tech.previous_technique_name}»` : ''}${!isFirstTechnique ? ' и оплаты' : ''}.`
+                                            : !tech.is_paid
+                                              ? `Время ожидания прошло, требуется оплата для доступа.`
+                                              : ``
+                                        );
+                                        setShowBlockedModal(true);
+                                      }
+                                    }}
+                                  />
+                                ))}
+                              </div>
+                            </div>
+                          )}
+
+                          {/* Секция "Мои" для гостей - только обычные пакеты */}
+                          {isGuest && bundleGroups.length > 0 && (
+                            <div>
+                              <h2 className="text-[20px] font-semibold text-white mb-3 leading-none tracking-normal">Мои</h2>
+                              <div className="flex flex-col gap-3">
+                                {bundleGroups.flatMap((bundle) => bundle.techniques).map((technique) => (
+                                  <TechniqueCard
+                                    key={technique.id}
+                                    technique={technique}
+                                    onClick={() => handleTechniqueClick(technique.id)}
+                                  />
+                                ))}
+                              </div>
+                            </div>
+                          )}
+
+                          {/* Секция "К покупке" - платные техники доступные к покупке */}
+                          {availableTechniques.length > 0 && (
+                            <div>
+                              <h2 className="text-[20px] font-semibold text-white mb-3 leading-none tracking-normal">К покупке</h2>
+                              <div className="flex flex-col gap-3">
+                                {availableTechniques.map((technique) => (
+                                  <TechniqueCard
+                                    key={technique.id}
+                                    technique={technique}
+                                    onClick={() => handleTechniqueClick(technique.id)}
+                                    isGuest={isGuest}
+                                  />
+                                ))}
+                              </div>
+                            </div>
+                          )}
+
+                          {/* Секция "Бесплатные" */}
+                          {freeTechniques.length > 0 && (
+                            <div>
+                              <h2 className="text-[20px] font-semibold text-white mb-3 leading-none tracking-normal">Бесплатные</h2>
+                              <div className="flex flex-col gap-3">
+                                {freeTechniques.map((technique) => (
+                                  <TechniqueCard
+                                    key={technique.id}
+                                    technique={technique}
+                                    onClick={() => handleTechniqueClick(technique.id)}
+                                  />
+                                ))}
+                              </div>
+                            </div>
+                          )}
+
+                          {/* Если нет ни одной техники */}
+                          {(isGuest
+                            ? (bundleGroups.length === 0 && availableTechniques.length === 0 && freeTechniques.length === 0)
+                            : (myTechniques.length === 0 && bundleGroups.length === 0 && moduleTechniques.length === 0 && availableTechniques.length === 0 && freeTechniques.length === 0 && (!userSpecialBundleTechniques || userSpecialBundleTechniques.length === 0))
+                          ) && (
+                              <div className="flex items-center justify-center h-full min-h-[300px]">
+                                <p className="text-sm text-white/60">Нет доступных техник</p>
+                              </div>
+                            )}
+                        </>
+                      ) : (
+                        /* Таб "Мои техники" - только доступные техники */
+                        <div className="flex flex-col gap-4">
+                          {/* Секция "Мои" для учеников - техники с прямым доступом, из пакетов, модулей и доступные из спец.пакетов */}
+                          {!isGuest && (myTechniques.length > 0 || bundleGroups.length > 0 || availableSpecialTechniques.length > 0 || moduleTechniques.length > 0) && (
+                            <div>
+                              <h2 className="text-[20px] font-semibold text-white mb-3 leading-none tracking-normal">Мои</h2>
+                              <div className="flex flex-col gap-3">
+                                {/* Обычные техники (исключая те, что в спец.пакетах) */}
+                                {myTechniques.filter(t => !specialBundleTechniqueIds.has(t.id)).map((technique) => (
+                                  <TechniqueCard
+                                    key={technique.id}
+                                    technique={technique}
+                                    onClick={() => handleTechniqueClick(technique.id)}
+                                  />
+                                ))}
+                                {/* Техники из обычных пакетов (исключая те, что в спец.пакетах) */}
+                                {bundleGroups.flatMap((bundle) => bundle.techniques).filter(t => !specialBundleTechniqueIds.has(t.id)).map((technique) => (
+                                  <TechniqueCard
+                                    key={technique.id}
+                                    technique={technique}
+                                    onClick={() => handleTechniqueClick(technique.id)}
+                                  />
+                                ))}
+                                {/* Доступные техники из специальных пакетов (оплачены и разблокированы) */}
+                                {availableSpecialTechniques.map((tech) => (
+                                  <TechniqueCard
+                                    key={`special-mine-${tech.technique_id}`}
+                                    technique={{
+                                      id: tech.technique_id,
+                                      title: tech.technique_name,
+                                      description: tech.technique_description,
+                                      cover_image: tech.technique_cover,
+                                      has_access: true,
+                                      is_unlocked: true,
+                                      can_purchase: false,
+                                      status: 'paid',
+                                    } as TechniqueWithAccess}
+                                    onClick={() => navigate(`/techniques/${tech.technique_id}`)}
+                                  />
+                                ))}
+                                {/* Техники из модулей (исключая те, что в спец.пакетах) */}
+                                {moduleTechniques.filter(t => !specialBundleTechniqueIds.has(t.id)).map((technique) => (
+                                  <TechniqueCard
+                                    key={`module-mine-${technique.id}`}
+                                    technique={technique}
+                                    onClick={() => handleTechniqueClick(technique.id)}
+                                  />
+                                ))}
+                              </div>
+                            </div>
+                          )}
+
+                          {/* Секция "Мои" для гостей - только обычные пакеты */}
+                          {isGuest && bundleGroups.length > 0 && (
+                            <div>
+                              <h2 className="text-[20px] font-semibold text-white mb-3 leading-none tracking-normal">Мои</h2>
+                              <div className="flex flex-col gap-3">
+                                {bundleGroups.flatMap((bundle) => bundle.techniques).map((technique) => (
+                                  <TechniqueCard
+                                    key={technique.id}
+                                    technique={technique}
+                                    onClick={() => handleTechniqueClick(technique.id)}
+                                  />
+                                ))}
+                              </div>
+                            </div>
+                          )}
+
+                          {/* Секция "Бесплатные" */}
+                          {myFreeTechniques.length > 0 && (
+                            <div>
+                              <h2 className="text-[20px] font-semibold text-white mb-3 leading-none tracking-normal">Бесплатные</h2>
+                              <div className="flex flex-col gap-3">
+                                {myFreeTechniques.map((technique) => (
+                                  <TechniqueCard
+                                    key={technique.id}
+                                    technique={technique}
+                                    onClick={() => handleTechniqueClick(technique.id)}
+                                  />
+                                ))}
+                              </div>
+                            </div>
+                          )}
+
+                          {/* Если нет ни одной техники */}
+                          {(isGuest
+                            ? (bundleGroups.length === 0 && myFreeTechniques.length === 0)
+                            : (myTechniques.length === 0 && bundleGroups.length === 0 && availableSpecialTechniques.length === 0 && moduleTechniques.length === 0 && myFreeTechniques.length === 0)
+                          ) && (
+                              <div className="flex items-center justify-center h-full min-h-[300px]">
+                                <p className="text-sm text-white/60">
+                                  {isGuest ? 'Станьте учеником, чтобы получить доступ к техникам' : 'У вас пока нет техник'}
+                                </p>
+                              </div>
+                            )}
+                        </div>
+                      )}
+                    </div>
+                  )}
+                </motion.div>
+              </AnimatePresence>
             </div>
           </div>
         </div>
