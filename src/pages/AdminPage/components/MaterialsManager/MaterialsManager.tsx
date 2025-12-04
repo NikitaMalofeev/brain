@@ -1297,16 +1297,6 @@ const MaterialsManager: React.FC = () => {
                                     </select>
                                 </div>
 
-                                <div className="form-group">
-                                    <label>Дата открытия *</label>
-                                    <input
-                                        type="date"
-                                        className="admin-input"
-                                        value={materialForm.release_date}
-                                        onChange={(e) => setMaterialForm({ ...materialForm, release_date: e.target.value })}
-                                        required
-                                    />
-                                </div>
                             </div>
 
                             {/* Поля от techniques */}

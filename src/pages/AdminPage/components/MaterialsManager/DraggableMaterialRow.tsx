@@ -141,14 +141,6 @@ const DraggableMaterialRow: React.FC<DraggableMaterialRowProps> = ({
                     ✏️
                 </button>
                 <button
-                    className="action-btn"
-                    onClick={() => onManageBlocks(material)}
-                    title="Управление блоками"
-                    style={{ background: 'rgba(75, 181, 67, 0.1)', color: '#4BB543' }}
-                >
-                    📋
-                </button>
-                <button
                     className="action-btn delete-btn"
                     onClick={() => onDelete(material)}
                     title="Удалить материал"

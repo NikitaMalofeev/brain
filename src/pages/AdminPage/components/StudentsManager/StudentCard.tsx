@@ -1175,23 +1175,6 @@ const StudentCard: React.FC<StudentCardProps> = ({ studentId, onBack, currentUse
                 <progress value={progressStats.completedLessons} max={progressStats.totalLessonsInCourse || 1} />
             </div>
 
-            <div className="admin-card">
-                <h3>Массовые операции</h3>
-                <button
-                    className="admin-button mr-2"
-                    onClick={handleBulkComplete}
-                    disabled={bulkLoading || loading}
-                >
-                    {bulkLoading ? 'Выполняется...' : 'Отметить все как пройденные'}
-                </button>
-                <button
-                    className="admin-button"
-                    onClick={handleBulkReset}
-                    disabled={bulkLoading || loading}
-                >
-                    {bulkLoading ? 'Выполняется...' : 'Снять все отметки'}
-                </button>
-            </div>
 
             {
                 Object.entries(lessonsByStage).map(([stageName, lessons]) => (

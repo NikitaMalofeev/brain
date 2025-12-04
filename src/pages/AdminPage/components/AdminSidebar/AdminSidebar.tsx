@@ -8,15 +8,12 @@ import {
   MessageOutlined,
   LogoutOutlined,
   ReadOutlined,
-  AimOutlined,
   CalendarOutlined,
   BuildOutlined,
   DollarOutlined,
   UserOutlined,
   SolutionOutlined,
   QuestionCircleOutlined,
-  VideoCameraOutlined,
-  KeyOutlined,
   ScheduleOutlined,
   InboxOutlined,
   GiftOutlined,
@@ -44,9 +41,7 @@ export type AdminSection =
   // Коммуникации
   | 'chats'
   | 'faq'
-  | 'broadcasts'
   // Система
-  | 'tokens'
   | 'calendar';
 
 interface AdminSidebarProps {
@@ -94,14 +89,12 @@ const AdminSidebar: React.FC<AdminSidebarProps> = ({
     getItem('Пользователи', 'users', <TeamOutlined />, [
       getItem('Ученики', 'students', <UserOutlined />),
       getItem('Кураторы', 'curators', <SolutionOutlined />),
-      getItem('Доступы', 'tokens', <KeyOutlined />),
     ]),
     getItem('Проверка ДЗ', 'submissions', <CheckSquareOutlined />),
     getItem('События', 'calendar', <ScheduleOutlined />),
     getItem('Коммуникации', 'communications', <MessageOutlined />, [
       getItem('Чаты', 'chats', <MessageOutlined />),
       getItem('FAQ', 'faq', <QuestionCircleOutlined />),
-      getItem('Эфиры', 'broadcasts', <VideoCameraOutlined />),
     ]),
   ];
 
@@ -119,8 +112,7 @@ const AdminSidebar: React.FC<AdminSidebarProps> = ({
     // Проверяем что это конечный пункт меню (не группа)
     const validSections: AdminSection[] = [
       'courses', 'materials', 'bundles', 'special-bundles', 'streams', 'modules', 'tariffs',
-      'students', 'curators', 'submissions', 'chats', 'faq', 'broadcasts',
-      'tokens', 'calendar'
+      'students', 'curators', 'submissions', 'chats', 'faq', 'calendar'
     ];
 
     if (validSections.includes(e.key as AdminSection)) {
@@ -143,8 +135,6 @@ const AdminSidebar: React.FC<AdminSidebarProps> = ({
       submissions: '',
       chats: 'communications',
       faq: 'communications',
-      broadcasts: 'communications',
-      tokens: 'users',
       calendar: '',
     };
     const group = sectionToGroup[currentSection];
