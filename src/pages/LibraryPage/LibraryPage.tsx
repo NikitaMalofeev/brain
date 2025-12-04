@@ -118,8 +118,14 @@ const LibraryPage: React.FC = () => {
                     </svg>
                 </div>
             </div>
-            <div className={'relative min-h-screen overflow-hidden bg-[url("/bg2.jpg")] bg-cover'}>
-                <div className={'flex flex-col gap-3 items-center py-6 pt-4'}>
+            <div className={'relative min-h-screen overflow-hidden'}>
+                {/* Фоновое изображение с blur */}
+                <div
+                    className={'absolute inset-0 bg-[url("/bg2.jpg")] bg-cover'}
+                    style={{ filter: 'blur(12px)', transform: 'scale(1.05)' }}
+                />
+                {/* Контент поверх фона без blur */}
+                <div className={'relative z-10 flex flex-col gap-3 items-center py-6 pt-4'}>
                     {stages.map((stage, i) => (
                         <div key={stage.stage_id} className={`w-[95%] ${stage.is_unlocked ? "cursor-pointer transition duration-200 ease-in hover:scale-105" : "pointer-events-none"}`}>
                             <StageCard

@@ -4,6 +4,7 @@ import { useSupabaseUser } from '@/lib/supabase/hooks/useSupabaseUser';
 import { useGuestStatus } from '@/lib/supabase/hooks/useIsGuest';
 import { useCalendarEvents, CalendarEvent } from '@/lib/supabase/hooks/useCalendar';
 import { useUserStreamModules } from '@/lib/supabase/hooks/useUserStreamModules';
+import { usePreviewCalendarEvents, usePreviewStreamModules, usePreviewStreamInfo } from '@/lib/supabase/hooks/usePreviewData';
 import { useSignal, initDataState } from '@telegram-apps/sdk-react';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/lib/supabase/client';
@@ -35,17 +36,17 @@ const CalendarPage: React.FC = () => {
 
   // Получаем события календаря на выбранный месяц
   const {
-    data: events,
+    data: userEvents,
     isLoading: eventsLoading,
     error: eventsError,
     isPlaceholderData,
   } = useCalendarEvents(supabaseUser?.id, selectedMonth);
 
   // Получаем модули пользователя
-  const { modules } = useUserStreamModules(supabaseUser?.id);
+  const { modules: userModules } = useUserStreamModules(supabaseUser?.id);
 
   // Получаем дату начала потока пользователя
-  const { data: streamStartDate } = useQuery({
+  const { data: userStreamStartDate } = useQuery({
     queryKey: ['user-stream-start-date', supabaseUser?.id],
     queryFn: async () => {
       if (!supabaseUser?.id || !supabase) return null;
@@ -62,24 +63,73 @@ const CalendarPage: React.FC = () => {
     staleTime: 10 * 60 * 1000,
   });
 
+  // Preview данные для гостей без тарифа/потока
+  const { data: previewEvents, isLoading: previewEventsLoading } = usePreviewCalendarEvents(selectedMonth);
+  const { data: previewModules, isLoading: previewModulesLoading } = usePreviewStreamModules();
+  const { data: previewStreamInfo } = usePreviewStreamInfo();
+
+  // Определяем используем ли preview режим (нет событий и модулей у пользователя)
+  const isPreviewMode = !eventsLoading && (!userEvents || userEvents.length === 0) && (!userModules || userModules.length === 0);
+
+  // Итоговые данные: используем пользовательские или preview
+  const events = isPreviewMode ? (previewEvents?.map(e => ({
+    event_id: e.event_id,
+    title: e.title,
+    description: e.description,
+    event_date: e.event_date,
+    event_time: e.event_time,
+    event_type: e.event_type,
+    external_url: e.external_url,
+    lesson_id: e.lesson_id,
+    material_id: e.material_id,
+    technique_id: e.technique_id,
+    cover_image: e.cover_image,
+    module_id: e.module_id,
+    module_name: e.module_name,
+    module_color: e.module_color,
+    can_access: e.can_access,
+  })) || []) : userEvents;
+
+  const modules = isPreviewMode ? previewModules : userModules;
+  const streamStartDate = isPreviewMode && previewStreamInfo ? previewStreamInfo.start_date : userStreamStartDate;
+
+  // Дефолтные цвета для модулей (если в базе не настроены)
+  const defaultModuleColors = [
+    '#FF6B6B', // Красный/коралловый
+    '#4ECDC4', // Бирюзовый
+    '#45B7D1', // Голубой
+    '#96CEB4', // Мятный
+    '#FFEAA7', // Жёлтый
+    '#DDA0DD', // Сливовый
+    '#98D8C8', // Светло-бирюзовый
+    '#F7DC6F', // Золотой
+  ];
+
   // Вычисляем периоды модулей
   const modulePeriods = useMemo((): ModulePeriod[] => {
     if (!modules || modules.length === 0 || !streamStartDate) return [];
 
     const startDate = new Date(streamStartDate);
-    const sortedModules = [...modules].sort((a, b) => a.module_order_num - b.module_order_num);
+    // Поддерживаем оба формата: module_order_num для пользовательских и order_num для preview
+    const sortedModules = [...modules].sort((a, b) => {
+      const orderA = (a as any).module_order_num ?? (a as any).order_num ?? 0;
+      const orderB = (b as any).module_order_num ?? (b as any).order_num ?? 0;
+      return orderA - orderB;
+    });
 
     return sortedModules.map((module, index) => {
       // Дата начала модуля = start_date потока + unlock_day - 1
       const moduleStart = new Date(startDate);
-      moduleStart.setDate(moduleStart.getDate() + (module.unlock_day || 0));
+      const unlockDay = (module as any).unlock_day ?? 0;
+      moduleStart.setDate(moduleStart.getDate() + unlockDay);
 
       // Дата окончания = начало следующего модуля - 1 день, или +6 дней если последний
       let moduleEnd: Date;
       if (index < sortedModules.length - 1) {
         const nextModule = sortedModules[index + 1];
+        const nextUnlockDay = (nextModule as any).unlock_day ?? 0;
         moduleEnd = new Date(startDate);
-        moduleEnd.setDate(moduleEnd.getDate() + (nextModule.unlock_day || 0) - 1);
+        moduleEnd.setDate(moduleEnd.getDate() + nextUnlockDay - 1);
       } else {
         // Последний модуль - добавляем 6 дней (неделя)
         moduleEnd = new Date(moduleStart);
@@ -88,18 +138,24 @@ const CalendarPage: React.FC = () => {
 
       const formatDate = (d: Date) => d.toISOString().split('T')[0];
 
+      // Получаем цвет модуля из данных или используем дефолтный по индексу
+      const moduleColor = (module as any).module_color ?? (module as any).color;
+      const color = moduleColor && moduleColor !== '#007AFF'
+        ? moduleColor
+        : defaultModuleColors[index % defaultModuleColors.length];
+
       return {
         moduleId: module.module_id,
-        moduleName: module.module_name,
-        color: module.module_color || '#007AFF',
+        moduleName: (module as any).module_name ?? (module as any).name ?? '',
+        color,
         startDate: formatDate(moduleStart),
         endDate: formatDate(moduleEnd),
       };
     });
   }, [modules, streamStartDate]);
 
-  // Начальная загрузка (только когда данных ещё нет совсем)
-  const initialLoading = userLoading || guestCheckLoading || (eventsLoading && !events);
+  // Начальная загрузка (включая preview)
+  const initialLoading = userLoading || guestCheckLoading || (eventsLoading && !events) || (isPreviewMode && previewEventsLoading);
 
   // Форматируем дату для отображения (например: "16 октября")
   const formatDateDisplay = (dateStr: string): string => {

@@ -1,4 +1,4 @@
-import { useSupabaseUser, useUserStreamInfo } from '@/lib/supabase/hooks';
+import { useSupabaseUser, usePreviewStreamModules } from '@/lib/supabase/hooks';
 import { useMemo, useState } from "react";
 import {
     initDataState as _initDataState,
@@ -15,7 +15,7 @@ import { motion } from "framer-motion";
 import { useGuestStatus } from '@/lib/supabase/hooks/useIsGuest';
 import GuestBlockedModal from '@/components/GuestBlockedModal';
 import LoadingSpinner from '@/components/LoadingSpinner/LoadingSpinner';
-import ModuleProgressBars from '@/components/ModuleProgressBars/ModuleProgressBars';
+import HealingChartRecharts from "@/components/Chart.tsx";
 import { getNounPluralForm } from '@/helpers/pluralize';
 
 const links = [{
@@ -98,10 +98,36 @@ export const UserPage = () => {
     const { isGuest } = useGuestStatus(supabaseUser?.id);
 
     // Используем хук для получения модулей потока пользователя
-    const { modulesAsStages: stages, loading: stagesLoading, error: stagesError } = useUserStreamModules(supabaseUser?.id);
+    const { modulesAsStages: userModules, loading: stagesLoading, error: stagesError } = useUserStreamModules(supabaseUser?.id);
 
-    // Получаем информацию о потоке (дата старта)
-    const { data: streamInfo } = useUserStreamInfo(supabaseUser?.id);
+    // Preview данные для гостей без тарифа/потока
+    const { data: previewModules, isLoading: previewLoading } = usePreviewStreamModules();
+
+    // Определяем используем ли preview режим (нет модулей у пользователя)
+    const isPreviewMode = !stagesLoading && (!userModules || userModules.length === 0);
+
+    // Преобразуем preview модули в формат modulesAsStages
+    const previewModulesAsStages = useMemo(() => {
+        if (!previewModules) return [];
+        return previewModules.map(m => ({
+            stage_id: m.first_stage_id || 0,
+            stage_name: m.module_name,
+            is_unlocked: true, // Для preview визуально разблокировано
+            cover_image_path: null,
+            unlock_day: m.unlock_day,
+            module_id: m.module_id,
+            total_lessons: m.total_lessons,
+            completed_lessons: m.completed_lessons,
+            unlocked_lessons: m.unlocked_lessons,
+            overdue_lessons: m.overdue_lessons,
+            total_assignments: m.total_assignments,
+            completed_assignments: m.completed_assignments,
+            overdue_assignments: m.overdue_assignments,
+        }));
+    }, [previewModules]);
+
+    // Итоговые данные: используем пользовательские или preview
+    const stages = isPreviewMode ? previewModulesAsStages : userModules;
 
     // Получение тарифа текущего пользователя
     const { data: userTariff } = useQuery({
@@ -156,37 +182,30 @@ export const UserPage = () => {
         return stages.filter(s => s.is_unlocked).reduce((acc, stage) => acc + (stage.overdue_assignments || 0), 0);
     }, [stages]);
 
-    // Рассчитываем прогресс по модулям для полос
-    const moduleProgressData = useMemo(() => {
-        if (!stages || !streamInfo?.startDate) return [];
+    // Рассчитываем позицию на графике (0-8) на основе прогресса текущего модуля
+    const chartCurrent = useMemo(() => {
+        if (!stages || stages.length === 0) return 0;
+        const unlockedStages = stages.filter(s => s.is_unlocked);
+        if (unlockedStages.length === 0) return 0;
 
-        const startDate = new Date(streamInfo.startDate);
-        const now = new Date();
-        const daysPassed = Math.floor((now.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24));
+        // Берём последний разблокированный модуль
+        const currentStageData = unlockedStages[unlockedStages.length - 1];
+        const completedLessons = currentStageData?.completed_lessons ?? 0;
+        const totalLessons = currentStageData?.total_lessons ?? 1;
 
-        // Сортируем модули по порядку
-        const sortedStages = [...stages].sort((a, b) => a.stage_order_num - b.stage_order_num);
+        // Масштабируем прогресс на шкалу 0-8 (длина графика)
+        // Базовое значение: (номер разблокированного модуля - 1) * 2 + прогресс внутри модуля * 2
+        const basePosition = (unlockedStages.length - 1) * 2;
+        const progressInModule = totalLessons > 0 ? (completedLessons / totalLessons) * 2 : 0;
 
-        return sortedStages.map((stage, index) => {
-            const moduleStartDay = stage.unlock_day || 0;
-            // Следующий модуль определяет конец текущего
-            const nextModule = sortedStages[index + 1];
-            const moduleEndDay = nextModule ? nextModule.unlock_day : moduleStartDay + 21; // 21 день по умолчанию для последнего
-            const totalDays = moduleEndDay - moduleStartDay;
-
-            // Сколько дней прошло с начала этого модуля
-            const daysInModule = Math.max(0, daysPassed - moduleStartDay);
-
-            return {
-                moduleNumber: index + 1,
-                daysPassed: Math.min(daysInModule, totalDays),
-                totalDays: totalDays
-            };
-        });
-    }, [stages, streamInfo]);
+        return Math.min(8, Math.round(basePosition + progressInModule));
+    }, [stages]);
 
 
-    if (loading || stagesLoading) {
+    // Загрузка: ждём пользователя и данные модулей (включая preview)
+    const isFullyLoading = loading || stagesLoading || (isPreviewMode && previewLoading);
+
+    if (isFullyLoading) {
         return (
             <Page back={false}>
                 <LoadingSpinner />
@@ -238,10 +257,35 @@ export const UserPage = () => {
                     variants={listVariants}
                     initial="hidden"
                     animate="show"
+                    onClick={(isGuest || isPreviewMode) ? () => setShowGuestModal(true) : undefined}
+                    style={{ cursor: (isGuest || isPreviewMode) ? 'pointer' : 'default' }}
                 >
-                    <div className={'flex flex-col gap-2 items-center absolute -top-[94px] left-1/2 -translate-x-1/2'}>
+                    {/* Оверлей и замочек для гостей на весь блок */}
+                    {(isGuest || isPreviewMode) && (
+                        <>
+                            <div className="absolute inset-0 bg-black/30 rounded-t-3xl z-10 pointer-events-none" />
+                            <div
+                                className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 flex items-center justify-center z-20"
+                                style={{
+                                    width: 44,
+                                    height: 44,
+                                    borderRadius: '50%',
+                                    background: 'rgba(0, 0, 0, 0.3)',
+                                    backdropFilter: 'blur(30px)',
+                                    WebkitBackdropFilter: 'blur(30px)',
+                                    pointerEvents: 'none',
+                                }}
+                            >
+                                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                    <rect x="3" y="11" width="18" height="11" rx="2" ry="2" />
+                                    <path d="M7 11V7a5 5 0 0 1 10 0v4" />
+                                </svg>
+                            </div>
+                        </>
+                    )}
+                    <div className={'flex flex-col gap-2 items-center absolute -top-[94px] left-1/2 -translate-x-1/2 z-30'}>
                         {user?.photo_url ?
-                            <img className={'w-36 h-36 rounded-full border border-white'} src={user.photo_url}
+                            <img className={'w-36 h-36 rounded-full border-2 border-white'} src={user.photo_url}
                                 alt="" /> :
                             <svg className={'w-36 h-36 rounded-full bg-white'} width="57" height="56"
                                 viewBox="0 0 57 56" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -253,16 +297,19 @@ export const UserPage = () => {
                     </div>
                     <p className={'pt-[58px] text-xl font-semibold text-center text-wrap max-w-full px-3 mb-2'}>Привет, {user?.first_name}</p>
                     <motion.div variants={itemVariants} className={' grid grid-cols-2 gap-3 mb-3 px-4'}>
-                        {/* Блок уровня с прогресс-барами */}
-                        <div className={'row-span-2'}>
-                            <ModuleProgressBars
-                                modules={moduleProgressData}
-                                currentModule={currentLevel}
-                            />
+                        {/* Блок уровня с графиком */}
+                        <div className={'row-span-2 flex flex-col items-center justify-center gap-3 px-2 rounded-2xl bg-white'}>
+                            <div className={'flex items-center flex-col gap-2'}>
+                                <p className={'text-sm text-center font-medium text-[#9F9F9F]'}>Ваш уровень секретности</p>
+                                <p className={'font-bold text-sm uppercase'}>
+                                    {currentStage?.stage_name || 'Неизвестная ступень'}
+                                </p>
+                                <HealingChartRecharts current={(isGuest || isPreviewMode) ? 0 : chartCurrent} />
+                            </div>
                         </div>
                         <div className={'p-3 rounded-2xl bg-white flex items-center flex-col'}>
                             <p className={'text-sm font-medium text-[#9F9F9F]'}>Выполнено</p>
-                            <p className={'text-[20px] font-bold'}>{isGuest ? '—' : `${completedAssignments} ${getNounPluralForm(completedAssignments, 'задание', 'задания', 'заданий')}`}</p>
+                            <p className={'text-[20px] font-bold'}>{(isGuest || isPreviewMode) ? `0 ${getNounPluralForm(0, 'задание', 'задания', 'заданий')}` : `${completedAssignments} ${getNounPluralForm(completedAssignments, 'задание', 'задания', 'заданий')}`}</p>
                         </div>
                         <div className={'p-3 rounded-2xl bg-white flex items-center flex-col'}>
                             <p className={'text-sm font-medium text-[#9F9F9F] flex items-center gap-1'}>
@@ -274,22 +321,19 @@ export const UserPage = () => {
                                         fill="#D2667D" />
                                 </svg>}
                             </p>
-                            <p className={'text-[20px] font-bold'}>{isGuest ? '—' : `${overdueAssignments} ${getNounPluralForm(overdueAssignments, 'день', 'дня', 'дней')}`}</p>
+                            <p className={'text-[20px] font-bold'}>{(isGuest || isPreviewMode) ? `0 ${getNounPluralForm(0, 'день', 'дня', 'дней')}` : `${overdueAssignments} ${getNounPluralForm(overdueAssignments, 'день', 'дня', 'дней')}`}</p>
                         </div>
                         <div
                             className={'py-2 px-4 rounded-2xl bg-white flex items-center col-span-2 gap-2 justify-between'}>
                             <div className={'flex gap-2 items-center'}>
-                                <div
-                                    className={'p-2 rounded-full bg-[linear-gradient(271.99deg,_#F1F8FE_0%,_#F1EFFF_100%)]'}>
-                                    <img src={'/eid.svg'} className={'w-6 h-6'} />
-                                </div>
+                                <img src={'/coin3.png'} style={{ width: 45, height: 46 }} alt="coin" />
                                 <div className={'flex flex-col'}>
                                     <p className={'text-sm font-medium text-[#9F9F9F]'}>Ваш баланс</p>
-                                    <p className={'text-sm font-bold'}>{isGuest ? '—' : `${supabaseUser?.total_points}`} эдельштейнов</p>
+                                    <p className={'text-sm font-bold'}>{(isGuest || isPreviewMode) ? '0' : `${supabaseUser?.total_points}`} эдельштейнов</p>
                                 </div>
                             </div>
                             <Ripple className="rounded-3xl overflow-hidden inline-block">
-                                <Link to={isGuest ? '#' : '/points'} onClick={isGuest ? (e) => { e.preventDefault(); setShowGuestModal(true); } : undefined}
+                                <Link to={(isGuest || isPreviewMode) ? '#' : '/points'} onClick={(isGuest || isPreviewMode) ? (e) => { e.preventDefault(); setShowGuestModal(true); } : undefined}
                                     className={"text-sm font-bold w-max leading-5 text-white py-2 px-4 rounded-3xl text-center bg-[linear-gradient(135deg,rgba(141,197,241,0.4)_-48.61%,#63ABE6_105.56%),linear-gradient(91.99deg,#F3F3F3_0%,#EAEAEA_100%)] block"}>
                                     Подробнее
                                 </Link>
@@ -309,20 +353,20 @@ export const UserPage = () => {
                                         </Ripple>*/}
                                     </div>
                                     <p className="text-sm font-bold text-black">
-                                        {isGuest ? 'Гость' : (userTariff ? userTariff.name : 'Базовый')}
+                                        {(isGuest || isPreviewMode) ? 'Гость' : (userTariff ? userTariff.name : 'Базовый')}
                                     </p>
                                 </div>
-                                <a href={isGuest ? '#' : 'https://t.me/katyaasta'} target={isGuest ? '_self' : '_blank'} onClick={isGuest ? (e) => { e.preventDefault(); window.open('https://brainprogramming.ru/enroll', '_blank'); } : undefined}>
+                                <a href={(isGuest || isPreviewMode) ? '#' : 'https://t.me/katyaasta'} target={(isGuest || isPreviewMode) ? '_self' : '_blank'} onClick={(isGuest || isPreviewMode) ? (e) => { e.preventDefault(); window.open('https://brainprogramming.ru/enroll', '_blank'); } : undefined}>
                                     <Ripple className="rounded-3xl overflow-hidden inline-block">
                                         <button
                                             className="text-sm font-bold w-max leading-5 text-white py-2 px-4 rounded-3xl text-center bg-[linear-gradient(135deg,rgba(141,197,241,0.4)_-48.61%,#63ABE6_105.56%),linear-gradient(91.99deg,#F3F3F3_0%,#EAEAEA_100%)]">
-                                            {isGuest ? 'Стать учеником' : 'Повысить тариф'}
+                                            {(isGuest || isPreviewMode) ? 'Стать учеником' : 'Повысить тариф'}
                                         </button>
                                     </Ripple>
                                 </a>
                             </div>
                             <p className="text-sm text-[#9F9F9F] leading-tight">
-                                {isGuest ? 'Зарегистрируйтесь, чтобы получить доступ к полному функционалу платформы.' : (userTariff?.description || 'Базовый тарифный план с ограниченным доступом к материалам.')}
+                                {(isGuest || isPreviewMode) ? 'Зарегистрируйтесь, чтобы получить доступ к полному функционалу платформы.' : (userTariff?.description || 'Базовый тарифный план с ограниченным доступом к материалам.')}
                             </p>
                         </div>
                     </motion.div>
@@ -330,14 +374,12 @@ export const UserPage = () => {
                     <motion.div variants={itemVariants} className={'bg-white rounded-t-3xl pt-5'}>
                         <div className={'px-4 flex flex-col gap-3'}>
                             {links.map((el, i) => {
-                                // Для гостей активна только кнопка "Помощь" (третья кнопка)
-                                const isDisabled = isGuest && i !== 2;
+                                // Все кнопки доступны для гостей (Чаты, FAQ, Помощь)
                                 return (
                                     <Ripple key={el.link} className="rounded-2xl overflow-hidden">
                                         <Link
-                                            className={clsx('relative bg-[linear-gradient(271.99deg,_#F1F8FE_0%,_#F1EFFF_100%)] py-4 px-6 rounded-2xl flex flex-col gap-2 items-start justify-between block', isDisabled && 'opacity-60 pointer-events-none')}
-                                            to={isDisabled ? '#' : el.link}
-                                            onClick={isDisabled ? (e) => { e.preventDefault(); setShowGuestModal(true); } : undefined}>
+                                            className={'relative bg-[linear-gradient(271.99deg,_#F1F8FE_0%,_#F1EFFF_100%)] py-4 px-6 rounded-2xl flex flex-col gap-2 items-start justify-between block'}
+                                            to={el.link}>
                                             <p className={'font-semibold'}>{el.title}</p>
                                             <img src={'/arrow-icon.svg'} alt="" className={'w-[36px] h-[36px]'} />
                                             <img src={el.image}

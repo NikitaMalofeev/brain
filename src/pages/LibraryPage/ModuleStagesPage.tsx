@@ -14,6 +14,7 @@ import { buildFileUrl } from '@/lib/supabase/supabaseStorageService';
 import { clsx } from 'clsx';
 import TooltipIcon from '@/shared/assets/icons/tooltip.svg';
 import Background1 from '@/shared/assets/images/background1.png';
+import LessonDefault from '@/shared/assets/images/lessonDefault.png';
 import LoadingSpinner from '@/components/LoadingSpinner/LoadingSpinner';
 
 // Удаляем текст в квадратных скобках из названия
@@ -386,8 +387,9 @@ const ModuleStagesPage: React.FC = () => {
                 >
                     {stagesWithAccess.map((stage, index) => {
                         const firstLesson = stage.lessons?.[0];
-                        const coverUrl = buildFileUrl(stage.cover_image_path) || '/test.png';
-                        const isUnlocked = (stage as any).isUnlocked !== false;
+                        const coverUrl = buildFileUrl(stage.cover_image_path) || LessonDefault;
+                        // Для гостей все ступени заблокированы
+                        const isUnlocked = isGuest ? false : (stage as any).isUnlocked !== false;
 
                         // Рассчитываем неделю и день относительно открытия модуля
                         // open_day_offset теперь 1-based: 1 = первый день, 7 = конец первой недели, 8 = начало второй
@@ -413,7 +415,7 @@ const ModuleStagesPage: React.FC = () => {
                                                     src={coverUrl}
                                                     alt={stage.name}
                                                     className="w-full h-full object-cover"
-                                                    onError={(e) => { e.currentTarget.src = '/test.png'; }}
+                                                    onError={(e) => { e.currentTarget.src = LessonDefault; }}
                                                 />
                                                 {/* Затемнение для заблокированных */}
                                                 {!isUnlocked && (

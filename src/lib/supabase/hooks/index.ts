@@ -59,3 +59,6 @@ export * from './useGlobalSearch';
 
 // Хук для первого невыполненного урока
 export * from './useFirstIncompleteLesson';
+
+// Хуки для preview режима (гости без тарифа/потока)
+export * from './usePreviewData';

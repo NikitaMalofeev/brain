@@ -3,7 +3,8 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { useSignal, initDataState } from '@telegram-apps/sdk-react';
 import { Page } from '@/components/Page';
 import LessonCard from '@/components/LessonCard/LessonCard';
-import { useModuleDetails, ModuleLesson } from '@/lib/supabase/hooks/useModuleDetails';
+import { useModuleDetails } from '@/lib/supabase/hooks/useModuleDetails';
+import { LessonData } from '@/lib/supabase/hooks/useStageDetails';
 import { useSupabaseUser } from '@/lib/supabase/hooks';
 import { useGuestStatus } from '@/lib/supabase/hooks/useIsGuest';
 import { useAppContext } from '@/contexts/AppContext';
@@ -138,14 +139,17 @@ const ModulePage: React.FC = () => {
     );
   }
 
-  const completedLessons = moduleDetails.lessons.filter((lesson) => lesson.is_completed).length;
-  const unlockedLessons = moduleDetails.lessons.filter((lesson) => lesson.is_unlocked).length;
+  // Для гостей показываем все уроки как заблокированные
+  const completedLessons = isGuest ? 0 : moduleDetails.lessons.filter((lesson) => lesson.is_completed).length;
+  const unlockedLessons = isGuest ? 0 : moduleDetails.lessons.filter((lesson) => lesson.is_unlocked).length;
   const totalLessons = moduleDetails.lessons.length;
   const lessonsRemaining = totalLessons - completedLessons;
   const lessonsLocked = totalLessons - unlockedLessons;
 
   let progressText = '';
-  if (lessonsLocked > 0) {
+  if (isGuest) {
+    progressText = 'Станьте учеником, чтобы открыть доступ к урокам';
+  } else if (lessonsLocked > 0) {
     const word = getNounPluralForm(lessonsLocked, 'день', 'дня', 'дней');
     progressText = `Еще ${lessonsLocked} ${word} до полного открытия модуля`;
   } else if (lessonsRemaining > 0) {
@@ -156,17 +160,18 @@ const ModulePage: React.FC = () => {
   }
 
   // Преобразуем уроки модуля в формат для LessonCard
-  const lessonsForCard = moduleDetails.lessons.map((lesson) => ({
-    lesson_id: lesson.lesson_id,
-    lesson_title: lesson.lesson_title,
-    lesson_description: lesson.lesson_description,
-    lesson_type: lesson.lesson_type,
+  // Для гостей все уроки помечаем как заблокированные
+  const lessonsForCard: LessonData[] = moduleDetails.lessons.map((lesson) => ({
+    lesson_id: Number(lesson.lesson_id),
+    lesson_name: lesson.lesson_title, // LessonCard ожидает lesson_name
+    content_type: lesson.lesson_type,
     order_num: lesson.order_num,
-    points: lesson.points,
     has_assignment: lesson.has_assignment,
-    is_unlocked: lesson.is_unlocked,
-    is_completed: lesson.is_completed,
-    submission_status: lesson.submission_status,
+    is_unlocked: isGuest ? false : lesson.is_unlocked,
+    is_completed: isGuest ? false : lesson.is_completed,
+    submission_status: lesson.submission_status as LessonData['submission_status'],
+    total_assignments: 0,
+    completed_assignments: 0,
   }));
 
   return (

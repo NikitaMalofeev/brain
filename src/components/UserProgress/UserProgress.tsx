@@ -26,6 +26,7 @@ interface UserProgressProps {
     stages: StageProgressData[];
     className?: string;
     nextLessonId?: number | null; // ID первого урока с невыполненным заданием
+    isGuest?: boolean; // Флаг гостевого режима
 }
 
 export function getWordByIndex(index: number): string {
@@ -33,9 +34,33 @@ export function getWordByIndex(index: number): string {
     return words[index - 1] || "";
 }
 
-export const UserProgress: React.FC<UserProgressProps> = ({ stages, className, nextLessonId }) => {
+export const UserProgress: React.FC<UserProgressProps> = ({ stages, className, nextLessonId, isGuest = false }) => {
     if (!stages || stages.length === 0) {
         return null;
+    }
+
+    // Для гостей показываем специальное сообщение
+    if (isGuest) {
+        return (
+            <div className={`bg-[#0000004D] p-4 pb-[16px] flex flex-col gap-3 rounded-3xl ${className}`}>
+                <div className={'flex items-center justify-between'}>
+                    <div className={'flex flex-col gap-1'}>
+                        <p className={'text-white'} style={{ fontFamily: 'Nunito', fontWeight: 700, fontSize: '16px', lineHeight: '100%' }}>
+                            Выполнено 0 заданий
+                        </p>
+                        <p className={'text-sm text-white/80'}>Модули для гостя заблокированы</p>
+                    </div>
+                    <div className="w-9 h-9 bg-[#FFFFFF33] rounded-full flex items-center justify-center flex-shrink-0">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                            <rect x="3" y="11" width="18" height="11" rx="2" ry="2" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+                            <path d="M7 11V7a5 5 0 0 1 10 0v4" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+                        </svg>
+                    </div>
+                </div>
+                <div className="w-full bg-[#FFFFFF33] rounded-full h-3">
+                </div>
+            </div>
+        );
     }
 
     // Суммируем задания по всем разблокированным модулям

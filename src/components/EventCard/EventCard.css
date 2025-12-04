@@ -91,37 +91,52 @@
   color: #000;
 }
 
-/* Стили для гостей - заблюренная карточка */
+/* Стили для гостей - заблокированная карточка */
 .event-card-blurred {
   position: relative;
 }
 
+/* Убираем blur с контента, но добавляем затемнение через оверлей */
 .event-card-blurred .event-card-content,
 .event-card-blurred .event-card-cover {
-  filter: blur(4px);
-  opacity: 0.7;
+  opacity: 1;
+  filter: none;
 }
 
+/* Затемняющий оверлей с opacity 0.3 */
 .event-card-blur-overlay {
   position: absolute;
   inset: 0;
-  background: rgba(255, 255, 255, 0.3);
+  background: rgba(0, 0, 0, 0.3);
   pointer-events: none;
   border-radius: 20px;
+  z-index: 1;
 }
 
-/* Замочек для гостей */
+/* Замочек для гостей - по центру с blur */
 .event-card-lock {
   position: absolute;
   top: 50%;
-  right: 16px;
-  transform: translateY(-50%);
+  left: 50%;
+  transform: translate(-50%, -50%);
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 36px;
-  height: 36px;
-  background: rgba(255, 255, 255, 0.9);
+  width: 44px;
+  height: 44px;
+  background: rgba(0, 0, 0, 0.3);
+  backdrop-filter: blur(30px);
+  -webkit-backdrop-filter: blur(30px);
   border-radius: 50%;
-  z-index: 1;
+  z-index: 2;
+}
+
+.event-card-lock svg {
+  width: 20px;
+  height: 20px;
+}
+
+.event-card-lock svg path,
+.event-card-lock svg rect {
+  stroke: #ADADAD;
 }

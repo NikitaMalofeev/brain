@@ -1,12 +1,12 @@
 import { Page } from "@/components/Page";
-import { useSupabaseUser, useUserStreamInfo, useUserStreamModules, useFirstIncompleteLesson } from "@/lib/supabase/hooks";
+import { useSupabaseUser, useUserStreamInfo, useUserStreamModules, useFirstIncompleteLesson, usePreviewStreamModules, usePreviewStreamInfo } from "@/lib/supabase/hooks";
 import { initDataState, useSignal } from "@telegram-apps/sdk-react";
 import { Link, useNavigate } from "react-router-dom";
 import { UserProgress } from "@/components/UserProgress/UserProgress.tsx";
 import { Ripple } from "@/components/ui/Ripple/Ripple.tsx";
 import StageCard from "@/components/StageCard/StageCard.tsx";
 import { motion } from "framer-motion";
-import { useState, useDeferredValue } from "react";
+import { useState, useDeferredValue, useMemo } from "react";
 import { X, Loader2 } from "lucide-react";
 import { useGuestStatus } from "@/lib/supabase/hooks/useIsGuest";
 import GuestBlockedModal from "@/components/GuestBlockedModal";
@@ -55,7 +55,42 @@ export const MainPage = () => {
     const { data: streamInfo } = useUserStreamInfo(supabaseUser?.id);
 
     // Используем хук для получения модулей потока пользователя
-    const { modulesAsStages, loading: isLoading } = useUserStreamModules(supabaseUser?.id);
+    const { modulesAsStages: userModules, loading: isLoading } = useUserStreamModules(supabaseUser?.id);
+
+    // Preview данные для гостей без тарифа/потока
+    const { data: previewModules, isLoading: previewLoading } = usePreviewStreamModules();
+    const { data: previewStreamInfo } = usePreviewStreamInfo();
+
+    // Определяем используем ли preview режим (нет модулей у пользователя)
+    const isPreviewMode = !isLoading && (!userModules || userModules.length === 0);
+
+    // Преобразуем preview модули в формат modulesAsStages
+    const previewModulesAsStages = useMemo(() => {
+        if (!previewModules) return [];
+        return previewModules.map(m => ({
+            stage_id: m.first_stage_id || 0,
+            stage_name: m.module_name,
+            is_unlocked: true, // Для preview визуально разблокировано
+            cover_image_path: null,
+            unlock_day: m.unlock_day,
+            module_id: m.module_id,
+            total_lessons: m.total_lessons,
+            completed_lessons: m.completed_lessons,
+            unlocked_lessons: m.unlocked_lessons,
+            overdue_lessons: m.overdue_lessons,
+            total_assignments: m.total_assignments,
+            completed_assignments: m.completed_assignments,
+            overdue_assignments: m.overdue_assignments,
+        }));
+    }, [previewModules]);
+
+    // Итоговые данные: используем пользовательские или preview
+    const modulesAsStages = isPreviewMode ? previewModulesAsStages : userModules;
+    const effectiveStreamInfo = isPreviewMode && previewStreamInfo ? {
+        startDate: previewStreamInfo.start_date,
+        currentWeek: previewStreamInfo.current_week,
+        streamName: previewStreamInfo.stream_name
+    } : streamInfo;
 
     // Получаем первый урок с невыполненным заданием
     const { data: firstIncompleteLesson } = useFirstIncompleteLesson(supabaseUser?.id);
@@ -74,7 +109,10 @@ export const MainPage = () => {
     const isSearching = searchQuery.length >= 2;
 
 
-    if (!supabaseUser?.id || isLoading) {
+    // Загрузка: ждём пользователя и данные модулей (включая preview)
+    const isFullyLoading = !supabaseUser?.id || isLoading || (isPreviewMode && previewLoading);
+
+    if (isFullyLoading) {
         return (
             <Page back={false}>
                 <LoadingSpinner />
@@ -82,7 +120,8 @@ export const MainPage = () => {
         );
     }
 
-    if (modulesAsStages?.length === 0 && !isLoading) {
+    // Если нет модулей даже в preview режиме
+    if (modulesAsStages?.length === 0 && !isLoading && !previewLoading) {
         return (
             <Page back={false}>
                 <div style={{ textAlign: 'center', marginTop: '50px' }}>
@@ -125,7 +164,7 @@ export const MainPage = () => {
                                     <Link to={'/points'} className="roadmap__link">
 
                                         <div className="flex gap-1 items-center">
-                                            <p className={'text-black font-semibold leading-4'}>{isGuest ? '—' : supabaseUser?.total_points}</p>
+                                            <p className={'text-black font-semibold leading-4'}>{isGuest ? '0' : supabaseUser?.total_points}</p>
                                             <img src={dnaIcon} alt="search" />
                                         </div>
                                     </Link>
@@ -208,7 +247,8 @@ export const MainPage = () => {
                                         <div
                                             key={`${result.stage_id}-${result.block_id || 'stage'}-${i}`}
                                             onClick={() => {
-                                                if (!result.is_unlocked) {
+                                                // Для гостей и preview режима всегда показываем модалку
+                                                if (isGuest || isPreviewMode || !result.is_unlocked) {
                                                     setShowGuestModal(true);
                                                     return;
                                                 }
@@ -257,10 +297,10 @@ export const MainPage = () => {
                                         isLocked={!stage.is_unlocked}
                                         coverImagePath={stage.cover_image_path || undefined}
                                         orderNum={i + 1}
-                                        isGuest={isGuest}
+                                        isGuest={isGuest || isPreviewMode}
                                         unlockDay={stage.unlock_day}
                                         moduleId={stage.module_id}
-                                        streamStartDate={streamInfo?.startDate}
+                                        streamStartDate={effectiveStreamInfo?.startDate}
                                     />
                                 </motion.div>
                             ))
@@ -278,7 +318,7 @@ export const MainPage = () => {
                 </motion.div>
 
             </div>
-            <UserProgress stages={modulesAsStages || []} className="mt-5" nextLessonId={firstIncompleteLesson?.lessonId} />
+            <UserProgress stages={modulesAsStages || []} className="mt-5" nextLessonId={firstIncompleteLesson?.lessonId} isGuest={isGuest || isPreviewMode} />
 
             {/* Модалка для гостей */}
             <GuestBlockedModal
