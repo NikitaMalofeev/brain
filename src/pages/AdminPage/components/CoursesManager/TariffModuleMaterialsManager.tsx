@@ -178,16 +178,10 @@ const TariffModuleMaterialsManager: React.FC<TariffModuleMaterialsManagerProps> 
     return result;
   }, [specialBundlePlacements]);
 
-  // Доступные материалы (которые ещё не добавлены в модуль)
+  // Доступные материалы - все материалы всегда доступны (одна техника может быть в нескольких днях)
   const availableMaterials = useMemo(() => {
-    console.log('🎵 [DEBUG] allMaterials:', allMaterials?.length, allMaterials);
-    console.log('🎵 [DEBUG] moduleMaterials:', moduleMaterials?.length, moduleMaterials);
-    if (!allMaterials || !moduleMaterials) return allMaterials || [];
-    const addedIds = new Set(moduleMaterials.map(mm => mm.material_id));
-    const available = allMaterials.filter(m => !addedIds.has(m.id));
-    console.log('🎵 [DEBUG] availableMaterials (not added yet):', available.length, available);
-    return available;
-  }, [allMaterials, moduleMaterials]);
+    return allMaterials || [];
+  }, [allMaterials]);
 
   // Отфильтрованные материалы по поисковому запросу
   const filteredMaterials = useMemo(() => {
@@ -688,13 +682,13 @@ const TariffModuleMaterialsManager: React.FC<TariffModuleMaterialsManagerProps> 
             <InputNumber
               min={1}
               max={moduleDaysCount}
-              value={unlockDay + 1}
-              onChange={(value) => setUnlockDay((value || 1) - 1)}
+              value={unlockDay}
+              onChange={(value) => setUnlockDay(value || 1)}
               style={{ width: '100%', marginTop: 8 }}
               placeholder={`От 1 до ${moduleDaysCount}`}
             />
             <Text type="secondary" style={{ fontSize: 12, display: 'block', marginTop: 4 }}>
-              Первая техника из пакета откроется на {unlockDay + 1} день модуля.
+              Первая техника из пакета откроется на {unlockDay} день модуля.
               Последующие техники откроются автоматически по заданным интервалам.
             </Text>
           </div>
@@ -725,13 +719,13 @@ const TariffModuleMaterialsManager: React.FC<TariffModuleMaterialsManagerProps> 
             <InputNumber
               min={1}
               max={moduleDaysCount}
-              value={unlockDay + 1}
-              onChange={(value) => setUnlockDay((value || 1) - 1)}
+              value={unlockDay}
+              onChange={(value) => setUnlockDay(value || 1)}
               style={{ width: '100%', marginTop: 8 }}
               placeholder={`От 1 до ${moduleDaysCount}`}
             />
             <Text type="secondary" style={{ fontSize: 12, display: 'block', marginTop: 4 }}>
-              Материал откроется на {unlockDay + 1} день модуля
+              Материал откроется на {unlockDay} день модуля
             </Text>
           </div>
 

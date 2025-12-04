@@ -238,12 +238,12 @@ const TechniquesPage: React.FC = () => {
             </button>
 
             {/* SVG квадрат между табами - две дуги по формуле */}
+            {/* Увеличиваем ширину SVG на 2px (по 1px с каждой стороны) чтобы закрыть субпиксельные зазоры */}
             <svg
-              width="40"
+              width="42"
               height="40"
-              viewBox="0 0 40 40"
+              viewBox="0 0 42 40"
               fill="none"
-              shapeRendering="crispEdges"
               className="flex-shrink-0 self-end"
               style={{
                 display: 'block',
@@ -252,10 +252,10 @@ const TechniquesPage: React.FC = () => {
                 marginRight: '-1px',
               }}
             >
-              {/* Тёмная часть - активный таб (слева) */}
-              <path d="M40 40A26 26 0 0 1 20 20A26 26 0 0 0 0 0V40H40Z" fill="#0000004D" />
-              {/* Светлая часть - неактивный таб (справа) */}
-              <path d="M40 40A26 26 0 0 1 20 20A26 26 0 0 0 0 0H40V40Z" fill="#FFFFFF33" />
+              {/* Тёмная часть - активный таб (слева) - растянута на 1px влево */}
+              <path d="M41 40A26 26 0 0 1 21 20A26 26 0 0 0 1 0H0V40H41Z" fill="#0000004D" />
+              {/* Светлая часть - неактивный таб (справа) - растянута на 1px вправо */}
+              <path d="M41 40A26 26 0 0 1 21 20A26 26 0 0 0 1 0H42V40H41Z" fill="#FFFFFF33" />
             </svg>
 
             {/* Правый таб */}

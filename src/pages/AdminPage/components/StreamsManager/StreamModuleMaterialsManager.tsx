@@ -179,12 +179,10 @@ const StreamModuleMaterialsManager: React.FC<StreamModuleMaterialsManagerProps> 
   const addModuleMaterialMutation = useAddModuleMaterial();
   const removeModuleMaterialMutation = useRemoveModuleMaterial();
 
-  // Computed
+  // Computed - все материалы всегда доступны (одна техника может быть в нескольких днях)
   const availableMaterials = useMemo(() => {
-    if (!allMaterials || !moduleMaterials) return allMaterials || [];
-    const addedIds = new Set(moduleMaterials.map((mm) => mm.material_id));
-    return allMaterials.filter((m) => !addedIds.has(m.id));
-  }, [allMaterials, moduleMaterials]);
+    return allMaterials || [];
+  }, [allMaterials]);
 
   const materialsByDay = useMemo(() => {
     if (!moduleMaterials) return {};
@@ -287,7 +285,7 @@ const StreamModuleMaterialsManager: React.FC<StreamModuleMaterialsManagerProps> 
               {materialsLoading ? (
                 <Spin />
               ) : availableMaterials.length === 0 ? (
-                <Empty description="Все материалы добавлены" />
+                <Empty description="Нет доступных материалов" />
               ) : (
                 <Space direction="vertical" style={{ width: '100%' }}>
                   {availableMaterials.map((material) => (

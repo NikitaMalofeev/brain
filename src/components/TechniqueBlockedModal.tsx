@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
 
 interface TechniqueBlockedModalProps {
@@ -10,9 +10,6 @@ interface TechniqueBlockedModalProps {
   buttonText?: string;
   onButtonClick?: () => void;
 }
-
-// Высота TabBar
-const TAB_BAR_HEIGHT = 56;
 
 /**
  * Модальное окно для блокированных техник
@@ -27,30 +24,6 @@ export default function TechniqueBlockedModal({
   buttonText = 'Купить',
   onButtonClick,
 }: TechniqueBlockedModalProps) {
-  const [bottomOffset, setBottomOffset] = useState(TAB_BAR_HEIGHT);
-
-  // Получаем safe area bottom из CSS переменной
-  useEffect(() => {
-    const updateBottomOffset = () => {
-      const safeAreaBottom = getComputedStyle(document.documentElement)
-        .getPropertyValue('--safe-area-bottom')
-        .trim();
-      const safeAreaValue = parseInt(safeAreaBottom, 10) || 0;
-      setBottomOffset(TAB_BAR_HEIGHT + safeAreaValue);
-    };
-
-    updateBottomOffset();
-
-    // Слушаем изменения CSS переменных через MutationObserver
-    const observer = new MutationObserver(updateBottomOffset);
-    observer.observe(document.documentElement, {
-      attributes: true,
-      attributeFilter: ['style'],
-    });
-
-    return () => observer.disconnect();
-  }, []);
-
   // Блокируем скролл body при открытии модалки
   useEffect(() => {
     if (isOpen) {
@@ -90,7 +63,7 @@ export default function TechniqueBlockedModal({
               borderTopLeftRadius: '32px',
               borderTopRightRadius: '32px',
               padding: '20px',
-              paddingBottom: `${bottomOffset}px`,
+              paddingBottom: 'calc(60px + 20px + var(--safe-area-bottom, 0px))',
             }}
             onClick={(e) => e.stopPropagation()}
           >
