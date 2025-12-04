@@ -1,6 +1,6 @@
 /**
  * Объединенный хук для работы с доступами чата
- * Управляет курсом (один course_id) и тарифами (массив tariff_ids) для чата
+ * Управляет потоком (один stream_id) и тарифами (массив tariff_ids) для чата
  */
 
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
@@ -9,28 +9,28 @@ import { logger } from '../../logger';
 
 // Интерфейс для доступов чата
 export interface ChatAccess {
-    courseId: string | null;
+    streamId: string | null;
     tariffIds: string[];
 }
 
-// Функция для получения текущего курса чата
-async function fetchChatCourse(chatId: string): Promise<string | null> {
+// Функция для получения текущего потока чата
+async function fetchChatStream(chatId: string): Promise<string | null> {
     if (!supabase) {
         throw new Error('Supabase не инициализирован');
     }
 
     const { data, error } = await supabase
         .from('chats')
-        .select('course_id')
+        .select('stream_id')
         .eq('id', chatId)
         .single();
 
     if (error) {
-        logger.error('Ошибка загрузки курса чата:', error);
+        logger.error('Ошибка загрузки потока чата:', error);
         throw error;
     }
 
-    return data?.course_id || null;
+    return data?.stream_id || null;
 }
 
 // Функция для получения тарифов чата
@@ -54,13 +54,13 @@ async function fetchChatTariffs(chatId: string): Promise<string[]> {
 
 // Функция для получения полных доступов чата
 async function fetchChatAccess(chatId: string): Promise<ChatAccess> {
-    const [courseId, tariffIds] = await Promise.all([
-        fetchChatCourse(chatId),
+    const [streamId, tariffIds] = await Promise.all([
+        fetchChatStream(chatId),
         fetchChatTariffs(chatId)
     ]);
 
     return {
-        courseId,
+        streamId,
         tariffIds
     };
 }
@@ -71,15 +71,15 @@ async function saveChatAccess(chatId: string, access: ChatAccess): Promise<void>
         throw new Error('Supabase не инициализирован');
     }
 
-    // 1. Обновляем course_id в таблице chats
-    const { error: courseError } = await supabase
+    // 1. Обновляем stream_id в таблице chats
+    const { error: streamError } = await supabase
         .from('chats')
-        .update({ course_id: access.courseId })
+        .update({ stream_id: access.streamId })
         .eq('id', chatId);
 
-    if (courseError) {
-        logger.error('Ошибка обновления курса чата:', courseError);
-        throw courseError;
+    if (streamError) {
+        logger.error('Ошибка обновления потока чата:', streamError);
+        throw streamError;
     }
 
     // 2. Обновляем тарифы в tariff_chat_access
@@ -147,7 +147,7 @@ export function useChatAccess(chatId: string | null) {
 
     return {
         // Данные
-        courseId: access?.courseId || null,
+        streamId: access?.streamId || null,
         tariffIds: access?.tariffIds || [],
         loading,
         error,

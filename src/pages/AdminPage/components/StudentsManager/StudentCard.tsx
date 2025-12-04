@@ -672,9 +672,9 @@ const StudentCard: React.FC<StudentCardProps> = ({ studentId, onBack, currentUse
                     {!isEditingChatLink ? (
                         <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginTop: '4px' }}>
                             {basicInfo.personal_chat_link ? (
-                                <a 
-                                    href={basicInfo.personal_chat_link} 
-                                    target="_blank" 
+                                <a
+                                    href={basicInfo.personal_chat_link}
+                                    target="_blank"
                                     rel="noopener noreferrer"
                                     style={{ color: '#0088cc', textDecoration: 'none' }}
                                 >
@@ -683,8 +683,8 @@ const StudentCard: React.FC<StudentCardProps> = ({ studentId, onBack, currentUse
                             ) : (
                                 <span style={{ color: '#999' }}>Не указан</span>
                             )}
-                            <button 
-                                className="action-btn edit-btn" 
+                            <button
+                                className="action-btn edit-btn"
                                 onClick={handleEditChatLink}
                                 title="Редактировать ссылку на чат"
                             >
@@ -848,9 +848,9 @@ const StudentCard: React.FC<StudentCardProps> = ({ studentId, onBack, currentUse
                         <div style={{ flex: 1 }}>
                             <select
                                 className="admin-input"
-                                style={{ 
-                                    fontSize: '14px', 
-                                    padding: '8px 12px', 
+                                style={{
+                                    fontSize: '14px',
+                                    padding: '8px 12px',
                                     height: '36px',
                                     minWidth: '200px'
                                 }}
@@ -866,9 +866,9 @@ const StudentCard: React.FC<StudentCardProps> = ({ studentId, onBack, currentUse
                                 ))}
                             </select>
                             {basicInfo.current_tariff_name && (
-                                <small style={{ 
-                                    display: 'block', 
-                                    marginTop: '4px', 
+                                <small style={{
+                                    display: 'block',
+                                    marginTop: '4px',
                                     color: '#666',
                                     fontSize: '12px'
                                 }}>
@@ -1068,8 +1068,8 @@ const StudentCard: React.FC<StudentCardProps> = ({ studentId, onBack, currentUse
                                                         {tech.is_time_unlocked
                                                             ? `Открыта ${unlockDate}`
                                                             : daysUntil > 0
-                                                            ? `Через ${daysUntil} дн. (${unlockDate})`
-                                                            : `С ${unlockDate}`}
+                                                                ? `Через ${daysUntil} дн. (${unlockDate})`
+                                                                : `С ${unlockDate}`}
                                                     </span>
 
                                                     {/* Чекбокс оплаты */}
@@ -1176,7 +1176,7 @@ const StudentCard: React.FC<StudentCardProps> = ({ studentId, onBack, currentUse
             </div>
 
 
-            {
+            {/* {
                 Object.entries(lessonsByStage).map(([stageName, lessons]) => (
                     <div key={stageName} className="admin-card">
                         <div className="flex justify-between items-center mb-4">
@@ -1265,9 +1265,9 @@ const StudentCard: React.FC<StudentCardProps> = ({ studentId, onBack, currentUse
                         </div>
                     </div>
                 ))
-            }
+            } */}
 
-            <div className="admin-card">
+            {/* <div className="admin-card">
                 <h3>Библиотечные материалы</h3>
                 <div className="admin-table">
                     <table>
@@ -1315,7 +1315,7 @@ const StudentCard: React.FC<StudentCardProps> = ({ studentId, onBack, currentUse
                         </tbody>
                     </table>
                 </div>
-            </div>
+            </div> */}
             {isPromoteModalOpen && (
                 <div className="admin-modal-backdrop">
                     <div className="admin-modal">

@@ -1,7 +1,7 @@
 import { useState, useEffect, useMemo } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/lib/supabase/client';
-import { useCoursesAdmin } from './useCoursesAdmin';
+import { useStreams } from './useTariffConfiguration';
 import { useTariffsAdmin } from './useTariffsAdmin';
 import type { Chat, CreateChatData, UpdateChatData } from '@/types';
 
@@ -12,8 +12,8 @@ interface ChatsAdminResult {
     error: Error | null;
 
     // Данные для селекторов
-    courses: Array<{ id: string; title: string }>;
-    coursesLoading: boolean;
+    streams: Array<{ id: string; name: string; course_id: string }>;
+    streamsLoading: boolean;
     tariffs: Array<{ id: string; name: string; code: string }>;
     tariffsLoading: boolean;
 
@@ -26,21 +26,21 @@ interface ChatsAdminResult {
 
 /**
  * Хук для административного управления чатами
- * Включает загрузку курсов и тарифов для селекторов
+ * Включает загрузку потоков и тарифов для селекторов
  */
 export function useChatsAdmin(): ChatsAdminResult {
     const [chats, setChats] = useState<Chat[]>([]);
     const [loading, setLoading] = useState<boolean>(true);
     const [error, setError] = useState<Error | null>(null);
 
-    // Загружаем курсы и тарифы для селекторов
-    const { courses, loading: coursesLoading } = useCoursesAdmin();
+    // Загружаем потоки и тарифы для селекторов
+    const { data: streamsData, isLoading: streamsLoading } = useStreams();
     const { tariffs, loading: tariffsLoading } = useTariffsAdmin();
 
     // Мемоизируем преобразованные массивы для избежания ререндеров
-    const memoizedCourses = useMemo(() =>
-        courses.map(course => ({ id: course.id, title: course.title })),
-        [courses]
+    const memoizedStreams = useMemo(() =>
+        (streamsData || []).map(stream => ({ id: stream.id, name: stream.name, course_id: stream.course_id })),
+        [streamsData]
     );
 
     const memoizedTariffs = useMemo(() =>
@@ -48,7 +48,7 @@ export function useChatsAdmin(): ChatsAdminResult {
         [tariffs]
     );
 
-    // Загрузка списка чатов с course_name через JOIN
+    // Загрузка списка чатов с stream_name через JOIN
     const loadChats = async () => {
         if (!supabase) {
             setError(new Error('Supabase клиент не инициализирован'));
@@ -64,18 +64,18 @@ export function useChatsAdmin(): ChatsAdminResult {
                 .from('chats')
                 .select(`
                     *,
-                    courses:course_id (
-                        title
+                    streams:stream_id (
+                        name
                     )
                 `)
                 .order('order_num', { ascending: true });
 
             if (chatsError) throw chatsError;
 
-            // Преобразуем данные, добавляя course_name
+            // Преобразуем данные, добавляя stream_name
             const transformedChats = chatsData?.map(chat => ({
                 ...chat,
-                course_name: chat.courses?.title || null
+                stream_name: chat.streams?.name || null
             })) || [];
 
             setChats(transformedChats);
@@ -99,8 +99,8 @@ export function useChatsAdmin(): ChatsAdminResult {
                 .insert([data])
                 .select(`
                     *,
-                    courses:course_id (
-                        title
+                    streams:stream_id (
+                        name
                     )
                 `)
                 .single();
@@ -110,7 +110,7 @@ export function useChatsAdmin(): ChatsAdminResult {
             // Преобразуем данные
             const newChat = {
                 ...insertedData,
-                course_name: insertedData.courses?.title || null
+                stream_name: insertedData.streams?.name || null
             } as Chat;
 
             // Обновляем локальное состояние без перезагрузки
@@ -138,8 +138,8 @@ export function useChatsAdmin(): ChatsAdminResult {
                 .eq('id', id)
                 .select(`
                     *,
-                    courses:course_id (
-                        title
+                    streams:stream_id (
+                        name
                     )
                 `)
                 .single();
@@ -149,7 +149,7 @@ export function useChatsAdmin(): ChatsAdminResult {
             // Преобразуем данные
             const updatedChat = {
                 ...updatedData,
-                course_name: updatedData.courses?.title || null
+                stream_name: updatedData.streams?.name || null
             };
 
             // Обновляем локальное состояние без перезагрузки
@@ -195,8 +195,8 @@ export function useChatsAdmin(): ChatsAdminResult {
         error,
 
         // Данные для селекторов
-        courses: memoizedCourses,
-        coursesLoading,
+        streams: memoizedStreams,
+        streamsLoading,
         tariffs: memoizedTariffs,
         tariffsLoading,
 

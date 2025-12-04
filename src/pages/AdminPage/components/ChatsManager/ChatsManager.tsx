@@ -5,7 +5,7 @@ import type { Chat, CreateChatData, UpdateChatData } from '@/types';
 
 /**
  * Компонент для управления Telegram чатами в админ-панели
- * Полный CRUD функционал с drag & drop сортировкой, фильтрацией по курсам
+ * Полный CRUD функционал с drag & drop сортировкой, фильтрацией по потокам
  */
 const ChatsManager: React.FC = () => {
     const {
@@ -16,25 +16,25 @@ const ChatsManager: React.FC = () => {
         createChat,
         updateChat,
         deleteChat,
-        courses,
-        coursesLoading,
+        streams,
+        streamsLoading,
         tariffs,
         tariffsLoading
     } = useChatsAdmin();
 
-    // Состояние для фильтрации по курсам
-    const [selectedCourseFilter, setSelectedCourseFilter] = useState<string>('all');
+    // Состояние для фильтрации по потокам
+    const [selectedStreamFilter, setSelectedStreamFilter] = useState<string>('all');
 
     // Состояние для модальных окон
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [editingChat, setEditingChat] = useState<Chat | null>(null);
     const [modalLoading, setModalLoading] = useState(false);
 
-    // Хук для работы с доступами конкретного чата (курс + тарифы)
+    // Хук для работы с доступами конкретного чата (поток + тарифы)
     const chatAccess = useChatAccess(editingChat?.id || null);
 
-    // Локальное состояние для формы (курс + тарифы)
-    const [selectedCourseId, setSelectedCourseId] = useState<string>('');
+    // Локальное состояние для формы (поток + тарифы)
+    const [selectedStreamId, setSelectedStreamId] = useState<string>('');
     const [selectedTariffIds, setSelectedTariffIds] = useState<string[]>([]);
 
     // Состояние для формы
@@ -48,12 +48,12 @@ const ChatsManager: React.FC = () => {
     // Состояние для drag & drop
     const [draggedChatId, setDraggedChatId] = useState<string | null>(null);
 
-    // Синхронизируем выбранные курс и тарифы с данными из хука
+    // Синхронизируем выбранный поток и тарифы с данными из хука
     useEffect(() => {
         if (editingChat && !chatAccess.loading) {
-            // Устанавливаем курс только если он изменился
-            if (chatAccess.courseId !== selectedCourseId) {
-                setSelectedCourseId(chatAccess.courseId || '');
+            // Устанавливаем поток только если он изменился
+            if (chatAccess.streamId !== selectedStreamId) {
+                setSelectedStreamId(chatAccess.streamId || '');
             }
 
             // Устанавливаем тарифы только если они изменились
@@ -65,21 +65,21 @@ const ChatsManager: React.FC = () => {
                 setSelectedTariffIds(currentTariffIds);
             }
         }
-    }, [editingChat?.id, chatAccess.courseId, chatAccess.tariffIds?.join(','), chatAccess.loading]);
+    }, [editingChat?.id, chatAccess.streamId, chatAccess.tariffIds?.join(','), chatAccess.loading]);
 
-    // Фильтрация чатов по выбранному курсу
-    const filteredChats = selectedCourseFilter === 'all'
+    // Фильтрация чатов по выбранному потоку
+    const filteredChats = selectedStreamFilter === 'all'
         ? chats
-        : chats.filter(chat => chat.course_id === selectedCourseFilter);
+        : chats.filter(chat => chat.stream_id === selectedStreamFilter);
 
-    // Обработчик изменения фильтра курсов
-    const handleCourseFilterChange = (courseId: string) => {
-        setSelectedCourseFilter(courseId);
+    // Обработчик изменения фильтра потоков
+    const handleStreamFilterChange = (streamId: string) => {
+        setSelectedStreamFilter(streamId);
     };
 
-    // Обработчик изменения курса в форме
-    const handleCourseChange = (courseId: string) => {
-        setSelectedCourseId(courseId);
+    // Обработчик изменения потока в форме
+    const handleStreamChange = (streamId: string) => {
+        setSelectedStreamId(streamId);
     };
 
     // Обработчик изменения чекбоксов тарифов
@@ -96,7 +96,7 @@ const ChatsManager: React.FC = () => {
     // Обработчики модального окна
     const openCreateModal = () => {
         setEditingChat(null);
-        setSelectedCourseId('');
+        setSelectedStreamId('');
         setSelectedTariffIds([]);
         setFormData({
             name: '',
@@ -121,7 +121,7 @@ const ChatsManager: React.FC = () => {
     const closeModal = () => {
         setIsModalOpen(false);
         setEditingChat(null);
-        setSelectedCourseId('');
+        setSelectedStreamId('');
         setSelectedTariffIds([]);
         setModalLoading(false);
     };
@@ -137,8 +137,8 @@ const ChatsManager: React.FC = () => {
         if (!formData.link.includes('t.me/')) {
             return 'Ссылка должна содержать t.me/';
         }
-        if (!selectedCourseId) {
-            return 'Курс обязателен для выбора';
+        if (!selectedStreamId) {
+            return 'Поток обязателен для выбора';
         }
         if (formData.order_num < 1) {
             return 'Порядковый номер должен быть больше 0';
@@ -165,14 +165,14 @@ const ChatsManager: React.FC = () => {
                     description: formData.description.trim() || undefined,
                     link: formData.link.trim(),
                     order_num: formData.order_num,
-                    course_id: selectedCourseId
+                    stream_id: selectedStreamId
                 };
 
                 // Параллельно обновляем чат и доступы
                 await Promise.all([
                     updateChat(updateData),
                     chatAccess.saveAccess({
-                        courseId: selectedCourseId,
+                        streamId: selectedStreamId,
                         tariffIds: selectedTariffIds
                     })
                 ]);
@@ -183,11 +183,11 @@ const ChatsManager: React.FC = () => {
                     description: formData.description.trim() || undefined,
                     link: formData.link.trim(),
                     order_num: formData.order_num,
-                    course_id: selectedCourseId
+                    stream_id: selectedStreamId
                 };
                 const createdChat = await createChat(createData);
 
-                // Сохраняем доступы для нового чата (если есть тарифы)
+                // Сохраняем доступы для нового чата (тарифы)
                 if (selectedTariffIds.length > 0) {
                     const { saveChatTariffAccess } = await import('@/lib/supabase/hooks');
                     await saveChatTariffAccess(createdChat.id, selectedTariffIds);
@@ -203,8 +203,8 @@ const ChatsManager: React.FC = () => {
             let errorMessage = 'Произошла ошибка при сохранении чата';
             if (error.message?.includes('duplicate')) {
                 errorMessage = 'Чат с таким названием уже существует';
-            } else if (error.message?.includes('course_id')) {
-                errorMessage = 'Ошибка при связывании с курсом. Проверьте выбранный курс.';
+            } else if (error.message?.includes('stream_id')) {
+                errorMessage = 'Ошибка при связывании с потоком. Проверьте выбранный поток.';
             } else if (error.message) {
                 errorMessage = error.message;
             }
@@ -344,17 +344,17 @@ const ChatsManager: React.FC = () => {
             <div className="admin-toolbar">
                 <div className="admin-filters">
                     <div className="admin-filter-group">
-                        <label>Фильтр по курсу:</label>
+                        <label>Фильтр по потоку:</label>
                         <select
                             className="admin-input"
-                            value={selectedCourseFilter}
-                            onChange={(e) => handleCourseFilterChange(e.target.value)}
+                            value={selectedStreamFilter}
+                            onChange={(e) => handleStreamFilterChange(e.target.value)}
                             style={{ margin: 0, minWidth: '200px' }}
                         >
-                            <option value="all">Все курсы</option>
-                            {courses.map(course => (
-                                <option key={course.id} value={course.id}>
-                                    {course.title}
+                            <option value="all">Все потоки</option>
+                            {streams.map(stream => (
+                                <option key={stream.id} value={stream.id}>
+                                    {stream.name}
                                 </option>
                             ))}
                         </select>
@@ -367,7 +367,7 @@ const ChatsManager: React.FC = () => {
 
             {filteredChats.length === 0 ? (
                 <div className="admin-empty-state">
-                    {selectedCourseFilter === 'all' ? (
+                    {selectedStreamFilter === 'all' ? (
                         <>
                             <p>Чаты не найдены</p>
                             <button className="admin-button" onClick={openCreateModal}>
@@ -375,7 +375,7 @@ const ChatsManager: React.FC = () => {
                             </button>
                         </>
                     ) : (
-                        <p>Чаты для выбранного курса не найдены</p>
+                        <p>Чаты для выбранного потока не найдены</p>
                     )}
                 </div>
             ) : (
@@ -386,7 +386,7 @@ const ChatsManager: React.FC = () => {
                                 <th>🔄</th>
                                 <th>Порядок</th>
                                 <th>Название</th>
-                                <th>Название курса</th>
+                                <th>Поток</th>
                                 <th>Ссылка</th>
                                 <th>Дата создания</th>
                                 <th>Действия</th>
@@ -417,7 +417,7 @@ const ChatsManager: React.FC = () => {
                                         </td>
                                         <td className="font-medium">{chat.name}</td>
                                         <td className="text-gray-600">
-                                            {chat.course_name || '—'}
+                                            {chat.stream_name || '—'}
                                         </td>
                                         <td>
                                             <a
@@ -499,22 +499,22 @@ const ChatsManager: React.FC = () => {
                             />
                         </div>
 
-                        {/* Селектор курса */}
+                        {/* Селектор потока */}
                         <div className="form-group">
-                            <label>Курс *</label>
-                            {coursesLoading ? (
-                                <div className="admin-loading">Загрузка курсов...</div>
+                            <label>Поток *</label>
+                            {streamsLoading ? (
+                                <div className="admin-loading">Загрузка потоков...</div>
                             ) : (
                                 <select
                                     className="admin-input"
-                                    value={selectedCourseId}
-                                    onChange={(e) => handleCourseChange(e.target.value)}
+                                    value={selectedStreamId}
+                                    onChange={(e) => handleStreamChange(e.target.value)}
                                     disabled={modalLoading}
                                 >
-                                    <option value="">Выберите курс</option>
-                                    {courses.map(course => (
-                                        <option key={course.id} value={course.id}>
-                                            {course.title}
+                                    <option value="">Выберите поток</option>
+                                    {streams.map(stream => (
+                                        <option key={stream.id} value={stream.id}>
+                                            {stream.name}
                                         </option>
                                     ))}
                                 </select>
@@ -586,4 +586,4 @@ const ChatsManager: React.FC = () => {
     );
 };
 
-export default ChatsManager; 
+export default ChatsManager;

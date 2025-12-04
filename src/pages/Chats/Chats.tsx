@@ -15,7 +15,7 @@ interface AvailableChat {
     description: string | null;
     link: string;
     order_num: number;
-    course_name: string | null;
+    stream_name: string | null;
 }
 
 export const Chats = () => {
@@ -133,7 +133,7 @@ export const Chats = () => {
                                             <div className={'flex flex-col gap-1'}>
                                                 <p className={' font-semibold'}>{chat.name}</p>
                                                 <p className={'text-sm font-medium text-[#9F9F9F]'}>
-                                                    {chat.description || (chat.course_name ? `Курс: ${chat.course_name}` : '')}
+                                                    {chat.description || (chat.stream_name ? `Поток: ${chat.stream_name}` : '')}
                                                 </p>
                                             </div>
                                         </div>
