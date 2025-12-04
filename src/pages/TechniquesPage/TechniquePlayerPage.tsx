@@ -44,6 +44,7 @@ const TechniquePlayerPage: React.FC = () => {
     console.log('Is Guest:', isGuest);
     console.log('Purchase URL:', technique?.purchase_url);
     console.log('Upgrade Tariff Chat URL:', technique?.upgrade_tariff_chat_url);
+    console.log('Animation URL:', technique?.animation_url);
     console.log('Full Technique Data:', technique);
     console.log('================================');
   }, [id, supabaseUser, isGuest, technique]);
@@ -111,6 +112,7 @@ const TechniquePlayerPage: React.FC = () => {
           audioUrl: technique.audio_url || MOCK_AUDIO_URL,
           coverImage: technique.cover_image,
           moduleName: technique.available_from_module,
+          animationUrl: technique.animation_url,
         }
       });
       return;
@@ -138,6 +140,7 @@ const TechniquePlayerPage: React.FC = () => {
         audioUrl: technique.audio_url,
         coverImage: technique.cover_image,
         moduleName: technique.available_from_module,
+        animationUrl: technique.animation_url,
       }
     });
   };

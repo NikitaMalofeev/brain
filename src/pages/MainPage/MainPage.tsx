@@ -10,6 +10,7 @@ import { useState, useDeferredValue, useMemo } from "react";
 import { X, Loader2 } from "lucide-react";
 import { useGuestStatus } from "@/lib/supabase/hooks/useIsGuest";
 import GuestBlockedModal from "@/components/GuestBlockedModal";
+import RoadMapModal from "@/components/RoadMap/RoadMapModal";
 import { useGlobalSearch } from "@/lib/supabase/hooks/useGlobalSearch";
 import SearchResultCard from "@/components/SearchResultCard/SearchResultCard";
 import LoadingSpinner from "@/components/LoadingSpinner/LoadingSpinner";
@@ -47,6 +48,7 @@ export const MainPage = () => {
     const { supabaseUser } = useSupabaseUser(initDataSignal);
     const [searchQuery, setSearchQuery] = useState('');
     const [showGuestModal, setShowGuestModal] = useState(false);
+    const [showRoadmapModal, setShowRoadmapModal] = useState(false);
 
     // Проверяем является ли пользователь гостем
     const { isGuest } = useGuestStatus(supabaseUser?.id);
@@ -177,7 +179,7 @@ export const MainPage = () => {
                             <motion.button
                                 whileTap={{ scale: 0.95 }}
                                 style={{ touchAction: 'manipulation' }}
-                                onClick={() => navigate('/roadmap')}
+                                onClick={() => setShowRoadmapModal(true)}
                                 className="roadmap"
                                 title="Дорожная карта"
                             >
@@ -325,6 +327,26 @@ export const MainPage = () => {
                 isOpen={showGuestModal}
                 onClose={() => setShowGuestModal(false)}
                 ctaUrl="https://brainprogramming.ru/enroll"
+            />
+
+            {/* Модалка дорожной карты */}
+            <RoadMapModal
+                isOpen={showRoadmapModal}
+                onClose={() => setShowRoadmapModal(false)}
+                stages={modulesAsStages || []}
+                onStageClick={(stageId, moduleId) => {
+                    if (moduleId) {
+                        navigate(`/library/module/${moduleId}`);
+                    }
+                }}
+                isGuest={isGuest || isPreviewMode}
+                onGuestBlock={() => {
+                    setShowRoadmapModal(false);
+                    setShowGuestModal(true);
+                }}
+                userPhotoUrl={supabaseUser?.photo_url}
+                currentWeek={effectiveStreamInfo?.currentWeek || 1}
+                streamStartDate={effectiveStreamInfo?.startDate}
             />
         </Page>
     )

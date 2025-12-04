@@ -6,6 +6,53 @@
   position: relative;
 }
 
+/* Видео-фон - верхние 80% экрана */
+.audio-player-video-background {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 80vh;
+  z-index: 0;
+  overflow: hidden;
+}
+
+.audio-player-video {
+  width: 100%;
+  height: 100%;
+}
+
+.background-video-container {
+  width: 100%;
+  height: 100%;
+  position: relative;
+}
+
+.background-video {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+/* Градиент на границе видео (видео 80vh, overlay перекрывает границу) */
+/* .audio-player-video-overlay {
+  position: absolute;
+  top: 71vh;
+  left: 0;
+  right: 0;
+  height: 10vh;
+  background: linear-gradient(to bottom, transparent 0%, #0F0F0E 100%);
+  z-index: 1;
+  pointer-events: none;
+} */
+
+/* Панель управления поверх видео */
+.audio-player-page .audio-player-controls-panel {
+  position: relative;
+  z-index: 10;
+  margin-top: auto;
+}
+
 /* Область с обложкой/визуализацией */
 .audio-player-cover-area {
   flex: 1;
@@ -38,8 +85,8 @@
   padding: 20px 16px 20px;
   margin: 0 16px;
   background: rgba(0, 0, 0, 0.2);
-  backdrop-filter: blur(50px);
-  -webkit-backdrop-filter: blur(50px);
+  backdrop-filter: blur(3px);
+  -webkit-backdrop-filter: blur(3px);
   border-radius: 32px;
 }
 

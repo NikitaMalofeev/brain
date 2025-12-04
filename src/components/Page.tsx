@@ -2,6 +2,7 @@ import { useNavigate, useLocation } from 'react-router-dom';
 import { type PropsWithChildren, useEffect, useRef } from 'react';
 import { SafeAreaFade } from '@/components/SafeAreaFade/SafeAreaFade';
 import { backButton, miniApp } from '@telegram-apps/sdk-react';
+import { handleModalBack } from '@/lib/modalState';
 import './Page.css';
 
 // Стили для учета отступов safe area с дополнительным отступом для fullscreen режима
@@ -61,6 +62,12 @@ export function Page({
 
       // Обработчик клика на кнопку назад
       const handleBackButtonClick = () => {
+        // Сначала проверяем, есть ли открытая модалка
+        if (handleModalBack()) {
+          // Модалка была закрыта, не делаем ничего больше
+          return;
+        }
+
         if (back) {
           // Обычная навигация назад
           navigate(-1);

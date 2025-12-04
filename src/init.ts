@@ -12,6 +12,7 @@ import {
   themeParamsState,
   retrieveLaunchParams,
   emitEvent,
+  postEvent,
 } from '@telegram-apps/sdk-react';
 
 /**
@@ -71,4 +72,10 @@ export async function init(options: {
     }),
   ]);
 
+  // Expand the Mini App to full screen height
+  try {
+    postEvent('web_app_expand');
+  } catch (e) {
+    console.warn('[init] Failed to expand Mini App:', e);
+  }
 }

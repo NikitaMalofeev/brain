@@ -182,7 +182,7 @@ const RoadMap: React.FC<RoadMapProps> = ({
   return (
     <div
       ref={containerRef}
-      className="relative min-h-screen overflow-hidden"
+      className="relative overflow-hidden"
       style={{
         backgroundImage: `url(${roadmapBg})`,
         backgroundSize: 'cover',
@@ -190,11 +190,13 @@ const RoadMap: React.FC<RoadMapProps> = ({
         backgroundRepeat: 'no-repeat',
         borderRadius: 32,
         marginTop: 0,
+        minHeight: '100%',
+        height: '100%',
       }}
     >
 
       {/* Контент */}
-      <div className="relative z-10 flex flex-col min-h-screen">
+      <div className="relative z-10 flex flex-col" style={{ minHeight: '100%' }}>
 
         {/* Прогресс недель */}
         <div style={{ paddingLeft: 32, paddingRight: 32, paddingTop: 58, marginBottom: 32 }}>

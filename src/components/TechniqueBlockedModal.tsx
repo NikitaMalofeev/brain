@@ -1,3 +1,4 @@
+import { useEffect, useState } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
 
 interface TechniqueBlockedModalProps {
@@ -9,6 +10,9 @@ interface TechniqueBlockedModalProps {
   buttonText?: string;
   onButtonClick?: () => void;
 }
+
+// Высота TabBar
+const TAB_BAR_HEIGHT = 56;
 
 /**
  * Модальное окно для блокированных техник
@@ -23,6 +27,43 @@ export default function TechniqueBlockedModal({
   buttonText = 'Купить',
   onButtonClick,
 }: TechniqueBlockedModalProps) {
+  const [bottomOffset, setBottomOffset] = useState(TAB_BAR_HEIGHT);
+
+  // Получаем safe area bottom из CSS переменной
+  useEffect(() => {
+    const updateBottomOffset = () => {
+      const safeAreaBottom = getComputedStyle(document.documentElement)
+        .getPropertyValue('--safe-area-bottom')
+        .trim();
+      const safeAreaValue = parseInt(safeAreaBottom, 10) || 0;
+      setBottomOffset(TAB_BAR_HEIGHT + safeAreaValue);
+    };
+
+    updateBottomOffset();
+
+    // Слушаем изменения CSS переменных через MutationObserver
+    const observer = new MutationObserver(updateBottomOffset);
+    observer.observe(document.documentElement, {
+      attributes: true,
+      attributeFilter: ['style'],
+    });
+
+    return () => observer.disconnect();
+  }, []);
+
+  // Блокируем скролл body при открытии модалки
+  useEffect(() => {
+    if (isOpen) {
+      document.body.style.overflow = 'hidden';
+    } else {
+      document.body.style.overflow = '';
+    }
+
+    return () => {
+      document.body.style.overflow = '';
+    };
+  }, [isOpen]);
+
   return (
     <AnimatePresence>
       {isOpen && (
@@ -44,7 +85,7 @@ export default function TechniqueBlockedModal({
             transition={{ type: 'spring', damping: 30, stiffness: 300 }}
             className="fixed left-0 right-0 z-50 flex flex-col items-center gap-4"
             style={{
-              bottom: '60px',
+              bottom: `${bottomOffset}px`,
               background: '#0000007A',
               backdropFilter: 'blur(30px)',
               borderTopLeftRadius: '32px',

@@ -2,6 +2,7 @@ import React, { useState, useRef, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { Page } from '@/components/Page';
 import { motion } from 'framer-motion';
+import { BackgroundVideo } from '@/components/BackgroundVideo';
 import './AudioPlayerPage.css';
 
 // Иконки
@@ -16,6 +17,7 @@ interface AudioPlayerState {
   audioUrl: string;
   coverImage?: string;
   moduleName?: string;
+  animationUrl?: string;
 }
 
 // Компонент анимированной сферы из частиц
@@ -174,6 +176,14 @@ const AudioPlayerPage: React.FC = () => {
   const [duration, setDuration] = useState(0);
   const [isDescriptionExpanded, setIsDescriptionExpanded] = useState(false);
 
+  // Логирование для отладки
+  useEffect(() => {
+    console.log('=== AudioPlayerPage DEBUG ===');
+    console.log('State:', state);
+    console.log('animationUrl:', state?.animationUrl);
+    console.log('============================');
+  }, [state]);
+
   // Если нет данных, возвращаемся назад
   useEffect(() => {
     if (!state) {
@@ -262,18 +272,32 @@ const AudioPlayerPage: React.FC = () => {
           onEnded={handleEnded}
         />
 
-        {/* Область с обложкой или анимированной сферой */}
-        <div className="audio-player-cover-area">
-          {state.coverImage ? (
-            <img
-              src={state.coverImage}
-              alt={state.title}
-              className="audio-player-cover-image"
-            />
-          ) : (
-            <ParticleSphere isPlaying={isPlaying} />
-          )}
-        </div>
+        {/* Область с видео-анимацией на фоне */}
+        {state.animationUrl ? (
+          <>
+            <div className="audio-player-video-background">
+              <BackgroundVideo
+                videoSrc={state.animationUrl}
+                fallbackImageSrc={state.coverImage}
+                className="audio-player-video"
+              />
+            </div>
+            {/* Градиентная подложка снизу */}
+            <div className="audio-player-video-overlay" />
+          </>
+        ) : (
+          <div className="audio-player-cover-area">
+            {state.coverImage ? (
+              <img
+                src={state.coverImage}
+                alt={state.title}
+                className="audio-player-cover-image"
+              />
+            ) : (
+              <ParticleSphere isPlaying={isPlaying} />
+            )}
+          </div>
+        )}
 
         {/* Нижняя панель управления */}
         <div className="audio-player-controls-panel">

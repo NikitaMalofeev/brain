@@ -121,7 +121,7 @@ const TechniqueEditor: React.FC<TechniqueEditorProps> = ({
 
   const handleChange = (
     field: keyof TechniqueFormData,
-    value: string | number | null
+    value: string | number | boolean | null
   ) => {
     setFormData((prev) => ({ ...prev, [field]: value }));
   };

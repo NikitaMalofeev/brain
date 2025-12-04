@@ -9,6 +9,7 @@ import DraggableMaterialBlockRow from './DraggableMaterialBlockRow';
 import DraggableMaterialRow from './DraggableMaterialRow';
 import { useTariffsAdmin, useMaterialTariffAccess, useCoursesAdmin } from '@/lib/supabase/hooks';
 import { generateWaveformData } from '@/lib/audio/waveformGenerator';
+import { VideoSelect } from '@/components/VideoSelect';
 
 // Объединенный тип Material (materials + techniques)
 interface Material {
@@ -23,6 +24,7 @@ interface Material {
 
     // Поля от techniques
     audio_url?: string | null;
+    animation_url?: string | null; // URL mp4 анимации для плеера
     duration_seconds?: number | null;
     status?: 'free' | 'purchasable' | 'locked';
     purchase_url?: string | null;
@@ -61,6 +63,7 @@ interface MaterialFormData {
 
     // Поля от techniques
     audio_url: string;
+    animation_url: string | null; // URL mp4 анимации для плеера
     duration_seconds: number | null;
     status: 'free' | 'purchasable' | 'locked';
     purchase_url: string;
@@ -131,6 +134,7 @@ const MaterialsManager: React.FC = () => {
 
         // Поля от techniques
         audio_url: '',
+        animation_url: null,
         duration_seconds: null,
         status: 'free',
         purchase_url: '',
@@ -317,6 +321,7 @@ const MaterialsManager: React.FC = () => {
 
                 // Поля от techniques
                 audio_url: material.audio_url || '',
+                animation_url: material.animation_url || null,
                 duration_seconds: material.duration_seconds || null,
                 status: material.status || 'free',
                 purchase_url: material.purchase_url || '',
@@ -341,6 +346,7 @@ const MaterialsManager: React.FC = () => {
 
                 // Поля от techniques (defaults для нового материала)
                 audio_url: '',
+                animation_url: null,
                 duration_seconds: null,
                 status: 'free',
                 purchase_url: '',
@@ -386,6 +392,7 @@ const MaterialsManager: React.FC = () => {
 
                 // Поля от techniques
                 audio_url: materialForm.audio_url.trim() || null,
+                animation_url: materialForm.animation_url || null,
                 duration_seconds: materialForm.duration_seconds,
                 status: materialForm.status,
                 purchase_url: materialForm.purchase_url.trim() || null,
@@ -1314,6 +1321,18 @@ const MaterialsManager: React.FC = () => {
                                 />
                                 <small style={{ color: '#666', fontSize: '12px' }}>
                                     Для аудио материалов - прямая ссылка на аудио файл
+                                </small>
+                            </div>
+
+                            {/* Анимация для плеера (MP4) */}
+                            <div className="form-group">
+                                <VideoSelect
+                                    value={materialForm.animation_url}
+                                    onChange={(url) => setMaterialForm({ ...materialForm, animation_url: url })}
+                                    label="Анимация для плеера (MP4)"
+                                />
+                                <small style={{ color: '#666', fontSize: '12px', display: 'block', marginTop: '8px' }}>
+                                    Видео будет проигрываться на фоне аудио плеера вместо стандартной анимации
                                 </small>
                             </div>
 

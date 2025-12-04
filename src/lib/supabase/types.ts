@@ -615,6 +615,7 @@ export interface Material extends TimestampFields {
 
   // Специфичные поля (бывшие techniques)
   audio_url?: string | null; // URL аудиофайла (для audio материалов)
+  animation_url?: string | null; // URL mp4 видео-анимации для плеера
   duration_seconds?: number | null; // Длительность
   status?: MaterialStatus; // Статус доступа
   purchase_url?: string | null; // URL для покупки
@@ -662,6 +663,9 @@ export interface MaterialWithAccess extends Material {
   access_granted_at?: string | null;
   access_expires_at?: string | null;
   access_source?: MaterialAccessSource | null;
+  // Алиасы из RPC функции (для обратной совместимости)
+  title?: string; // Алиас для name
+  cover_image?: string | null; // Алиас для cover_image_path
   // Поля из get_user_techniques_with_schedule для расписания модулей
   unlock_day?: number | null; // День открытия в модуле (unlock_offset_days)
   active_days?: number | null; // Количество дней доступа после разблокировки

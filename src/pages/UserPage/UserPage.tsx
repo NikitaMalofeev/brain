@@ -257,32 +257,7 @@ export const UserPage = () => {
                     variants={listVariants}
                     initial="hidden"
                     animate="show"
-                    onClick={(isGuest || isPreviewMode) ? () => setShowGuestModal(true) : undefined}
-                    style={{ cursor: (isGuest || isPreviewMode) ? 'pointer' : 'default' }}
                 >
-                    {/* Оверлей и замочек для гостей на весь блок */}
-                    {(isGuest || isPreviewMode) && (
-                        <>
-                            <div className="absolute inset-0 bg-black/30 rounded-t-3xl z-10 pointer-events-none" />
-                            <div
-                                className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 flex items-center justify-center z-20"
-                                style={{
-                                    width: 44,
-                                    height: 44,
-                                    borderRadius: '50%',
-                                    background: 'rgba(0, 0, 0, 0.3)',
-                                    backdropFilter: 'blur(30px)',
-                                    WebkitBackdropFilter: 'blur(30px)',
-                                    pointerEvents: 'none',
-                                }}
-                            >
-                                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                                    <rect x="3" y="11" width="18" height="11" rx="2" ry="2" />
-                                    <path d="M7 11V7a5 5 0 0 1 10 0v4" />
-                                </svg>
-                            </div>
-                        </>
-                    )}
                     <div className={'flex flex-col gap-2 items-center absolute -top-[94px] left-1/2 -translate-x-1/2 z-30'}>
                         {user?.photo_url ?
                             <img className={'w-36 h-36 rounded-full border-2 border-white'} src={user.photo_url}
@@ -298,7 +273,29 @@ export const UserPage = () => {
                     <p className={'pt-[58px] text-xl font-semibold text-center text-wrap max-w-full px-3 mb-2'}>Привет, {user?.first_name}</p>
                     <motion.div variants={itemVariants} className={' grid grid-cols-2 gap-3 mb-3 px-4'}>
                         {/* Блок уровня с графиком */}
-                        <div className={'row-span-2 flex flex-col items-center justify-center gap-3 px-2 rounded-2xl bg-white'}>
+                        <div className={'row-span-2 flex flex-col items-center justify-center gap-3 px-2 rounded-2xl bg-white relative overflow-hidden'}>
+                            {(isGuest || isPreviewMode) && (
+                                <div
+                                    className="absolute inset-0 bg-black/20 z-10 cursor-pointer rounded-2xl"
+                                    onClick={() => setShowGuestModal(true)}
+                                >
+                                    <div
+                                        className="absolute top-2 right-2 flex items-center gap-1 rounded-full"
+                                        style={{
+                                            padding: '4px 8px',
+                                            background: 'linear-gradient(90deg, rgba(34, 34, 34, 0.6) 0%, rgba(117, 117, 117, 0.6) 100%)',
+                                            backdropFilter: 'blur(30px)',
+                                            WebkitBackdropFilter: 'blur(30px)',
+                                        }}
+                                    >
+                                        <span style={{ fontFamily: 'Nunito', fontWeight: 500, fontSize: '12px', lineHeight: '14px', color: 'white' }}>Только ученикам</span>
+                                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                            <rect x="3" y="11" width="18" height="11" rx="2" ry="2" />
+                                            <path d="M7 11V7a5 5 0 0 1 10 0v4" />
+                                        </svg>
+                                    </div>
+                                </div>
+                            )}
                             <div className={'flex items-center flex-col gap-2'}>
                                 <p className={'text-sm text-center font-medium text-[#9F9F9F]'}>Ваш уровень секретности</p>
                                 <p className={'font-bold text-sm uppercase'}>
@@ -307,11 +304,55 @@ export const UserPage = () => {
                                 <HealingChartRecharts current={(isGuest || isPreviewMode) ? 0 : chartCurrent} />
                             </div>
                         </div>
-                        <div className={'p-3 rounded-2xl bg-white flex items-center flex-col'}>
+                        <div className={'p-3 rounded-2xl bg-white flex items-center flex-col relative overflow-hidden'}>
+                            {(isGuest || isPreviewMode) && (
+                                <div
+                                    className="absolute inset-0 bg-black/20 z-10 cursor-pointer rounded-2xl"
+                                    onClick={() => setShowGuestModal(true)}
+                                >
+                                    <div
+                                        className="absolute top-2 right-2 flex items-center gap-1 rounded-full"
+                                        style={{
+                                            padding: '4px 8px',
+                                            background: 'linear-gradient(90deg, rgba(34, 34, 34, 0.6) 0%, rgba(117, 117, 117, 0.6) 100%)',
+                                            backdropFilter: 'blur(30px)',
+                                            WebkitBackdropFilter: 'blur(30px)',
+                                        }}
+                                    >
+                                        <span style={{ fontFamily: 'Nunito', fontWeight: 500, fontSize: '12px', lineHeight: '14px', color: 'white' }}>Только ученикам</span>
+                                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                            <rect x="3" y="11" width="18" height="11" rx="2" ry="2" />
+                                            <path d="M7 11V7a5 5 0 0 1 10 0v4" />
+                                        </svg>
+                                    </div>
+                                </div>
+                            )}
                             <p className={'text-sm font-medium text-[#9F9F9F]'}>Выполнено</p>
                             <p className={'text-[20px] font-bold'}>{(isGuest || isPreviewMode) ? `0 ${getNounPluralForm(0, 'задание', 'задания', 'заданий')}` : `${completedAssignments} ${getNounPluralForm(completedAssignments, 'задание', 'задания', 'заданий')}`}</p>
                         </div>
-                        <div className={'p-3 rounded-2xl bg-white flex items-center flex-col'}>
+                        <div className={'p-3 rounded-2xl bg-white flex items-center flex-col relative overflow-hidden'}>
+                            {(isGuest || isPreviewMode) && (
+                                <div
+                                    className="absolute inset-0 bg-black/20 z-10 cursor-pointer rounded-2xl"
+                                    onClick={() => setShowGuestModal(true)}
+                                >
+                                    <div
+                                        className="absolute top-2 right-2 flex items-center gap-1 rounded-full"
+                                        style={{
+                                            padding: '4px 8px',
+                                            background: 'linear-gradient(90deg, rgba(34, 34, 34, 0.6) 0%, rgba(117, 117, 117, 0.6) 100%)',
+                                            backdropFilter: 'blur(30px)',
+                                            WebkitBackdropFilter: 'blur(30px)',
+                                        }}
+                                    >
+                                        <span style={{ fontFamily: 'Nunito', fontWeight: 500, fontSize: '12px', lineHeight: '14px', color: 'white' }}>Только ученикам</span>
+                                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                            <rect x="3" y="11" width="18" height="11" rx="2" ry="2" />
+                                            <path d="M7 11V7a5 5 0 0 1 10 0v4" />
+                                        </svg>
+                                    </div>
+                                </div>
+                            )}
                             <p className={'text-sm font-medium text-[#9F9F9F] flex items-center gap-1'}>
                                 Просрочено
                                 {overdueAssignments > 0 && <svg width="16" height="16" viewBox="0 0 16 16" fill="none"
@@ -324,7 +365,29 @@ export const UserPage = () => {
                             <p className={'text-[20px] font-bold'}>{(isGuest || isPreviewMode) ? `0 ${getNounPluralForm(0, 'день', 'дня', 'дней')}` : `${overdueAssignments} ${getNounPluralForm(overdueAssignments, 'день', 'дня', 'дней')}`}</p>
                         </div>
                         <div
-                            className={'py-2 px-4 rounded-2xl bg-white flex items-center col-span-2 gap-2 justify-between'}>
+                            className={'py-2 px-4 rounded-2xl bg-white flex items-center col-span-2 gap-2 justify-between relative overflow-hidden'}>
+                            {(isGuest || isPreviewMode) && (
+                                <div
+                                    className="absolute inset-0 bg-black/20 z-10 cursor-pointer rounded-2xl"
+                                    onClick={() => setShowGuestModal(true)}
+                                >
+                                    <div
+                                        className="absolute top-2 right-2 flex items-center gap-1 rounded-full"
+                                        style={{
+                                            padding: '4px 8px',
+                                            background: 'linear-gradient(90deg, rgba(34, 34, 34, 0.6) 0%, rgba(117, 117, 117, 0.6) 100%)',
+                                            backdropFilter: 'blur(30px)',
+                                            WebkitBackdropFilter: 'blur(30px)',
+                                        }}
+                                    >
+                                        <span style={{ fontFamily: 'Nunito', fontWeight: 500, fontSize: '12px', lineHeight: '14px', color: 'white' }}>Только ученикам</span>
+                                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                            <rect x="3" y="11" width="18" height="11" rx="2" ry="2" />
+                                            <path d="M7 11V7a5 5 0 0 1 10 0v4" />
+                                        </svg>
+                                    </div>
+                                </div>
+                            )}
                             <div className={'flex gap-2 items-center'}>
                                 <img src={'/coin3.png'} style={{ width: 45, height: 46 }} alt="coin" />
                                 <div className={'flex flex-col'}>
@@ -374,17 +437,42 @@ export const UserPage = () => {
                     <motion.div variants={itemVariants} className={'bg-white rounded-t-3xl pt-5'}>
                         <div className={'px-4 flex flex-col gap-3'}>
                             {links.map((el, i) => {
-                                // Все кнопки доступны для гостей (Чаты, FAQ, Помощь)
+                                const isBlocked = (isGuest || isPreviewMode) && (el.link === '/chats' || el.link === '/faq' || el.link === '/help');
                                 return (
                                     <Ripple key={el.link} className="rounded-2xl overflow-hidden">
-                                        <Link
-                                            className={'relative bg-[linear-gradient(271.99deg,_#F1F8FE_0%,_#F1EFFF_100%)] py-4 px-6 rounded-2xl flex flex-col gap-2 items-start justify-between block'}
-                                            to={el.link}>
-                                            <p className={'font-semibold'}>{el.title}</p>
-                                            <img src={'/arrow-icon.svg'} alt="" className={'w-[36px] h-[36px]'} />
-                                            <img src={el.image}
-                                                className={clsx(`absolute mt-4 top-1/2 -right-[70px] -translate-y-1/2 bg-breathe-${i + 5}`, el.className)} />
-                                        </Link>
+                                        <div className="relative">
+                                            <Link
+                                                className={'relative bg-[linear-gradient(271.99deg,_#F1F8FE_0%,_#F1EFFF_100%)] py-4 px-6 rounded-2xl flex flex-col gap-2 items-start justify-between block'}
+                                                to={isBlocked ? '#' : el.link}
+                                                onClick={isBlocked ? (e) => { e.preventDefault(); setShowGuestModal(true); } : undefined}>
+                                                <p className={'font-semibold'}>{el.title}</p>
+                                                <img src={'/arrow-icon.svg'} alt="" className={'w-[36px] h-[36px]'} />
+                                                <img src={el.image}
+                                                    className={clsx(`absolute mt-4 top-1/2 -right-[70px] -translate-y-1/2 bg-breathe-${i + 5}`, el.className)} />
+                                            </Link>
+                                            {isBlocked && (
+                                                <div
+                                                    className="absolute inset-0 bg-black/20 z-10 cursor-pointer rounded-2xl"
+                                                    onClick={() => setShowGuestModal(true)}
+                                                >
+                                                    <div
+                                                        className="absolute top-2 right-2 flex items-center gap-1 rounded-full"
+                                                        style={{
+                                                            padding: '4px 8px',
+                                                            background: 'linear-gradient(90deg, rgba(34, 34, 34, 0.6) 0%, rgba(117, 117, 117, 0.6) 100%)',
+                                                            backdropFilter: 'blur(30px)',
+                                                            WebkitBackdropFilter: 'blur(30px)',
+                                                        }}
+                                                    >
+                                                        <span style={{ fontFamily: 'Nunito', fontWeight: 500, fontSize: '12px', lineHeight: '14px', color: 'white' }}>Только ученикам</span>
+                                                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                                            <rect x="3" y="11" width="18" height="11" rx="2" ry="2" />
+                                                            <path d="M7 11V7a5 5 0 0 1 10 0v4" />
+                                                        </svg>
+                                                    </div>
+                                                </div>
+                                            )}
+                                        </div>
                                     </Ripple>
                                 )
                             })}

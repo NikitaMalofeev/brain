@@ -25,7 +25,8 @@
       "Bash(git remote add:*)",
       "Bash(git push:*)",
       "Bash(xargs -I {} sh -c 'echo \"\"==== {} ====\"\" && head -30 \"\"{}\"\"')",
-      "Bash(git add:*)"
+      "Bash(git add:*)",
+      "Bash(grep:*)"
     ],
     "deny": [],
     "ask": []
