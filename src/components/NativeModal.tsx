@@ -7,9 +7,10 @@ interface NativeModalProps {
     setIsOpen: (isOpen: boolean) => void;
     title: string;
     description: string;
+    coverImage?: string | null;
 }
 
-export default function NativeModal({ isOpen, setIsOpen, title, description }: NativeModalProps) {
+export default function NativeModal({ isOpen, setIsOpen, title, description, coverImage }: NativeModalProps) {
 
     const closeModal = () => {
         setIsOpen(false);
@@ -30,7 +31,7 @@ export default function NativeModal({ isOpen, setIsOpen, title, description }: N
                         <div className={'flex flex-col gap-3 items-center'}>
                             <div className=" bg-white rounded-2xl py-6 px-4 flex flex-col items-center gap-4">
                                 <img
-                                    src="/test.png"
+                                    src={coverImage || "/test.png"}
                                     alt="Demo"
                                     className="rounded-xl w-full object-cover h-[170px]"
                                 />

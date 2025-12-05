@@ -1,5 +1,5 @@
-import React from 'react';
-import { useParams, useLocation } from 'react-router-dom';
+import React, { useMemo } from 'react';
+import { useParams, useLocation, useNavigate } from 'react-router-dom';
 import { Page } from '@/components/Page';
 import { CalendarEvent } from '@/lib/supabase/hooks/useCalendar';
 import EventCardImage from '@/shared/assets/images/eventCard.png';
@@ -12,9 +12,29 @@ import './EventPage.css';
 const EventPage: React.FC = () => {
   const { id } = useParams<{ id: string }>();
   const location = useLocation();
+  const navigate = useNavigate();
 
   // Получаем данные события из state навигации
   const event = location.state?.event as CalendarEvent | undefined;
+
+  // Проверяем, прошло ли время события
+  const isEventTimeReached = useMemo(() => {
+    if (!event) return false;
+
+    const now = new Date();
+    // Формируем дату события
+    let eventDateTime: Date;
+
+    if (event.event_time) {
+      // Если есть время - используем дату + время
+      eventDateTime = new Date(`${event.event_date}T${event.event_time}`);
+    } else {
+      // Если нет времени - начало дня (00:00)
+      eventDateTime = new Date(`${event.event_date}T00:00:00`);
+    }
+
+    return now >= eventDateTime;
+  }, [event]);
 
   // Форматирование даты
   const formatDate = (dateStr: string): string => {
@@ -35,10 +55,44 @@ const EventPage: React.FC = () => {
 
   // Обработчик кнопки "Перейти"
   const handleGoClick = () => {
-    if (event?.external_url) {
+    if (!event) return;
+
+    // Для внешних ссылок (zoom, offline)
+    if (event.external_url) {
       window.open(event.external_url, '_blank');
+      return;
+    }
+
+    // Для открытия урока - переход на страницу урока
+    if (event.event_type === 'lesson_unlock' && event.lesson_id && isEventTimeReached) {
+      navigate(`/lessons/${event.lesson_id}`);
+      return;
     }
   };
+
+  // Определяем, можно ли показать кнопку перехода
+  const canShowButton = useMemo(() => {
+    if (!event) return false;
+
+    // Внешние ссылки - всегда показываем (для zoom можно заранее показать)
+    if (event.external_url) return true;
+
+    // Для lesson_unlock показываем кнопку, если есть lesson_id
+    if (event.event_type === 'lesson_unlock' && event.lesson_id) return true;
+
+    return false;
+  }, [event]);
+
+  // Текст кнопки
+  const buttonText = useMemo(() => {
+    if (!event) return 'Перейти';
+
+    if (event.event_type === 'lesson_unlock') {
+      return 'Перейти к уроку';
+    }
+
+    return 'Перейти';
+  }, [event]);
 
   if (!event) {
     return (
@@ -85,13 +139,13 @@ const EventPage: React.FC = () => {
         </div>
 
         {/* Кнопка "Перейти" */}
-        {event.external_url && (
+        {canShowButton && (
           <div className="event-page-footer">
             <button
               className="event-page-button"
               onClick={handleGoClick}
             >
-              Перейти
+              {buttonText}
             </button>
           </div>
         )}

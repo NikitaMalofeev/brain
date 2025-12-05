@@ -101,7 +101,15 @@ export const UserPage = () => {
     const { modulesAsStages: userModules, loading: stagesLoading, error: stagesError } = useUserStreamModules(supabaseUser?.id);
 
     // Preview данные для гостей без тарифа/потока
-    const { data: previewModules, isLoading: previewLoading } = usePreviewStreamModules();
+    const { data: previewModules, isLoading: previewLoading, error: previewError } = usePreviewStreamModules();
+
+    // Логируем ошибки для отладки
+    if (stagesError) {
+        console.error('useUserStreamModules error:', stagesError);
+    }
+    if (previewError) {
+        console.error('usePreviewStreamModules error:', previewError);
+    }
 
     // Определяем используем ли preview режим (нет модулей у пользователя)
     const isPreviewMode = !stagesLoading && (!userModules || userModules.length === 0);
@@ -113,7 +121,7 @@ export const UserPage = () => {
             stage_id: m.first_stage_id || 0,
             stage_name: m.module_name,
             is_unlocked: true, // Для preview визуально разблокировано
-            cover_image_path: null,
+            cover_image_path: m.module_cover_image || null,
             unlock_day: m.unlock_day,
             module_id: m.module_id,
             total_lessons: m.total_lessons,
@@ -221,8 +229,8 @@ export const UserPage = () => {
         );
     }
 
-    // Если есть ошибка при получении данных
-    if (error || stagesError) {
+    // Если есть ошибка при получении данных (кроме preview - там допустимо)
+    if (error || (stagesError && !isPreviewMode)) {
         return (
             <Page back={false}>
                 <div className="profile-error">
@@ -284,24 +292,13 @@ export const UserPage = () => {
                         <div className={'row-span-2 flex flex-col items-center justify-center gap-3 px-2 rounded-2xl bg-white relative overflow-hidden'}>
                             {(isGuest || isPreviewMode) && (
                                 <div
-                                    className="absolute inset-0 bg-black/20 z-10 cursor-pointer rounded-2xl"
+                                    className="absolute inset-0 bg-black/30 z-10 cursor-pointer rounded-2xl flex items-center justify-center"
                                     onClick={() => setShowGuestModal(true)}
                                 >
-                                    <div
-                                        className="absolute top-2 right-2 flex items-center gap-1 rounded-full"
-                                        style={{
-                                            padding: '4px 8px',
-                                            background: 'linear-gradient(90deg, rgba(34, 34, 34, 0.6) 0%, rgba(117, 117, 117, 0.6) 100%)',
-                                            backdropFilter: 'blur(30px)',
-                                            WebkitBackdropFilter: 'blur(30px)',
-                                        }}
-                                    >
-                                        <span style={{ fontFamily: 'Nunito', fontWeight: 500, fontSize: '12px', lineHeight: '14px', color: 'white' }}>Только ученикам</span>
-                                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                                            <rect x="3" y="11" width="18" height="11" rx="2" ry="2" />
-                                            <path d="M7 11V7a5 5 0 0 1 10 0v4" />
-                                        </svg>
-                                    </div>
+                                    <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                        <rect x="3" y="11" width="18" height="11" rx="2" ry="2" />
+                                        <path d="M7 11V7a5 5 0 0 1 10 0v4" />
+                                    </svg>
                                 </div>
                             )}
                             <div className={'flex items-center flex-col gap-2'}>
@@ -315,24 +312,13 @@ export const UserPage = () => {
                         <div className={'p-3 rounded-2xl bg-white flex items-center flex-col relative overflow-hidden'}>
                             {(isGuest || isPreviewMode) && (
                                 <div
-                                    className="absolute inset-0 bg-black/20 z-10 cursor-pointer rounded-2xl"
+                                    className="absolute inset-0 bg-black/30 z-10 cursor-pointer rounded-2xl flex items-center justify-center"
                                     onClick={() => setShowGuestModal(true)}
                                 >
-                                    <div
-                                        className="absolute top-2 right-2 flex items-center gap-1 rounded-full"
-                                        style={{
-                                            padding: '4px 8px',
-                                            background: 'linear-gradient(90deg, rgba(34, 34, 34, 0.6) 0%, rgba(117, 117, 117, 0.6) 100%)',
-                                            backdropFilter: 'blur(30px)',
-                                            WebkitBackdropFilter: 'blur(30px)',
-                                        }}
-                                    >
-                                        <span style={{ fontFamily: 'Nunito', fontWeight: 500, fontSize: '12px', lineHeight: '14px', color: 'white' }}>Только ученикам</span>
-                                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                                            <rect x="3" y="11" width="18" height="11" rx="2" ry="2" />
-                                            <path d="M7 11V7a5 5 0 0 1 10 0v4" />
-                                        </svg>
-                                    </div>
+                                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                        <rect x="3" y="11" width="18" height="11" rx="2" ry="2" />
+                                        <path d="M7 11V7a5 5 0 0 1 10 0v4" />
+                                    </svg>
                                 </div>
                             )}
                             <p className={'text-sm font-medium text-[#9F9F9F]'}>Выполнено</p>
@@ -341,24 +327,13 @@ export const UserPage = () => {
                         <div className={'p-3 rounded-2xl bg-white flex items-center flex-col relative overflow-hidden'}>
                             {(isGuest || isPreviewMode) && (
                                 <div
-                                    className="absolute inset-0 bg-black/20 z-10 cursor-pointer rounded-2xl"
+                                    className="absolute inset-0 bg-black/30 z-10 cursor-pointer rounded-2xl flex items-center justify-center"
                                     onClick={() => setShowGuestModal(true)}
                                 >
-                                    <div
-                                        className="absolute top-2 right-2 flex items-center gap-1 rounded-full"
-                                        style={{
-                                            padding: '4px 8px',
-                                            background: 'linear-gradient(90deg, rgba(34, 34, 34, 0.6) 0%, rgba(117, 117, 117, 0.6) 100%)',
-                                            backdropFilter: 'blur(30px)',
-                                            WebkitBackdropFilter: 'blur(30px)',
-                                        }}
-                                    >
-                                        <span style={{ fontFamily: 'Nunito', fontWeight: 500, fontSize: '12px', lineHeight: '14px', color: 'white' }}>Только ученикам</span>
-                                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                                            <rect x="3" y="11" width="18" height="11" rx="2" ry="2" />
-                                            <path d="M7 11V7a5 5 0 0 1 10 0v4" />
-                                        </svg>
-                                    </div>
+                                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                        <rect x="3" y="11" width="18" height="11" rx="2" ry="2" />
+                                        <path d="M7 11V7a5 5 0 0 1 10 0v4" />
+                                    </svg>
                                 </div>
                             )}
                             <p className={'text-sm font-medium text-[#9F9F9F]'}>
@@ -370,24 +345,13 @@ export const UserPage = () => {
                             className={'py-2 px-4 rounded-2xl bg-white flex items-center col-span-2 gap-2 justify-between relative overflow-hidden'}>
                             {(isGuest || isPreviewMode) && (
                                 <div
-                                    className="absolute inset-0 bg-black/20 z-10 cursor-pointer rounded-2xl"
+                                    className="absolute inset-0 bg-black/30 z-10 cursor-pointer rounded-2xl flex items-center justify-center"
                                     onClick={() => setShowGuestModal(true)}
                                 >
-                                    <div
-                                        className="absolute top-2 right-2 flex items-center gap-1 rounded-full"
-                                        style={{
-                                            padding: '4px 8px',
-                                            background: 'linear-gradient(90deg, rgba(34, 34, 34, 0.6) 0%, rgba(117, 117, 117, 0.6) 100%)',
-                                            backdropFilter: 'blur(30px)',
-                                            WebkitBackdropFilter: 'blur(30px)',
-                                        }}
-                                    >
-                                        <span style={{ fontFamily: 'Nunito', fontWeight: 500, fontSize: '12px', lineHeight: '14px', color: 'white' }}>Только ученикам</span>
-                                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                                            <rect x="3" y="11" width="18" height="11" rx="2" ry="2" />
-                                            <path d="M7 11V7a5 5 0 0 1 10 0v4" />
-                                        </svg>
-                                    </div>
+                                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                        <rect x="3" y="11" width="18" height="11" rx="2" ry="2" />
+                                        <path d="M7 11V7a5 5 0 0 1 10 0v4" />
+                                    </svg>
                                 </div>
                             )}
                             <div className={'flex gap-2 items-center'}>

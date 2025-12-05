@@ -4,6 +4,7 @@ import { Page } from '@/components/Page';
 import { useSupabaseUser } from '@/lib/supabase/hooks/useSupabaseUser';
 import { useGuestStatus } from '@/lib/supabase/hooks/useIsGuest';
 import { useTechniquesFiltered, BundleGroup } from '@/lib/supabase/hooks/useTechniques';
+import { useUserStreamInfo } from '@/lib/supabase/hooks/useUserStreamInfo';
 import { useUserSpecialBundleTechniques } from '@/lib/supabase/hooks/useSpecialBundles';
 import { useSignal, initDataState } from '@telegram-apps/sdk-react';
 import { logger } from '@/lib/logger';
@@ -43,6 +44,9 @@ const TechniquesPage: React.FC = () => {
 
   // Проверяем является ли пользователь гостем
   const { isGuest, isLoading: guestCheckLoading } = useGuestStatus(supabaseUser?.id);
+
+  // Получаем информацию о потоке пользователя (для расчёта дат открытия)
+  const { data: streamInfo } = useUserStreamInfo(supabaseUser?.id);
 
   // Получаем техники с фильтрацией
   const {
@@ -100,7 +104,22 @@ const TechniquesPage: React.FC = () => {
 
     // Кейс 1: Техника из модуля (заблокирована по времени)
     if (technique.user_access_source === 'module' && technique.module_name && technique.unlock_day !== undefined) {
-      setModalDescription(`Техника из модуля «${technique.module_name}»\nОткроется на ${technique.unlock_day} день`);
+      // Рассчитываем дату открытия
+      let unlockDateText = '';
+      if (streamInfo?.startDate) {
+        const startDate = new Date(streamInfo.startDate);
+        const unlockDate = new Date(startDate);
+        unlockDate.setDate(startDate.getDate() + technique.unlock_day - 1);
+
+        const day = unlockDate.getDate();
+        const monthNames = [
+          'января', 'февраля', 'марта', 'апреля', 'мая', 'июня',
+          'июля', 'августа', 'сентября', 'октября', 'ноября', 'декабря'
+        ];
+        unlockDateText = `${day} ${monthNames[unlockDate.getMonth()]}`;
+      }
+
+      setModalDescription(unlockDateText ? `Доступ откроется ${unlockDateText}` : `Откроется на ${technique.unlock_day} день`);
       return;
     }
 
@@ -392,13 +411,27 @@ const TechniquesPage: React.FC = () => {
                                         navigate(`/techniques/${tech.technique_id}`);
                                       } else {
                                         setModalTitle(`Техника «${tech.technique_name}» недоступна`);
-                                        setModalDescription(
-                                          !tech.is_time_unlocked
-                                            ? `Откроется ${new Date(tech.unlock_date).toLocaleDateString('ru-RU')}${tech.previous_technique_name ? ` после техники «${tech.previous_technique_name}»` : ''}${tech.technique_position > 1 ? ' и оплаты' : ''}.`
-                                            : !tech.is_paid
-                                              ? `Время ожидания прошло, требуется оплата для доступа.`
-                                              : ``
-                                        );
+
+                                        let description = '';
+                                        if (!tech.is_time_unlocked) {
+                                          // Используем delay_days техники (сколько дней ждать после предыдущей)
+                                          const delayDays = tech.delay_days || 30;
+                                          const months = Math.round(delayDays / 30);
+
+                                          const monthText = months <= 1 ? '1 месяц' :
+                                            months >= 2 && months <= 4 ? `${months} месяца` :
+                                            `${months} месяцев`;
+
+                                          if (tech.previous_technique_name) {
+                                            description = `Доступ откроется через ${monthText} после покупки техники «${tech.previous_technique_name}»`;
+                                          } else {
+                                            description = `Доступ откроется через ${monthText}`;
+                                          }
+                                        } else if (!tech.is_paid) {
+                                          description = `Время ожидания прошло, требуется оплата для доступа.`;
+                                        }
+
+                                        setModalDescription(description);
                                         setShowBlockedModal(true);
                                       }
                                     }}

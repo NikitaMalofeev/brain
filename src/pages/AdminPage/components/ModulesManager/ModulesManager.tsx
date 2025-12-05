@@ -1,8 +1,10 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useRef } from 'react';
 import { useStreams } from '@/lib/supabase/hooks/useTariffConfiguration';
 import { useStreamModules } from '@/lib/supabase/hooks/useStreamModules';
 import { supabase } from '@/lib/supabase/client';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { uploadFile, buildFileUrl } from '@/lib/supabase/supabaseStorageService';
+import { FileUploader, FileUploaderRef } from '@/components/FileUploader/FileUploader';
 import {
   Card,
   Button,
@@ -37,7 +39,7 @@ import {
   DeleteOutlined,
 } from '@ant-design/icons';
 
-const { Title, Text } = Typography;
+const { Text } = Typography;
 
 // ========== INTERFACES ==========
 interface StreamModule {
@@ -45,6 +47,7 @@ interface StreamModule {
   stream_id: string;
   name: string;
   color: string | null;
+  cover_image: string | null;
   order_num: number;
 }
 
@@ -55,7 +58,7 @@ interface StreamModule {
 function useCreateModule() {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: async (params: { stream_id: string; name: string; color: string | null; order_num: number }) => {
+    mutationFn: async (params: { stream_id: string; name: string; color: string | null; cover_image: string | null; order_num: number }) => {
       if (!supabase) throw new Error('Supabase not initialized');
       const { data, error } = await supabase
         .from('stream_modules')
@@ -74,11 +77,11 @@ function useCreateModule() {
 function useUpdateModule() {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: async (params: { id: string; name: string; color: string | null; order_num: number }) => {
+    mutationFn: async (params: { id: string; name: string; color: string | null; cover_image: string | null; order_num: number }) => {
       if (!supabase) throw new Error('Supabase not initialized');
       const { data, error } = await supabase
         .from('stream_modules')
-        .update({ name: params.name, color: params.color, order_num: params.order_num })
+        .update({ name: params.name, color: params.color, cover_image: params.cover_image, order_num: params.order_num })
         .eq('id', params.id)
         .select()
         .single();
@@ -111,6 +114,8 @@ const ModulesManager: React.FC = () => {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingModule, setEditingModule] = useState<StreamModule | null>(null);
   const [form] = Form.useForm();
+  const [selectedCoverFile, setSelectedCoverFile] = useState<File | null>(null);
+  const coverUploaderRef = useRef<FileUploaderRef>(null);
 
   // Hooks
   const { data: streams, isLoading: streamsLoading } = useStreams();
@@ -136,6 +141,8 @@ const ModulesManager: React.FC = () => {
   // Handlers
   const openCreateModal = () => {
     setEditingModule(null);
+    setSelectedCoverFile(null);
+    coverUploaderRef.current?.clearFile();
     form.setFieldsValue({
       name: '',
       color: '#3B82F6',
@@ -146,6 +153,8 @@ const ModulesManager: React.FC = () => {
 
   const openEditModal = (module: StreamModule) => {
     setEditingModule(module);
+    setSelectedCoverFile(null);
+    coverUploaderRef.current?.clearFile();
     form.setFieldsValue({
       name: module.name,
       color: module.color || '#3B82F6',
@@ -165,11 +174,21 @@ const ModulesManager: React.FC = () => {
         color = values.color.toHexString();
       }
 
+      // Загружаем обложку если выбрана
+      let coverImagePath = editingModule?.cover_image || null;
+      if (selectedCoverFile) {
+        const uploadedPath = await uploadFile(selectedCoverFile, 'modules');
+        if (uploadedPath) {
+          coverImagePath = uploadedPath;
+        }
+      }
+
       if (editingModule) {
         await updateModuleMutation.mutateAsync({
           id: editingModule.id,
           name: values.name,
           color,
+          cover_image: coverImagePath,
           order_num: values.order_num,
         });
         message.success('Модуль обновлён');
@@ -178,11 +197,13 @@ const ModulesManager: React.FC = () => {
           stream_id: selectedStreamId!,
           name: values.name,
           color,
+          cover_image: coverImagePath,
           order_num: values.order_num,
         });
         message.success('Модуль создан');
       }
       setIsModalOpen(false);
+      setSelectedCoverFile(null);
     } catch (err: any) {
       message.error(err?.message || 'Ошибка при сохранении');
     }
@@ -266,6 +287,24 @@ const ModulesManager: React.FC = () => {
               rowKey="id"
               pagination={false}
               columns={[
+                {
+                  title: 'Обложка',
+                  dataIndex: 'cover_image',
+                  width: 80,
+                  render: (cover_image: string | null) => (
+                    cover_image ? (
+                      <img
+                        src={buildFileUrl(cover_image) || ''}
+                        alt="cover"
+                        style={{ width: 60, height: 40, objectFit: 'cover', borderRadius: 4 }}
+                      />
+                    ) : (
+                      <div style={{ width: 60, height: 40, borderRadius: 4, background: '#f0f0f0', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                        <Text type="secondary" style={{ fontSize: 10 }}>Нет</Text>
+                      </div>
+                    )
+                  ),
+                },
                 {
                   title: 'Цвет',
                   dataIndex: 'color',
@@ -364,6 +403,32 @@ const ModulesManager: React.FC = () => {
           </Form.Item>
           <Form.Item name="order_num" label="Порядковый номер">
             <InputNumber min={1} style={{ width: '100%' }} />
+          </Form.Item>
+
+          {/* Обложка модуля */}
+          <Form.Item label="Обложка модуля">
+            <Space direction="vertical" style={{ width: '100%' }}>
+              {editingModule?.cover_image && !selectedCoverFile && (
+                <div style={{ marginBottom: 8 }}>
+                  <Text type="secondary" style={{ fontSize: 12, display: 'block', marginBottom: 4 }}>Текущая обложка:</Text>
+                  <img
+                    src={buildFileUrl(editingModule.cover_image) || ''}
+                    alt="cover"
+                    style={{ maxWidth: 200, maxHeight: 120, objectFit: 'cover', borderRadius: 8 }}
+                  />
+                </div>
+              )}
+              <FileUploader
+                ref={coverUploaderRef}
+                acceptedTypes="image/*"
+                onFileSelected={(file: File | null) => setSelectedCoverFile(file)}
+              />
+              {selectedCoverFile && (
+                <Text type="secondary" style={{ fontSize: 12 }}>
+                  Выбран файл: {selectedCoverFile.name}
+                </Text>
+              )}
+            </Space>
           </Form.Item>
         </Form>
       </Modal>

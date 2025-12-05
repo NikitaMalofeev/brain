@@ -8,6 +8,7 @@ export interface UserStreamModule {
     module_name: string;
     module_order_num: number;
     module_color: string | null;
+    module_cover_image: string | null; // Обложка модуля
     is_unlocked: boolean;
     total_lessons: number;
     completed_lessons: number;
@@ -99,7 +100,7 @@ export function useUserStreamModules(userId: string | null | undefined): UseUser
         completed_lessons: module.completed_lessons,
         unlocked_lessons: module.unlocked_lessons,
         overdue_lessons: module.overdue_lessons || 0,
-        cover_image_path: null, // stream_modules не имеют обложек
+        cover_image_path: module.module_cover_image || null, // Обложка модуля из БД
         // Дополнительные поля
         module_id: module.module_id,
         module_color: module.module_color,

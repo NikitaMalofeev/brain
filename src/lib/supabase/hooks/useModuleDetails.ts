@@ -24,6 +24,7 @@ export interface ModuleDetails {
   module_name: string;
   module_description: string;
   module_color: string | null;
+  module_cover_image: string | null;
   module_order_num: number;
   stream_id: string;
   stream_name: string;
@@ -76,13 +77,17 @@ export function useModuleDetails(
         moduleId,
         moduleName: result.module_name,
         lessonsCount: result.lessons?.length || 0,
+        coverImage: result.module_cover_image,
       });
+
+      console.log('Module cover_image from DB:', result.module_cover_image);
 
       return {
         module_id: result.module_id,
         module_name: result.module_name,
         module_description: result.module_description,
         module_color: result.module_color,
+        module_cover_image: result.module_cover_image || null,
         module_order_num: result.module_order_num,
         stream_id: result.stream_id,
         stream_name: result.stream_name,

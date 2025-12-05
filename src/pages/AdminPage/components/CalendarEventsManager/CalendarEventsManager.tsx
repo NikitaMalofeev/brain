@@ -9,6 +9,7 @@ import {
   useStreamModulesForSelect,
   useEventTariffs,
   useUpdateEventTariffs,
+  useModuleLessonsForSelect,
 } from '@/lib/supabase/hooks/useCalendar';
 
 interface CalendarEvent {
@@ -116,6 +117,9 @@ const CalendarEventsManager: React.FC = () => {
 
   // Модули потока
   const { data: modules } = useStreamModulesForSelect(selectedStreamId);
+
+  // Уроки выбранного модуля (для типа lesson_unlock)
+  const { data: moduleLessons } = useModuleLessonsForSelect(formData.module_id || null);
 
   // Тарифы
   const { tariffs } = useTariffsAdmin();
@@ -430,7 +434,12 @@ const CalendarEventsManager: React.FC = () => {
                 </label>
                 <select
                   value={formData.module_id}
-                  onChange={(e) => setFormData(prev => ({ ...prev, module_id: e.target.value }))}
+                  onChange={(e) => setFormData(prev => ({
+                    ...prev,
+                    module_id: e.target.value,
+                    // Сбрасываем lesson_id при смене модуля
+                    lesson_id: ''
+                  }))}
                   className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#B862EA] focus:border-transparent"
                 >
                   <option value="">-- Без модуля --</option>
@@ -461,14 +470,28 @@ const CalendarEventsManager: React.FC = () => {
               {formData.event_type === 'lesson_unlock' && (
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">
-                    ID урока
+                    Урок
                   </label>
-                  <input
-                    type="number"
-                    value={formData.lesson_id}
-                    onChange={(e) => setFormData(prev => ({ ...prev, lesson_id: e.target.value }))}
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#B862EA] focus:border-transparent"
-                  />
+                  {formData.module_id ? (
+                    moduleLessons && moduleLessons.length > 0 ? (
+                      <select
+                        value={formData.lesson_id}
+                        onChange={(e) => setFormData(prev => ({ ...prev, lesson_id: e.target.value }))}
+                        className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#B862EA] focus:border-transparent"
+                      >
+                        <option value="">-- Выберите урок --</option>
+                        {moduleLessons.map((lesson) => (
+                          <option key={lesson.id} value={lesson.id}>
+                            {lesson.order_num}. {lesson.name}
+                          </option>
+                        ))}
+                      </select>
+                    ) : (
+                      <p className="text-sm text-gray-500 py-2">В этом модуле нет уроков</p>
+                    )
+                  ) : (
+                    <p className="text-sm text-amber-600 py-2">Сначала выберите модуль</p>
+                  )}
                 </div>
               )}
 

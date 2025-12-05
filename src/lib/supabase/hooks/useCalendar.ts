@@ -402,3 +402,31 @@ export function useUpdateEventTariffs() {
     },
   });
 }
+
+/**
+ * Хук для получения уроков модуля (для выбора в форме события)
+ */
+export function useModuleLessonsForSelect(moduleId: string | null) {
+  return useQuery({
+    queryKey: ['module-lessons-select', moduleId],
+    queryFn: async () => {
+      if (!moduleId || !supabase) {
+        return [];
+      }
+
+      const { data, error } = await supabase
+        .from('lessons')
+        .select('id, name, order_num')
+        .eq('stream_module_id', moduleId)
+        .order('order_num', { ascending: true });
+
+      if (error) {
+        logger.error('Error fetching module lessons for select', { error });
+        throw error;
+      }
+
+      return data || [];
+    },
+    enabled: !!moduleId && !!supabase,
+  });
+}

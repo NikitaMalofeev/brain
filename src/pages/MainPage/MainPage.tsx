@@ -73,7 +73,7 @@ export const MainPage = () => {
             stage_id: m.first_stage_id || 0,
             stage_name: m.module_name,
             is_unlocked: true, // Для preview визуально разблокировано
-            cover_image_path: null,
+            cover_image_path: m.module_cover_image || null,
             unlock_day: m.unlock_day,
             module_id: m.module_id,
             total_lessons: m.total_lessons,

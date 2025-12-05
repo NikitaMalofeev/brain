@@ -37,35 +37,7 @@ const itemVariants = {
     },
 };
 
-/**
- * Хук для получения данных модуля (название, описание, order_num)
- * Получаем напрямую из stream_modules
- */
-function useModuleInfo(moduleId: string | undefined) {
-    return useQuery({
-        queryKey: ['module-info', moduleId],
-        queryFn: async () => {
-            if (!moduleId || !supabase) return null;
-
-            // Получаем данные модуля напрямую
-            const { data, error } = await supabase
-                .from('stream_modules')
-                .select('id, name, order_num')
-                .eq('id', moduleId)
-                .single();
-
-            if (error || !data) return null;
-
-            return {
-                name: data.name,
-                description: null, // stream_modules не имеет description
-                order_num: data.order_num,
-            };
-        },
-        enabled: !!moduleId,
-        staleTime: 10 * 60 * 1000,
-    });
-}
+// useModuleInfo удален - данные теперь берутся из useModuleStages
 
 /**
  * Хук для получения данных о доступе к модулю (stream_start_date, module_unlock_offset)
@@ -197,19 +169,22 @@ const ModuleStagesPage: React.FC = () => {
     const { supabaseUser, loading: userLoading } = useSupabaseUser(initDataSignal);
     const { isGuest } = useGuestStatus(supabaseUser?.id);
 
-    const { data: stages, isLoading: stagesLoading, error: stagesError } = useModuleStages(moduleId || null);
+    const { data: stagesData, isLoading: stagesLoading, error: stagesError } = useModuleStages(moduleId || null);
 
-    // Получаем данные модуля (название, описание, order_num)
-    const { data: moduleInfo, isLoading: moduleInfoLoading, error: moduleInfoError } = useModuleInfo(moduleId);
-    console.log('🔍 [DEBUG] moduleId:', moduleId);
-    console.log('🔍 [DEBUG] moduleInfo:', moduleInfo);
-    console.log('🔍 [DEBUG] moduleInfoLoading:', moduleInfoLoading);
-    console.log('🔍 [DEBUG] moduleInfoError:', moduleInfoError);
+    // Извлекаем stages и moduleInfo из результата
+    const stages = stagesData?.stages;
+    const moduleInfo = stagesData?.moduleInfo;
+
     const moduleName = moduleInfo?.name;
     const moduleDescription = moduleInfo?.description;
     const moduleOrderNum = moduleInfo?.order_num || 1;
-    // Используем локальную картинку как на MainPage: /step11.png, /step22.png и т.д.
-    const moduleCoverUrl = `/step${moduleOrderNum}${moduleOrderNum}.png`;
+    const moduleCoverImage = moduleInfo?.cover_image;
+    // Если есть загруженная обложка - используем её, иначе fallback на локальную картинку
+    const moduleCoverUrl = moduleCoverImage ? buildFileUrl(moduleCoverImage) : `/step${moduleOrderNum}${moduleOrderNum}.png`;
+
+    console.log('🔍 [DEBUG] moduleInfo:', moduleInfo);
+    console.log('🔍 [DEBUG] moduleCoverImage:', moduleCoverImage);
+    console.log('🔍 [DEBUG] moduleCoverUrl:', moduleCoverUrl);
 
     // Получаем данные о доступе к модулю
     const { data: accessData, isLoading: accessLoading } = useModuleAccessData(supabaseUser?.id, moduleId);
@@ -249,7 +224,7 @@ const ModuleStagesPage: React.FC = () => {
         });
     }, [stages, streamStartDate, moduleUnlockOffset]);
 
-    const loading = userLoading || stagesLoading || accessLoading || moduleInfoLoading;
+    const loading = userLoading || stagesLoading || accessLoading;
 
     const handleStageClick = (lessonId: number, isUnlocked: boolean) => {
         if (isGuest) {
@@ -309,7 +284,7 @@ const ModuleStagesPage: React.FC = () => {
 
     return (
         <Page showTabBar={false}>
-            <div className="min-h-full text-black pt-4 px-4 pb-4" style={{ backgroundImage: `url(${Background1})`, backgroundSize: '120%', backgroundPosition: 'top', backgroundAttachment: 'fixed', backgroundRepeat: 'no-repeat' }}>
+            <div className="min-h-screen text-black pt-4 px-4 pb-4" style={{ backgroundImage: `url(${Background1})`, backgroundSize: '120%', backgroundPosition: 'top', backgroundAttachment: 'fixed', backgroundRepeat: 'no-repeat' }}>
                 {/* Белая карточка с заголовком и прогрессом */}
                 <div
                     className="p-4 flex flex-col"

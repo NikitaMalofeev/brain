@@ -21,17 +21,43 @@ export interface StageWithLessons extends Partial<CourseStage> {
   lessons: Lesson[];
 }
 
+// Данные модуля
+export interface ModuleInfo {
+  name: string;
+  description: string | null;
+  order_num: number;
+  cover_image: string | null;
+}
+
+// Результат хука с информацией о модуле
+export interface ModuleStagesResult {
+  stages: StageWithLessons[];
+  moduleInfo: ModuleInfo | null;
+}
+
 /**
  * Получить уроки модуля как "ступени" (для обратной совместимости)
  * Теперь работает напрямую с lessons через stream_module_id
+ * Также возвращает информацию о самом модуле
  */
 export function useModuleStages(streamModuleId: string | null) {
   return useQuery({
     queryKey: ['module-stages', streamModuleId],
-    queryFn: async (): Promise<StageWithLessons[]> => {
-      if (!streamModuleId || !supabase) return [];
+    queryFn: async (): Promise<ModuleStagesResult> => {
+      if (!streamModuleId || !supabase) return { stages: [], moduleInfo: null };
 
       logger.debug('Fetching lessons for module (as stages)', { streamModuleId });
+
+      // Получаем данные модуля
+      const { data: moduleData, error: moduleError } = await supabase
+        .from('stream_modules')
+        .select('name, order_num, cover_image')
+        .eq('id', streamModuleId)
+        .single();
+
+      if (moduleError) {
+        logger.error('Error fetching module info', { streamModuleId, error: moduleError });
+      }
 
       // Получаем уроки напрямую через stream_module_id
       const { data: lessons, error } = await supabase
@@ -47,7 +73,7 @@ export function useModuleStages(streamModuleId: string | null) {
 
       // Преобразуем каждый урок в "ступень" с одним уроком для обратной совместимости
       // Это позволяет использовать существующие компоненты без изменений
-      return (lessons || []).map(lesson => ({
+      const stages = (lessons || []).map(lesson => ({
         id: lesson.stage_id || lesson.id, // Используем stage_id если есть, иначе lesson.id
         name: lesson.name,
         description: lesson.description,
@@ -55,6 +81,16 @@ export function useModuleStages(streamModuleId: string | null) {
         cover_image_path: lesson.cover_image_path || null,
         lessons: [lesson], // Каждая "ступень" содержит один урок
       }));
+
+      return {
+        stages,
+        moduleInfo: moduleData ? {
+          name: moduleData.name,
+          description: null,
+          order_num: moduleData.order_num,
+          cover_image: moduleData.cover_image || null,
+        } : null,
+      };
     },
     enabled: !!streamModuleId,
     staleTime: 2 * 60 * 1000, // 2 минуты

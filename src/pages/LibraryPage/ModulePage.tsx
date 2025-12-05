@@ -4,6 +4,7 @@ import { useSignal, initDataState } from '@telegram-apps/sdk-react';
 import { Page } from '@/components/Page';
 import LessonCard from '@/components/LessonCard/LessonCard';
 import { useModuleDetails } from '@/lib/supabase/hooks/useModuleDetails';
+import { buildFileUrl } from '@/lib/supabase/supabaseStorageService';
 import { LessonData } from '@/lib/supabase/hooks/useStageDetails';
 import { useSupabaseUser } from '@/lib/supabase/hooks';
 import { useGuestStatus } from '@/lib/supabase/hooks/useIsGuest';
@@ -225,6 +226,7 @@ const ModulePage: React.FC = () => {
         description={moduleDetails.module_description}
         isOpen={isOpen}
         setIsOpen={setIsOpen}
+        coverImage={moduleDetails.module_cover_image ? buildFileUrl(moduleDetails.module_cover_image) : null}
       />
       <GuestBlockedModal
         isOpen={showGuestModal}

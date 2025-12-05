@@ -56,7 +56,11 @@ export const uploadFile = async (file: File, prefix: string = ''): Promise<strin
 
   const fileExt = file.name.split('.').pop();
   const fileName = `${Date.now()}.${fileExt}`;
-  const filePath = `${prefix}${fileName}`;
+  // Добавляем слеш после prefix если его нет
+  const normalizedPrefix = prefix && !prefix.endsWith('/') ? `${prefix}/` : prefix;
+  const filePath = `${normalizedPrefix}${fileName}`;
+
+  console.log('Uploading file to bucket:', BUCKET_NAME, 'path:', filePath);
 
   const { error } = await supabase.storage
     .from(BUCKET_NAME)
@@ -67,6 +71,7 @@ export const uploadFile = async (file: File, prefix: string = ''): Promise<strin
     throw new Error(`Не удалось загрузить файл: ${error.message}`);
   }
 
+  console.log('File uploaded successfully:', filePath);
   return filePath;
 };
 

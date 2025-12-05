@@ -86,11 +86,8 @@ const StageCard: React.FC<StageCardProps> = ({
                         )}
                     >
                     <img
-                        src={buildFileUrl(coverImagePath) || `/step${orderNum}${orderNum}.png`}
+                        src={`/step${orderNum}${orderNum}.png`}
                         className={clsx("w-full h-[140px] md:h-[200px] object-cover", `bg-breathe-${orderNum}`)}
-                        onError={(e) => {
-                            e.currentTarget.src = `/step${orderNum}${orderNum}.png`;
-                        }}
                         alt=""
                     />
                     {/* Затемнение для заблокированных карточек */}

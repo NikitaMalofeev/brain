@@ -16,6 +16,7 @@ export interface PreviewStreamModule {
     module_name: string;
     module_order_num: number;
     module_color: string;
+    module_cover_image: string | null;
     is_unlocked: boolean;
     total_lessons: number;
     completed_lessons: number;
