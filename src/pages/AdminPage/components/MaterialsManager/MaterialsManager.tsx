@@ -162,6 +162,10 @@ const MaterialsManager: React.FC = () => {
     const [selectedFile, setSelectedFile] = useState<File | null>(null);
     const [uploadedFileUrl, setUploadedFileUrl] = useState<string>('');
 
+    // Ref для загрузчика аудио в модальном окне материала
+    const materialAudioUploaderRef = useRef<FileUploaderRef>(null);
+    const [selectedAudioFile, setSelectedAudioFile] = useState<File | null>(null);
+
     // Загрузка и ошибки
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState('');
@@ -368,6 +372,7 @@ const MaterialsManager: React.FC = () => {
         setMaterialModalOpen(false);
         setEditingMaterial(null);
         setSelectedTariffIds([]);
+        setSelectedAudioFile(null);
         setError('');
         setSuccess('');
     };
@@ -382,6 +387,18 @@ const MaterialsManager: React.FC = () => {
         }
 
         try {
+            // Если выбран аудио файл, загружаем его
+            let finalAudioUrl = materialForm.audio_url.trim() || null;
+            if (selectedAudioFile && materialAudioUploaderRef.current?.hasSelectedFile()) {
+                const uploadResult = await materialAudioUploaderRef.current.uploadFile();
+                if (uploadResult && uploadResult.filePath) {
+                    finalAudioUrl = uploadResult.filePath;
+                } else {
+                    setError('Ошибка загрузки аудио файла');
+                    return;
+                }
+            }
+
             const materialData: any = {
                 name: materialForm.name.trim(),
                 description: materialForm.description.trim() || null,
@@ -391,7 +408,7 @@ const MaterialsManager: React.FC = () => {
                 release_date: materialForm.release_date ? new Date(materialForm.release_date).toISOString() : null,
 
                 // Поля от techniques
-                audio_url: materialForm.audio_url.trim() || null,
+                audio_url: finalAudioUrl,
                 animation_url: materialForm.animation_url || null,
                 duration_seconds: materialForm.duration_seconds,
                 status: materialForm.status,
@@ -1306,34 +1323,57 @@ const MaterialsManager: React.FC = () => {
 
                             </div>
 
-                            {/* Поля от techniques */}
-                            <hr style={{ margin: '20px 0', borderColor: '#e0e0e0' }} />
-                            <h4 style={{ marginBottom: '16px', color: '#666' }}>Расширенные настройки (от Techniques)</h4>
+                            {/* Аудио и анимация */}
+                            <div style={{
+                                marginTop: '24px',
+                                padding: '20px',
+                                backgroundColor: 'var(--admin-bg-lighter)',
+                                borderRadius: '12px',
+                                border: '1px solid var(--admin-border)'
+                            }}>
+                                <div className="form-group" style={{ marginBottom: '20px' }}>
+                                    <label style={{ fontWeight: 600, marginBottom: '12px', display: 'block' }}>
+                                        Аудио файл
+                                    </label>
+                                    <FileUploader
+                                        ref={materialAudioUploaderRef}
+                                        onFileSelected={(file) => setSelectedAudioFile(file)}
+                                        onUploadError={(error) => setError(`Ошибка загрузки аудио: ${error}`)}
+                                        acceptedTypes="audio/mpeg,audio/wav,audio/mp3,audio/mp4,audio/m4a,audio/aac,audio/flac"
+                                        filePrefix={FILE_PREFIXES.AUDIO}
+                                        currentFileUrl={materialForm.audio_url ? buildFileUrl(materialForm.audio_url) || undefined : undefined}
+                                        disabled={false}
+                                    />
 
-                            <div className="form-group">
-                                <label>URL аудио файла</label>
-                                <input
-                                    type="text"
-                                    className="admin-input"
-                                    value={materialForm.audio_url}
-                                    onChange={(e) => setMaterialForm({ ...materialForm, audio_url: e.target.value })}
-                                    placeholder="https://..."
-                                />
-                                <small style={{ color: '#666', fontSize: '12px' }}>
-                                    Для аудио материалов - прямая ссылка на аудио файл
-                                </small>
-                            </div>
+                                    <div style={{
+                                        marginTop: '16px',
+                                        padding: '12px',
+                                        backgroundColor: 'var(--admin-bg)',
+                                        borderRadius: '8px'
+                                    }}>
+                                        <label style={{ fontSize: '13px', color: '#666', marginBottom: '8px', display: 'block' }}>
+                                            Или вставьте ссылку вручную:
+                                        </label>
+                                        <input
+                                            type="text"
+                                            className="admin-input"
+                                            value={materialForm.audio_url}
+                                            onChange={(e) => setMaterialForm({ ...materialForm, audio_url: e.target.value })}
+                                            placeholder="https://..."
+                                        />
+                                    </div>
+                                </div>
 
-                            {/* Анимация для плеера (MP4) */}
-                            <div className="form-group">
-                                <VideoSelect
-                                    value={materialForm.animation_url}
-                                    onChange={(url) => setMaterialForm({ ...materialForm, animation_url: url })}
-                                    label="Анимация для плеера (MP4)"
-                                />
-                                <small style={{ color: '#666', fontSize: '12px', display: 'block', marginTop: '8px' }}>
-                                    Видео будет проигрываться на фоне аудио плеера вместо стандартной анимации
-                                </small>
+                                <div className="form-group" style={{ marginBottom: 0 }}>
+                                    <VideoSelect
+                                        value={materialForm.animation_url}
+                                        onChange={(url) => setMaterialForm({ ...materialForm, animation_url: url })}
+                                        label="Анимация для плеера (MP4)"
+                                    />
+                                    <small style={{ color: '#888', fontSize: '12px', display: 'block', marginTop: '8px' }}>
+                                        Видео будет проигрываться на фоне аудио плеера
+                                    </small>
+                                </div>
                             </div>
 
                             <div className="form-row">
