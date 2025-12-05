@@ -41,6 +41,12 @@ const { Text, Title } = Typography;
 const { TextArea } = Input;
 const { Panel } = Collapse;
 
+// Типы данных для потоков
+interface Stream {
+    id: string;
+    name: string;
+}
+
 // Типы данных для сабмитов с assignment_id
 interface SubmissionWithDetails {
     id: number;
@@ -61,6 +67,7 @@ interface SubmissionWithDetails {
     user_photo_url?: string;
     lesson_name: string;
     stage_name: string;
+    stream_id?: string;
     reviewer_name?: string;
     lesson_deadline?: string;
     assignment_title?: string;
@@ -83,6 +90,7 @@ interface LessonSubmissionGroup {
     lesson_id: number;
     lesson_name: string;
     stage_name: string;
+    stream_id?: string;
     submissions: SubmissionWithDetails[];
     total_assignments: number;
     submitted_assignments: number;
@@ -110,9 +118,12 @@ const SubmissionsManager: React.FC<SubmissionsManagerProps> = ({
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
     const [statusFilter, setStatusFilter] = useState<string>('pending');
+    const [streamFilter, setStreamFilter] = useState<string>('all');
+    const [streams, setStreams] = useState<Stream[]>([]);
     const [currentUser, setCurrentUser] = useState<{ id: string; role: string } | null>(null);
     const [feedbackModalOpen, setFeedbackModalOpen] = useState<string | null>(null);
     const [feedbackText, setFeedbackText] = useState<string>('');
+    const [feedbackModalGroup, setFeedbackModalGroup] = useState<LessonSubmissionGroup | null>(null);
     const [lessonAssignments, setLessonAssignments] = useState<Record<number, any[]>>({});
 
     const [manualApproveModal, setManualApproveModal] = useState<{
@@ -152,6 +163,14 @@ const SubmissionsManager: React.FC<SubmissionsManagerProps> = ({
             }
             setCurrentUser(effectiveCurrentUser || null);
 
+            // Загружаем список потоков
+            const { data: streamsData } = await supabase
+                .from('streams')
+                .select('id, name')
+                .order('start_date', { ascending: false });
+
+            setStreams(streamsData || []);
+
             const { data: assignmentsData } = await supabase
                 .from('assignments')
                 .select('id, lesson_id, title, order_num');
@@ -178,7 +197,7 @@ const SubmissionsManager: React.FC<SubmissionsManagerProps> = ({
                     lessons!submissions_lesson_id_fkey (
                         name,
                         deadline_at,
-                        course_stages!lessons_stage_id_fkey (name)
+                        stream_modules (name, stream_id)
                     ),
                     assignments!submissions_assignment_id_fkey (id, title, order_num),
                     reviewer:users!submissions_reviewed_by_curator_id_fkey(first_name, last_name)
@@ -225,7 +244,8 @@ const SubmissionsManager: React.FC<SubmissionsManagerProps> = ({
                 user_photo_url: submission.users?.photo_url,
                 lesson_name: submission.lessons?.name || 'Неизвестный урок',
                 lesson_deadline: submission.lessons?.deadline_at,
-                stage_name: submission.lessons?.course_stages?.name || 'Неизвестная ступень',
+                stage_name: submission.lessons?.stream_modules?.name || 'Неизвестный модуль',
+                stream_id: submission.lessons?.stream_modules?.stream_id,
                 reviewer_name: submission.reviewer?.first_name && submission.reviewer?.last_name
                     ? `${submission.reviewer.first_name} ${submission.reviewer.last_name}`
                     : submission.reviewer?.first_name,
@@ -290,6 +310,7 @@ const SubmissionsManager: React.FC<SubmissionsManagerProps> = ({
                     lesson_id: submission.lesson_id,
                     lesson_name: submission.lesson_name,
                     stage_name: submission.stage_name,
+                    stream_id: submission.stream_id,
                     submissions: [],
                     total_assignments: totalAssignments,
                     submitted_assignments: 0,
@@ -315,6 +336,12 @@ const SubmissionsManager: React.FC<SubmissionsManagerProps> = ({
 
     const filteredGroups = useMemo(() => {
         return groupedSubmissions.filter(group => {
+            // Фильтр по потоку
+            if (streamFilter !== 'all' && group.stream_id !== streamFilter) {
+                return false;
+            }
+
+            // Фильтр по статусу
             if (statusFilter === 'all') return true;
             if (statusFilter === 'pending') {
                 return group.submissions.some(s => ['submitted', 'pending_review'].includes(s.status));
@@ -325,7 +352,7 @@ const SubmissionsManager: React.FC<SubmissionsManagerProps> = ({
             }
             return true;
         });
-    }, [groupedSubmissions, statusFilter]);
+    }, [groupedSubmissions, statusFilter, streamFilter]);
 
     const handleQuickAction = async (submissionId: number, action: 'approve' | 'reject', points?: number) => {
         try {
@@ -376,15 +403,61 @@ const SubmissionsManager: React.FC<SubmissionsManagerProps> = ({
         }
     };
 
-    const handleSaveLessonFeedback = async (userId: string, lessonId: number) => {
+    const handleApproveAllAndFeedback = async () => {
+        if (!feedbackModalGroup || !supabase) return;
+
         try {
             if (!feedbackText.trim()) {
                 message.warning('Введите текст обратной связи');
                 return;
             }
 
+            const { user_id: userId, lesson_id: lessonId, submissions } = feedbackModalGroup;
             const key = `${userId}-${lessonId}`;
+            const now = new Date().toISOString();
 
+            // 1. Принять все непроверенные задания
+            const pendingSubmissions = submissions.filter(s =>
+                ['submitted', 'pending_review'].includes(s.status)
+            );
+
+            let totalPointsAwarded = 0;
+
+            for (const submission of pendingSubmissions) {
+                const { error } = await supabase
+                    .from('submissions')
+                    .update({
+                        status: 'approved',
+                        reviewed_at: now,
+                        reviewed_by_curator_id: currentUser?.id || null,
+                        points_awarded: 100
+                    })
+                    .eq('id', submission.id);
+
+                if (error) {
+                    message.error(`Ошибка при принятии задания: ${error.message}`);
+                    return;
+                }
+                totalPointsAwarded += 100;
+            }
+
+            // 2. Обновить баллы пользователя
+            if (totalPointsAwarded > 0) {
+                const { data: userData } = await supabase
+                    .from('users')
+                    .select('total_points')
+                    .eq('id', userId)
+                    .single();
+
+                if (userData) {
+                    await supabase
+                        .from('users')
+                        .update({ total_points: (userData.total_points || 0) + totalPointsAwarded })
+                        .eq('id', userId);
+                }
+            }
+
+            // 3. Сохранить обратную связь по дню
             if (lessonFeedbacks[key]) {
                 const { error } = await supabase
                     .from('lesson_feedback')
@@ -409,11 +482,12 @@ const SubmissionsManager: React.FC<SubmissionsManagerProps> = ({
             }
 
             setFeedbackModalOpen(null);
+            setFeedbackModalGroup(null);
             setFeedbackText('');
-            message.success('Обратная связь сохранена');
+            message.success(`Принято ${pendingSubmissions.length} заданий, обратная связь сохранена`);
             await loadData();
         } catch (err) {
-            message.error('Ошибка сохранения обратной связи');
+            message.error('Ошибка при сохранении');
         }
     };
 
@@ -543,18 +617,35 @@ const SubmissionsManager: React.FC<SubmissionsManagerProps> = ({
             )}
 
             <Card style={{ marginBottom: 16 }}>
-                <Space>
-                    <Text strong>Статус:</Text>
-                    <Select
-                        value={statusFilter}
-                        onChange={setStatusFilter}
-                        style={{ width: 200 }}
-                        options={[
-                            { value: 'all', label: 'Все' },
-                            { value: 'pending', label: 'Ожидают проверки' },
-                            { value: 'completed', label: 'Полностью сданные' }
-                        ]}
-                    />
+                <Space size="large">
+                    <Space>
+                        <Text strong>Поток:</Text>
+                        <Select
+                            value={streamFilter}
+                            onChange={setStreamFilter}
+                            style={{ width: 200 }}
+                            options={[
+                                { value: 'all', label: 'Все потоки' },
+                                ...streams.map(stream => ({
+                                    value: stream.id,
+                                    label: stream.name
+                                }))
+                            ]}
+                        />
+                    </Space>
+                    <Space>
+                        <Text strong>Статус:</Text>
+                        <Select
+                            value={statusFilter}
+                            onChange={setStatusFilter}
+                            style={{ width: 200 }}
+                            options={[
+                                { value: 'all', label: 'Все' },
+                                { value: 'pending', label: 'Ожидают проверки' },
+                                { value: 'completed', label: 'Полностью сданные' }
+                            ]}
+                        />
+                    </Space>
                 </Space>
             </Card>
 
@@ -708,67 +799,79 @@ const SubmissionsManager: React.FC<SubmissionsManagerProps> = ({
                                         ))}
 
                                     {/* Обратная связь по дню */}
-                                    {allSubmitted && (
-                                        <>
-                                            <Divider style={{ margin: '12px 0' }} />
-                                            {group.lesson_feedback ? (
-                                                <Card size="small" style={{ backgroundColor: '#f6ffed' }}>
-                                                    <Space direction="vertical" style={{ width: '100%' }}>
-                                                        <Text strong>
-                                                            <MessageOutlined /> Обратная связь по дню:
-                                                        </Text>
-                                                        <Text>{group.lesson_feedback.feedback_text}</Text>
-                                                        <Button
-                                                            size="small"
-                                                            icon={<EditOutlined />}
-                                                            onClick={() => {
-                                                                setFeedbackModalOpen(key);
-                                                                setFeedbackText(group.lesson_feedback?.feedback_text || '');
-                                                            }}
-                                                        >
-                                                            Редактировать
-                                                        </Button>
-                                                    </Space>
-                                                </Card>
-                                            ) : (
-                                                <Button
-                                                    icon={<MessageOutlined />}
-                                                    onClick={() => {
-                                                        setFeedbackModalOpen(key);
-                                                        setFeedbackText('');
-                                                    }}
-                                                >
-                                                    Оставить обратную связь по дню
-                                                </Button>
-                                            )}
-                                        </>
-                                    )}
+                                    <>
+                                        <Divider style={{ margin: '12px 0' }} />
+                                        {group.lesson_feedback ? (
+                                            <Card size="small" style={{ backgroundColor: '#f6ffed' }}>
+                                                <Space direction="vertical" style={{ width: '100%' }}>
+                                                    <Text strong>
+                                                        <MessageOutlined /> Обратная связь по дню:
+                                                    </Text>
+                                                    <Text>{group.lesson_feedback.feedback_text}</Text>
+                                                    <Button
+                                                        size="small"
+                                                        icon={<EditOutlined />}
+                                                        onClick={() => {
+                                                            setFeedbackModalOpen(key);
+                                                            setFeedbackModalGroup(group);
+                                                            setFeedbackText(group.lesson_feedback?.feedback_text || '');
+                                                        }}
+                                                    >
+                                                        Редактировать
+                                                    </Button>
+                                                </Space>
+                                            </Card>
+                                        ) : (
+                                            <Button
+                                                type="primary"
+                                                icon={<CheckCircleOutlined />}
+                                                onClick={() => {
+                                                    setFeedbackModalOpen(key);
+                                                    setFeedbackModalGroup(group);
+                                                    setFeedbackText('');
+                                                }}
+                                                style={{ backgroundColor: '#52c41a', borderColor: '#52c41a' }}
+                                            >
+                                                Принять все и оставить обратную связь по дню
+                                            </Button>
+                                        )}
+                                    </>
                                 </Space>
-
-                                {/* Модальное окно для feedback */}
-                                <Modal
-                                    title="Обратная связь по дню"
-                                    open={feedbackModalOpen === key}
-                                    onOk={() => handleSaveLessonFeedback(group.user_id, group.lesson_id)}
-                                    onCancel={() => {
-                                        setFeedbackModalOpen(null);
-                                        setFeedbackText('');
-                                    }}
-                                    okText="Сохранить"
-                                    cancelText="Отмена"
-                                >
-                                    <TextArea
-                                        value={feedbackText}
-                                        onChange={(e) => setFeedbackText(e.target.value)}
-                                        placeholder="Напишите общую обратную связь по всем заданиям дня..."
-                                        rows={5}
-                                    />
-                                </Modal>
                             </Panel>
                         );
                     })}
                 </Collapse>
             )}
+
+            {/* Модальное окно для обратной связи по дню */}
+            <Modal
+                title="Принять все и оставить обратную связь"
+                open={!!feedbackModalOpen}
+                onOk={handleApproveAllAndFeedback}
+                onCancel={() => {
+                    setFeedbackModalOpen(null);
+                    setFeedbackModalGroup(null);
+                    setFeedbackText('');
+                }}
+                okText="Принять все и сохранить"
+                cancelText="Отмена"
+            >
+                <Space direction="vertical" style={{ width: '100%' }}>
+                    {feedbackModalGroup && (
+                        <Alert
+                            type="info"
+                            message={`Будет принято заданий: ${feedbackModalGroup.submissions.filter(s => ['submitted', 'pending_review'].includes(s.status)).length}`}
+                            style={{ marginBottom: 12 }}
+                        />
+                    )}
+                    <TextArea
+                        value={feedbackText}
+                        onChange={(e) => setFeedbackText(e.target.value)}
+                        placeholder="Напишите общую обратную связь по всем заданиям дня..."
+                        rows={5}
+                    />
+                </Space>
+            </Modal>
 
             {/* Модалка ручного подтверждения */}
             <Modal

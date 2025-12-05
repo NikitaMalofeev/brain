@@ -112,13 +112,13 @@ export function useFirstIncompleteLesson(userId: string | undefined) {
 
                         const assignmentIds = assignmentsData.map(a => a.id);
 
-                        // Проверяем выполненные задания
+                        // Проверяем выполненные задания (все кроме rejected считаются выполненными)
                         const { data: submissionsData } = await supabase
                             .from('submissions')
                             .select('assignment_id')
                             .eq('user_id', userId)
                             .in('assignment_id', assignmentIds)
-                            .eq('status', 'approved');
+                            .neq('status', 'rejected');
 
                         const completedAssignmentIds = new Set(submissionsData?.map(s => s.assignment_id) || []);
 

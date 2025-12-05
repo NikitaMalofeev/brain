@@ -28,6 +28,13 @@ import { useAssignmentsWithProgress, useSaveAssignmentDraft, useSubmitAssignment
 import { useTechniqueByModuleAndDay } from '@/lib/supabase/hooks/useTechniqueSchedule';
 import LoadingSpinner from '@/components/LoadingSpinner/LoadingSpinner';
 
+interface LessonFeedback {
+    id: number;
+    feedback_text: string;
+    created_at: string;
+    curator_id?: string;
+}
+
 interface LessonPageState {
     lesson: LessonWithBlocks | null;
     loading: boolean;
@@ -40,6 +47,8 @@ interface LessonPageState {
     completedAssignments: number;
     // Для связи с техниками
     moduleId: string | null;
+    // Обратная связь по дню от куратора
+    lessonFeedback: LessonFeedback | null;
 }
 
 // Функция для преобразования URL в тексте в кликабельные ссылки
@@ -584,6 +593,7 @@ const LessonPage: React.FC = () => {
         totalAssignments: 0,
         completedAssignments: 0,
         moduleId: null,
+        lessonFeedback: null,
     });
 
     // Создаем Supabase-совместимого User
@@ -802,10 +812,18 @@ const LessonPage: React.FC = () => {
                         .select('id, assignment_id, status')
                         .eq('user_id', supabaseCompatUser.id)
                         .in('assignment_id', assignmentIds)
-                        .eq('status', 'approved');
+                        .neq('status', 'rejected');
 
                     completedAssignments = assignmentSubmissions?.length || 0;
                 }
+
+                // Загружаем обратную связь по дню от куратора
+                const { data: lessonFeedback } = await supabase
+                    .from('lesson_feedback')
+                    .select('id, feedback_text, created_at, curator_id')
+                    .eq('user_id', supabaseCompatUser.id)
+                    .eq('lesson_id', lessonId)
+                    .maybeSingle();
 
                 setState(prev => ({
                     ...prev,
@@ -814,6 +832,7 @@ const LessonPage: React.FC = () => {
                     userDataLoading: false, // Загрузка пользовательских данных завершена
                     totalAssignments,
                     completedAssignments,
+                    lessonFeedback,
                 }));
 
                 logger.debug('User data loaded', { lessonId, hasSubmission: !!submission, hasProgress: !!progress });
@@ -1473,6 +1492,72 @@ const LessonPage: React.FC = () => {
                             }
                         });
                     })()}
+                </div>
+
+                {/* Комментарий куратора (обратная связь по дню) - показывается всегда */}
+                <div style={{ padding: '0 16px 20px 16px' }}>
+                    <div
+                        style={{
+                            backgroundColor: 'rgba(255, 255, 255, 0.8)',
+                            backdropFilter: 'blur(20px)',
+                            WebkitBackdropFilter: 'blur(20px)',
+                            borderRadius: 16,
+                            padding: 16,
+                        }}
+                    >
+                        {/* Заголовок с датой */}
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
+                            <p
+                                style={{
+                                    fontFamily: 'Nunito, sans-serif',
+                                    fontWeight: 600,
+                                    fontSize: 16,
+                                    lineHeight: '100%',
+                                    color: '#222222',
+                                    margin: 0,
+                                }}
+                            >
+                                Комментарий куратора
+                            </p>
+                            {state.lessonFeedback?.created_at && (
+                                <p
+                                    style={{
+                                        fontFamily: 'Nunito, sans-serif',
+                                        fontWeight: 400,
+                                        fontSize: 14,
+                                        lineHeight: '120%',
+                                        color: '#ADADAD',
+                                        margin: 0,
+                                    }}
+                                >
+                                    {new Date(state.lessonFeedback.created_at).toLocaleDateString('ru-RU')}
+                                </p>
+                            )}
+                        </div>
+                        {/* Область с текстом */}
+                        <div
+                            style={{
+                                backgroundColor: '#FFFFFF',
+                                borderRadius: 12,
+                                padding: 12,
+                            }}
+                        >
+                            <p
+                                style={{
+                                    fontFamily: 'Nunito, sans-serif',
+                                    fontWeight: 400,
+                                    fontSize: 14,
+                                    lineHeight: '120%',
+                                    color: state.lessonFeedback?.feedback_text ? '#222222' : '#ADADAD',
+                                    margin: 0,
+                                    whiteSpace: 'pre-wrap',
+                                    wordBreak: 'break-word',
+                                }}
+                            >
+                                {state.lessonFeedback?.feedback_text || 'Комментарий пока не добавлен'}
+                            </p>
+                        </div>
+                    </div>
                 </div>
 
                 {/* Техника дня - если есть техника для этого дня в модуле */}

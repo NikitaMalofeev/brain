@@ -246,8 +246,8 @@ const AssignmentItem: React.FC<AssignmentItemProps> = ({ assignment, userId, les
             </div>
           )}
 
-          {/* Отображение сданного ответа (если уже сдано и принято) */}
-          {assignment.submission?.status === 'approved' && assignment.submission.content_text && (
+          {/* Отображение сданного ответа (если уже сдано) */}
+          {assignment.submission && assignment.submission.status !== 'rejected' && assignment.submission.content_text && (
             <div className="mt-3 p-3 bg-gray-50 border border-gray-200 rounded-lg">
               <h4 className="text-xs font-semibold text-gray-700 mb-1">Ваш ответ:</h4>
               <p className="text-sm text-gray-600 whitespace-pre-wrap">

@@ -211,10 +211,11 @@ const useStageDetails = (user: User | null, stageId: string | number) => {
                 });
 
                 // Создаем мапы для подсчета completed submissions по урокам
+                // Считаем выполненным если есть submission и статус не rejected
                 const completedByLesson = new Map<number, number>();
                 assignmentsData?.forEach(assignment => {
                     const submission = assignmentSubmissionsData?.find(
-                        s => s.assignment_id === assignment.id && s.status === 'approved'
+                        s => s.assignment_id === assignment.id && s.status !== 'rejected'
                     );
                     if (submission) {
                         const count = completedByLesson.get(assignment.lesson_id) || 0;
@@ -252,9 +253,9 @@ const useStageDetails = (user: User | null, stageId: string | number) => {
                     // ПРИОРИТЕТ 1: Флаг is_completed из lesson_progress (покрывает админское управление)
                     let isCompleted = !!progress?.is_completed;
 
-                    // ПРИОРИТЕТ 2: Для уроков с заданием - также засчитываем approved submission
+                    // ПРИОРИТЕТ 2: Для уроков с заданием - засчитываем если есть submission и статус не rejected
                         if (!isCompleted && lessonWithAccess.out_has_assignment) {
-                        isCompleted = submission?.status === 'approved';
+                        isCompleted = !!submission && submission?.status !== 'rejected';
                     }
 
                     // ПРИОРИТЕТ 3: Для уроков без задания - также засчитываем completed_at

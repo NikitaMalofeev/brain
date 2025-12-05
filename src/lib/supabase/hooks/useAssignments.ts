@@ -103,13 +103,14 @@ export function useAssignmentsWithProgress(
 
       logger.debug('Fetching assignments with progress', { userId, lessonId });
 
-      // Получить все submissions для этих заданий
+      // Получить все submissions для этих заданий (сортируем по дате, чтобы брать последний)
       const assignmentIds = assignments.map((a) => a.id);
       const { data: submissions, error: submissionsError } = await supabase
         .from('submissions')
         .select('*')
         .in('assignment_id', assignmentIds)
-        .eq('user_id', userId);
+        .eq('user_id', userId)
+        .order('submitted_at', { ascending: false });
 
       if (submissionsError) {
         logger.error('Error fetching submissions', { userId, lessonId, error: submissionsError });
@@ -137,7 +138,7 @@ export function useAssignmentsWithProgress(
           ...assignment,
           submission,
           draft,
-          is_completed: submission?.status === 'approved',
+          is_completed: !!submission && submission.status !== 'rejected',
           is_submitted: !!submission && submission.status !== 'rejected',
         };
       });
@@ -150,7 +151,7 @@ export function useAssignmentsWithProgress(
       return result;
     },
     enabled: !!userId && !!lessonId && !assignmentsLoading && !!assignments,
-    staleTime: 30 * 1000, // 30 секунд
+    staleTime: 5 * 1000, // 5 секунд - быстрее обновляем статус заданий
   });
 }
 

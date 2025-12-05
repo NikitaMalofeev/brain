@@ -166,13 +166,13 @@ function useModuleAssignmentsProgress(userId: string | undefined, moduleId: stri
 
             const assignmentIds = assignmentsData?.map(a => a.id) || [];
 
-            // Получаем выполненные задания пользователя
+            // Получаем выполненные задания пользователя (все кроме rejected)
             const { data: submissionsData } = await supabase
                 .from('submissions')
                 .select('id')
                 .eq('user_id', userId)
                 .in('assignment_id', assignmentIds)
-                .eq('status', 'approved');
+                .neq('status', 'rejected');
 
             const completedAssignments = submissionsData?.length || 0;
 
