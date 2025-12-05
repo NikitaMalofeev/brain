@@ -391,11 +391,10 @@ const TechniquesPage: React.FC = () => {
                                       if (tech.is_available) {
                                         navigate(`/techniques/${tech.technique_id}`);
                                       } else {
-                                        const isFirstTechnique = tech.technique_position === 1;
                                         setModalTitle(`Техника «${tech.technique_name}» недоступна`);
                                         setModalDescription(
                                           !tech.is_time_unlocked
-                                            ? `Откроется ${new Date(tech.unlock_date).toLocaleDateString('ru-RU')}${tech.previous_technique_name ? ` после техники «${tech.previous_technique_name}»` : ''}${!isFirstTechnique ? ' и оплаты' : ''}.`
+                                            ? `Откроется ${new Date(tech.unlock_date).toLocaleDateString('ru-RU')}${tech.previous_technique_name ? ` после техники «${tech.previous_technique_name}»` : ''}${tech.technique_position > 1 ? ' и оплаты' : ''}.`
                                             : !tech.is_paid
                                               ? `Время ожидания прошло, требуется оплата для доступа.`
                                               : ``

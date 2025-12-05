@@ -23,6 +23,7 @@ import {
   DownOutlined,
   UpOutlined,
   GiftOutlined,
+  InboxOutlined,
 } from '@ant-design/icons';
 import {
   useAddTechniqueToTariffModule,
@@ -40,6 +41,11 @@ import {
   SpecialBundleTechniqueAcrossModules,
   ModuleInfo,
 } from '@/lib/supabase/hooks/useSpecialBundles';
+import {
+  useBundles,
+  useBundleTechniques,
+  Bundle,
+} from '@/lib/supabase/hooks/useBundles';
 
 const { Text } = Typography;
 
@@ -109,12 +115,17 @@ const TariffModuleMaterialsManager: React.FC<TariffModuleMaterialsManagerProps> 
 }) => {
   const [draggedMaterial, setDraggedMaterial] = useState<Material | null>(null);
   const [draggedSpecialBundle, setDraggedSpecialBundle] = useState<SpecialBundle | null>(null);
+  const [draggedBundle, setDraggedBundle] = useState<Bundle | null>(null);
   const [searchQuery, setSearchQuery] = useState<string>('');
   const [addMaterialModal, setAddMaterialModal] = useState<{
     materialId: string;
     materialName: string;
   } | null>(null);
   const [addSpecialBundleModal, setAddSpecialBundleModal] = useState<{
+    bundleId: string;
+    bundleName: string;
+  } | null>(null);
+  const [addBundleModal, setAddBundleModal] = useState<{
     bundleId: string;
     bundleName: string;
   } | null>(null);
@@ -139,6 +150,11 @@ const TariffModuleMaterialsManager: React.FC<TariffModuleMaterialsManagerProps> 
   const { data: allTariffPlacements } = useAllSpecialBundlePlacementsForTariff(allTariffModuleIds);
   const placeSpecialBundleMutation = usePlaceSpecialBundle();
   const removeSpecialBundlePlacementMutation = useRemoveSpecialBundlePlacement();
+
+  // Обычные пакеты
+  const { data: bundles } = useBundles();
+  // Загружаем техники выбранного пакета при открытии модалки
+  const { data: selectedBundleTechniques } = useBundleTechniques(addBundleModal?.bundleId || null);
 
   // Доступные специальные пакеты (которые ещё не размещены НИ В ОДНОМ модуле тарифа)
   const availableSpecialBundles = useMemo(() => {
@@ -233,6 +249,16 @@ const TariffModuleMaterialsManager: React.FC<TariffModuleMaterialsManagerProps> 
       setDraggedSpecialBundle(null);
       return;
     }
+    // Если перетаскиваем обычный пакет
+    if (draggedBundle) {
+      setAddBundleModal({
+        bundleId: draggedBundle.id,
+        bundleName: draggedBundle.name,
+      });
+      setUnlockDay(day);
+      setDraggedBundle(null);
+      return;
+    }
     // Если перетаскиваем материал
     if (!draggedMaterial) return;
     setAddMaterialModal({
@@ -270,6 +296,38 @@ const TariffModuleMaterialsManager: React.FC<TariffModuleMaterialsManagerProps> 
       message.success('Специальный пакет удалён');
     } catch (err: any) {
       message.error(err?.message || 'Ошибка при удалении');
+    }
+  };
+
+  // Добавление всех техник обычного пакета в один день
+  const handleConfirmAddBundle = async () => {
+    if (!addBundleModal || !selectedBundleTechniques) return;
+    if (unlockDay < 1 || unlockDay > moduleDaysCount) {
+      message.error(`День должен быть от 1 до ${moduleDaysCount}`);
+      return;
+    }
+    if (selectedBundleTechniques.length === 0) {
+      message.error('Пакет не содержит техник');
+      return;
+    }
+    try {
+      // Добавляем все техники пакета в один день
+      const baseOrderNum = (moduleMaterials?.length || 0) + 1;
+      for (let i = 0; i < selectedBundleTechniques.length; i++) {
+        const tech = selectedBundleTechniques[i];
+        await addMaterialMutation.mutateAsync({
+          tariff_stream_module_id: module.tariff_stream_module_id,
+          technique_id: tech.technique_id,
+          unlock_offset_days: unlockDay,
+          active_days: null, // Без ограничения по времени
+          order_num: baseOrderNum + i,
+        });
+      }
+      message.success(`Добавлено ${selectedBundleTechniques.length} техник из пакета`);
+      setAddBundleModal(null);
+      setUnlockDay(1);
+    } catch (err: any) {
+      message.error(err?.message || 'Ошибка при добавлении');
     }
   };
 
@@ -376,6 +434,46 @@ const TariffModuleMaterialsManager: React.FC<TariffModuleMaterialsManagerProps> 
                 </Card>
               )}
 
+              {/* Обычные пакеты */}
+              {bundles && bundles.length > 0 && (
+                <Card
+                  size="small"
+                  title={
+                    <Space>
+                      <InboxOutlined style={{ color: '#13c2c2' }} />
+                      <span>Пакеты</span>
+                    </Space>
+                  }
+                  style={{ borderColor: '#13c2c2' }}
+                >
+                  <Space direction="vertical" style={{ width: '100%' }}>
+                    {bundles.map((bundle) => (
+                      <Card
+                        key={bundle.id}
+                        size="small"
+                        draggable
+                        onDragStart={() => setDraggedBundle(bundle)}
+                        onDragEnd={() => setDraggedBundle(null)}
+                        style={{
+                          cursor: 'grab',
+                          background: '#e6fffb',
+                          borderColor: '#13c2c2',
+                        }}
+                        bodyStyle={{ padding: 8 }}
+                      >
+                        <Space>
+                          <DragOutlined style={{ color: '#13c2c2' }} />
+                          <InboxOutlined style={{ color: '#13c2c2' }} />
+                          <Text ellipsis style={{ maxWidth: 100, color: '#13c2c2' }}>
+                            {bundle.name}
+                          </Text>
+                        </Space>
+                      </Card>
+                    ))}
+                  </Space>
+                </Card>
+              )}
+
               {/* Материалы */}
               <Card size="small" title="Доступные материалы">
                 <Input
@@ -434,7 +532,7 @@ const TariffModuleMaterialsManager: React.FC<TariffModuleMaterialsManagerProps> 
                   const hasSpecialBundleTechniques = specialBundleTechniquesByDay[day]?.length > 0;
                   const hasSpecialBundleStart = specialBundlesByDay[day]?.length > 0;
                   const hasContent = hasMaterials || hasSpecialBundleTechniques;
-                  const isDragging = draggedMaterial || draggedSpecialBundle;
+                  const isDragging = draggedMaterial || draggedSpecialBundle || draggedBundle;
 
                   return (
                   <div
@@ -451,13 +549,13 @@ const TariffModuleMaterialsManager: React.FC<TariffModuleMaterialsManagerProps> 
                       borderRadius: 6,
                       border: `2px solid ${
                         isDragging
-                          ? draggedSpecialBundle ? '#722ed1' : '#1890ff'
+                          ? draggedSpecialBundle ? '#722ed1' : draggedBundle ? '#13c2c2' : '#1890ff'
                           : hasContent
                           ? '#722ed1'
                           : '#d9d9d9'
                       }`,
                       background: isDragging
-                        ? draggedSpecialBundle ? '#f9f0ff' : '#e6f7ff'
+                        ? draggedSpecialBundle ? '#f9f0ff' : draggedBundle ? '#e6fffb' : '#e6f7ff'
                         : hasContent
                         ? '#f9f0ff'
                         : '#fafafa',
@@ -744,6 +842,65 @@ const TariffModuleMaterialsManager: React.FC<TariffModuleMaterialsManagerProps> 
                 : 'Материал будет доступен без ограничения по времени'}
             </Text>
           </div>
+        </Space>
+      </Modal>
+
+      {/* Modal для добавления обычного пакета */}
+      <Modal
+        title="Добавить пакет"
+        open={!!addBundleModal}
+        onOk={handleConfirmAddBundle}
+        onCancel={() => {
+          setAddBundleModal(null);
+          setUnlockDay(1);
+        }}
+        confirmLoading={isMutating}
+        okText="Добавить все техники"
+        cancelText="Отмена"
+      >
+        <Space direction="vertical" style={{ width: '100%' }} size="large">
+          <div>
+            <Text strong>Пакет:</Text>{' '}
+            <Text style={{ color: '#13c2c2' }}>{addBundleModal?.bundleName}</Text>
+          </div>
+
+          <div>
+            <Text strong>День открытия всех техник:</Text>
+            <InputNumber
+              min={1}
+              max={moduleDaysCount}
+              value={unlockDay}
+              onChange={(value) => setUnlockDay(value || 1)}
+              style={{ width: '100%', marginTop: 8 }}
+              placeholder={`От 1 до ${moduleDaysCount}`}
+            />
+            <Text type="secondary" style={{ fontSize: 12, display: 'block', marginTop: 4 }}>
+              Все техники из пакета откроются на {unlockDay} день модуля.
+            </Text>
+          </div>
+
+          {selectedBundleTechniques && selectedBundleTechniques.length > 0 && (
+            <div>
+              <Text strong>Техники в пакете ({selectedBundleTechniques.length}):</Text>
+              <div style={{ marginTop: 8, maxHeight: 200, overflowY: 'auto' }}>
+                {selectedBundleTechniques.map((tech, index) => (
+                  <div
+                    key={tech.id}
+                    style={{
+                      padding: '4px 8px',
+                      background: index % 2 === 0 ? '#fafafa' : '#fff',
+                      borderRadius: 4,
+                    }}
+                  >
+                    <Space size={4}>
+                      {tech.technique?.material_type === 'audio' ? '🎵' : '🎬'}
+                      <Text style={{ fontSize: 13 }}>{tech.technique?.name}</Text>
+                    </Space>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
         </Space>
       </Modal>
     </div>
