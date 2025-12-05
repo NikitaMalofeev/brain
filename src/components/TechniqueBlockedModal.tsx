@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
 
 interface TechniqueBlockedModalProps {
@@ -24,51 +24,6 @@ export default function TechniqueBlockedModal({
   buttonText = 'Купить',
   onButtonClick,
 }: TechniqueBlockedModalProps) {
-  const [bottomOffset, setBottomOffset] = useState(80); // 60px TabBar + 20px padding
-
-  // Получаем safe-area-bottom из CSS переменной (устанавливается AppWrapper через события Telegram)
-  useEffect(() => {
-    const updateBottomOffset = () => {
-      // Получаем из CSS переменной (устанавливается AppWrapper)
-      const cssVar = getComputedStyle(document.documentElement).getPropertyValue('--safe-area-bottom').trim();
-      const safeAreaFromCSS = cssVar ? parseInt(cssVar, 10) || 0 : 0;
-
-      // 60px TabBar + 20px базовый padding + safe-area
-      setBottomOffset(60 + 20 + safeAreaFromCSS);
-    };
-
-    updateBottomOffset();
-
-    // Слушаем те же события что и AppWrapper для обновления safe-area
-    const handleSafeAreaEvent = (event: MessageEvent) => {
-      try {
-        if (!event.data) return;
-        const data = typeof event.data === 'string' ? JSON.parse(event.data) : event.data;
-        if (data.eventType === 'safe_area_changed' && data.eventData) {
-          const bottom = data.eventData.bottom;
-          if (typeof bottom === 'number') {
-            setBottomOffset(60 + 20 + bottom);
-          }
-        }
-      } catch {
-        // Ignore parsing errors
-      }
-    };
-
-    window.addEventListener('message', handleSafeAreaEvent);
-    window.addEventListener('resize', updateBottomOffset);
-
-    // Проверяем периодически на случай если событие уже прошло
-    const intervalId = setInterval(updateBottomOffset, 1000);
-    setTimeout(() => clearInterval(intervalId), 5000); // Останавливаем через 5 секунд
-
-    return () => {
-      window.removeEventListener('message', handleSafeAreaEvent);
-      window.removeEventListener('resize', updateBottomOffset);
-      clearInterval(intervalId);
-    };
-  }, []);
-
   // Блокируем скролл body при открытии модалки
   useEffect(() => {
     if (isOpen) {
@@ -108,7 +63,7 @@ export default function TechniqueBlockedModal({
               borderTopLeftRadius: '32px',
               borderTopRightRadius: '32px',
               padding: '20px',
-              paddingBottom: `${bottomOffset}px`,
+              paddingBottom: 'calc(60px + 20px + max(0px, env(safe-area-inset-bottom, 0px)))',
             }}
             onClick={(e) => e.stopPropagation()}
           >

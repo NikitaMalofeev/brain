@@ -78,4 +78,25 @@ export async function init(options: {
   } catch (e) {
     console.warn('[init] Failed to expand Mini App:', e);
   }
+
+  // Request fullscreen mode (like Surf project)
+  try {
+    postEvent('web_app_request_fullscreen');
+  } catch (e) {
+    console.warn('[init] Failed to request fullscreen:', e);
+  }
+
+  // Request safe area information
+  try {
+    postEvent('web_app_request_safe_area');
+  } catch (e) {
+    console.warn('[init] Failed to request safe area:', e);
+  }
+
+  // Disable vertical swipe to close
+  try {
+    postEvent('web_app_setup_swipe_behavior', { allow_vertical_swipe: false });
+  } catch (e) {
+    console.warn('[init] Failed to setup swipe behavior:', e);
+  }
 }

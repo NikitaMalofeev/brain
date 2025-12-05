@@ -104,10 +104,10 @@ const RoadMapModal: React.FC<RoadMapModalProps> = ({
             transition={{ duration: 1, ease: [0.34, 1.56, 0.64, 1] }}
             className="fixed z-50 flex items-center justify-center"
             style={{
-              top: 0,
+              top: 'env(safe-area-inset-top, 0px)',
               left: 0,
               right: 0,
-              bottom: 52, // Учитываем высоту bottom меню
+              bottom: 'calc(52px + env(safe-area-inset-bottom, 0px))', // Учитываем высоту bottom меню + safe area
               pointerEvents: 'none',
             }}
           >

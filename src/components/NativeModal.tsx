@@ -24,6 +24,12 @@ export default function NativeModal({ isOpen, setIsOpen, title, description, cov
                     animate={{ opacity: 1 }}
                     exit={{ opacity: 0 }}
                     className="fixed inset-0 bg-black/40 backdrop-blur-sm flex items-center justify-center z-50"
+                    style={{
+                        paddingTop: 'env(safe-area-inset-top, 0px)',
+                        paddingBottom: 'env(safe-area-inset-bottom, 0px)',
+                        paddingLeft: 'env(safe-area-inset-left, 0px)',
+                        paddingRight: 'env(safe-area-inset-right, 0px)',
+                    }}
                 >
                     {/* Обёртка модалки, задаём позицию относительную, чтобы «крестик» можно было вывести вниз */}
                     <div className="relative w-[90%] max-w-md">
