@@ -40,6 +40,8 @@ interface RoadMapProps {
   currentWeek?: number;
   totalWeeks?: number;
   streamStartDate?: string;
+  /** Задержка перед началом анимации карточек (для ожидания анимации popup) */
+  animationDelay?: number;
 }
 
 /**
@@ -55,6 +57,7 @@ const RoadMap: React.FC<RoadMapProps> = ({
   currentWeek = 1,
   totalWeeks = 9,
   streamStartDate,
+  animationDelay = 0,
 }) => {
   const containerRef = useRef<HTMLDivElement>(null);
   const [containerSize, setContainerSize] = useState({ width: BASE_WIDTH, height: BASE_HEIGHT });
@@ -275,12 +278,20 @@ const RoadMap: React.FC<RoadMapProps> = ({
               return roadmapWhiteMark;
             };
 
+            // Карточки въезжают с боков: нечётные (index 0, 2) слева, чётные (index 1, 3) справа
+            // isLeft определяет конечную позицию карточки (index % 2 !== 0 = слева)
+            const slideFromLeft = index % 2 === 0; // 0, 2 въезжают слева; 1, 3 въезжают справа
+
             return (
               <motion.div
                 key={stage.stage_id}
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                transition={{ delay: index * 0.1 }}
+                initial={{ opacity: 0, x: slideFromLeft ? -100 : 100 }}
+                animate={{ opacity: 1, x: 0 }}
+                transition={{
+                  delay: animationDelay + index * 0.15,
+                  duration: 0.5,
+                  ease: [0.25, 0.46, 0.45, 0.94]
+                }}
                 className="absolute"
                 style={{
                   // Позиционируем от низа контейнера
@@ -375,14 +386,14 @@ const RoadMap: React.FC<RoadMapProps> = ({
                     )}
                   </div>
 
-                  {/* Карточка модуля */}
+                  {/* Карточка модуля - блюр применяется через CSS класс чтобы не было мигания */}
                   <div
-                    className="flex items-center gap-3 rounded-2xl shadow-lg p-3 pr-4 cursor-pointer transition-all"
+                    className="flex items-center gap-3 rounded-2xl shadow-lg p-3 pr-4 cursor-pointer transition-colors"
                     style={{
                       maxWidth: 165,
                       background: isActive ? 'rgba(255, 255, 255, 0.8)' : 'rgba(0, 0, 0, 0.3)',
-                      backdropFilter: isLocked ? 'blur(30px)' : 'none',
-                      WebkitBackdropFilter: isLocked ? 'blur(30px)' : 'none',
+                      backdropFilter: 'blur(30px)',
+                      WebkitBackdropFilter: 'blur(30px)',
                     }}
                     onClick={() => {
                       if (isGuest) {
@@ -445,7 +456,7 @@ const RoadMap: React.FC<RoadMapProps> = ({
                             animate={{
                               strokeDashoffset: 113 - (113 * daysProgressPercent) / 100
                             }}
-                            transition={{ delay: index * 0.1 + 0.3, duration: 0.5 }}
+                            transition={{ delay: animationDelay + index * 0.15 + 0.4, duration: 0.5 }}
                             strokeDasharray="113"
                           />
                         )}

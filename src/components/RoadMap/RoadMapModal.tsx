@@ -98,10 +98,10 @@ const RoadMapModal: React.FC<RoadMapModalProps> = ({
 
           {/* Popup контейнер */}
           <motion.div
-            initial={{ opacity: 0, scale: 0.95 }}
+            initial={{ opacity: 0, scale: 0 }}
             animate={{ opacity: 1, scale: 1 }}
-            exit={{ opacity: 0, scale: 0.95 }}
-            transition={{ type: 'spring', damping: 25, stiffness: 300 }}
+            exit={{ opacity: 0, scale: 0 }}
+            transition={{ duration: 1, ease: [0.34, 1.56, 0.64, 1] }}
             className="fixed z-50 flex items-center justify-center"
             style={{
               top: 0,
@@ -135,6 +135,7 @@ const RoadMapModal: React.FC<RoadMapModalProps> = ({
                 currentWeek={currentWeek}
                 totalWeeks={totalWeeks}
                 streamStartDate={streamStartDate}
+                animationDelay={1}
               />
             </div>
             </div>

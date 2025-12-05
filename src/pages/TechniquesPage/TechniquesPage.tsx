@@ -10,11 +10,10 @@ import { useSignal, initDataState } from '@telegram-apps/sdk-react';
 import { logger } from '@/lib/logger';
 import { TechniqueWithAccess } from '@/lib/supabase/types';
 import TechniqueCard from '@/components/TechniqueCard/TechniqueCard';
+import { TechniqueSkeletonGroup } from '@/components/TechniqueCard/TechniqueCardSkeleton';
 import { motion, AnimatePresence } from 'framer-motion';
 import TechniqueBlockedModal from '@/components/TechniqueBlockedModal';
 import BuyModal from '@/components/BuyModal';
-import TabBar from '@/components/TabBar/TabBar';
-import LoadingSpinner from '@/components/LoadingSpinner/LoadingSpinner';
 
 // Типы табов
 type TabType = 'all' | 'mine';
@@ -339,8 +338,10 @@ const TechniquesPage: React.FC = () => {
                   transition={{ duration: 0.2 }}
                 >
                   {loading ? (
-                    <div className="flex items-center justify-center h-full min-h-[300px]">
-                      <LoadingSpinner size={64} />
+                    <div className="flex flex-col gap-6">
+                      <TechniqueSkeletonGroup count={2} />
+                      <TechniqueSkeletonGroup count={2} />
+                      <TechniqueSkeletonGroup count={1} />
                     </div>
                   ) : error ? (
                     <div className="flex items-center justify-center h-full min-h-[300px]">

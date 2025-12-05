@@ -20,3 +20,54 @@
     align-items: center;
     gap: 6px;
 }
+
+/* Skeleton shimmer animation */
+@keyframes shimmer {
+    0% {
+        background-position: -200% 0;
+    }
+    100% {
+        background-position: 200% 0;
+    }
+}
+
+.animate-shimmer {
+    animation: shimmer 1.5s infinite linear;
+}
+
+/* Particle animation */
+@keyframes particle-float {
+    0%, 100% {
+        transform: translateY(0) scale(1);
+        opacity: 0;
+    }
+    10% {
+        opacity: 1;
+    }
+    90% {
+        opacity: 1;
+    }
+    100% {
+        transform: translateY(-40px) scale(0.5);
+        opacity: 0;
+    }
+}
+
+@keyframes particle-glow {
+    0%, 100% {
+        box-shadow: 0 0 4px rgba(99, 171, 230, 0.4);
+    }
+    50% {
+        box-shadow: 0 0 12px rgba(99, 171, 230, 0.8);
+    }
+}
+
+.particle {
+    position: absolute;
+    width: 6px;
+    height: 6px;
+    background: linear-gradient(135deg, rgba(141, 197, 241, 0.8), #63ABE6);
+    border-radius: 50%;
+    pointer-events: none;
+    animation: particle-float 1.5s ease-out forwards, particle-glow 0.8s ease-in-out infinite;
+}
