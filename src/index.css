@@ -52,16 +52,14 @@
 }
 
 :root {
-  /* Safe area - используем Telegram CSS переменные (env() НЕ работает в Telegram Mini Apps!) */
-  /* --tg-viewport-safe-area-inset-* - от bindViewportCssVars() */
-  /* --tg-viewport-content-safe-area-inset-* - контентная область */
-  --safe-area-top: var(--tg-viewport-content-safe-area-inset-top, var(--tg-viewport-safe-area-inset-top, 0px));
-  --safe-area-right: var(--tg-viewport-content-safe-area-inset-right, var(--tg-viewport-safe-area-inset-right, 0px));
-  --safe-area-bottom: var(--tg-viewport-content-safe-area-inset-bottom, var(--tg-viewport-safe-area-inset-bottom, 0px));
-  --safe-area-left: var(--tg-viewport-content-safe-area-inset-left, var(--tg-viewport-safe-area-inset-left, 0px));
+  /* Safe area - используем env() с viewport-fit=cover (как в Surf проекте) */
+  --safe-area-top: env(safe-area-inset-top, 0px);
+  --safe-area-right: env(safe-area-inset-right, 0px);
+  --safe-area-bottom: env(safe-area-inset-bottom, 0px);
+  --safe-area-left: env(safe-area-inset-left, 0px);
 
-  /* Отступ контента сверху: safe-area + 12px */
-  --content-top-offset: calc(var(--safe-area-top) + 12px);
+  /* Отступ контента сверху: 12px + safe-area */
+  --content-top-offset: calc(12px + env(safe-area-inset-top, 0px));
 
 
 
@@ -191,40 +189,40 @@ body {
   border-left: var(--safe-area-left) solid rgba(255, 255, 0, 0.2);
 }
 
-/* Safe area utility classes (используем Telegram переменные) */
+/* Safe area utility classes (как в Surf проекте) */
 .with-safe-area-top {
-  padding-top: var(--safe-area-top, 0px);
+  padding-top: env(safe-area-inset-top, 0px);
 }
 
 .with-safe-area-bottom {
-  padding-bottom: max(16px, var(--safe-area-bottom, 16px));
+  padding-bottom: max(16px, env(safe-area-inset-bottom, 16px));
 }
 
 .with-safe-area-left {
-  padding-left: max(16px, var(--safe-area-left, 16px));
+  padding-left: max(16px, env(safe-area-inset-left, 16px));
 }
 
 .with-safe-area-right {
-  padding-right: max(16px, var(--safe-area-right, 16px));
+  padding-right: max(16px, env(safe-area-inset-right, 16px));
 }
 
 /* Для fixed элементов внизу экрана (кнопки, модалки) */
 .fixed-bottom-safe {
-  bottom: max(16px, var(--safe-area-bottom, 16px));
+  bottom: max(16px, env(safe-area-inset-bottom, 16px));
 }
 
 /* Для модальных окон - учет safe area */
 .modal-safe-area {
-  padding-top: var(--safe-area-top, 0px);
-  padding-bottom: var(--safe-area-bottom, 0px);
-  padding-left: var(--safe-area-left, 0px);
-  padding-right: var(--safe-area-right, 0px);
+  padding-top: env(safe-area-inset-top, 0px);
+  padding-bottom: env(safe-area-inset-bottom, 0px);
+  padding-left: env(safe-area-inset-left, 0px);
+  padding-right: env(safe-area-inset-right, 0px);
 }
 
-/* Отступ контента сверху: safe-area + 12px */
+/* Отступ контента сверху: 12px + safe-area */
 /* Используй этот класс для страниц с кастомным фоном чтобы контент начинался с правильного отступа */
 .with-content-offset {
-  padding-top: var(--content-top-offset, 12px);
+  padding-top: calc(12px + env(safe-area-inset-top, 0px));
 }
 
 /* Походу не используется */
