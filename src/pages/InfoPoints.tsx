@@ -31,7 +31,7 @@ export const InfoPoints = () => {
         <Page>
             <div className={'text-black flex flex-col gap-6'}>
                 <div
-                    className={'relative flex p-5 items-end rounded-b-3xl bg-[url("/bg3.jpg")] bg-cover bg-right-top h-[328px] overflow-hidden'}>
+                    className={'page-bg-container relative flex p-5 items-end rounded-b-3xl bg-[url("/bg3.jpg")] bg-cover bg-right-top h-[328px] overflow-hidden'}>
 
                     <img src={'/coin1.png'} alt={''} className={'w-[304px] absolute -bottom-[110px] right-[8px] coin coin1'} />
                     <img src={'/coin2.png'} alt={''} className={'w-[253px] absolute top-0 left-1/2 -translate-x-1/2 coin coin2'} />

@@ -234,7 +234,7 @@ const StagePage: React.FC = () => {
 
     return (
         <Page showTabBar={false}>
-            <div className={'bg-[url("/bg3.jpg")] min-h-full bg-cover bg-top text-black'}>
+            <div className={'page-bg-container bg-[url("/bg3.jpg")] min-h-full bg-cover bg-top text-black'}>
                 {/* Белая карточка с заголовком и прогрессом */}
                 <div className={'bg-white rounded-2xl mx-4 mt-4 p-4 flex flex-col gap-3'}>
                     <div className={'flex items-center justify-between'}>

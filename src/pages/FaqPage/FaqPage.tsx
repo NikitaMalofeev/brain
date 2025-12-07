@@ -33,7 +33,7 @@ export const FaqPage = () => {
         <Page>
             <div className={'flex flex-col gap-2 text-black min-h-screen'}>
                 <div
-                    className={'relative items-center rounded-b-3xl bg-[url("/bg3.jpg")] bg-cover bg-bottom h-[328px] overflow-hidden'}>
+                    className={'page-bg-container relative items-center rounded-b-3xl bg-[url("/bg3.jpg")] bg-cover bg-bottom h-[328px] overflow-hidden'}>
                     <img src={'/sphere-faq.png'} alt={''}
                          className={'bg-breathe-2 object-cover w-[502px] h-[502px] absolute -top-[35px] left-1/2 -translate-x-1/2'}/>
                 </div>

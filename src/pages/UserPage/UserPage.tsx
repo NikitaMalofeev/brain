@@ -269,7 +269,7 @@ export const UserPage = () => {
                     playsInline
                 />
                 <motion.div
-                    className={'rounded-t-3xl bg-[url("/bg3.jpg")] bg-cover bg-bottom relative'}
+                    className={'page-bg-container rounded-t-3xl bg-[url("/bg3.jpg")] bg-cover bg-bottom relative'}
                     variants={listVariants}
                     initial="hidden"
                     animate="show"

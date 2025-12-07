@@ -136,7 +136,7 @@ export const MainPage = () => {
     return (
         <Page back={false}>
             <div
-                className={'bg-[url("/bg3.jpg")] bg-cover bg-bottom p-4 pt-3 rounded-b-3xl flex-1 flex flex-col gap-5'}
+                className={'page-bg-container bg-[url("/bg3.jpg")] bg-cover bg-bottom p-4 rounded-b-3xl flex-1 flex flex-col gap-5'}
             >
                 <motion.div
                     className={'flex items-center justify-between w-full'}

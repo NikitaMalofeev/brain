@@ -205,7 +205,7 @@ const ModulePage: React.FC = () => {
           </div>
         </div>
         <motion.div
-          className="bg-[url('/bg3.jpg')] min-h-full bg-cover bg-top p-4 rounded-t-3xl flex-1 flex flex-col gap-3"
+          className="page-bg-container bg-[url('/bg3.jpg')] min-h-full bg-cover bg-top p-4 rounded-t-3xl flex-1 flex flex-col gap-3"
           variants={listVariants}
           initial="hidden"
           animate="show"

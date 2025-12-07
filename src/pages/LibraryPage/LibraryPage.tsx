@@ -118,7 +118,7 @@ const LibraryPage: React.FC = () => {
                     </svg>
                 </div>
             </div>
-            <div className={'relative min-h-screen overflow-hidden'}>
+            <div className={'page-bg-container relative min-h-screen overflow-hidden'}>
                 {/* Фоновое изображение с blur */}
                 <div
                     className={'absolute inset-0 bg-[url("/bg2.jpg")] bg-cover'}
