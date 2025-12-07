@@ -5,9 +5,11 @@ import { backButton, miniApp } from '@telegram-apps/sdk-react';
 import { handleModalBack } from '@/lib/modalState';
 import './Page.css';
 
-// Стили для учета отступов safe area с дополнительным отступом для fullscreen режима
+// Стили для Page контейнера
+// НЕ используем paddingTop здесь - это позволяет фонам страниц растягиваться на весь экран
+// Отступ сверху (safe-area + 24px) задаётся через CSS переменную --content-top-offset
+// и применяется к контенту внутри страниц через класс .page-content-offset
 const safeAreaStyle = {
-  //paddingTop: 'calc(var(--safe-area-top, 0px) + var(--fullscreen-extra-padding, 0px))',
   paddingRight: 'var(--safe-area-right, 0px)',
   paddingBottom: 'var(--safe-area-bottom, 0px)',
   paddingLeft: 'var(--safe-area-left, 0px)',
@@ -123,13 +125,12 @@ export function Page({
   return (
     <main
       className={`max-w-[600px] mx-auto page-container ${showTabBar ? 'with-tab-bar' : ''}`}
-      style={{ ...containerStyle, backgroundColor: '#ffffff' }}
+      style={containerStyle}
       ref={containerRef}
     >
       <div
         className="content-wrapper"
         style={{
-          backgroundColor: '#ffffff',
           flex: 1,
           overflowY: 'auto',
         }}

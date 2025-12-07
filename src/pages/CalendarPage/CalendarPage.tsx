@@ -231,7 +231,7 @@ const CalendarPage: React.FC = () => {
   return (
     <Page back={false}>
       <div
-        className="calendar-page"
+        className="calendar-page with-content-offset"
         style={{
           backgroundImage: `url(${Background1})`,
           backgroundSize: 'cover',

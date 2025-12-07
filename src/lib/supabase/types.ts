@@ -568,8 +568,12 @@ export type Database = {
 // МАТЕРИАЛЫ (объединенные materials + techniques)
 // ============================================================================
 
-// Статусы материала
-export type MaterialStatus = 'free' | 'purchasable' | 'locked';
+// Статусы материала/техники
+// - 'free' = бесплатная (доступна всем, показывается в библиотеке)
+// - 'paid' = платная (показывается в библиотеке, требует оплаты)
+// - 'default' = по умолчанию (только через модули/пакеты, НЕ показывается в библиотеке отдельно)
+// Для обратной совместимости 'purchasable' и 'locked' тоже поддерживаются
+export type MaterialStatus = 'free' | 'paid' | 'default' | 'purchasable' | 'locked';
 
 // Типы условий разблокировки
 export type UnlockConditionType =

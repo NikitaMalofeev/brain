@@ -58,6 +58,9 @@
   --safe-area-bottom: env(safe-area-inset-bottom, 0px);
   --safe-area-left: env(safe-area-inset-left, 0px);
 
+  /* Отступ контента сверху: safe-area + 24px (2x12px) */
+  --content-top-offset: calc(var(--safe-area-top, 0px) + 24px);
+
 
 
   /* RGB значения для использования с градиентами и прозрачностью */
@@ -214,6 +217,12 @@ body {
   padding-bottom: env(safe-area-inset-bottom, 0px);
   padding-left: env(safe-area-inset-left, 0px);
   padding-right: env(safe-area-inset-right, 0px);
+}
+
+/* Отступ контента сверху: safe-area + 24px */
+/* Используй этот класс для страниц с кастомным фоном чтобы контент начинался с правильного отступа */
+.with-content-offset {
+  padding-top: var(--content-top-offset, 24px);
 }
 
 /* Походу не используется */

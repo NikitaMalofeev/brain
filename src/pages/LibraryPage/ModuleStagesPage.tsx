@@ -284,7 +284,7 @@ const ModuleStagesPage: React.FC = () => {
 
     return (
         <Page showTabBar={false}>
-            <div className="min-h-screen text-black pt-4 px-4 pb-4" style={{ backgroundImage: `url(${Background1})`, backgroundSize: '120%', backgroundPosition: 'top', backgroundAttachment: 'fixed', backgroundRepeat: 'no-repeat' }}>
+            <div className="min-h-screen text-black px-4 pb-4 with-content-offset" style={{ backgroundImage: `url(${Background1})`, backgroundSize: '120%', backgroundPosition: 'top', backgroundAttachment: 'fixed', backgroundRepeat: 'no-repeat' }}>
                 {/* Белая карточка с заголовком и прогрессом */}
                 <div
                     className="p-4 flex flex-col"

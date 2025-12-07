@@ -26,7 +26,7 @@ interface Material {
     audio_url?: string | null;
     animation_url?: string | null; // URL mp4 анимации для плеера
     duration_seconds?: number | null;
-    status?: 'free' | 'purchasable' | 'locked';
+    status?: 'free' | 'paid' | 'default';
     purchase_url?: string | null;
     upgrade_tariff_chat_url?: string | null;
     available_from_module?: string | null;
@@ -65,7 +65,7 @@ interface MaterialFormData {
     audio_url: string;
     animation_url: string | null; // URL mp4 анимации для плеера
     duration_seconds: number | null;
-    status: 'free' | 'purchasable' | 'locked';
+    status: 'free' | 'paid' | 'default';
     purchase_url: string;
     upgrade_tariff_chat_url: string;
     available_from_module: string;
@@ -136,7 +136,7 @@ const MaterialsManager: React.FC = () => {
         audio_url: '',
         animation_url: null,
         duration_seconds: null,
-        status: 'free',
+        status: 'default',
         purchase_url: '',
         upgrade_tariff_chat_url: '',
         available_from_module: '',
@@ -327,7 +327,10 @@ const MaterialsManager: React.FC = () => {
                 audio_url: material.audio_url || '',
                 animation_url: material.animation_url || null,
                 duration_seconds: material.duration_seconds || null,
-                status: material.status || 'free',
+                // Маппинг старых статусов на новые
+                status: material.status === 'purchasable' ? 'paid'
+                    : material.status === 'locked' ? 'default'
+                    : (material.status as 'free' | 'paid' | 'default') || 'default',
                 purchase_url: material.purchase_url || '',
                 upgrade_tariff_chat_url: material.upgrade_tariff_chat_url || '',
                 available_from_module: material.available_from_module || '',
@@ -352,7 +355,7 @@ const MaterialsManager: React.FC = () => {
                 audio_url: '',
                 animation_url: null,
                 duration_seconds: null,
-                status: 'free',
+                status: 'default',
                 purchase_url: '',
                 upgrade_tariff_chat_url: '',
                 available_from_module: '',
@@ -422,7 +425,10 @@ const MaterialsManager: React.FC = () => {
                         duration_days: materialForm.unlock_condition_duration_days || undefined,
                     }
                     : null,
-                is_standalone: materialForm.is_standalone,
+                // is_standalone автоматически определяется по статусу:
+                // paid или free = standalone (показывается в библиотеке)
+                // default = НЕ standalone (только через модули/пакеты)
+                is_standalone: materialForm.status === 'paid' || materialForm.status === 'free',
                 is_special: materialForm.is_special,
             };
 
@@ -1393,12 +1399,17 @@ const MaterialsManager: React.FC = () => {
                                     <select
                                         className="admin-input"
                                         value={materialForm.status}
-                                        onChange={(e) => setMaterialForm({ ...materialForm, status: e.target.value as 'free' | 'purchasable' | 'locked' })}
+                                        onChange={(e) => setMaterialForm({ ...materialForm, status: e.target.value as 'free' | 'paid' | 'default' })}
                                     >
-                                        <option value="free">🆓 Бесплатный</option>
-                                        <option value="purchasable">💰 Доступен к покупке</option>
-                                        <option value="locked">🔒 Заблокирован</option>
+                                        <option value="default">📦 По умолчанию (только через модули/пакеты)</option>
+                                        <option value="paid">💰 Платная (в библиотеке, требует оплаты)</option>
+                                        <option value="free">🎁 Бесплатная (в библиотеке, доступна всем)</option>
                                     </select>
+                                    <small style={{ color: '#666', fontSize: '12px', marginTop: '4px', display: 'block' }}>
+                                        {materialForm.status === 'default' && 'Техника доступна только через модули, пакеты или специальные пакеты. Не показывается в библиотеке отдельно.'}
+                                        {materialForm.status === 'paid' && 'Техника показывается в библиотеке. Требуется отметка оплаты в карточке ученика.'}
+                                        {materialForm.status === 'free' && 'Техника показывается в библиотеке. Доступна всем пользователям.'}
+                                    </small>
                                 </div>
                             </div>
 
@@ -1425,21 +1436,6 @@ const MaterialsManager: React.FC = () => {
                                     onChange={(e) => setMaterialForm({ ...materialForm, upgrade_tariff_chat_url: e.target.value })}
                                     placeholder="https://t.me/..."
                                 />
-                            </div>
-
-                            <div className="form-group">
-                                <label className="checkbox-inline" style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                                    <input
-                                        type="checkbox"
-                                        className="admin-checkbox"
-                                        checked={materialForm.is_standalone}
-                                        onChange={(e) => setMaterialForm({ ...materialForm, is_standalone: e.target.checked })}
-                                    />
-                                    <span>Самостоятельная техника</span>
-                                </label>
-                                <small style={{ color: '#666', fontSize: '12px', display: 'block', marginTop: '4px' }}>
-                                    Если отмечено, материал доступен независимо от модулей
-                                </small>
                             </div>
 
                             <div className="form-group">

@@ -17,7 +17,11 @@ interface TechniqueFormData {
   audio_url: string;
   cover_image: string;
   duration_seconds: number | null;
-  status: 'free' | 'purchasable' | 'locked';
+  // Новые статусы:
+  // - 'free' = бесплатная (показывается в библиотеке, доступна всем)
+  // - 'paid' = платная (показывается в библиотеке, требует оплаты)
+  // - 'default' = по умолчанию (только через модули/пакеты, НЕ в библиотеке)
+  status: 'free' | 'paid' | 'default';
   purchase_url: string;
   upgrade_tariff_chat_url: string;
   available_from_module: string;
@@ -25,7 +29,7 @@ interface TechniqueFormData {
   unlock_condition_technique_id: string;
   unlock_condition_duration_days: number;
   order_num: number;
-  is_standalone: boolean; // НОВОЕ ПОЛЕ
+  is_standalone: boolean; // Автоматически устанавливается на основе статуса
 }
 
 const initialFormData: TechniqueFormData = {
@@ -34,7 +38,7 @@ const initialFormData: TechniqueFormData = {
   audio_url: '',
   cover_image: '',
   duration_seconds: null,
-  status: 'purchasable',
+  status: 'default', // По умолчанию - только через модули/пакеты
   purchase_url: '',
   upgrade_tariff_chat_url: '',
   available_from_module: '',
@@ -42,7 +46,7 @@ const initialFormData: TechniqueFormData = {
   unlock_condition_technique_id: '',
   unlock_condition_duration_days: 30,
   order_num: 0,
-  is_standalone: false, // По умолчанию не standalone
+  is_standalone: false, // Автоматически определяется по статусу
 };
 
 const TechniqueEditor: React.FC<TechniqueEditorProps> = ({
@@ -95,6 +99,14 @@ const TechniqueEditor: React.FC<TechniqueEditorProps> = ({
     },
   });
 
+  // Маппинг старых статусов на новые
+  const mapOldStatusToNew = (oldStatus: string | null | undefined): 'free' | 'paid' | 'default' => {
+    if (oldStatus === 'free') return 'free';
+    if (oldStatus === 'purchasable' || oldStatus === 'paid') return 'paid';
+    if (oldStatus === 'locked' || oldStatus === 'default' || !oldStatus) return 'default';
+    return 'default';
+  };
+
   // Заполнить форму данными техники при загрузке
   useEffect(() => {
     if (technique) {
@@ -104,7 +116,7 @@ const TechniqueEditor: React.FC<TechniqueEditorProps> = ({
         audio_url: technique.audio_url || '',
         cover_image: technique.cover_image || '',
         duration_seconds: technique.duration_seconds,
-        status: technique.status || 'purchasable',
+        status: mapOldStatusToNew(technique.status),
         purchase_url: technique.purchase_url || '',
         upgrade_tariff_chat_url: technique.upgrade_tariff_chat_url || '',
         available_from_module: technique.available_from_module || '',
@@ -114,7 +126,7 @@ const TechniqueEditor: React.FC<TechniqueEditorProps> = ({
         unlock_condition_duration_days:
           technique.unlock_condition_value?.duration_days || 30,
         order_num: technique.order_num || 0,
-        is_standalone: technique.is_standalone || false, // Загрузить is_standalone
+        is_standalone: technique.is_standalone || false,
       });
     }
   }, [technique]);
@@ -137,6 +149,11 @@ const TechniqueEditor: React.FC<TechniqueEditorProps> = ({
     setIsSaving(true);
 
     try {
+      // is_standalone автоматически определяется по статусу:
+      // - paid или free = standalone (показывается в библиотеке)
+      // - default = НЕ standalone (только через модули/пакеты)
+      const isStandalone = formData.status === 'paid' || formData.status === 'free';
+
       const dataToSave: any = {
         title: formData.title.trim(),
         description: formData.description.trim() || null,
@@ -156,7 +173,7 @@ const TechniqueEditor: React.FC<TechniqueEditorProps> = ({
                 duration_days: formData.unlock_condition_duration_days,
               }
             : null,
-        is_standalone: formData.is_standalone, // Сохранить is_standalone
+        is_standalone: isStandalone, // Автоматически на основе статуса
       };
 
       if (techniqueId) {
@@ -297,9 +314,9 @@ const TechniqueEditor: React.FC<TechniqueEditorProps> = ({
           />
         </div>
 
-        {/* Статус */}
+        {/* Статус доступа */}
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-2">Статус</label>
+          <label className="block text-sm font-medium text-gray-700 mb-2">Статус доступа</label>
           <select
             value={formData.status}
             onChange={(e) =>
@@ -307,24 +324,15 @@ const TechniqueEditor: React.FC<TechniqueEditorProps> = ({
             }
             className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#B862EA] focus:border-transparent"
           >
-            <option value="free">Бесплатная</option>
-            <option value="purchasable">К покупке</option>
-            <option value="locked">Заблокирована (по условию)</option>
+            <option value="default">По умолчанию (только через модули/пакеты)</option>
+            <option value="paid">Платная (в библиотеке, требует оплаты)</option>
+            <option value="free">Бесплатная (в библиотеке, доступна всем)</option>
           </select>
-        </div>
-
-        {/* Standalone техника */}
-        <div className="flex items-center gap-3 p-4 bg-blue-50 rounded-lg border border-blue-200">
-          <input
-            type="checkbox"
-            id="is_standalone"
-            checked={formData.is_standalone}
-            onChange={(e) => handleChange('is_standalone', e.target.checked)}
-            className="w-5 h-5 text-[#B862EA] border-gray-300 rounded focus:ring-[#B862EA]"
-          />
-          <label htmlFor="is_standalone" className="text-sm font-medium text-gray-700 cursor-pointer">
-            Не привязана к модулям
-          </label>
+          <p className="mt-2 text-xs text-gray-500">
+            {formData.status === 'default' && '📦 Техника доступна только через модули, пакеты или специальные пакеты. Не показывается в библиотеке отдельно.'}
+            {formData.status === 'paid' && '💰 Техника показывается в библиотеке в секции "К покупке". Требуется отметка оплаты в карточке ученика.'}
+            {formData.status === 'free' && '🎁 Техника показывается в библиотеке в секции "Бесплатные". Доступна всем пользователям.'}
+          </p>
         </div>
 
         {/* URL покупки и чата */}

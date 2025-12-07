@@ -2,9 +2,6 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '../client';
 import { logger } from '@/lib/logger';
 import type {
-  ModuleMaterial,
-  CreateModuleMaterial,
-  UpdateModuleMaterial,
   // Backwards compatibility
   StreamModuleTechnique,
   CreateStreamModuleTechnique,
@@ -307,5 +304,171 @@ export const useTechniqueByModuleAndDay = (
       return data;
     },
     enabled: !!moduleId && !!day,
+  });
+};
+
+// ============================================================================
+// ХУКИ ДЛЯ ПЛАТНЫХ ТЕХНИК (status = 'paid')
+// ============================================================================
+
+/**
+ * Интерфейс для платной техники с информацией об оплате
+ */
+export interface PaidTechniqueWithPayment {
+  technique_id: string;
+  technique_name: string;
+  technique_description: string | null;
+  technique_cover: string | null;
+  technique_audio_url: string | null;
+  is_paid: boolean;
+  paid_at: string | null;
+  paid_by: string | null;
+  order_num: number;
+}
+
+/**
+ * Хук для получения списка платных техник с информацией об оплате для пользователя
+ */
+export const useUserPaidTechniques = (userId: string | null) => {
+  return useQuery({
+    queryKey: ['user-paid-techniques', userId],
+    queryFn: async (): Promise<PaidTechniqueWithPayment[]> => {
+      if (!userId || !supabase) {
+        return [];
+      }
+
+      logger.debug('Fetching user paid techniques', { userId });
+
+      const { data, error } = await supabase.rpc('get_user_paid_techniques', {
+        p_user_id: userId,
+      });
+
+      if (error) {
+        logger.error('Error fetching user paid techniques', { error });
+        throw error;
+      }
+
+      return (data as PaidTechniqueWithPayment[]) || [];
+    },
+    enabled: !!userId,
+  });
+};
+
+/**
+ * Хук для отметки платной техники как оплаченной
+ */
+export const useMarkPaidTechniquePaid = () => {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async (params: {
+      user_id: string;
+      technique_id: string;
+      paid_by?: string;
+    }) => {
+      if (!supabase) {
+        throw new Error('Supabase client not initialized');
+      }
+
+      logger.debug('Marking paid technique as paid', params);
+
+      // Upsert запись в user_paid_technique_access
+      const { data, error } = await supabase
+        .from('user_paid_technique_access')
+        .upsert({
+          user_id: params.user_id,
+          technique_id: params.technique_id,
+          is_paid: true,
+          paid_at: new Date().toISOString(),
+          paid_by: params.paid_by || null,
+        }, {
+          onConflict: 'user_id,technique_id',
+        })
+        .select()
+        .single();
+
+      if (error) {
+        logger.error('Error marking paid technique as paid', { error });
+        throw error;
+      }
+
+      // Также выдаём доступ к технике
+      const { error: accessError } = await supabase.rpc('grant_technique_access', {
+        p_user_id: params.user_id,
+        p_technique_id: params.technique_id,
+        p_access_source: 'purchase',
+        p_expires_at: null,
+      });
+
+      if (accessError) {
+        logger.warn('Error granting technique access after payment', { error: accessError });
+        // Не бросаем ошибку, т.к. оплата уже зафиксирована
+      }
+
+      return data;
+    },
+    onSuccess: (_, variables) => {
+      queryClient.invalidateQueries({ queryKey: ['user-paid-techniques', variables.user_id] });
+      queryClient.invalidateQueries({ queryKey: ['user-technique-access', variables.user_id] });
+      queryClient.invalidateQueries({ queryKey: ['techniques', variables.user_id] });
+      queryClient.invalidateQueries({ queryKey: ['admin-students'] });
+    },
+  });
+};
+
+/**
+ * Хук для отмены оплаты платной техники
+ */
+export const useUnmarkPaidTechniquePaid = () => {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async (params: {
+      user_id: string;
+      technique_id: string;
+    }) => {
+      if (!supabase) {
+        throw new Error('Supabase client not initialized');
+      }
+
+      logger.debug('Unmarking paid technique', params);
+
+      // Обновляем запись - ставим is_paid = false
+      const { data, error } = await supabase
+        .from('user_paid_technique_access')
+        .update({
+          is_paid: false,
+          paid_at: null,
+          paid_by: null,
+        })
+        .eq('user_id', params.user_id)
+        .eq('technique_id', params.technique_id)
+        .select()
+        .single();
+
+      if (error) {
+        logger.error('Error unmarking paid technique', { error });
+        throw error;
+      }
+
+      // Отзываем доступ к технике
+      const { error: revokeError } = await supabase.rpc('revoke_technique_access', {
+        p_user_id: params.user_id,
+        p_technique_id: params.technique_id,
+      });
+
+      if (revokeError) {
+        logger.warn('Error revoking technique access after unmark', { error: revokeError });
+        // Не бросаем ошибку
+      }
+
+      return data;
+    },
+    onSuccess: (_, variables) => {
+      queryClient.invalidateQueries({ queryKey: ['user-paid-techniques', variables.user_id] });
+      queryClient.invalidateQueries({ queryKey: ['user-technique-access', variables.user_id] });
+      queryClient.invalidateQueries({ queryKey: ['techniques', variables.user_id] });
+      queryClient.invalidateQueries({ queryKey: ['admin-students'] });
+    },
   });
 };

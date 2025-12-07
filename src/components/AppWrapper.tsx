@@ -79,8 +79,8 @@ export const AppWrapper: FC<AppWrapperProps> = ({ children }) => {
     const bottomValue = typeof bottom === 'number' ? `${bottom}px` : '0px';
     const leftValue = typeof left === 'number' ? `${left}px` : '0px';
 
-    // ТЕСТ: Отключаем safe-area-top - используем фиксированные отступы
-    // document.documentElement.style.setProperty('--safe-area-top', topValue);
+    // Включаем safe-area-top для правильных отступов на всех устройствах
+    document.documentElement.style.setProperty('--safe-area-top', topValue);
     document.documentElement.style.setProperty('--safe-area-right', rightValue);
     document.documentElement.style.setProperty('--safe-area-bottom', bottomValue);
     document.documentElement.style.setProperty('--safe-area-left', leftValue);

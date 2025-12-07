@@ -1286,7 +1286,7 @@ const LessonPage: React.FC = () => {
 
     return (
         <Page back={true} showTabBar={false}>
-            <div className={'text-black'} style={{ backgroundImage: `url(${Background1})`, backgroundSize: '120%', backgroundPosition: 'top', backgroundAttachment: 'fixed', backgroundRepeat: 'no-repeat', minHeight: '100vh' }}>
+            <div className={'text-black with-content-offset'} style={{ backgroundImage: `url(${Background1})`, backgroundSize: '120%', backgroundPosition: 'top', backgroundAttachment: 'fixed', backgroundRepeat: 'no-repeat', minHeight: '100vh' }}>
                 {/* Обложка урока с бейджами внутри */}
                 <div style={{ position: 'relative' }}>
                     <img

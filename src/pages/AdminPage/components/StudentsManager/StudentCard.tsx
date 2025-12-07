@@ -29,6 +29,11 @@ import {
     useUnmarkSpecialTechniquePaid,
     groupTechniquesBySpecialBundle,
 } from '@/lib/supabase/hooks/useSpecialBundles';
+import {
+    useUserPaidTechniques,
+    useMarkPaidTechniquePaid,
+    useUnmarkPaidTechniquePaid,
+} from '@/lib/supabase/hooks/useTechniqueSchedule';
 
 interface StudentCardProps {
     studentId: string;
@@ -68,6 +73,11 @@ const StudentCard: React.FC<StudentCardProps> = ({ studentId, onBack, currentUse
     const specialBundleGroups = userSpecialBundleTechniques
         ? groupTechniquesBySpecialBundle(userSpecialBundleTechniques)
         : [];
+
+    // Платные техники (status = 'paid')
+    const { data: paidTechniques } = useUserPaidTechniques(studentId);
+    const markPaidTechniqueMutation = useMarkPaidTechniquePaid();
+    const unmarkPaidTechniqueMutation = useUnmarkPaidTechniquePaid();
 
     // Cостояние для модального окна назначения куратором
     const [isPromoteModalOpen, setIsPromoteModalOpen] = useState(false);
@@ -1004,6 +1014,81 @@ const StudentCard: React.FC<StudentCardProps> = ({ studentId, onBack, currentUse
                         </div>
                     )}
                 </div>
+
+                {/* Платные техники (status = 'paid') */}
+                {paidTechniques && paidTechniques.length > 0 && (
+                    <div className="form-group">
+                        <label style={{ fontSize: '14px', fontWeight: '600', marginBottom: '8px', display: 'block' }}>
+                            Платные техники (отдельные):
+                        </label>
+                        <div
+                            style={{
+                                padding: '12px',
+                                backgroundColor: '#fff7e6',
+                                borderRadius: '8px',
+                                border: '1px solid #ffd591'
+                            }}
+                        >
+                            <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                                {paidTechniques.map((tech) => (
+                                    <div
+                                        key={tech.technique_id}
+                                        style={{
+                                            display: 'flex',
+                                            alignItems: 'center',
+                                            justifyContent: 'space-between',
+                                            padding: '8px 12px',
+                                            backgroundColor: tech.is_paid ? '#f6ffed' : '#fff',
+                                            borderRadius: '6px',
+                                            border: `1px solid ${tech.is_paid ? '#b7eb8f' : '#d9d9d9'}`
+                                        }}
+                                    >
+                                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                                            <span style={{ fontSize: '16px' }}>
+                                                {tech.is_paid ? '✅' : '💰'}
+                                            </span>
+                                            <span style={{ fontWeight: '500' }}>
+                                                {tech.technique_name}
+                                            </span>
+                                        </div>
+                                        <label style={{ display: 'flex', alignItems: 'center', gap: '6px', cursor: 'pointer' }}>
+                                            <input
+                                                type="checkbox"
+                                                checked={tech.is_paid}
+                                                onChange={async (e) => {
+                                                    try {
+                                                        if (e.target.checked) {
+                                                            await markPaidTechniqueMutation.mutateAsync({
+                                                                user_id: studentId,
+                                                                technique_id: tech.technique_id,
+                                                                paid_by: currentUser?.id,
+                                                            });
+                                                        } else {
+                                                            await unmarkPaidTechniqueMutation.mutateAsync({
+                                                                user_id: studentId,
+                                                                technique_id: tech.technique_id,
+                                                            });
+                                                        }
+                                                    } catch (err: any) {
+                                                        alert(err?.message || 'Ошибка');
+                                                    }
+                                                }}
+                                                disabled={markPaidTechniqueMutation.isPending || unmarkPaidTechniqueMutation.isPending}
+                                                style={{ width: '16px', height: '16px', cursor: 'pointer' }}
+                                            />
+                                            <span style={{
+                                                fontSize: '12px',
+                                                color: tech.is_paid ? '#52c41a' : '#faad14',
+                                            }}>
+                                                {tech.is_paid ? 'Оплачено' : 'Не оплачено'}
+                                            </span>
+                                        </label>
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
+                    </div>
+                )}
 
                 {/* Специальные пакеты */}
                 {specialBundleGroups.length > 0 && (

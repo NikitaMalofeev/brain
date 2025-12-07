@@ -214,7 +214,7 @@ const TechniquesPage: React.FC = () => {
         }
       `}</style>
       <div
-        className="flex flex-col min-h-screen pb-4"
+        className="flex flex-col min-h-screen pb-4 with-content-offset"
         style={{
           backgroundImage: 'url(/background2.png)',
           backgroundSize: 'cover',
@@ -224,7 +224,7 @@ const TechniquesPage: React.FC = () => {
         }}
       >
         {/* Заголовок */}
-        <div className="pt-4 pb-4 px-4">
+        <div className="pb-4 px-4">
           <h1 className="text-[24px] font-semibold text-white leading-none tracking-normal">Библиотека</h1>
         </div>
 

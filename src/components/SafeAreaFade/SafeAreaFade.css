@@ -8,10 +8,10 @@
   z-index: 9999; /* Максимально высокий z-index, чтобы быть поверх всего */
 }
 
-/* Верхний фейд */
+/* Верхний фейд - высота = safe-area-top + 24px (дополнительный отступ) */
 .safe-area-fade-top {
   top: 0;
-  height: 100px; /* Высота верхнего фейда */
+  height: calc(var(--safe-area-top, 0px) + 24px + 40px); /* safe-area + 24px отступ + 40px для градиента */
   background: linear-gradient(
     to bottom,
     var(--tgui-background) 0%,

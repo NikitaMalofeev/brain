@@ -77,11 +77,19 @@ export interface BundleGroup {
  * Хук-хелпер для фильтрации техник по категориям
  * Разделяет техники на доступные, заблокированные и те, к которым есть доступ
  *
+ * Новые статусы:
+ * - 'free' = бесплатная (показывается в библиотеке, доступна всем)
+ * - 'paid' = платная (показывается в библиотеке, требует оплаты)
+ * - 'default' = по умолчанию (только через модули/пакеты, НЕ в библиотеке)
+ * - 'purchasable' = устаревший, обратная совместимость -> маппится на 'paid'
+ * - 'locked' = устаревший, обратная совместимость -> маппится на 'default'
+ *
  * Категории:
  * - myTechniques: техники с has_access = true (из пакетов, модулей, прямого доступа)
- * - availableTechniques: can_purchase = true И is_unlocked = true (можно купить прямо сейчас)
- * - lockedTechniques: is_unlocked = false ИЛИ (can_purchase = false И has_access = false)
+ * - availableTechniques: can_purchase = true И is_unlocked = true (платные к покупке)
+ * - lockedTechniques: нет доступа, не разблокирована
  * - freeTechniques: status = 'free'
+ * - paidTechniques: status = 'paid' или 'purchasable' (платные, требуют оплаты)
  * - bundleGroups: техники сгруппированные по пакетам
  *
  * @param userId - ID пользователя
@@ -89,6 +97,10 @@ export interface BundleGroup {
  */
 export function useTechniquesFiltered(userId: string | null | undefined) {
   const { data: techniques, isLoading, error } = useTechniques(userId);
+
+  // Хелпер для определения платного статуса (учитывает обратную совместимость)
+  const isPaidStatus = (status: string | undefined | null) =>
+    status === 'paid' || status === 'purchasable';
 
   // Мои техники - те, к которым есть доступ (has_access = true), НЕ из пакетов
   const myTechniques = techniques?.filter(
@@ -126,7 +138,14 @@ export function useTechniquesFiltered(userId: string | null | undefined) {
     (t) => t.status === 'free'
   ) || [];
 
+  // Платные техники - к покупке (status = 'paid' или 'purchasable')
+  // Показываем только те, к которым нет доступа и можно купить
+  const paidTechniques = techniques?.filter(
+    (t) => !t.has_access && isPaidStatus(t.status) && t.is_unlocked !== false
+  ) || [];
+
   // К покупке - можно купить, нет доступа, не бесплатная, разблокирована
+  // Теперь включает платные техники (paid/purchasable)
   const availableTechniques = techniques?.filter(
     (t) => !t.has_access && t.can_purchase && t.status !== 'free' && t.is_unlocked !== false
   ) || [];
@@ -148,6 +167,7 @@ export function useTechniquesFiltered(userId: string | null | undefined) {
     myTechniques,
     freeTechniques,
     myFreeTechniques,
+    paidTechniques,
     moduleTechniques,
     bundleGroups,
     isLoading,
