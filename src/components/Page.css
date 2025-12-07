@@ -10,10 +10,10 @@ body{
 }
 
 /* Класс для фоновых контейнеров страниц - добавляет правильный отступ сверху */
-/* 44px базовый отступ + safe-area-inset-top для нотча/статус-бара */
+/* 56px базовый отступ + safe-area-inset-top для нотча/статус-бара */
 /* !important гарантирует что отступ не будет перезаписан стилями страниц */
 .page-bg-container {
-  padding-top: calc(44px + env(safe-area-inset-top, 0px)) !important;
+  padding-top: calc(56px + env(safe-area-inset-top, 0px)) !important;
 }
 
 html, body, #root {

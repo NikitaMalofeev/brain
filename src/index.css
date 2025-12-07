@@ -219,10 +219,15 @@ body {
   padding-right: env(safe-area-inset-right, 0px);
 }
 
-/* Отступ контента сверху: 44px + safe-area */
+/* Отступ контента сверху: 56px + safe-area */
 /* Используй этот класс для страниц с кастомным фоном чтобы контент начинался с правильного отступа */
 /* !important гарантирует что отступ не будет перезаписан стилями страниц */
 .with-content-offset {
+  padding-top: calc(56px + env(safe-area-inset-top, 0px)) !important;
+}
+
+/* Меньший отступ 44px + safe-area для календаря и других страниц где нужен минимальный отступ */
+.with-content-offset-small {
   padding-top: calc(44px + env(safe-area-inset-top, 0px)) !important;
 }
 
