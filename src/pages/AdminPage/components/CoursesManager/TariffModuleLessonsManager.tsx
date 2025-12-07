@@ -23,6 +23,8 @@ interface ModuleLessonsManagerProps {
   moduleName: string;
   moduleDurationDays?: number;
   allModulesInfo?: ModuleInfo[]; // Информация о всех модулях для спец.пакетов
+  streamStartDate?: string; // Дата начала потока
+  moduleUnlockOffset?: number; // День открытия модуля относительно начала потока
 }
 
 const ModuleLessonsManager: React.FC<ModuleLessonsManagerProps> = ({
@@ -33,6 +35,8 @@ const ModuleLessonsManager: React.FC<ModuleLessonsManagerProps> = ({
   moduleName,
   moduleDurationDays,
   allModulesInfo,
+  streamStartDate,
+  moduleUnlockOffset,
 }) => {
   const [lessonForm] = Form.useForm();
   const [lessonModalVisible, setLessonModalVisible] = useState(false);
@@ -48,6 +52,20 @@ const ModuleLessonsManager: React.FC<ModuleLessonsManagerProps> = ({
   const [searchQuery, setSearchQuery] = useState<string>('');
 
   const moduleDaysCount = moduleDurationDays || customModuleDays;
+
+  // Функция для получения даты конкретного дня модуля
+  const getDayDate = (dayNum: number): string | null => {
+    if (!streamStartDate) return null;
+    const startDate = new Date(streamStartDate);
+    // День модуля = дата начала потока + unlock_offset модуля + (dayNum - 1)
+    const dayOffset = (moduleUnlockOffset || 0) + (dayNum - 1);
+    startDate.setDate(startDate.getDate() + dayOffset);
+    return startDate.toLocaleDateString('ru-RU', {
+      day: '2-digit',
+      month: '2-digit',
+      year: 'numeric',
+    });
+  };
 
   // Хуки для работы с уроками напрямую (без ступеней)
   const { data: lessons, isLoading } = useModuleLessons(streamModuleId);
@@ -453,7 +471,7 @@ const ModuleLessonsManager: React.FC<ModuleLessonsManagerProps> = ({
                     }}
                   >
                     <Text strong style={{ fontSize: 12 }}>
-                      День {day}
+                      День {day}{getDayDate(day) ? ` - ${getDayDate(day)}` : ''}
                     </Text>
                     {/* Иконка удаления в правом верхнем углу */}
                     {lessonsByDay[day]?.length > 0 && (

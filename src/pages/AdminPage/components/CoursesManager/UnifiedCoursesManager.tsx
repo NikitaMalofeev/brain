@@ -301,7 +301,7 @@ const UnifiedCoursesManager: React.FC = () => {
   const [navigation, setNavigation] = useState<NavigationState>({ view: 'courses' });
   const [expandedModules, setExpandedModules] = useState<string[]>([]);
   const [editingModule, setEditingModule] = useState<string | null>(null);
-  const [editingModuleData, setEditingModuleData] = useState<{ days: number | null; unlockDays: number | null }>({ days: null, unlockDays: null });
+  const [editingModuleData, setEditingModuleData] = useState<{ days: number | null; gridDays: number | null; unlockDays: number | null }>({ days: null, gridDays: null, unlockDays: null });
   const [editingTechnique, setEditingTechnique] = useState<string | null>(null);
   const [editingTechniqueData, setEditingTechniqueData] = useState<{ days: number }>({ days: 0 });
   const [showCopyModal, setShowCopyModal] = useState(false);
@@ -348,6 +348,13 @@ const UnifiedCoursesManager: React.FC = () => {
     navigation.tariffId || null
   );
   const { data: moduleMaterials } = useStreamModuleMaterials(navigation.streamId || null);
+
+  // Получаем дату начала текущего потока
+  const currentStreamStartDate = useMemo(() => {
+    if (!navigation.streamId || !courseStreams) return undefined;
+    const currentStream = courseStreams.find((s: any) => s.id === navigation.streamId);
+    return currentStream?.start_date;
+  }, [navigation.streamId, courseStreams]);
 
   // Мутации
   const addTariffToStreamMutation = useAddTariffToStream();
@@ -507,6 +514,7 @@ const UnifiedCoursesManager: React.FC = () => {
   const handleUpdateModule = async (
     tariffStreamModuleId: string,
     accessDurationDays: number | null,
+    gridDays: number | null,
     unlockOffsetDays: number | null,
     orderNum: number
   ) => {
@@ -514,6 +522,7 @@ const UnifiedCoursesManager: React.FC = () => {
       await updateModuleMutation.mutateAsync({
         tariff_stream_module_id: tariffStreamModuleId,
         access_duration_days: accessDurationDays,
+        grid_days: gridDays,
         unlock_offset_days: unlockOffsetDays,
         order_num: orderNum,
       });
@@ -834,6 +843,7 @@ const UnifiedCoursesManager: React.FC = () => {
                           {module.unlock_offset_days ? `Открывается на ${module.unlock_offset_days} день` : 'Доступен сразу'}
                           {' | '}
                           {module.access_duration_days ? `${module.access_duration_days} дней доступа` : 'Бессрочно'}
+                          {module.grid_days && ` | Сетка: ${module.grid_days} дней`}
                         </Text>
                       </div>
                     </div>
@@ -847,6 +857,7 @@ const UnifiedCoursesManager: React.FC = () => {
                           setEditingModule(module.tariff_stream_module_id);
                           setEditingModuleData({
                             days: module.access_duration_days,
+                            gridDays: module.grid_days,
                             unlockDays: module.unlock_offset_days ?? 0
                           });
                           // Открываем модуль если он закрыт
@@ -889,6 +900,19 @@ const UnifiedCoursesManager: React.FC = () => {
                             onChange={(value) => setEditingModuleData({ ...editingModuleData, days: value })}
                           />
                         </div>
+                        <div>
+                          <Text strong style={{ fontSize: 12 }}>Дней в сетке расписания:</Text>
+                          <InputNumber
+                            style={{ width: '100%', marginTop: 4 }}
+                            placeholder="Пусто = как доступ"
+                            min={1}
+                            value={editingModuleData.gridDays}
+                            onChange={(value) => setEditingModuleData({ ...editingModuleData, gridDays: value })}
+                          />
+                          <Text type="secondary" style={{ fontSize: 11, display: 'block', marginTop: 2 }}>
+                            Только для отображения сетки, не влияет на доступ
+                          </Text>
+                        </div>
                         <Space>
                           <Button
                             type="primary"
@@ -897,6 +921,7 @@ const UnifiedCoursesManager: React.FC = () => {
                             onClick={() => handleUpdateModule(
                               module.tariff_stream_module_id,
                               editingModuleData.days,
+                              editingModuleData.gridDays,
                               editingModuleData.unlockDays,
                               module.order_num
                             )}
@@ -919,7 +944,7 @@ const UnifiedCoursesManager: React.FC = () => {
                   <TariffModuleContentManager
                     module={module}
                     allMaterials={allTechniques || []}
-                    moduleDurationDays={module.access_duration_days || undefined}
+                    moduleDurationDays={module.grid_days ?? module.access_duration_days ?? undefined}
                     streamId={navigation.streamId!}
                     courseId={navigation.courseId!}
                     allTariffModuleIds={configuration?.modules.map(m => m.tariff_stream_module_id) || []}
@@ -929,6 +954,7 @@ const UnifiedCoursesManager: React.FC = () => {
                       access_duration_days: m.access_duration_days,
                       unlock_offset_days: m.unlock_offset_days,
                     })) || []}
+                    streamStartDate={currentStreamStartDate}
                   />
                 </Panel>
               ))}

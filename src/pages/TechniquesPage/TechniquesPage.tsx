@@ -6,6 +6,7 @@ import { useGuestStatus } from '@/lib/supabase/hooks/useIsGuest';
 import { useTechniquesFiltered, BundleGroup } from '@/lib/supabase/hooks/useTechniques';
 import { useUserStreamInfo } from '@/lib/supabase/hooks/useUserStreamInfo';
 import { useUserSpecialBundleTechniques } from '@/lib/supabase/hooks/useSpecialBundles';
+import { useLibraryButtonsSettings } from '@/lib/supabase/hooks/useSystemSettings';
 import { useSignal, initDataState } from '@telegram-apps/sdk-react';
 import { logger } from '@/lib/logger';
 import { TechniqueWithAccess } from '@/lib/supabase/types';
@@ -63,6 +64,9 @@ const TechniquesPage: React.FC = () => {
 
   // Получаем техники из специальных пакетов
   const { data: userSpecialBundleTechniques } = useUserSpecialBundleTechniques(supabaseUser?.id);
+
+  // Получаем настройки кнопок библиотеки
+  const { data: libraryButtonsSettings } = useLibraryButtonsSettings();
 
   // Техники из спец.пакетов, которые доступны (оплачены и время прошло) - для таба "Мои"
   const availableSpecialTechniques = userSpecialBundleTechniques?.filter(t => t.is_available) || [];
@@ -610,24 +614,48 @@ const TechniquesPage: React.FC = () => {
         {/* Кнопки внизу страницы */}
         {!loading && !error && (availableTechniques.length > 0 || freeTechniques.length > 0 || myTechniques.length > 0) && (
           <div className="flex flex-col gap-2 mt-4 px-4">
-            <button
-              className="w-full py-3.5 text-white text-sm font-semibold rounded-[20px] hover:opacity-80 transition-opacity active:scale-[0.98]"
-              style={{
-                background: '#0000007A',
-                backdropFilter: 'blur(10px)',
-              }}
-            >
-              Библиотека
-            </button>
-            <button
-              className="w-full py-3.5 text-white text-sm font-semibold rounded-[20px] hover:opacity-80 transition-opacity active:scale-[0.98]"
-              style={{
-                background: 'rgba(255, 255, 255, 0.2)',
-                backdropFilter: 'blur(10px)',
-              }}
-            >
-              Запустить биорегулирование
-            </button>
+            {libraryButtonsSettings?.library_button?.enabled !== false && (
+              <button
+                className="w-full py-3.5 text-white text-sm font-semibold rounded-[20px] hover:opacity-80 transition-opacity active:scale-[0.98]"
+                style={{
+                  background: '#0000007A',
+                  backdropFilter: 'blur(10px)',
+                }}
+                onClick={() => {
+                  const url = libraryButtonsSettings?.library_button?.url;
+                  if (url) {
+                    if (url.startsWith('http')) {
+                      window.open(url, '_blank');
+                    } else {
+                      navigate(url);
+                    }
+                  }
+                }}
+              >
+                {libraryButtonsSettings?.library_button?.label || 'Библиотека'}
+              </button>
+            )}
+            {libraryButtonsSettings?.bioregulation_button?.enabled !== false && (
+              <button
+                className="w-full py-3.5 text-white text-sm font-semibold rounded-[20px] hover:opacity-80 transition-opacity active:scale-[0.98]"
+                style={{
+                  background: 'rgba(255, 255, 255, 0.2)',
+                  backdropFilter: 'blur(10px)',
+                }}
+                onClick={() => {
+                  const url = libraryButtonsSettings?.bioregulation_button?.url;
+                  if (url) {
+                    if (url.startsWith('http')) {
+                      window.open(url, '_blank');
+                    } else {
+                      navigate(url);
+                    }
+                  }
+                }}
+              >
+                {libraryButtonsSettings?.bioregulation_button?.label || 'Запустить биорегулирование'}
+              </button>
+            )}
           </div>
         )}
 

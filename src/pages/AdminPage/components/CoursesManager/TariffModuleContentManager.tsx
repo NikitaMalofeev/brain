@@ -19,6 +19,7 @@ interface TariffModuleContentManagerProps {
   courseId: string;
   allTariffModuleIds: string[]; // Все ID модулей тарифа для проверки размещений спец.пакетов
   allModulesInfo: ModuleInfo[]; // Информация о всех модулях для расчёта расположения техник
+  streamStartDate?: string; // Дата начала потока для вычисления дат дней
 }
 
 type ContentType = 'techniques' | 'lessons';
@@ -31,6 +32,7 @@ const TariffModuleContentManager: React.FC<TariffModuleContentManagerProps> = ({
   courseId,
   allTariffModuleIds,
   allModulesInfo,
+  streamStartDate,
 }) => {
   const [contentType, setContentType] = useState<ContentType>('techniques');
 
@@ -57,6 +59,8 @@ const TariffModuleContentManager: React.FC<TariffModuleContentManagerProps> = ({
           moduleDurationDays={moduleDurationDays}
           allTariffModuleIds={allTariffModuleIds}
           allModulesInfo={allModulesInfo}
+          streamStartDate={streamStartDate}
+          moduleUnlockOffset={module.unlock_offset_days}
         />
       ) : (
         <TariffModuleLessonsManager
@@ -67,6 +71,8 @@ const TariffModuleContentManager: React.FC<TariffModuleContentManagerProps> = ({
           moduleName={module.module_name}
           moduleDurationDays={moduleDurationDays}
           allModulesInfo={allModulesInfo}
+          streamStartDate={streamStartDate}
+          moduleUnlockOffset={module.unlock_offset_days}
         />
       )}
     </div>

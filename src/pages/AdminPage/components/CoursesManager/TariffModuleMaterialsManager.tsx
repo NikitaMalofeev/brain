@@ -73,6 +73,8 @@ interface TariffModuleMaterialsManagerProps {
   moduleDurationDays?: number; // Количество дней доступа к модулю
   allTariffModuleIds: string[]; // Все ID модулей тарифа для проверки размещений спец.пакетов
   allModulesInfo: ModuleInfo[]; // Информация о всех модулях для расчёта расположения техник
+  streamStartDate?: string; // Дата начала потока
+  moduleUnlockOffset?: number; // День открытия модуля относительно начала потока
 }
 
 // Хук для получения материалов модуля тарифа
@@ -112,6 +114,8 @@ const TariffModuleMaterialsManager: React.FC<TariffModuleMaterialsManagerProps> 
   moduleDurationDays,
   allTariffModuleIds,
   allModulesInfo,
+  streamStartDate,
+  moduleUnlockOffset,
 }) => {
   const [draggedMaterial, setDraggedMaterial] = useState<Material | null>(null);
   const [draggedSpecialBundle, setDraggedSpecialBundle] = useState<SpecialBundle | null>(null);
@@ -136,6 +140,20 @@ const TariffModuleMaterialsManager: React.FC<TariffModuleMaterialsManagerProps> 
 
   // Используем количество дней доступа к модулю из конфигурации тарифа или введенное значение
   const moduleDaysCount = moduleDurationDays || customModuleDays;
+
+  // Функция для получения даты конкретного дня модуля
+  const getDayDate = (dayNum: number): string | null => {
+    if (!streamStartDate) return null;
+    const startDate = new Date(streamStartDate);
+    // День модуля = дата начала потока + unlock_offset модуля + (dayNum - 1)
+    const dayOffset = (moduleUnlockOffset || 0) + (dayNum - 1);
+    startDate.setDate(startDate.getDate() + dayOffset);
+    return startDate.toLocaleDateString('ru-RU', {
+      day: '2-digit',
+      month: '2-digit',
+      year: 'numeric',
+    });
+  };
 
   const { data: moduleMaterials, isLoading } = useModuleMaterials(module.tariff_stream_module_id);
   const addMaterialMutation = useAddTechniqueToTariffModule();
@@ -562,7 +580,7 @@ const TariffModuleMaterialsManager: React.FC<TariffModuleMaterialsManagerProps> 
                     }}
                   >
                     <Text strong style={{ fontSize: 12 }}>
-                      День {day}
+                      День {day}{getDayDate(day) ? ` - ${getDayDate(day)}` : ''}
                     </Text>
                     {/* Иконка удаления в правом верхнем углу */}
                     {hasMaterials && (

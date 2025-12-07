@@ -135,7 +135,8 @@ export function useGlobalSearch(
                             id,
                             title,
                             block_type,
-                            content_text
+                            content_text,
+                            technique_ids
                         )
                     )
                 `)
@@ -143,6 +144,33 @@ export function useGlobalSearch(
 
             if (!stagesData) {
                 return [];
+            }
+
+            // Собираем все уникальные technique_ids из блоков
+            const allTechniqueIds = new Set<string>();
+            for (const stage of stagesData) {
+                for (const lesson of (stage.lessons || [])) {
+                    for (const block of (lesson.lesson_blocks || [])) {
+                        if (block.technique_ids && Array.isArray(block.technique_ids)) {
+                            block.technique_ids.forEach((id: string) => allTechniqueIds.add(id));
+                        }
+                    }
+                }
+            }
+
+            // Загружаем названия техник из materials
+            let techniquesMap = new Map<string, string>();
+            if (allTechniqueIds.size > 0) {
+                const { data: techniquesData } = await supabase
+                    .from('materials')
+                    .select('id, name')
+                    .in('id', Array.from(allTechniqueIds));
+
+                if (techniquesData) {
+                    techniquesData.forEach(t => {
+                        techniquesMap.set(t.id, t.name);
+                    });
+                }
             }
 
             // Map для сбора результатов по stage_id (одна карточка на ступень)
@@ -173,14 +201,14 @@ export function useGlobalSearch(
 
                 // Поиск по описанию ступени
                 if (stage.description?.toLowerCase().includes(searchTerm)) {
-                    matchedIn.push(`${stage.name} → Описание`);
+                    matchedIn.push('Описание');
                 }
 
                 // Поиск по урокам и блокам
                 for (const lesson of (stage.lessons || [])) {
                     // Поиск по названию урока
                     if (lesson.name?.toLowerCase().includes(searchTerm)) {
-                        matchedIn.push(`${stage.name} → ${lesson.name}`);
+                        matchedIn.push(lesson.name);
                     }
 
                     // Поиск по блокам внутри урока
@@ -195,10 +223,23 @@ export function useGlobalSearch(
                                 : '';
                             const blockTitle = block.title || blockTypeDisplay || 'Блок';
                             const displayText = blockTypeDisplay
-                                ? `${stage.name} → ${blockTitle}, ${blockTypeDisplay}`
-                                : `${stage.name} → ${blockTitle}`;
+                                ? `${blockTitle}, ${blockTypeDisplay}`
+                                : blockTitle;
                             if (!matchedIn.some(m => m.includes(blockTitle))) {
                                 matchedIn.push(displayText);
+                            }
+                        }
+
+                        // Поиск по названиям техник, привязанных к блоку
+                        if (block.technique_ids && Array.isArray(block.technique_ids)) {
+                            for (const techId of block.technique_ids) {
+                                const techniqueName = techniquesMap.get(techId);
+                                if (techniqueName && techniqueName.toLowerCase().includes(searchTerm)) {
+                                    const displayText = `Техника: ${techniqueName}`;
+                                    if (!matchedIn.some(m => m.includes(techniqueName))) {
+                                        matchedIn.push(displayText);
+                                    }
+                                }
                             }
                         }
                     }

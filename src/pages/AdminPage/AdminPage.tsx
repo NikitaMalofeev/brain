@@ -28,6 +28,7 @@ import { UnifiedCoursesManager } from './components/CoursesManager';
 import { ModulesManager } from './components/ModulesManager';
 import BundlesManager from './components/BundlesManager/BundlesManager';
 import SpecialBundlesManager from './components/SpecialBundlesManager/SpecialBundlesManager';
+import LinksManager from './components/LinksManager/LinksManager';
 
 // Состояние для навигации по сабмитам
 interface SubmissionsNavigationState {
@@ -44,6 +45,7 @@ const sectionToPath: Record<AdminSection, string> = {
   streams: 'streams',
   modules: 'modules',
   tariffs: 'tariffs',
+  links: 'links',
   students: 'students',
   curators: 'curators',
   submissions: 'submissions',
@@ -380,6 +382,8 @@ const AdminPageNew: React.FC = () => {
         return <ModulesManager />;
       case 'tariffs':
         return <SimpleTariffsManager />;
+      case 'links':
+        return <LinksManager />;
       case 'students':
         return <StudentsManager currentUser={adminUser} />;
       case 'curators':

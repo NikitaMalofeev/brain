@@ -112,16 +112,23 @@ BEGIN
   ),
 
   -- 3. Доступ через модули тарифа
+  -- ВАЖНО: unlocks_at рассчитывается как:
+  --   stream.start_date + module_offset + technique_offset
+  -- А НЕ как granted_at + technique_offset!
   module_access AS (
     SELECT
       tmm.material_id,
       'module'::text as src,
       CASE
         WHEN tmm.active_days IS NOT NULL
-        THEN uma.granted_at + (COALESCE(tmm.unlock_offset_days, 0) || ' days')::interval + (tmm.active_days || ' days')::interval
+        THEN s.start_date + (COALESCE(tsm.unlock_offset_days, 0) || ' days')::interval
+             + (COALESCE(tmm.unlock_offset_days, 0) || ' days')::interval
+             + (tmm.active_days || ' days')::interval
         ELSE NULL
       END as expires_at,
-      uma.granted_at + (COALESCE(tmm.unlock_offset_days, 0) || ' days')::interval as unlocks_at,
+      -- Дата разблокировки = start_date потока + offset модуля + offset техники
+      s.start_date + (COALESCE(tsm.unlock_offset_days, 0) || ' days')::interval
+                   + (COALESCE(tmm.unlock_offset_days, 0) || ' days')::interval as unlocks_at,
       uma.granted_at,
       sm.id as mod_id,
       sm.name as mod_name,
@@ -130,6 +137,7 @@ BEGIN
       tmm.order_num as tmm_order_num
     FROM public.user_module_access uma
     JOIN public.stream_modules sm ON sm.id = uma.stream_module_id
+    JOIN public.streams s ON s.id = sm.stream_id
     JOIN public.tariff_stream_modules tsm ON tsm.stream_module_id = sm.id
     JOIN public.stream_tariffs st ON st.id = tsm.stream_tariff_id
     JOIN public.tariff_module_materials tmm ON tmm.tariff_stream_module_id = tsm.id
@@ -406,16 +414,21 @@ BEGIN
       RETURN TRUE;
     END IF;
 
-    -- 3. Доступ через модули (упрощённая проверка)
+    -- 3. Доступ через модули
+    -- ВАЖНО: unlocks_at = stream.start_date + module_offset + technique_offset
     SELECT EXISTS (
       SELECT 1
       FROM public.user_module_access uma
+      JOIN public.stream_modules sm ON sm.id = uma.stream_module_id
+      JOIN public.streams s ON s.id = sm.stream_id
       JOIN public.tariff_stream_modules tsm ON tsm.stream_module_id = uma.stream_module_id
       JOIN public.tariff_module_materials tmm ON tmm.tariff_stream_module_id = tsm.id
       WHERE uma.user_id = p_user_id
         AND tmm.material_id = p_technique_id
         AND (uma.expires_at IS NULL OR uma.expires_at > NOW())
-        AND (uma.granted_at + (COALESCE(tmm.unlock_offset_days, 0) || ' days')::interval) <= NOW()
+        AND (s.start_date
+             + (COALESCE(tsm.unlock_offset_days, 0) || ' days')::interval
+             + (COALESCE(tmm.unlock_offset_days, 0) || ' days')::interval) <= NOW()
     ) INTO v_has_module_access;
 
     IF v_has_module_access THEN

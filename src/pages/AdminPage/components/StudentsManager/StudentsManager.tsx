@@ -11,11 +11,13 @@ import {
   Select,
   Alert,
   Empty,
+  Input,
 } from 'antd';
 import {
   LeftOutlined,
   RightOutlined,
   IdcardOutlined,
+  SearchOutlined,
 } from '@ant-design/icons';
 import type { ColumnsType } from 'antd/es/table';
 
@@ -56,6 +58,7 @@ const StudentsManager: React.FC<StudentsManagerProps> = ({ currentUser }) => {
     order: 'DESC'
   });
   const [roleFilter, setRoleFilter] = useState<'all' | 'guest' | 'user' | 'curator' | 'admin'>('all');
+  const [searchQuery, setSearchQuery] = useState('');
   const [filteredStudents, setFilteredStudents] = useState<StudentRecord[]>([]);
 
   useEffect(() => {
@@ -82,8 +85,38 @@ const StudentsManager: React.FC<StudentsManagerProps> = ({ currentUser }) => {
       filtered = filtered.filter(student => student.role === roleFilter);
     }
 
+    if (searchQuery.trim()) {
+      const query = searchQuery.toLowerCase().trim();
+      const roleLabels: Record<string, string> = {
+        user: 'ученик',
+        curator: 'куратор',
+        admin: 'админ',
+        guest: 'гость'
+      };
+
+      filtered = filtered.filter(student => {
+        const searchableFields = [
+          student.full_name,
+          student.telegram_id,
+          student.web_login,
+          student.course_title,
+          student.curator_name,
+          roleLabels[student.role] || student.role,
+          String(student.total_points),
+          `${student.completed_lessons_percent}%`,
+          student.created_at ? new Date(student.created_at).toLocaleDateString('ru-RU') : '',
+          student.last_login ? new Date(student.last_login).toLocaleDateString('ru-RU') : '',
+          student.web_last_login ? new Date(student.web_last_login).toLocaleDateString('ru-RU') : '',
+        ];
+
+        return searchableFields.some(field =>
+          field && field.toLowerCase().includes(query)
+        );
+      });
+    }
+
     setFilteredStudents(filtered);
-  }, [students, currentUser, roleFilter]);
+  }, [students, currentUser, roleFilter, searchQuery]);
 
   if (selectedStudentId) {
     return <StudentCard studentId={selectedStudentId} onBack={() => setSelectedStudentId(null)} currentUser={currentUser} />;
@@ -248,6 +281,14 @@ const StudentsManager: React.FC<StudentsManagerProps> = ({ currentUser }) => {
       }
       extra={
         <Space>
+          <Input
+            placeholder="Поиск по всем колонкам..."
+            prefix={<SearchOutlined />}
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            allowClear
+            style={{ width: 250 }}
+          />
           <Text>Фильтр по роли:</Text>
           <Select
             value={roleFilter}

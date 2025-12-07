@@ -11,6 +11,7 @@ export interface TariffModuleConfig {
   stream_module_id: string;
   module_name: string;
   access_duration_days: number | null;
+  grid_days: number | null; // Количество дней для сетки расписания (если null - используется access_duration_days)
   unlock_offset_days: number; // С какого дня потока модуль доступен
   order_num: number;
   techniques: TariffTechniqueConfig[];
@@ -62,6 +63,7 @@ export function useTariffConfiguration(streamId: string | null, tariffId: string
             stream_module_id: row.module_id,
             module_name: row.module_name,
             access_duration_days: row.access_duration_days,
+            grid_days: row.grid_days ?? null,
             unlock_offset_days: row.unlock_offset_days ?? 0,
             order_num: row.module_order_num,
             techniques: [],
@@ -140,6 +142,7 @@ export function useUpdateModuleInTariff() {
     mutationFn: async (params: {
       tariff_stream_module_id: string;
       access_duration_days: number | null;
+      grid_days?: number | null;
       unlock_offset_days?: number | null;
       order_num: number;
     }) => {
@@ -151,6 +154,7 @@ export function useUpdateModuleInTariff() {
         .from('tariff_stream_modules')
         .update({
           access_duration_days: params.access_duration_days,
+          grid_days: params.grid_days ?? null,
           unlock_offset_days: params.unlock_offset_days ?? 0,
           order_num: params.order_num,
         })
