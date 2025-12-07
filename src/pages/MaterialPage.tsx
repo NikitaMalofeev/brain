@@ -130,7 +130,7 @@ export const MaterialPage = () => {
         <Page>
             {data.material_type === "video" && mainBlock && (
                 <div className={'flex flex-col gap-2 text-black'}>
-                    <div className={'h-[300px]'}>
+                    <div className={'h-[300px] page-bg-container'}>
                         <VideoPlayer
                             videoId={getKinescopeId(mainBlock.content_url) || ''}
                         />
@@ -143,7 +143,7 @@ export const MaterialPage = () => {
             )}
 
             {data.material_type === 'audio' && mainBlock && (
-                <div className={'flex flex-col gap-2 text-black'}>
+                <div className={'flex flex-col gap-2 text-black page-bg-container'}>
                     <img
                         src={buildFileUrl(data.cover_image_path) || ''}
                         alt={data.name || 'Обложка материала'}

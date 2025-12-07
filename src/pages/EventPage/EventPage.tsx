@@ -108,7 +108,7 @@ const EventPage: React.FC = () => {
     <Page back>
       <div className="event-page">
         {/* Обложка события */}
-        <div className="event-page-cover">
+        <div className="event-page-cover page-bg-container">
           <img
             src={event.cover_image || EventCardImage}
             alt={event.title}

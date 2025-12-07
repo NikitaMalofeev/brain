@@ -81,7 +81,7 @@ export const ProfileMain: FC = () => {
 
   return (
     <Page>
-      <div className="profile-main">
+      <div className="profile-main with-content-offset">
         {/* Верхний блок с аватаром и данными пользователя */}
         <div className="profile-header">
           <div className="profile-avatar-container">

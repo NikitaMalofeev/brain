@@ -74,7 +74,7 @@ const RoadMapPage: React.FC = () => {
 
     return (
         <Page back={true} showTabBar={false}>
-            <div style={{ backgroundColor: '#FFFFFF', minHeight: '100vh' }}>
+            <div className="with-content-offset" style={{ backgroundColor: '#FFFFFF', minHeight: '100vh' }}>
                 <RoadMap
                     stages={modulesAsStages || []}
                     onStageClick={handleStageClick}
