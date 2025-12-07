@@ -9,15 +9,9 @@ body{
   background-color: var(--profile-bg, #ffffff);
 }
 
-/* Отступ сверху для safe-area чтобы контент не упирался в нотч/статус-бар */
-.page-container > .content-wrapper {
-  padding-top: calc(env(safe-area-inset-top, 0px) + 12px);
-}
-
-/* Класс для фоновых контейнеров страниц - растягивает фон под safe-area */
+/* Класс для фоновых контейнеров страниц - добавляет правильный отступ сверху */
 .page-bg-container {
-  margin-top: calc(-1 * (env(safe-area-inset-top, 0px) + 12px));
-  padding-top: calc(env(safe-area-inset-top, 0px) + 24px);
+  padding-top: var(--content-top-offset, 12px);
 }
 
 html, body, #root {

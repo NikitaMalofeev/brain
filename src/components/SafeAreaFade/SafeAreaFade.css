@@ -8,15 +8,15 @@
   z-index: 9999; /* Максимально высокий z-index, чтобы быть поверх всего */
 }
 
-/* Верхний фейд - высота = safe-area-top + 24px (дополнительный отступ) */
+/* Верхний фейд - высота = content-top-offset + 40px для градиента */
 .safe-area-fade-top {
   top: 0;
-  height: calc(var(--safe-area-top, 0px) + 24px + 40px); /* safe-area + 24px отступ + 40px для градиента */
+  height: calc(var(--content-top-offset, 12px) + 40px);
   background: linear-gradient(
     to bottom,
     var(--tgui-background) 0%,
-    var(--tgui-background) 60%,
-    rgba(var(--tgui-background-rgb, 255, 255, 255), 0.9) 80%,
+    var(--tgui-background) 50%,
+    rgba(var(--tgui-background-rgb, 255, 255, 255), 0.8) 70%,
     rgba(var(--tgui-background-rgb, 255, 255, 255), 0) 100%
   );
 }
