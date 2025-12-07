@@ -102,15 +102,25 @@ export function useTechniquesFiltered(userId: string | null | undefined) {
   const isPaidStatus = (status: string | undefined | null) =>
     status === 'paid' || status === 'purchasable';
 
-  // Мои техники - те, к которым есть доступ (has_access = true), НЕ из пакетов
-  const myTechniques = techniques?.filter(
-    (t) => t.has_access && t.user_access_source !== 'bundle'
-  ) || [];
+  // ========================================
+  // ВАЖНО: Каждая техника должна попасть только в ОДНУ категорию!
+  // Используем Set для отслеживания уже распределённых техник
+  //
+  // ПРИОРИТЕТ ИСТОЧНИКА ДОСТУПА:
+  // 1. Если техника в модуле → проверяем ТОЛЬКО дату (is_unlocked), status игнорируется
+  // 2. Если техника в пакете (bundle) → доступна
+  // 3. Если прямой доступ → доступна
+  // 4. Только потом смотрим status (free/paid)
+  // ========================================
+  const usedIds = new Set<string>();
 
-  // Техники из пакетов с доступом - группируем по bundle_name
+  // 1. Техники из пакетов (bundle) - высший приоритет для группировки
   const bundleTechniquesWithAccess = techniques?.filter(
     (t) => t.has_access && t.user_access_source === 'bundle' && t.bundle_id
   ) || [];
+
+  // Добавляем в usedIds
+  bundleTechniquesWithAccess.forEach((t) => usedIds.add(t.id));
 
   // Группируем техники из пакетов по bundle_id
   const bundleGroupsMap = new Map<string, BundleGroup>();
@@ -128,37 +138,64 @@ export function useTechniquesFiltered(userId: string | null | undefined) {
   });
   const bundleGroups = Array.from(bundleGroupsMap.values());
 
-  // Бесплатные техники - для таба "Мои техники" (все бесплатные доступны пользователю)
-  const myFreeTechniques = techniques?.filter(
-    (t) => t.status === 'free'
+  // 2. Техники из модулей - ПРИОРИТЕТ МОДУЛЯ! (status игнорируется)
+  // 2a. Разблокированные по дате из модулей → идут в myTechniques
+  const moduleTechniquesUnlocked = techniques?.filter(
+    (t) => !usedIds.has(t.id) && t.user_access_source === 'module' && t.is_unlocked === true
   ) || [];
 
-  // Бесплатные техники - для таба "Все техники" в секции "Бесплатные" (те же самые)
-  const freeTechniques = techniques?.filter(
-    (t) => t.status === 'free'
-  ) || [];
+  // Добавляем в usedIds
+  moduleTechniquesUnlocked.forEach((t) => usedIds.add(t.id));
 
-  // Платные техники - к покупке (status = 'paid' или 'purchasable')
-  // Показываем только те, к которым нет доступа и можно купить
-  const paidTechniques = techniques?.filter(
-    (t) => !t.has_access && isPaidStatus(t.status) && t.is_unlocked !== false
-  ) || [];
-
-  // К покупке - можно купить, нет доступа, не бесплатная, разблокирована
-  // Теперь включает платные техники (paid/purchasable)
-  const availableTechniques = techniques?.filter(
-    (t) => !t.has_access && t.can_purchase && t.status !== 'free' && t.is_unlocked !== false
-  ) || [];
-
-  // Заблокированные (не из модуля) - нет доступа, не разблокирована, НЕ из модуля
-  const lockedTechniques = techniques?.filter(
-    (t) => !t.has_access && t.is_unlocked === false && t.user_access_source !== 'module'
-  ) || [];
-
-  // Техники из модулей (заблокированные по времени) - из модуля И ещё НЕ разблокированы (is_unlocked = false)
+  // 2b. Заблокированные по времени из модулей (дата ещё не прошла)
   const moduleTechniques = techniques?.filter(
-    (t) => !t.has_access && t.user_access_source === 'module' && t.is_unlocked === false
+    (t) => !usedIds.has(t.id) && t.user_access_source === 'module' && t.is_unlocked === false
   ) || [];
+
+  // Добавляем в usedIds
+  moduleTechniques.forEach((t) => usedIds.add(t.id));
+
+  // 3. Мои техники - прямой доступ (НЕ bundle, НЕ module, НЕ free, НЕ уже использованные)
+  // Бесплатные (free) идут в отдельную секцию "Бесплатные", не в "Мои"
+  const myTechniquesFromDirect = techniques?.filter(
+    (t) => !usedIds.has(t.id) && t.has_access && t.user_access_source !== 'bundle' && t.user_access_source !== 'module' && t.status !== 'free'
+  ) || [];
+
+  // Добавляем в usedIds
+  myTechniquesFromDirect.forEach((t) => usedIds.add(t.id));
+
+  // Объединяем прямой доступ + разблокированные модульные
+  const myTechniques = [...myTechniquesFromDirect, ...moduleTechniquesUnlocked];
+
+  // 4. Бесплатные техники (status='free') - отдельная секция "Бесплатные"
+  // НЕ попадают в "Мои", показываются в отдельном блоке для всех пользователей
+  const freeTechniques = techniques?.filter(
+    (t) => !usedIds.has(t.id) && t.status === 'free'
+  ) || [];
+
+  // Добавляем в usedIds
+  freeTechniques.forEach((t) => usedIds.add(t.id));
+
+  // 5. К покупке - платные техники (status='paid' ИЛИ can_purchase=true), нет доступа
+  // Объединяем paidTechniques и availableTechniques в один список
+  const availableTechniques = techniques?.filter(
+    (t) => !usedIds.has(t.id) && !t.has_access && (isPaidStatus(t.status) || t.can_purchase) && t.is_unlocked !== false
+  ) || [];
+
+  // Добавляем в usedIds
+  availableTechniques.forEach((t) => usedIds.add(t.id));
+
+  // paidTechniques - алиас для обратной совместимости
+  const paidTechniques = availableTechniques;
+
+  // 7. Остальные заблокированные (НЕ из модулей - они уже обработаны)
+  const lockedTechniques = techniques?.filter(
+    (t) => !usedIds.has(t.id) && !t.has_access && t.is_unlocked === false
+  ) || [];
+
+  // myFreeTechniques - для обратной совместимости (бесплатные в "Мои техники")
+  // Теперь это просто ссылка на freeTechniques
+  const myFreeTechniques = freeTechniques;
 
   return {
     techniques: techniques || [],

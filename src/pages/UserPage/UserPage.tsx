@@ -389,7 +389,7 @@ export const UserPage = () => {
                                     <Ripple className="rounded-3xl overflow-hidden inline-block">
                                         <button
                                             className="text-sm font-bold w-max leading-5 text-white py-2 px-4 rounded-3xl text-center bg-[linear-gradient(135deg,rgba(141,197,241,0.4)_-48.61%,#63ABE6_105.56%),linear-gradient(91.99deg,#F3F3F3_0%,#EAEAEA_100%)]">
-                                            {(isGuest || isPreviewMode) ? 'Стать учеником' : 'Повысить тариф'}
+                                            {(isGuest || isPreviewMode) ? 'Стать учеником' : 'Стать учеником'}
                                         </button>
                                     </Ripple>
                                 </a>

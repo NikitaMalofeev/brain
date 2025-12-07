@@ -103,8 +103,8 @@ BEGIN
       'bundle'::text as src,
       NULL::timestamptz as expires_at,
       ub.assigned_at as granted_at,
-      b.id as bundle_id,
-      b.name as bundle_name
+      b.id as b_id,
+      b.name as b_name
     FROM public.user_bundles ub
     JOIN public.bundle_techniques bt ON bt.bundle_id = ub.bundle_id
     JOIN public.bundles b ON b.id = ub.bundle_id
@@ -151,7 +151,7 @@ BEGIN
 
     SELECT material_id, src, expires_at, granted_at,
            NULL::uuid, NULL::text, NULL::int, NULL::int, NULL::int, granted_at,
-           bundle_id, bundle_name
+           b_id, b_name
     FROM bundle_access
 
     UNION ALL
@@ -174,8 +174,8 @@ BEGIN
       (array_agg(aa.mod_name ORDER BY aa.granted_at DESC))[1] as mod_name,
       (array_agg(aa.unlock_offs ORDER BY aa.granted_at DESC))[1] as unlock_day_val,
       (array_agg(aa.act_days ORDER BY aa.granted_at DESC))[1] as act_days_val,
-      (array_agg(aa.b_id ORDER BY aa.granted_at DESC))[1] as bundle_id,
-      (array_agg(aa.b_name ORDER BY aa.granted_at DESC))[1] as bundle_name
+      (array_agg(aa.b_id ORDER BY aa.granted_at DESC))[1] as ua_bundle_id,
+      (array_agg(aa.b_name ORDER BY aa.granted_at DESC))[1] as ua_bundle_name
     FROM all_access aa
     GROUP BY aa.material_id
   )
@@ -194,13 +194,24 @@ BEGIN
     m.unlock_condition_type,
     m.unlock_condition_value,
     m.order_num,
-    COALESCE(ua.has_acc, false) as has_access,
-    (m.status = 'paid' AND NOT COALESCE(ua.has_acc, false)
-     AND m.unlock_condition_type IS NULL) as can_purchase,
+    -- has_access: приоритет источника доступа
+    -- 1. Если есть доступ через модуль/пакет/прямой → true (status игнорируется)
+    -- 2. Если нет доступа через модуль/пакет → смотрим status (free = true)
     CASE
-      WHEN ua.src = 'module' THEN COALESCE(ua.has_acc, false)
-      WHEN COALESCE(ua.has_acc, false) THEN true
-      WHEN m.unlock_condition_type IS NOT NULL THEN false
+      WHEN COALESCE(ua.has_acc, false) THEN true  -- Есть доступ через модуль/пакет/прямой
+      WHEN m.status = 'free' THEN true            -- Бесплатная для всех (гости тоже)
+      ELSE false                                   -- Нет доступа
+    END as has_access,
+    -- can_purchase: можно купить если status='paid', нет доступа, нет unlock_condition
+    (m.status = 'paid'
+     AND NOT COALESCE(ua.has_acc, false)
+     AND m.unlock_condition_type IS NULL) as can_purchase,
+    -- is_unlocked: разблокирована ли техника
+    CASE
+      WHEN ua.src = 'module' THEN COALESCE(ua.has_acc, false)  -- Модульная - по времени
+      WHEN COALESCE(ua.has_acc, false) THEN true               -- Есть прямой доступ
+      WHEN m.status = 'free' THEN true                         -- Бесплатная
+      WHEN m.unlock_condition_type IS NOT NULL THEN false      -- Есть условие разблокировки
       ELSE true
     END as is_unlocked,
     ua.mod_id as module_id,
@@ -209,14 +220,18 @@ BEGIN
     ua.act_days_val as active_days,
     ua.src as user_access_source,
     ua.exp_at as user_access_expires_at,
-    ua.bundle_id,
-    ua.bundle_name
+    ua.ua_bundle_id as bundle_id,
+    ua.ua_bundle_name as bundle_name
   FROM public.materials m
   LEFT JOIN user_access ua ON ua.material_id = m.id
   WHERE m.is_standalone = true
      OR ua.material_id IS NOT NULL
   ORDER BY
-    CASE WHEN COALESCE(ua.has_acc, false) THEN 0 ELSE 1 END,
+    -- Сначала доступные, потом недоступные
+    CASE
+      WHEN COALESCE(ua.has_acc, false) OR m.status = 'free' THEN 0
+      ELSE 1
+    END,
     m.order_num NULLS LAST;
 
 END;
@@ -338,6 +353,10 @@ DROP FUNCTION IF EXISTS public.can_user_purchase_technique(uuid, uuid);
 
 -- =============================================
 -- 5.1 Функция can_user_access_technique (исправленная)
+-- Логика приоритета источника доступа:
+-- 1. Если есть доступ через модуль/пакет/прямой → true (status игнорируется)
+-- 2. Если status = 'free' → true (бесплатная для всех, включая гостей)
+-- 3. Иначе → false
 -- =============================================
 CREATE OR REPLACE FUNCTION public.can_user_access_technique(
   p_user_id UUID,
@@ -346,7 +365,9 @@ CREATE OR REPLACE FUNCTION public.can_user_access_technique(
 RETURNS BOOLEAN AS $$
 DECLARE
   v_technique_status TEXT;
-  v_has_access BOOLEAN;
+  v_has_direct_access BOOLEAN := false;
+  v_has_bundle_access BOOLEAN := false;
+  v_has_module_access BOOLEAN := false;
 BEGIN
   -- Получить статус техники из materials
   SELECT status INTO v_technique_status
@@ -357,29 +378,66 @@ BEGIN
     RETURN FALSE;
   END IF;
 
-  -- Бесплатные техники доступны всем
+  -- Если пользователь указан - проверяем все источники доступа
+  IF p_user_id IS NOT NULL THEN
+    -- 1. Прямой доступ через user_material_access
+    SELECT EXISTS (
+      SELECT 1
+      FROM public.user_material_access
+      WHERE user_id = p_user_id
+        AND material_id = p_technique_id
+        AND (expires_at IS NULL OR expires_at > NOW())
+    ) INTO v_has_direct_access;
+
+    IF v_has_direct_access THEN
+      RETURN TRUE;
+    END IF;
+
+    -- 2. Доступ через пакеты (bundles)
+    SELECT EXISTS (
+      SELECT 1
+      FROM public.user_bundles ub
+      JOIN public.bundle_techniques bt ON bt.bundle_id = ub.bundle_id
+      WHERE ub.user_id = p_user_id
+        AND bt.technique_id = p_technique_id
+    ) INTO v_has_bundle_access;
+
+    IF v_has_bundle_access THEN
+      RETURN TRUE;
+    END IF;
+
+    -- 3. Доступ через модули (упрощённая проверка)
+    SELECT EXISTS (
+      SELECT 1
+      FROM public.user_module_access uma
+      JOIN public.tariff_stream_modules tsm ON tsm.stream_module_id = uma.stream_module_id
+      JOIN public.tariff_module_materials tmm ON tmm.tariff_stream_module_id = tsm.id
+      WHERE uma.user_id = p_user_id
+        AND tmm.material_id = p_technique_id
+        AND (uma.expires_at IS NULL OR uma.expires_at > NOW())
+        AND (uma.granted_at + (COALESCE(tmm.unlock_offset_days, 0) || ' days')::interval) <= NOW()
+    ) INTO v_has_module_access;
+
+    IF v_has_module_access THEN
+      RETURN TRUE;
+    END IF;
+  END IF;
+
+  -- Нет доступа через модуль/пакет/прямой → смотрим status
+  -- Бесплатные техники доступны всем (включая гостей)
   IF v_technique_status = 'free' THEN
     RETURN TRUE;
   END IF;
 
-  IF p_user_id IS NULL THEN
-    RETURN FALSE;
-  END IF;
-
-  -- Проверить доступ в user_material_access
-  SELECT EXISTS (
-    SELECT 1
-    FROM public.user_material_access
-    WHERE user_id = p_user_id
-      AND material_id = p_technique_id
-      AND (expires_at IS NULL OR expires_at > NOW())
-  ) INTO v_has_access;
-
-  RETURN v_has_access;
+  RETURN FALSE;
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
 
-COMMENT ON FUNCTION public.can_user_access_technique IS 'Проверяет может ли пользователь прослушать технику';
+COMMENT ON FUNCTION public.can_user_access_technique IS
+'Проверяет доступ к технике с приоритетом источника:
+1. Модуль/пакет/прямой доступ → true (status игнорируется)
+2. status=free → true (для всех, включая гостей)
+3. Иначе → false';
 GRANT EXECUTE ON FUNCTION public.can_user_access_technique(uuid, uuid) TO authenticated;
 GRANT EXECUTE ON FUNCTION public.can_user_access_technique(uuid, uuid) TO anon;
 
@@ -463,6 +521,10 @@ GRANT EXECUTE ON FUNCTION public.can_user_purchase_technique(uuid, uuid) TO anon
 
 -- =============================================
 -- 5.3 Функция get_techniques_with_access (исправленная, fallback)
+-- Логика приоритета источника доступа:
+-- 1. Если есть доступ через модуль/пакет/прямой → has_access=true
+-- 2. Если status='free' → has_access=true (для всех, включая гостей)
+-- 3. Иначе → has_access=false
 -- =============================================
 CREATE OR REPLACE FUNCTION public.get_techniques_with_access(p_user_id UUID)
 RETURNS TABLE (
@@ -497,21 +559,33 @@ BEGIN
     m.unlock_condition_type,
     m.unlock_condition_value,
     m.order_num,
+    -- has_access с приоритетом источника
     can_user_access_technique(p_user_id, m.id) as has_access,
-    (can_user_purchase_technique(p_user_id, m.id)->>'can_purchase')::BOOLEAN as can_purchase,
+    -- can_purchase: только для paid техник без доступа
+    (m.status = 'paid'
+     AND NOT can_user_access_technique(p_user_id, m.id)
+     AND m.unlock_condition_type IS NULL) as can_purchase,
+    -- is_unlocked
     CASE
-      WHEN m.status = 'free' THEN true
       WHEN can_user_access_technique(p_user_id, m.id) THEN true
+      WHEN m.status = 'free' THEN true
       WHEN m.unlock_condition_type IS NOT NULL THEN false
       ELSE true
     END as is_unlocked
   FROM public.materials m
   WHERE m.is_standalone = true
-  ORDER BY m.order_num ASC NULLS LAST;
+  ORDER BY
+    -- Сначала доступные
+    CASE WHEN can_user_access_technique(p_user_id, m.id) OR m.status = 'free' THEN 0 ELSE 1 END,
+    m.order_num ASC NULLS LAST;
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
 
-COMMENT ON FUNCTION public.get_techniques_with_access IS 'Возвращает техники с информацией о доступе (fallback)';
+COMMENT ON FUNCTION public.get_techniques_with_access IS
+'Возвращает техники с приоритетом источника доступа (fallback функция):
+1. Модуль/пакет/прямой доступ → has_access=true
+2. status=free → has_access=true
+3. Иначе → has_access=false';
 GRANT EXECUTE ON FUNCTION public.get_techniques_with_access(uuid) TO authenticated;
 GRANT EXECUTE ON FUNCTION public.get_techniques_with_access(uuid) TO anon;
 

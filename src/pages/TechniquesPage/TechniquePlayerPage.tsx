@@ -307,7 +307,7 @@ const TechniquePlayerPage: React.FC = () => {
                     backdropFilter: 'blur(30px)',
                   }}
                 >
-                  Повысить тариф
+                  Стать учеником
                 </button>
               )}
 

@@ -141,7 +141,7 @@ export default function BuyModal({
                     backdropFilter: 'blur(30px)',
                   }}
                 >
-                  Повысить тариф
+                  Стать учеником
                 </button>
               )}
             </div>
