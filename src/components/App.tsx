@@ -10,7 +10,7 @@ import { useSupabaseUser, useActiveTariff, useRedeemToken, useFindTokenByTgId } 
 import { AppMotionProvider } from '@/animations/motionConfig';
 import TabBar from '@/components/TabBar/TabBar';
 import IFrameSplash from '@/components/IFrameSplash';
-import LoadingSpinner from '@/components/LoadingSpinner/LoadingSpinner';
+import SmartLoadingSpinner from '@/components/SmartLoadingSpinner/SmartLoadingSpinner';
 import { ErrorBoundary } from '@/components/ErrorBoundary';
 import { WebViewProvider } from '@/hooks/useWebView';
 
@@ -110,8 +110,8 @@ function AppContent({ showSplash }: { showSplash: boolean }) {
         // Показываем сплэш-скрин вместо обычной загрузки
         return null; // Сплэш будет показан в App() компоненте
     } else if (isAppLoading && !showSplash) {
-        // Если сплэш уже показали, но данные еще грузятся - показываем обычную загрузку
-        return <LoadingSpinner />;
+        // Если сплэш уже показали, но данные еще грузятся
+        return <SmartLoadingSpinner />;
     }
 
     // Если нет активного тарифа И нет токенов для активации - блокируем доступ
@@ -134,7 +134,7 @@ function AppContent({ showSplash }: { showSplash: boolean }) {
             <ScrollToTop />
             <div style={{ flex: 1, position: 'relative', overflow: 'hidden' }}>
                 <ErrorBoundary fallback={PageErrorFallback}>
-                    <Suspense fallback={null}>
+                    <Suspense fallback={<SmartLoadingSpinner />}>
                         <Routes location={location}>
                             {routers.map((router) => <Route key={router.path} {...router} />)}
                             <Route path="*" element={<Navigate to="/" />} />

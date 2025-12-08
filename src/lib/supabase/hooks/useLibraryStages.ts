@@ -62,8 +62,8 @@ const useLibraryStages = (userId: string | null, courseId: string | null): UseLi
         },
         enabled: !!userId && !!courseId, // Запрос выполняется только если есть userId и courseId
         retry: 2,
-        staleTime: 2 * 60 * 1000, // 2 минуты - ступени могут обновляться при прохождении уроков
-        gcTime: 5 * 60 * 1000, // 5 минут в кэше
+        staleTime: 5 * 60 * 1000, // 5 минут - ступени обновляются при прохождении уроков
+        gcTime: 15 * 60 * 1000, // 15 минут в кэше
     });
 
     return {

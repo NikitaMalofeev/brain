@@ -88,8 +88,8 @@ export function useUserStreamModules(userId: string | null | undefined): UseUser
         },
         enabled: !!userId,
         retry: 2,
-        staleTime: 2 * 60 * 1000, // 2 минуты
-        gcTime: 5 * 60 * 1000, // 5 минут в кэше
+        staleTime: 10 * 60 * 1000, // 10 минут - модули потока редко меняются
+        gcTime: 30 * 60 * 1000, // 30 минут в кэше
     });
 
     // Конвертируем модули в формат совместимый со StageCard и RoadMap

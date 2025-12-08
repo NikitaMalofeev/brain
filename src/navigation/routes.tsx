@@ -39,7 +39,6 @@ const IndexPage = lazy(() => import('@/pages/IndexPage/IndexPage').then(m => ({ 
 const InitDataPage = lazy(() => import('@/pages/InitDataPage').then(m => ({ default: m.InitDataPage })));
 const LaunchParamsPage = lazy(() => import('@/pages/LaunchParamsPage').then(m => ({ default: m.LaunchParamsPage })));
 const ThemeParamsPage = lazy(() => import('@/pages/ThemeParamsPage').then(m => ({ default: m.ThemeParamsPage })));
-const TONConnectPage = lazy(() => import('@/pages/TONConnectPage/TONConnectPage').then(m => ({ default: m.TONConnectPage })));
 const DiagnosticsPage = lazy(() => import('@/pages/DiagnosticsPage/DiagnosticsPage').then(m => ({ default: m.DiagnosticsPage })));
 const TokenErrorPage = lazy(() => import('@/pages/TokenErrorPage/TokenErrorPage'));
 
@@ -135,10 +134,6 @@ export const routers = [
   {
     path: '/profile2',
     Component: UserPage
-  },
-  {
-    path: '/ton-connect',
-    Component: TONConnectPage
   },
   {
     path: '/diagnostics',

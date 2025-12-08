@@ -93,7 +93,8 @@ export function useModuleStages(streamModuleId: string | null) {
       };
     },
     enabled: !!streamModuleId,
-    staleTime: 2 * 60 * 1000, // 2 минуты
+    staleTime: 5 * 60 * 1000, // 5 минут - уроки модуля редко меняются
+    gcTime: 15 * 60 * 1000, // 15 минут в кэше
   });
 }
 
