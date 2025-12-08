@@ -4,6 +4,7 @@ import { Page } from '@/components/Page';
 import { CalendarEvent } from '@/lib/supabase/hooks/useCalendar';
 import EventCardImage from '@/shared/assets/images/eventCard.png';
 import { useWebView } from '@/hooks/useWebView';
+import { convertMskToLocal, isMskTimeReached } from '@/lib/utils/timezone';
 import './EventPage.css';
 
 /**
@@ -19,23 +20,10 @@ const EventPage: React.FC = () => {
   // Получаем данные события из state навигации
   const event = location.state?.event as CalendarEvent | undefined;
 
-  // Проверяем, прошло ли время события
+  // Проверяем, прошло ли время события (с учётом МСК)
   const isEventTimeReached = useMemo(() => {
     if (!event) return false;
-
-    const now = new Date();
-    // Формируем дату события
-    let eventDateTime: Date;
-
-    if (event.event_time) {
-      // Если есть время - используем дату + время
-      eventDateTime = new Date(`${event.event_date}T${event.event_time}`);
-    } else {
-      // Если нет времени - начало дня (00:00)
-      eventDateTime = new Date(`${event.event_date}T00:00:00`);
-    }
-
-    return now >= eventDateTime;
+    return isMskTimeReached(event.event_date, event.event_time);
   }, [event]);
 
   // Форматирование даты
@@ -47,12 +35,6 @@ const EventPage: React.FC = () => {
       'июля', 'августа', 'сентября', 'октября', 'ноября', 'декабря'
     ];
     return `${day} ${monthNames[date.getMonth()]}`;
-  };
-
-  // Форматирование времени
-  const formatTime = (timeStr: string | null): string => {
-    if (!timeStr) return '';
-    return timeStr.substring(0, 5); // HH:MM
   };
 
   // Обработчик кнопки "Перейти"
@@ -132,7 +114,7 @@ const EventPage: React.FC = () => {
           {/* Время */}
           {event.event_time && (
             <div className="event-page-time">
-              {formatTime(event.event_time)}
+              {convertMskToLocal(event.event_time, event.event_date)}
             </div>
           )}
 

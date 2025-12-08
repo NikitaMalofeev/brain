@@ -4,6 +4,7 @@ import { motion } from 'framer-motion';
 import { CalendarEvent } from '@/lib/supabase/hooks/useCalendar';
 import GuestBlockedModal from '@/components/GuestBlockedModal';
 import EventCardImage from '@/shared/assets/images/eventCard.png';
+import { convertMskToLocal } from '@/lib/utils/timezone';
 import './EventCard.css';
 
 interface EventCardProps {
@@ -18,11 +19,6 @@ const EventCard: React.FC<EventCardProps> = ({ event, isGuest = false }) => {
   const navigate = useNavigate();
   const [showGuestModal, setShowGuestModal] = useState(false);
 
-  // Форматирование времени
-  const formatTime = (timeStr: string | null): string => {
-    if (!timeStr) return '';
-    return timeStr.substring(0, 5); // HH:MM
-  };
 
   // Определение типа события для бейджа - берём из event_type
   const getEventTypeLabel = () => {
@@ -109,7 +105,7 @@ const EventCard: React.FC<EventCardProps> = ({ event, isGuest = false }) => {
         {/* Время справа (только если не заблокировано) */}
         {!isBlurred && event.event_time && (
           <div className="event-card-time">
-            {formatTime(event.event_time)}
+            {convertMskToLocal(event.event_time, event.event_date)}
           </div>
         )}
 
