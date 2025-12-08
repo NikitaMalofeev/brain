@@ -111,7 +111,7 @@ const TechniquePlayerPage: React.FC = () => {
           title: technique.title,
           description: technique.description,
           audioUrl: technique.audio_url || MOCK_AUDIO_URL,
-          coverImage: technique.cover_image,
+          coverImage: buildFileUrl(technique.cover_image),
           moduleName: technique.available_from_module,
           animationUrl: technique.animation_url,
         }
@@ -139,7 +139,7 @@ const TechniquePlayerPage: React.FC = () => {
         title: technique.title,
         description: technique.description,
         audioUrl: technique.audio_url,
-        coverImage: technique.cover_image,
+        coverImage: buildFileUrl(technique.cover_image),
         moduleName: technique.available_from_module,
         animationUrl: technique.animation_url,
       }
@@ -209,9 +209,9 @@ const TechniquePlayerPage: React.FC = () => {
       >
         {/* Обложка */}
         <div className="relative w-full aspect-square rounded-2xl overflow-hidden mb-6">
-          {technique.cover_image ? (
+          {buildFileUrl(technique.cover_image) ? (
             <img
-              src={technique.cover_image}
+              src={buildFileUrl(technique.cover_image)!}
               alt={technique.title}
               className="w-full h-full object-cover"
             />
@@ -334,7 +334,7 @@ const TechniquePlayerPage: React.FC = () => {
       <GuestBlockedModal
         isOpen={showGuestModal}
         onClose={() => setShowGuestModal(false)}
-        ctaUrl={technique?.purchase_url || 'https://brainprogramming.ru/enroll'}
+        ctaUrl={technique?.purchase_url || 'https://brainprogramming.ru/main?utm_source=app'}
       />
 
       {/* Модалка для учеников с заблокированными техниками */}

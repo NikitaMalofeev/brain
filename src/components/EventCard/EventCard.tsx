@@ -134,7 +134,7 @@ const EventCard: React.FC<EventCardProps> = ({ event, isGuest = false }) => {
         title="Доступно только ученикам"
         description="Станьте учеником, чтобы получить полный доступ к календарю событий"
         ctaText="Стать учеником"
-        ctaUrl="https://brainprogramming.ru/enroll"
+        ctaUrl="https://brainprogramming.ru/main?utm_source=app"
       />
     </>
   );

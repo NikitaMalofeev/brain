@@ -114,7 +114,7 @@ const StageCard: React.FC<StageCardProps> = ({
         <GuestBlockedModal
             isOpen={showGuestModal}
             onClose={() => setShowGuestModal(false)}
-            ctaUrl="https://brainprogramming.ru/enroll"
+            ctaUrl="https://brainprogramming.ru/main?utm_source=app"
         />
     </>
     );

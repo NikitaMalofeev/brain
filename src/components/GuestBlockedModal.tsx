@@ -16,7 +16,7 @@ interface GuestBlockedModalProps {
 export default function GuestBlockedModal({
   isOpen,
   onClose,
-  ctaUrl = 'https://brainprogramming.ru/enroll',
+  ctaUrl = 'https://brainprogramming.ru/main?utm_source=app',
 }: GuestBlockedModalProps) {
   const handleCtaClick = () => {
     // Открываем внешнюю ссылку в новой вкладке

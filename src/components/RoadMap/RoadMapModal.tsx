@@ -1,5 +1,6 @@
 import React, { useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { X } from 'lucide-react';
 import { registerModalBackHandler, unregisterModalBackHandler } from '@/lib/modalState';
 import RoadMap from './RoadMap';
 
@@ -77,10 +78,6 @@ const RoadMapModal: React.FC<RoadMapModalProps> = ({
     }
   };
 
-  // Рассчитываем размеры попапа
-  // Соотношение: 375x480 для экрана 375x812, + 25% высоты
-  // Ширина: 100% экрана, высота: (480/812) * 1.25 = ~74% экрана
-  const popupHeightPercent = (480 / 812) * 100 * 1.25;
 
   return (
     <AnimatePresence>
@@ -114,30 +111,47 @@ const RoadMapModal: React.FC<RoadMapModalProps> = ({
             <div
               style={{
                 width: '100%',
-                height: `${popupHeightPercent}vh`,
+                height: `70vh`,
                 maxHeight: '85vh',
                 borderRadius: 32,
                 overflow: 'hidden',
                 pointerEvents: 'auto',
+                position: 'relative',
               }}
               onClick={(e) => e.stopPropagation()}
             >
-            <div
-              className="w-full h-full overflow-y-auto"
-              style={{ borderRadius: 32 }}
-            >
-              <RoadMap
-                stages={stages}
-                onStageClick={handleStageClick}
-                isGuest={isGuest}
-                onGuestBlock={onGuestBlock}
-                userPhotoUrl={userPhotoUrl}
-                currentWeek={currentWeek}
-                totalWeeks={totalWeeks}
-                streamStartDate={streamStartDate}
-                animationDelay={1}
-              />
-            </div>
+              {/* Кнопка закрытия */}
+              <button
+                onClick={onClose}
+                style={{
+                  position: 'absolute',
+                  top: 8,
+                  right: 8,
+                  zIndex: 20,
+                  background: 'transparent',
+                  border: 'none',
+                  cursor: 'pointer',
+                  padding: 8,
+                }}
+              >
+                <X size={16} color="#222222" />
+              </button>
+              <div
+                className="w-full h-full overflow-y-auto"
+                style={{ borderRadius: 32 }}
+              >
+                <RoadMap
+                  stages={stages}
+                  onStageClick={handleStageClick}
+                  isGuest={isGuest}
+                  onGuestBlock={onGuestBlock}
+                  userPhotoUrl={userPhotoUrl}
+                  currentWeek={currentWeek}
+                  totalWeeks={totalWeeks}
+                  streamStartDate={streamStartDate}
+                  animationDelay={1}
+                />
+              </div>
             </div>
           </motion.div>
         </>
