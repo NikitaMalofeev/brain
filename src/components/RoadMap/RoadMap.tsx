@@ -104,9 +104,13 @@ const RoadMap: React.FC<RoadMapProps> = ({
   // Рассчитываем сколько дней прошло с начала потока
   const getDaysSinceStreamStart = () => {
     if (!streamStartDate) return 0;
-    const startDate = new Date(streamStartDate);
+    // ВАЖНО: парсим дату как локальную, добавляя T00:00:00 чтобы избежать UTC сдвига
+    const startDate = new Date(streamStartDate + 'T00:00:00');
     const now = new Date();
-    const diffTime = now.getTime() - startDate.getTime();
+    // Сравниваем только даты без времени
+    const startDay = new Date(startDate.getFullYear(), startDate.getMonth(), startDate.getDate());
+    const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    const diffTime = today.getTime() - startDay.getTime();
     const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
     return Math.max(0, diffDays);
   };
@@ -262,9 +266,10 @@ const RoadMap: React.FC<RoadMapProps> = ({
             const moduleDuration = getDaysForModule(index);
 
             const moduleUnlockDay = stage.unlock_day || 0;
-            // unlock_day считается с 1 (1 = первый день), daysSinceStart с 0 (0 = день старта)
-            // Если unlock_day = 1 и daysSinceStart = 1, значит мы на 2-м дне модуля (1 день прошёл + текущий)
-            const daysIntoModule = Math.max(0, daysSinceStart - moduleUnlockDay + 2);
+            // unlock_day - это 0-indexed offset (0 = сразу доступен в день старта)
+            // daysSinceStart тоже с 0 (0 = день старта)
+            // Если unlock_day = 0 и daysSinceStart = 0, значит мы на 1-м дне модуля
+            const daysIntoModule = Math.max(0, daysSinceStart - moduleUnlockDay + 1);
             const displayDays = isActive ? Math.min(daysIntoModule, moduleDuration) : moduleDuration;
             const daysProgressPercent = moduleDuration > 0 ? (displayDays / moduleDuration) * 100 : 0;
 

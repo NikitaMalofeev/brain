@@ -532,7 +532,7 @@ const UnifiedTariffsManager: React.FC = () => {
                                                 {technique.technique_title}
                                               </span>
                                               <span className="text-xs text-gray-500">
-                                                (открыть через {technique.unlock_offset_days} дней)
+                                                (через {technique.unlock_offset_days} дн. → день {technique.unlock_offset_days + 1})
                                               </span>
                                               <button
                                                 onClick={() =>

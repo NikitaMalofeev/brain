@@ -168,7 +168,6 @@ const CalendarPage: React.FC = () => {
   const modulePeriods = useMemo((): ModulePeriod[] => {
     if (!modules || modules.length === 0 || !streamStartDate) return [];
 
-    const startDate = new Date(streamStartDate);
     // Поддерживаем оба формата: module_order_num для пользовательских и order_num для preview
     const sortedModules = [...modules].sort((a, b) => {
       const orderA = (a as any).module_order_num ?? (a as any).order_num ?? 0;
@@ -178,8 +177,9 @@ const CalendarPage: React.FC = () => {
 
     return sortedModules.map((module, index) => {
       // Дата начала модуля = start_date потока + unlock_day
-      // unlock_day - это СМЕЩЕНИЕ в днях (0 = сразу доступен, 1 = через 1 день)
-      const moduleStart = new Date(startDate);
+      // unlock_day - это 0-indexed offset (0 = сразу доступен в день старта)
+      // ВАЖНО: парсим дату как локальную, добавляя T00:00:00 чтобы избежать UTC сдвига
+      const moduleStart = new Date(streamStartDate + 'T00:00:00');
       const unlockDay = (module as any).unlock_day ?? 0;
       moduleStart.setDate(moduleStart.getDate() + unlockDay);
 
@@ -191,7 +191,13 @@ const CalendarPage: React.FC = () => {
       const moduleEnd = new Date(moduleStart);
       moduleEnd.setDate(moduleEnd.getDate() + durationDays - 1);
 
-      const formatDate = (d: Date) => d.toISOString().split('T')[0];
+      // Форматируем дату в локальной таймзоне (не UTC!)
+      const formatDate = (d: Date) => {
+        const year = d.getFullYear();
+        const month = String(d.getMonth() + 1).padStart(2, '0');
+        const day = String(d.getDate()).padStart(2, '0');
+        return `${year}-${month}-${day}`;
+      };
 
       // Получаем цвет модуля из данных или используем дефолтный по индексу
       const moduleColor = (module as any).module_color ?? (module as any).color;

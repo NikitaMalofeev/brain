@@ -77,6 +77,7 @@ const StagePage: React.FC = () => {
 
     const navigate = useNavigate();
 
+    
     // Получаем информацию из глобального контекста
     const { isTelegramApp } = useAppContext();
 
@@ -189,8 +190,22 @@ const StagePage: React.FC = () => {
 
     if (loading) {
         return (
-            <Page showTabBar={false}>
-                <div className={'page-bg-container bg-[url("/bg3.jpg")] min-h-full bg-cover bg-top text-black'}>
+            <Page showTabBar={false} showSafeAreaFade={false}>
+                <style>{`
+                    .page-container .content-wrapper { background-color: transparent !important; }
+                    .page-container { background-color: transparent !important; }
+                `}</style>
+                <div
+                    className={'page-bg-container text-black min-h-screen pb-8'}
+                    style={{
+                        backgroundImage: 'url(/bg3.jpg)',
+                        backgroundSize: 'cover',
+                        backgroundPosition: 'top center',
+                        backgroundAttachment: 'fixed',
+                        backgroundRepeat: 'no-repeat',
+                        paddingBottom: 'max(32px, env(safe-area-inset-bottom, 32px))',
+                    }}
+                >
                     {/* Скелетон заголовка */}
                     <div className={'bg-white rounded-2xl mx-4 mt-4 p-4 flex flex-col gap-3 animate-pulse'}>
                         <div className={'flex flex-col gap-2'}>
@@ -276,8 +291,22 @@ const StagePage: React.FC = () => {
     }
 
     return (
-        <Page showTabBar={false}>
-            <div className={'page-bg-container bg-[url("/bg3.jpg")] min-h-full bg-cover bg-top text-black'}>
+        <Page showTabBar={false} showSafeAreaFade={false}>
+            <style>{`
+                .page-container .content-wrapper { background-color: transparent !important; }
+                .page-container { background-color: transparent !important; }
+            `}</style>
+            <div
+                className={'page-bg-container text-black min-h-screen pb-8'}
+                style={{
+                    backgroundImage: 'url(/bg3.jpg)',
+                    backgroundSize: 'cover',
+                    backgroundPosition: 'top center',
+                    backgroundAttachment: 'fixed',
+                    backgroundRepeat: 'no-repeat',
+                    paddingBottom: 'max(32px, env(safe-area-inset-bottom, 32px))',
+                }}
+            >
                 {/* Белая карточка с заголовком и прогрессом */}
                 <div className={'bg-white rounded-2xl mx-4 mt-4 p-4 flex flex-col gap-3'}>
                     <div className={'flex items-center justify-between'}>

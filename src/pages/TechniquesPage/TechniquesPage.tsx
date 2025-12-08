@@ -151,12 +151,15 @@ const TechniquesPage: React.FC = () => {
     // Кейс 1: Техника из модуля (заблокирована по времени)
     if (technique.user_access_source === 'module' && technique.module_name && technique.unlock_day !== undefined) {
       // Рассчитываем дату открытия
-      // unlock_day - это СМЕЩЕНИЕ в днях (0 = сразу доступен, 1 = через 1 день после старта)
+      // unlock_day - это НОМЕР ДНЯ модуля (1 = первый день, 3 = третий день)
+      // Формула: start_date + (unlock_day - 1)
       let unlockDateText = '';
       if (streamInfo?.startDate) {
-        const startDate = new Date(streamInfo.startDate);
+        // ВАЖНО: парсим дату как локальную, добавляя T00:00:00 чтобы избежать UTC сдвига
+        const startDate = new Date(streamInfo.startDate + 'T00:00:00');
         const unlockDate = new Date(startDate);
-        unlockDate.setDate(startDate.getDate() + technique.unlock_day);
+        // -1 потому что unlock_day это номер дня (день 1 = start_date + 0)
+        unlockDate.setDate(startDate.getDate() + technique.unlock_day - 1);
 
         const day = unlockDate.getDate();
         const monthNames = [

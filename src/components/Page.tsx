@@ -132,7 +132,6 @@ export function Page({
         className="content-wrapper"
         style={{
           flex: 1,
-          overflowY: 'auto',
         }}
       >
         {children}

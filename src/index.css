@@ -1,5 +1,42 @@
 @import "tailwindcss";
 
+/* Сброс фона Telegram UI AppRoot - позволяет страницам устанавливать свой фон */
+[class*="tgui"] {
+  background: transparent !important;
+}
+
+/* Переопределяем переменную фона Telegram UI */
+:root {
+  --tgui--bg_color: transparent !important;
+}
+
+/* Полноэкранный фон для страниц */
+body.bg-stage {
+  background: url('/bg3.jpg') no-repeat top center !important;
+  background-size: cover !important;
+  background-attachment: fixed !important;
+}
+
+/* Фоллбэк для iOS/webview где background-attachment: fixed не работает */
+body.bg-stage::before {
+  content: '';
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  background: url('/bg3.jpg') no-repeat top center;
+  background-size: cover;
+  z-index: -1;
+  pointer-events: none;
+}
+
+/* Убираем transform который может ломать position: fixed */
+html, body, #root {
+  transform: none !important;
+  -webkit-transform: none !important;
+}
+
 /* ---- Ripple-эффекты ---- */
 .ripple-surface {
   position: relative;

@@ -303,6 +303,10 @@ export function useSubmitAssignment() {
       queryClient.invalidateQueries({
         queryKey: ['assignment-draft', variables.userId, variables.assignmentId],
       });
+      // Обновить счётчики на главной странице и в профиле
+      queryClient.invalidateQueries({
+        queryKey: ['user-stream-modules', variables.userId],
+      });
     },
   });
 }

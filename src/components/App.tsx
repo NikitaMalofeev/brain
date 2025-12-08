@@ -132,7 +132,7 @@ function AppContent({ showSplash }: { showSplash: boolean }) {
     return (
         <div style={{ display: 'flex', flexDirection: 'column', flex: 1, position: 'relative' }}>
             <ScrollToTop />
-            <div style={{ flex: 1, position: 'relative', overflow: 'hidden' }}>
+            <div style={{ flex: 1, position: 'relative' }}>
                 <ErrorBoundary fallback={PageErrorFallback}>
                     <Suspense fallback={<SmartLoadingSpinner />}>
                         <Routes location={location}>

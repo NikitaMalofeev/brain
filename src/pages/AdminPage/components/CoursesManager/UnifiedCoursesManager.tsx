@@ -840,7 +840,7 @@ const UnifiedCoursesManager: React.FC = () => {
                         <Text strong>{module.module_name}</Text>
                         <br />
                         <Text type="secondary" style={{ fontSize: 12 }}>
-                          {module.unlock_offset_days ? `Открывается на ${module.unlock_offset_days} день` : 'Доступен сразу'}
+                          {module.unlock_offset_days ? `Через ${module.unlock_offset_days} дн. (день ${module.unlock_offset_days + 1})` : 'Доступен сразу (день 1)'}
                           {' | '}
                           {module.access_duration_days ? `${module.access_duration_days} дней доступа` : 'Бессрочно'}
                           {module.grid_days && ` | Сетка: ${module.grid_days} дней`}

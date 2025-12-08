@@ -55,8 +55,8 @@ export const HelpPage = () => {
     }
     return (
         <Page>
-            <div className={'flex flex-col gap-4 text-black min-h-[calc(100vh-60px)]'}>
-                <h2 className={'font-bold text-xl p-4 pb-0 pt-4'}>Ваш куратор</h2>
+            <div className={'flex flex-col gap-4 text-black min-h-[calc(100vh-60px)] with-content-offset'}>
+                <h2 className={'font-bold text-xl px-4 pb-0'}>Ваш куратор</h2>
                 {userCurator ? <div className="px-4 ">
                     <Ripple className="rounded-2xl overflow-hidden inline-block w-full">
                         <Link to={`https://t.me/${data?.filter(el => el.id === userCurator?.curator_id)?.[0].username}`} className={'flex items-center gap-4 justify-between block w-full'}>

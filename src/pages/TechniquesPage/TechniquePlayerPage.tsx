@@ -53,6 +53,7 @@ const TechniquePlayerPage: React.FC = () => {
   const [showStudentBlockedModal, setShowStudentBlockedModal] = useState(false);
   const [modalTitle, setModalTitle] = useState('');
   const [modalDescription, setModalDescription] = useState('');
+  const [isRedirecting, setIsRedirecting] = useState(false);
   const { openWebView } = useWebView();
 
   // Находим текущую технику
@@ -125,6 +126,8 @@ const TechniquePlayerPage: React.FC = () => {
     // Если есть доступ - сразу переходим на AudioPlayerPage
     // TODO: вернуть проверку technique.audio_url когда будут реальные данные
     if (canPlay) {
+      // Устанавливаем флаг редиректа чтобы не показывать UI страницы
+      setIsRedirecting(true);
       navigate('/audio-player', {
         replace: true,
         state: {
@@ -180,7 +183,8 @@ const TechniquePlayerPage: React.FC = () => {
     }
   };
 
-  if (loading) {
+  // Показываем спиннер при загрузке или при редиректе на плеер
+  if (loading || isRedirecting) {
     return (
       <BlackBackground>
         <DarkLoadingSpinner />

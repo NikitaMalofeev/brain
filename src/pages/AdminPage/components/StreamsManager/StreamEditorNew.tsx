@@ -367,7 +367,7 @@ const StreamEditorNew: React.FC<StreamEditorProps> = ({ streamId, onClose, onSav
                                 >
                                   • {technique.technique_title}
                                   <span className="text-gray-500 ml-1">
-                                    (через {technique.unlock_offset_days} дней)
+                                    (через {technique.unlock_offset_days} дн. → день {technique.unlock_offset_days + 1})
                                   </span>
                                 </div>
                               ))

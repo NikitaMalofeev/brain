@@ -269,14 +269,14 @@ const TariffConfigurationEditor: React.FC = () => {
                           <div className="mt-3 ml-8 space-y-2 bg-white p-3 rounded border border-blue-300">
                             <div>
                               <label className="block text-xs font-medium text-gray-700 mb-1">
-                                Открыть с дня потока:
+                                Через сколько дней открыть (0 = сразу):
                               </label>
                               <input
                                 type="number"
                                 id={`unlock-days-${module.tariff_stream_module_id}`}
                                 defaultValue={module.unlock_offset_days || 0}
                                 min="0"
-                                placeholder="0 = сразу доступен"
+                                placeholder="0 = день 1, 7 = день 8"
                                 className="w-full px-3 py-1.5 text-sm rounded bg-white text-gray-900 border border-gray-300"
                               />
                             </div>
@@ -320,7 +320,7 @@ const TariffConfigurationEditor: React.FC = () => {
                         ) : (
                           <div className="mt-1 ml-8 flex items-center gap-3 flex-wrap">
                             <p className="text-sm text-gray-600">
-                              Открыть: {module.unlock_offset_days > 0 ? `с ${module.unlock_offset_days} дня` : 'сразу'}
+                              Открыть: {module.unlock_offset_days > 0 ? `через ${module.unlock_offset_days} дн. (день ${module.unlock_offset_days + 1})` : 'сразу (день 1)'}
                             </p>
                             <p className="text-sm text-gray-600">
                               Доступ: {module.access_duration_days ? `${module.access_duration_days} дней` : 'бессрочно'}
@@ -413,7 +413,7 @@ const TariffConfigurationEditor: React.FC = () => {
                                           {technique.technique_title}
                                         </span>
                                         <span className="text-xs text-gray-500">
-                                          (открыть через {technique.unlock_offset_days} дней)
+                                          (через {technique.unlock_offset_days} дн. → день {technique.unlock_offset_days + 1})
                                         </span>
                                         <button
                                           onClick={() => setEditingTechnique(technique.tariff_module_technique_id!)}

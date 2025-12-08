@@ -1319,7 +1319,20 @@ const LessonPage: React.FC = () => {
 
     return (
         <Page back={true} showTabBar={false}>
-            <div className={'text-black'} style={{ backgroundImage: `url(${Background1})`, backgroundSize: '120%', backgroundPosition: 'top', backgroundAttachment: 'fixed', backgroundRepeat: 'no-repeat', minHeight: '100dvh' }}>
+            {/* Фиксированный фон на весь экран */}
+            <div style={{
+                position: 'fixed',
+                top: 0,
+                left: 0,
+                right: 0,
+                bottom: 0,
+                backgroundImage: `url(${Background1})`,
+                backgroundSize: '120%',
+                backgroundPosition: 'top',
+                backgroundRepeat: 'no-repeat',
+                zIndex: -1,
+            }} />
+            <div className={'text-black'} style={{ minHeight: '100dvh', paddingBottom: '20px', position: 'relative' }}>
                 {/* Обложка урока с бейджами внутри - fullscreen до верха */}
                 <div
                     style={{

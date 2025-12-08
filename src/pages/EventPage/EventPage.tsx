@@ -109,13 +109,18 @@ const EventPage: React.FC = () => {
   return (
     <Page back>
       <div className="event-page">
-        {/* Обложка события */}
-        <div className="event-page-cover page-bg-container">
-          <img
-            src={event.cover_image || EventCardImage}
-            alt={event.title}
-          />
-        </div>
+        {/* Обложка события - fullscreen до верха */}
+        <div
+          className="event-page-cover"
+          style={{
+            position: 'relative',
+            height: 'calc(193px + env(safe-area-inset-top, 0px))',
+            backgroundImage: `url(${event.cover_image || EventCardImage})`,
+            backgroundSize: 'cover',
+            backgroundPosition: 'center',
+            borderRadius: '0 0 32px 32px',
+          }}
+        />
 
         {/* Контент */}
         <div className="event-page-content">
