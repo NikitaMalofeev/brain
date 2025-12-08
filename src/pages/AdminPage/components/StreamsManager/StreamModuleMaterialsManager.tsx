@@ -300,7 +300,7 @@ const StreamModuleMaterialsManager: React.FC<StreamModuleMaterialsManagerProps> 
                     >
                       <Space>
                         <DragOutlined />
-                        {material.material_type === 'audio' ? '🎵' : '🎬'}
+                        🎵
                         <Text ellipsis style={{ maxWidth: 120 }}>
                           {material.name}
                         </Text>
@@ -356,7 +356,7 @@ const StreamModuleMaterialsManager: React.FC<StreamModuleMaterialsManagerProps> 
                         bodyStyle={{ padding: 4 }}
                       >
                         <Space size={2}>
-                          {mm.material?.material_type === 'audio' ? '🎵' : '🎬'}
+                          🎵
                           <Text ellipsis style={{ fontSize: 11, maxWidth: 60 }}>
                             {mm.material?.name}
                           </Text>

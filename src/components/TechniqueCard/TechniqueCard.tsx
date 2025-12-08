@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { motion } from 'framer-motion';
 import { clsx } from 'clsx';
 import { TechniqueWithAccess } from '@/lib/supabase/types';
@@ -14,6 +14,9 @@ export interface TechniqueCardProps {
  * Отображает превью техники с обложкой, названием, описанием и статусом доступа
  */
 const TechniqueCard: React.FC<TechniqueCardProps> = ({ technique, onClick, isGuest = false }) => {
+  const [isImageLoaded, setIsImageLoaded] = useState(false);
+  const [hasImageError, setHasImageError] = useState(false);
+
   const {
     title,
     description,
@@ -23,18 +26,28 @@ const TechniqueCard: React.FC<TechniqueCardProps> = ({ technique, onClick, isGue
     can_purchase,
     status,
     is_unlocked,
+    user_access_source,
   } = technique;
 
+  // Проверяем это техника из модуля
+  const isModuleTechnique = user_access_source === 'module';
+
   // Определяем можно ли кликнуть на карточку
-  const isClickable = has_access || status === 'free';
+  // Для модульных техник: has_access + is_unlocked (оба должны быть true)
+  // Для остальных: has_access или бесплатная
+  const isClickable = isModuleTechnique
+    ? (has_access && is_unlocked === true)
+    : (has_access || status === 'free');
 
   // Техника заблокирована если:
-  // 1. Нет доступа И is_unlocked = false (техника из модуля, ещё не разблокирована по времени)
+  // Для модульных: is_unlocked === false (не наступила дата)
+  // Для остальных:
+  // 1. Нет доступа И is_unlocked = false
   // 2. Нет доступа И нельзя купить И не бесплатная
-  // 3. Для гостей - все техники к покупке тоже показываем как заблокированные (с замочком)
-  const isLocked = !has_access && status !== 'free' && (
-    is_unlocked === false || (!can_purchase && !is_unlocked) || (isGuest && can_purchase)
-  );
+  // Для гостей: если can_purchase - показываем кнопку "Купить", не замок
+  const isLocked = isModuleTechnique
+    ? (is_unlocked === false)
+    : (!has_access && status !== 'free' && !can_purchase);
 
   return (
     <motion.div
@@ -53,12 +66,22 @@ const TechniqueCard: React.FC<TechniqueCardProps> = ({ technique, onClick, isGue
         onClick={onClick}
       >
         {/* Обложка */}
-        <div className="relative w-[60px] h-[60px] rounded-xl flex-shrink-0 overflow-hidden">
+        <div className="relative w-[60px] h-[60px] rounded-xl flex-shrink-0 overflow-hidden bg-white/20">
+          {/* Placeholder пока изображение не загрузилось */}
+          {!isImageLoaded && !hasImageError && (
+            <div className="absolute inset-0 bg-white/20 animate-pulse" />
+          )}
           <img
-            src={cover_image || '/mock-library-card-image.png'}
+            src={cover_image && cover_image.trim() !== '' ? cover_image : '/mock-library-card-image.png'}
             alt={title}
-            className="w-full h-full object-cover"
+            className={clsx(
+              "w-full h-full object-cover transition-opacity duration-200",
+              isImageLoaded ? "opacity-100" : "opacity-0"
+            )}
+            onLoad={() => setIsImageLoaded(true)}
             onError={(e) => {
+              setHasImageError(true);
+              setIsImageLoaded(true);
               e.currentTarget.src = '/mock-library-card-image.png';
             }}
           />
@@ -110,8 +133,8 @@ const TechniqueCard: React.FC<TechniqueCardProps> = ({ technique, onClick, isGue
 
         {/* Кнопки Play/Lock/Купить в правом верхнем углу */}
         <div className="absolute top-3 right-3">
-          {has_access || status === 'free' ? (
-            /* Иконка Play для доступных и бесплатных */
+          {isClickable ? (
+            /* Иконка Play для разблокированных и бесплатных */
             <button
               className="w-[44px] h-[44px] rounded-full flex items-center justify-center hover:opacity-80 transition-opacity"
               style={{ background: 'rgba(0, 0, 0, 0.4)' }}

@@ -123,18 +123,13 @@ const CalendarPage: React.FC = () => {
       const unlockDay = (module as any).unlock_day ?? 0;
       moduleStart.setDate(moduleStart.getDate() + unlockDay);
 
-      // Дата окончания = начало следующего модуля - 1 день, или +6 дней если последний
-      let moduleEnd: Date;
-      if (index < sortedModules.length - 1) {
-        const nextModule = sortedModules[index + 1];
-        const nextUnlockDay = (nextModule as any).unlock_day ?? 0;
-        moduleEnd = new Date(startDate);
-        moduleEnd.setDate(moduleEnd.getDate() + nextUnlockDay - 1);
-      } else {
-        // Последний модуль - добавляем 6 дней (неделя)
-        moduleEnd = new Date(moduleStart);
-        moduleEnd.setDate(moduleEnd.getDate() + 6);
-      }
+      // Дата окончания = начало модуля + access_duration_days - 1
+      // Если access_duration_days не задан (null), используем 7 дней по умолчанию
+      const accessDuration = (module as any).access_duration_days;
+      const durationDays = accessDuration ?? 7; // По умолчанию 7 дней
+
+      const moduleEnd = new Date(moduleStart);
+      moduleEnd.setDate(moduleEnd.getDate() + durationDays - 1);
 
       const formatDate = (d: Date) => d.toISOString().split('T')[0];
 

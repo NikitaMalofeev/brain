@@ -62,6 +62,24 @@ const TechniquesPage: React.FC = () => {
     error,
   } = useTechniquesFiltered(supabaseUser?.id);
 
+  // DEBUG: Логируем все техники для отладки
+  console.log('🔍 [TechniquesPage] ALL techniques:', techniques?.map(t => ({
+    id: t.id,
+    title: t.title,
+    has_access: t.has_access,
+    is_unlocked: t.is_unlocked,
+    user_access_source: t.user_access_source,
+    module_name: t.module_name,
+    unlock_day: t.unlock_day,
+  })));
+  console.log('🔍 [TechniquesPage] myTechniques:', myTechniques?.length);
+  console.log('🔍 [TechniquesPage] moduleTechniques (locked by time):', moduleTechniques?.map(t => ({
+    title: t.title,
+    is_unlocked: t.is_unlocked,
+    unlock_day: t.unlock_day,
+    module_name: t.module_name,
+  })));
+
   // Получаем техники из специальных пакетов
   const { data: userSpecialBundleTechniques } = useUserSpecialBundleTechniques(supabaseUser?.id);
 
@@ -196,8 +214,17 @@ const TechniquesPage: React.FC = () => {
       }
     }
 
-    // Кейс 3: Техника доступна к покупке - открываем BuyModal (для учеников и гостей)
+    // Кейс 3: Техника доступна к покупке
     if (technique.can_purchase && !technique.has_access && technique.status !== 'free') {
+      // Для гостей - сразу переходим на URL покупки без модалки
+      if (isGuest) {
+        if (technique.purchase_url) {
+          window.open(technique.purchase_url, '_blank');
+        }
+        // Если нет URL - просто ничего не делаем, модалку не показываем
+        return;
+      }
+      // Для учеников - открываем модалку выбора способа покупки
       setBuyModalTechnique(technique);
       setShowBuyModal(true);
       return;

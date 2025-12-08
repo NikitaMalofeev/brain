@@ -127,7 +127,7 @@ const MaterialsManager: React.FC = () => {
     const [materialForm, setMaterialForm] = useState<MaterialFormData>({
         name: '',
         description: '',
-        material_type: 'video',
+        material_type: 'audio',
         order_num: 1,
         course_id: '',
         release_date: new Date().toISOString().split('T')[0],
@@ -346,7 +346,7 @@ const MaterialsManager: React.FC = () => {
             setMaterialForm({
                 name: '',
                 description: '',
-                material_type: 'video',
+                material_type: 'audio',
                 order_num: materials.length + 1,
                 course_id: coursesAdmin.courses.length > 0 ? coursesAdmin.courses[0].id : '',
                 release_date: new Date().toISOString().split('T')[0],
@@ -841,10 +841,10 @@ const MaterialsManager: React.FC = () => {
 
     const getMaterialTypeLabel = (type: string) => {
         const types: { [key: string]: string } = {
-            'video': '🎥 Видео-материал',
-            'audio': '🎵 Аудио-материал'
+            'audio': '🎵 Аудиотехника',
+            'video': '🎥 Видео' // Legacy support
         };
-        return types[type] || type;
+        return types[type] || '🎵 Аудиотехника';
     };
 
     const renderBlockContent = (block: MaterialBlock) => {
@@ -1174,22 +1174,8 @@ const MaterialsManager: React.FC = () => {
                                 ))}
                             </select>
                         </div>
-                        <div className="admin-filter-group">
-                            <label htmlFor="material-type-filter">Тип материала:</label>
-                            <select
-                                id="material-type-filter"
-                                className="admin-input"
-                                value={materialTypeFilter}
-                                onChange={(e) => setMaterialTypeFilter(e.target.value)}
-                                style={{ minWidth: '180px' }}
-                            >
-                                <option value="all">🌟 Все типы</option>
-                                <option value="video">🎥 Видео-материалы</option>
-                                <option value="audio">🎵 Аудио-материалы</option>
-                            </select>
-                        </div>
                         <div className="admin-filter-info" style={{ color: 'var(--admin-text-secondary)', fontSize: '14px' }}>
-                            Показано: {filteredMaterials.length} из {materials.length} материалов
+                            Показано: {filteredMaterials.length} из {materials.length} аудиотехник
                         </div>
                     </div>
                 </div>
@@ -1315,18 +1301,17 @@ const MaterialsManager: React.FC = () => {
 
                             <div className="form-row">
                                 <div className="form-group">
-                                    <label>Тип материала *</label>
-                                    <select
-                                        className="admin-input"
-                                        value={materialForm.material_type}
-                                        onChange={(e) => setMaterialForm({ ...materialForm, material_type: e.target.value as 'video' | 'audio' })}
-                                        required
-                                    >
-                                        <option value="video">🎥 Видео-материал</option>
-                                        <option value="audio">🎵 Аудио-материал</option>
-                                    </select>
+                                    <label>Тип материала</label>
+                                    <div style={{
+                                        padding: '10px 12px',
+                                        backgroundColor: 'var(--admin-bg-lighter)',
+                                        borderRadius: '8px',
+                                        color: 'var(--admin-text)',
+                                        fontWeight: 500
+                                    }}>
+                                        🎵 Аудиотехника
+                                    </div>
                                 </div>
-
                             </div>
 
                             {/* Аудио и анимация */}

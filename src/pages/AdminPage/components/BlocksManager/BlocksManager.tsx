@@ -819,7 +819,7 @@ const BlocksManager: React.FC<BlocksManagerProps> = ({ courseId, stageId, lesson
                                                 <option value="">Выберите технику...</option>
                                                 {materials.map((material) => (
                                                     <option key={material.id} value={material.id}>
-                                                        {material.name} ({material.material_type})
+                                                        {material.name} 🎵
                                                     </option>
                                                 ))}
                                             </select>
@@ -990,7 +990,7 @@ const BlocksManager: React.FC<BlocksManagerProps> = ({ courseId, stageId, lesson
                                                     />
                                                     <span style={{ fontSize: 13 }}>
                                                         {technique.name}
-                                                        <span style={{ color: '#888', marginLeft: 4 }}>({technique.material_type})</span>
+                                                        <span style={{ color: '#888', marginLeft: 4 }}>🎵</span>
                                                     </span>
                                                 </label>
                                             );

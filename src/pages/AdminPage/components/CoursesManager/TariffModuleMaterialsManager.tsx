@@ -522,7 +522,7 @@ const TariffModuleMaterialsManager: React.FC<TariffModuleMaterialsManagerProps> 
                       >
                         <Space>
                           <DragOutlined />
-                          {material.material_type === 'audio' ? '🎵' : '🎬'}
+                          🎵
                           <Text ellipsis style={{ maxWidth: 120 }}>
                             {material.name}
                           </Text>
@@ -618,7 +618,7 @@ const TariffModuleMaterialsManager: React.FC<TariffModuleMaterialsManagerProps> 
                             {/* Заголовок с названием */}
                             <Space size={4} style={{ width: '100%', justifyContent: 'space-between' }}>
                               <Space size={4}>
-                                {mm.material?.material_type === 'audio' ? '🎵' : '🎬'}
+                                🎵
                                 <Text
                                   ellipsis={!isExpanded}
                                   style={{
@@ -658,7 +658,7 @@ const TariffModuleMaterialsManager: React.FC<TariffModuleMaterialsManagerProps> 
                                 {/* Мета информация */}
                                 <Space size={8} wrap>
                                   <Text type="secondary" style={{ fontSize: 10 }}>
-                                    {mm.material?.material_type === 'audio' ? '🎵 Аудио' : '🎬 Видео'}
+                                    🎵 Аудио
                                   </Text>
                                   {mm.material?.duration_seconds && (
                                     <Text type="secondary" style={{ fontSize: 10 }}>
@@ -746,7 +746,7 @@ const TariffModuleMaterialsManager: React.FC<TariffModuleMaterialsManagerProps> 
                             </Text>
                           </Space>
                           <Space size={4}>
-                            {tech.technique?.material_type === 'audio' ? '🎵' : '🎬'}
+                            🎵
                             <Text
                               ellipsis
                               style={{
@@ -911,7 +911,7 @@ const TariffModuleMaterialsManager: React.FC<TariffModuleMaterialsManagerProps> 
                     }}
                   >
                     <Space size={4}>
-                      {tech.technique?.material_type === 'audio' ? '🎵' : '🎬'}
+                      🎵
                       <Text style={{ fontSize: 13 }}>{tech.technique?.name}</Text>
                     </Space>
                   </div>

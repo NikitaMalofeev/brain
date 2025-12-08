@@ -4,6 +4,7 @@ import roadmapBg from '@/shared/assets/images/roadmap.png';
 import roadmapUserMark from '@/shared/assets/icons/roadmapUserMark.svg';
 import roadmapDarkMark from '@/shared/assets/icons/roadmapDarkMark.svg';
 import roadmapWhiteMark from '@/shared/assets/icons/roadmapWhiteMark.svg';
+import { getNounPluralForm } from '@/helpers/pluralize';
 
 // Базовые размеры экрана для которых заданы координаты дороги
 const BASE_WIDTH = 400;
@@ -261,7 +262,9 @@ const RoadMap: React.FC<RoadMapProps> = ({
             const moduleDuration = getDaysForModule(index);
 
             const moduleUnlockDay = stage.unlock_day || 0;
-            const daysIntoModule = Math.max(0, daysSinceStart - moduleUnlockDay);
+            // unlock_day считается с 1 (1 = первый день), daysSinceStart с 0 (0 = день старта)
+            // Если unlock_day = 1 и daysSinceStart = 1, значит мы на 2-м дне модуля (1 день прошёл + текущий)
+            const daysIntoModule = Math.max(0, daysSinceStart - moduleUnlockDay + 2);
             const displayDays = isActive ? Math.min(daysIntoModule, moduleDuration) : moduleDuration;
             const daysProgressPercent = moduleDuration > 0 ? (displayDays / moduleDuration) * 100 : 0;
 
@@ -484,7 +487,7 @@ const RoadMap: React.FC<RoadMapProps> = ({
                             color: isActive ? '#222222' : '#ADADAD',
                           }}
                         >
-                          {displayDays === 1 ? 'день' : displayDays < 5 ? 'дня' : 'дней'}
+                          {getNounPluralForm(displayDays, 'день', 'дня', 'дней')}
                         </span>
                       </div>
                     </div>

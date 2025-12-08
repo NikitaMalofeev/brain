@@ -22,6 +22,7 @@ export interface UserStreamModule {
     total_assignments: number;
     completed_assignments: number;
     overdue_assignments: number;
+    access_duration_days: number | null; // Длительность доступа к модулю (null = бессрочно)
 }
 
 // Интерфейс совместимый с существующими компонентами (StageCard, RoadMap)
@@ -39,6 +40,7 @@ export interface StreamModuleAsStage {
     module_id: string;
     module_color: string | null;
     unlock_day: number; // С какого дня потока модуль доступен
+    access_duration_days: number | null; // Длительность доступа к модулю (null = бессрочно)
     // Поля для подсчёта заданий
     total_assignments: number;
     completed_assignments: number;
@@ -105,6 +107,7 @@ export function useUserStreamModules(userId: string | null | undefined): UseUser
         module_id: module.module_id,
         module_color: module.module_color,
         unlock_day: module.unlock_day,
+        access_duration_days: module.access_duration_days,
         // Поля для заданий
         total_assignments: module.total_assignments || 0,
         completed_assignments: module.completed_assignments || 0,

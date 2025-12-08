@@ -1286,17 +1286,18 @@ const LessonPage: React.FC = () => {
 
     return (
         <Page back={true} showTabBar={false}>
-            <div className={'text-black with-content-offset'} style={{ backgroundImage: `url(${Background1})`, backgroundSize: '120%', backgroundPosition: 'top', backgroundAttachment: 'fixed', backgroundRepeat: 'no-repeat', minHeight: '100vh' }}>
-                {/* Обложка урока с бейджами внутри */}
-                <div style={{ position: 'relative' }}>
-                    <img
-                        src={buildFileUrl(state.lesson.cover_image_path) || dayBackground}
-                        className={'w-full h-[193px] object-cover'}
-                        style={{
-                            borderRadius: '0 0 32px 32px',
-                        }}
-                        alt={state.lesson.name}
-                    />
+            <div className={'text-black'} style={{ backgroundImage: `url(${Background1})`, backgroundSize: '120%', backgroundPosition: 'top', backgroundAttachment: 'fixed', backgroundRepeat: 'no-repeat', minHeight: '100vh', paddingBottom: 'env(safe-area-inset-bottom, 0px)' }}>
+                {/* Обложка урока с бейджами внутри - fullscreen до верха */}
+                <div
+                    style={{
+                        position: 'relative',
+                        height: 'calc(193px + env(safe-area-inset-top, 0px))',
+                        backgroundImage: `url(${buildFileUrl(state.lesson.cover_image_path) || dayBackground})`,
+                        backgroundSize: 'cover',
+                        backgroundPosition: 'center',
+                        borderRadius: '0 0 32px 32px',
+                    }}
+                >
 
                     {/* Бейджи внутри картинки */}
                     <div

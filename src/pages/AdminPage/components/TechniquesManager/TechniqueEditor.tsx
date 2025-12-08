@@ -17,11 +17,10 @@ interface TechniqueFormData {
   audio_url: string;
   cover_image: string;
   duration_seconds: number | null;
-  // Новые статусы:
+  // Статусы:
   // - 'free' = бесплатная (показывается в библиотеке, доступна всем)
   // - 'paid' = платная (показывается в библиотеке, требует оплаты)
-  // - 'default' = по умолчанию (только через модули/пакеты, НЕ в библиотеке)
-  status: 'free' | 'paid' | 'default';
+  status: 'free' | 'paid';
   purchase_url: string;
   upgrade_tariff_chat_url: string;
   available_from_module: string;
@@ -38,7 +37,7 @@ const initialFormData: TechniqueFormData = {
   audio_url: '',
   cover_image: '',
   duration_seconds: null,
-  status: 'default', // По умолчанию - только через модули/пакеты
+  status: 'paid', // По умолчанию - платная
   purchase_url: '',
   upgrade_tariff_chat_url: '',
   available_from_module: '',
@@ -46,7 +45,7 @@ const initialFormData: TechniqueFormData = {
   unlock_condition_technique_id: '',
   unlock_condition_duration_days: 30,
   order_num: 0,
-  is_standalone: false, // Автоматически определяется по статусу
+  is_standalone: true, // Автоматически определяется по статусу
 };
 
 const TechniqueEditor: React.FC<TechniqueEditorProps> = ({
@@ -100,11 +99,10 @@ const TechniqueEditor: React.FC<TechniqueEditorProps> = ({
   });
 
   // Маппинг старых статусов на новые
-  const mapOldStatusToNew = (oldStatus: string | null | undefined): 'free' | 'paid' | 'default' => {
+  const mapOldStatusToNew = (oldStatus: string | null | undefined): 'free' | 'paid' => {
     if (oldStatus === 'free') return 'free';
-    if (oldStatus === 'purchasable' || oldStatus === 'paid') return 'paid';
-    if (oldStatus === 'locked' || oldStatus === 'default' || !oldStatus) return 'default';
-    return 'default';
+    // Все остальные статусы (paid, purchasable, locked, default, null) -> paid
+    return 'paid';
   };
 
   // Заполнить форму данными техники при загрузке
@@ -324,12 +322,10 @@ const TechniqueEditor: React.FC<TechniqueEditorProps> = ({
             }
             className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#B862EA] focus:border-transparent"
           >
-            <option value="default">По умолчанию (только через модули/пакеты)</option>
             <option value="paid">Платная (в библиотеке, требует оплаты)</option>
             <option value="free">Бесплатная (в библиотеке, доступна всем)</option>
           </select>
           <p className="mt-2 text-xs text-gray-500">
-            {formData.status === 'default' && '📦 Техника доступна только через модули, пакеты или специальные пакеты. Не показывается в библиотеке отдельно.'}
             {formData.status === 'paid' && '💰 Техника показывается в библиотеке в секции "К покупке". Требуется отметка оплаты в карточке ученика.'}
             {formData.status === 'free' && '🎁 Техника показывается в библиотеке в секции "Бесплатные". Доступна всем пользователям.'}
           </p>

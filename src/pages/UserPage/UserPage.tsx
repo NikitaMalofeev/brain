@@ -103,7 +103,7 @@ export const UserPage = () => {
     // Preview данные для гостей без тарифа/потока
     const { data: previewModules, isLoading: previewLoading, error: previewError } = usePreviewStreamModules();
 
-    // Логируем ошибки для отладки
+   
     if (stagesError) {
         console.error('useUserStreamModules error:', stagesError);
     }
@@ -259,7 +259,7 @@ export const UserPage = () => {
     const currentStage = stages && stages.length > 0 ? stages[currentLevel - 1] : null;
     return (
         <Page back={false}>
-            <div className={'relative text-black min-h-screen bg-white pt-[180px] overflow-hidden'}>
+            <div className={' relative text-black min-h-screen bg-white pt-[180px] overflow-hidden'}>
                 <video
                     className={'absolute top-[150px] left-1/2 -translate-y-1/2 -translate-x-1/2 rotate-[16deg] object-cover scale-125'}
                     src="/brain2.mov"        /* или CDN-ссылка */
@@ -269,7 +269,7 @@ export const UserPage = () => {
                     playsInline
                 />
                 <motion.div
-                    className={'page-bg-container rounded-t-3xl bg-[url("/bg3.jpg")] bg-cover bg-bottom relative'}
+                    className={'rounded-t-3xl bg-[url("/bg3.jpg")] bg-cover bg-bottom relative'}
                     variants={listVariants}
                     initial="hidden"
                     animate="show"
@@ -339,7 +339,7 @@ export const UserPage = () => {
                             <p className={'text-sm font-medium text-[#9F9F9F]'}>
                                 Просрочено
                             </p>
-                            <p className={'text-[20px] font-bold'}>{(isGuest || isPreviewMode) ? `0 ${getNounPluralForm(0, 'день', 'дня', 'дней')}` : `${overdueAssignments} ${getNounPluralForm(overdueAssignments, 'день', 'дня', 'дней')}`}</p>
+                            <p className={'text-[20px] font-bold'}>{(isGuest || isPreviewMode) ? `0 ${getNounPluralForm(0, 'задание', 'задания', 'заданий')}` : `${overdueAssignments} ${getNounPluralForm(overdueAssignments, 'задание', 'задания', 'заданий')}`}</p>
                         </div>
                         <div
                             className={'py-2 px-4 rounded-2xl bg-white flex items-center col-span-2 gap-2 justify-between relative overflow-hidden'}>

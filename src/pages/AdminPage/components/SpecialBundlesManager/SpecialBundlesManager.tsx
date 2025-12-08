@@ -354,7 +354,7 @@ const SpecialBundlePanelContent: React.FC<SpecialBundlePanelContentProps> = ({
                   >
                     <Space>
                       <DragOutlined />
-                      {technique.material_type === 'audio' ? '🎵' : '🎬'}
+                      🎵
                       <Text ellipsis style={{ maxWidth: 150 }}>
                         {technique.name}
                       </Text>
@@ -457,7 +457,7 @@ const SpecialBundlePanelContent: React.FC<SpecialBundlePanelContentProps> = ({
                         <Tag color={index === 0 ? 'green' : 'default'}>
                           #{bt.technique_position}
                         </Tag>
-                        {bt.technique?.material_type === 'audio' ? '🎵' : '🎬'}
+                        🎵
                         <Text strong>{bt.technique?.name}</Text>
                         {index === 0 && (
                           <Tag color="green">Первая техника</Tag>

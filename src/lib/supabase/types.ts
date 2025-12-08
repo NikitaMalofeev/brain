@@ -674,6 +674,7 @@ export interface MaterialWithAccess extends Material {
   unlock_day?: number | null; // День открытия в модуле (unlock_offset_days)
   active_days?: number | null; // Количество дней доступа после разблокировки
   is_unlocked?: boolean; // Открыт ли материал на текущую дату
+  unlock_date?: string | null; // Дата разблокировки (YYYY-MM-DD) - источник истины!
   module_id?: string | null; // ID модуля
   module_name?: string | null; // Название модуля
   user_access_source?: 'direct' | 'bundle' | 'module' | string | null; // Источник доступа

@@ -340,7 +340,7 @@ const BundlePanelContent: React.FC<BundlePanelContentProps> = ({
                     >
                       <Space>
                         <DragOutlined />
-                        {technique.material_type === 'audio' ? '🎵' : '🎬'}
+                        🎵
                         <Text ellipsis style={{ maxWidth: 150 }}>
                           {technique.name}
                         </Text>
@@ -380,7 +380,7 @@ const BundlePanelContent: React.FC<BundlePanelContentProps> = ({
                     >
                       <Space style={{ width: '100%', justifyContent: 'space-between' }}>
                         <Space>
-                          {bt.technique?.material_type === 'audio' ? '🎵' : '🎬'}
+                          🎵
                           <Text>{bt.technique?.name}</Text>
                         </Space>
                         <Popconfirm

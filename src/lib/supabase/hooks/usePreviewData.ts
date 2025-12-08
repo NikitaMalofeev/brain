@@ -29,6 +29,7 @@ export interface PreviewStreamModule {
     total_assignments: number;
     completed_assignments: number;
     overdue_assignments: number;
+    access_duration_days?: number | null; // Опционально для preview
 }
 
 export interface PreviewCalendarEvent {
