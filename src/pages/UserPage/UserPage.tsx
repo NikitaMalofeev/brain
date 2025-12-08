@@ -1,5 +1,6 @@
 import { useSupabaseUser, usePreviewStreamModules } from '@/lib/supabase/hooks';
 import { useMemo, useState } from "react";
+import { useWebView } from '@/hooks/useWebView';
 import {
     initDataState as _initDataState,
     useSignal,
@@ -90,6 +91,7 @@ export const UserPage = () => {
     const initDataState = useSignal(_initDataState);
     const { supabaseUser, loading, error } = useSupabaseUser(initDataState);
     const [showGuestModal, setShowGuestModal] = useState(false);
+    const { openWebView } = useWebView();
     const user = useMemo(() =>
         initDataState && initDataState.user ? initDataState.user : undefined,
         [initDataState]);
@@ -385,7 +387,7 @@ export const UserPage = () => {
                                         {(isGuest || isPreviewMode) ? 'Гость' : (userTariff ? userTariff.name : 'Базовый')}
                                     </p>
                                 </div>
-                                <a href={(isGuest || isPreviewMode) ? '#' : 'https://t.me/katyaasta'} target={(isGuest || isPreviewMode) ? '_self' : '_blank'} onClick={(isGuest || isPreviewMode) ? (e) => { e.preventDefault(); window.open('https://brainprogramming.ru/main?utm_source=app', '_blank'); } : undefined}>
+                                <a href={(isGuest || isPreviewMode) ? '#' : 'https://t.me/katyaasta'} target={(isGuest || isPreviewMode) ? '_self' : '_blank'} onClick={(isGuest || isPreviewMode) ? (e) => { e.preventDefault(); openWebView('https://brainprogramming.ru/main?utm_source=app'); } : undefined}>
                                     <Ripple className="rounded-3xl overflow-hidden inline-block">
                                         <button
                                             className="text-sm font-bold w-max leading-5 text-white py-2 px-4 rounded-3xl text-center bg-[linear-gradient(135deg,rgba(141,197,241,0.4)_-48.61%,#63ABE6_105.56%),linear-gradient(91.99deg,#F3F3F3_0%,#EAEAEA_100%)]">

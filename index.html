@@ -16,5 +16,98 @@
     <noscript>You need to enable JavaScript to run this app.</noscript>
     <div id="root"></div>
     <script src="/src/index.tsx" type="module"></script>
+
+    <!-- Eruda - мобильная консоль для отладки -->
+    <!-- <script src="https://cdn.jsdelivr.net/npm/eruda"></script>
+    <script>
+      eruda.init();
+
+      // Позиционируем кнопку
+      eruda._entryBtn._$el[0].style.cssText = 'position:fixed!important;z-index:99999!important;bottom:80px!important;right:20px!important;';
+
+      // Функция анализа производительности
+      window.analyzePerformance = function() {
+        console.clear();
+        console.log('%c=== 🚀 PERFORMANCE ANALYSIS ===', 'color: #E91E63; font-weight: bold; font-size: 16px; background: #000; padding: 10px;');
+
+        // Navigation Timing
+        const nav = performance.getEntriesByType('navigation')[0];
+        if (nav) {
+          console.log('%c📊 Navigation Timing:', 'color: #4CAF50; font-weight: bold; font-size: 14px');
+          console.log('  DNS Lookup:', Math.round(nav.domainLookupEnd - nav.domainLookupStart) + 'ms');
+          console.log('  TCP Connect:', Math.round(nav.connectEnd - nav.connectStart) + 'ms');
+          console.log('  TTFB (Time to First Byte):', Math.round(nav.responseStart - nav.requestStart) + 'ms');
+          console.log('  Response Download:', Math.round(nav.responseEnd - nav.responseStart) + 'ms');
+          console.log('  DOM Interactive:', Math.round(nav.domInteractive) + 'ms');
+          console.log('  DOM Complete:', Math.round(nav.domComplete) + 'ms');
+          console.log('  Load Event:', Math.round(nav.loadEventEnd) + 'ms');
+        }
+
+        // Paint Timing
+        const paintEntries = performance.getEntriesByType('paint');
+        if (paintEntries.length) {
+          console.log('%c🎨 Paint Timing:', 'color: #2196F3; font-weight: bold; font-size: 14px');
+          paintEntries.forEach(entry => {
+            console.log('  ' + entry.name + ':', Math.round(entry.startTime) + 'ms');
+          });
+        }
+
+        // LCP
+        const lcpEntries = performance.getEntriesByType('largest-contentful-paint');
+        if (lcpEntries.length) {
+          const lcp = lcpEntries[lcpEntries.length - 1];
+          const lcpValue = Math.round(lcp.startTime);
+          const lcpStatus = lcpValue < 2500 ? '✅ Good' : lcpValue < 4000 ? '⚠️ Needs Improvement' : '❌ Poor';
+          console.log('%c📏 LCP (Largest Contentful Paint):', 'color: #9C27B0; font-weight: bold; font-size: 14px');
+          console.log('  Value:', lcpValue + 'ms', lcpStatus);
+        }
+
+        // Resources
+        const resources = performance.getEntriesByType('resource');
+        console.log('%c📦 Resources (' + resources.length + '):', 'color: #FF9800; font-weight: bold; font-size: 14px');
+
+        // Группируем по типу
+        const byType = {};
+        resources.forEach(r => {
+          const type = r.initiatorType || 'other';
+          if (!byType[type]) byType[type] = { count: 0, totalSize: 0, totalTime: 0 };
+          byType[type].count++;
+          byType[type].totalSize += r.transferSize || 0;
+          byType[type].totalTime += r.duration || 0;
+        });
+
+        Object.keys(byType).forEach(type => {
+          const data = byType[type];
+          console.log('  ' + type + ': ' + data.count + ' files, ' + Math.round(data.totalSize/1024) + 'KB, ' + Math.round(data.totalTime) + 'ms');
+        });
+
+        // Топ 5 самых медленных ресурсов
+        console.log('%c🐌 Slowest Resources:', 'color: #f44336; font-weight: bold; font-size: 14px');
+        resources
+          .sort((a, b) => b.duration - a.duration)
+          .slice(0, 5)
+          .forEach((r, i) => {
+            const name = r.name.split('/').pop().substring(0, 40);
+            console.log('  ' + (i+1) + '. ' + name + ': ' + Math.round(r.duration) + 'ms');
+          });
+
+        // Memory (если доступно)
+        if (performance.memory) {
+          console.log('%c💾 Memory:', 'color: #607D8B; font-weight: bold; font-size: 14px');
+          console.log('  Used JS Heap:', Math.round(performance.memory.usedJSHeapSize / 1048576) + 'MB');
+          console.log('  Total JS Heap:', Math.round(performance.memory.totalJSHeapSize / 1048576) + 'MB');
+        }
+
+        console.log('%c=== END ANALYSIS ===', 'color: #E91E63; font-weight: bold; font-size: 14px; background: #000; padding: 5px;');
+        console.log('%c💡 Tip: Run analyzePerformance() again after navigation', 'color: #888; font-style: italic;');
+      };
+
+      // Запускаем анализ после полной загрузки
+      window.addEventListener('load', () => {
+        setTimeout(analyzePerformance, 1000);
+      });
+
+      console.log('%c🔧 Type analyzePerformance() to run analysis manually', 'color: #4CAF50; font-weight: bold;');
+    </script> -->
   </body>
 </html>

@@ -1,5 +1,6 @@
 import { Ripple } from '@/components/ui/Ripple/Ripple';
 import { AnimatePresence, motion } from 'framer-motion';
+import { useWebView } from '@/hooks/useWebView';
 
 interface GuestBlockedModalProps {
   isOpen: boolean;
@@ -18,10 +19,12 @@ export default function GuestBlockedModal({
   onClose,
   ctaUrl = 'https://brainprogramming.ru/main?utm_source=app',
 }: GuestBlockedModalProps) {
+  const { openWebView } = useWebView();
+
   const handleCtaClick = () => {
-    // Открываем внешнюю ссылку в новой вкладке
+    // Открываем внешнюю ссылку во внутреннем WebView
     if (ctaUrl) {
-      window.open(ctaUrl, '_blank', 'noopener,noreferrer');
+      openWebView(ctaUrl);
     }
     onClose();
   };

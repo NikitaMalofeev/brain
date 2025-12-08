@@ -1,4 +1,5 @@
 import { AnimatePresence, motion } from 'framer-motion';
+import { useWebView } from '@/hooks/useWebView';
 
 interface BuyModalProps {
   isOpen: boolean;
@@ -20,16 +21,18 @@ export default function BuyModal({
   purchaseUrl,
   upgradeTariffUrl,
 }: BuyModalProps) {
+  const { openWebView } = useWebView();
+
   const handlePurchaseClick = () => {
     if (purchaseUrl) {
-      window.open(purchaseUrl, '_blank', 'noopener,noreferrer');
+      openWebView(purchaseUrl);
     }
     onClose();
   };
 
   const handleUpgradeTariffClick = () => {
     if (upgradeTariffUrl) {
-      window.open(upgradeTariffUrl, '_blank', 'noopener,noreferrer');
+      openWebView(upgradeTariffUrl);
     }
     onClose();
   };

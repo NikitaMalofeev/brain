@@ -15,6 +15,7 @@ import { TechniqueSkeletonGroup } from '@/components/TechniqueCard/TechniqueCard
 import { motion, AnimatePresence } from 'framer-motion';
 import TechniqueBlockedModal from '@/components/TechniqueBlockedModal';
 import BuyModal from '@/components/BuyModal';
+import { useWebView } from '@/hooks/useWebView';
 
 // Типы табов
 type TabType = 'all' | 'mine';
@@ -60,6 +61,7 @@ const TABS: Tab[] = [
 const TechniquesPage: React.FC = () => {
   const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState<TabType>('all');
+  const { openWebView } = useWebView();
 
   // Получаем данные пользователя
   const initDataSignal = useSignal(initDataState);
@@ -242,7 +244,7 @@ const TechniquesPage: React.FC = () => {
       // Для гостей - сразу переходим на URL покупки без модалки
       if (isGuest) {
         if (technique.purchase_url) {
-          window.open(technique.purchase_url, '_blank');
+          openWebView(technique.purchase_url);
         }
         // Если нет URL - просто ничего не делаем, модалку не показываем
         return;
@@ -725,7 +727,7 @@ const TechniquesPage: React.FC = () => {
                   const url = libraryButtonsSettings?.library_button?.url;
                   if (url) {
                     if (url.startsWith('http')) {
-                      window.open(url, '_blank');
+                      openWebView(url);
                     } else {
                       navigate(url);
                     }
@@ -746,7 +748,7 @@ const TechniquesPage: React.FC = () => {
                   const url = libraryButtonsSettings?.bioregulation_button?.url;
                   if (url) {
                     if (url.startsWith('http')) {
-                      window.open(url, '_blank');
+                      openWebView(url);
                     } else {
                       navigate(url);
                     }

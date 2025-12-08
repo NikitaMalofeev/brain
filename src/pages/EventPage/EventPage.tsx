@@ -3,6 +3,7 @@ import { useParams, useLocation, useNavigate } from 'react-router-dom';
 import { Page } from '@/components/Page';
 import { CalendarEvent } from '@/lib/supabase/hooks/useCalendar';
 import EventCardImage from '@/shared/assets/images/eventCard.png';
+import { useWebView } from '@/hooks/useWebView';
 import './EventPage.css';
 
 /**
@@ -13,6 +14,7 @@ const EventPage: React.FC = () => {
   const { id } = useParams<{ id: string }>();
   const location = useLocation();
   const navigate = useNavigate();
+  const { openWebView } = useWebView();
 
   // Получаем данные события из state навигации
   const event = location.state?.event as CalendarEvent | undefined;
@@ -59,7 +61,7 @@ const EventPage: React.FC = () => {
 
     // Для внешних ссылок (zoom, offline)
     if (event.external_url) {
-      window.open(event.external_url, '_blank');
+      openWebView(event.external_url);
       return;
     }
 

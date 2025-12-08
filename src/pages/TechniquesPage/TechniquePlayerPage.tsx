@@ -10,6 +10,7 @@ import TechniqueBlockedModal from '@/components/TechniqueBlockedModal';
 import { motion } from 'framer-motion';
 import LoadingSpinner from '@/components/LoadingSpinner/LoadingSpinner';
 import { buildFileUrl } from '@/lib/supabase/supabaseStorageService';
+import { useWebView } from '@/hooks/useWebView';
 
 /**
  * Страница проигрывателя техники (аудиопрактики)
@@ -33,6 +34,7 @@ const TechniquePlayerPage: React.FC = () => {
   const [showStudentBlockedModal, setShowStudentBlockedModal] = useState(false);
   const [modalTitle, setModalTitle] = useState('');
   const [modalDescription, setModalDescription] = useState('');
+  const { openWebView } = useWebView();
 
   // Находим текущую технику
   const technique = techniques?.find((t) => t.id === id);
@@ -43,8 +45,7 @@ const TechniquePlayerPage: React.FC = () => {
     console.log('Technique ID:', id);
     console.log('User ID:', supabaseUser?.id);
     console.log('Is Guest:', isGuest);
-    console.log('Purchase URL:', technique?.purchase_url);
-    console.log('Upgrade Tariff Chat URL:', technique?.upgrade_tariff_chat_url);
+    console.log('Description:', technique?.description);
     console.log('Animation URL:', technique?.animation_url);
     console.log('Full Technique Data:', technique);
     console.log('================================');
@@ -149,14 +150,14 @@ const TechniquePlayerPage: React.FC = () => {
   // Обработчик покупки
   const handlePurchaseClick = () => {
     if (technique?.purchase_url) {
-      window.open(technique.purchase_url, '_blank', 'noopener,noreferrer');
+      openWebView(technique.purchase_url);
     }
   };
 
   // Обработчик обновления тарифа
   const handleUpgradeTariffClick = () => {
     if (technique?.upgrade_tariff_chat_url) {
-      window.open(technique.upgrade_tariff_chat_url, '_blank', 'noopener,noreferrer');
+      openWebView(technique.upgrade_tariff_chat_url);
     }
   };
 

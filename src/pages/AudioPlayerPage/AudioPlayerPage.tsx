@@ -181,6 +181,9 @@ const AudioPlayerPage: React.FC = () => {
     console.log('=== AudioPlayerPage DEBUG ===');
     console.log('State:', state);
     console.log('animationUrl:', state?.animationUrl);
+    console.log('animationUrl truthy?:', !!state?.animationUrl);
+    console.log('coverImage:', state?.coverImage);
+    console.log('Will show video?:', !!state?.animationUrl);
     console.log('============================');
   }, [state]);
 
@@ -263,6 +266,11 @@ const AudioPlayerPage: React.FC = () => {
   return (
     <Page back showTabBar={false}>
       <div className="audio-player-page">
+        {/* Шторка-анимация открытия снизу вверх */}
+        <div className="audio-player-reveal-overlay">
+          <div className="audio-player-reveal-line" />
+        </div>
+
         {/* Скрытый audio элемент */}
         <audio
           ref={audioRef}

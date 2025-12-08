@@ -12,6 +12,7 @@ import TabBar from '@/components/TabBar/TabBar';
 import IFrameSplash from '@/components/IFrameSplash';
 import LoadingSpinner from '@/components/LoadingSpinner/LoadingSpinner';
 import { ErrorBoundary } from '@/components/ErrorBoundary';
+import { WebViewProvider } from '@/hooks/useWebView';
 
 function PageErrorFallback({ error }: { error: unknown }) {
     const navigate = useNavigate();
@@ -173,19 +174,21 @@ export function App() {
             platform={['macos', 'ios'].includes(lp.tgWebAppPlatform) ? 'ios' : 'base'}
         >
             <AppMotionProvider>
-                {/* Контент грузится параллельно */}
-                <HashRouter>
-                    <AppContent showSplash={showSplash} />
-                </HashRouter>
+                <WebViewProvider>
+                    {/* Контент грузится параллельно */}
+                    <HashRouter>
+                        <AppContent showSplash={showSplash} />
+                    </HashRouter>
 
-                {/* Сплэш показывается во время загрузки приложения */}
-                {showSplash && (
-                    <IFrameSplash onDone={() => {
-                        setShowSplash(false);
-                        // Сохраняем флаг, что сплэш уже показали в этой сессии
-                        sessionStorage.setItem('brain-splash-shown', 'true');
-                    }} />
-                )}
+                    {/* Сплэш показывается во время загрузки приложения */}
+                    {showSplash && (
+                        <IFrameSplash onDone={() => {
+                            setShowSplash(false);
+                            // Сохраняем флаг, что сплэш уже показали в этой сессии
+                            sessionStorage.setItem('brain-splash-shown', 'true');
+                        }} />
+                    )}
+                </WebViewProvider>
             </AppMotionProvider>
         </AppRoot>
     );

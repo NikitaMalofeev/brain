@@ -2,8 +2,48 @@
   display: flex;
   flex-direction: column;
   min-height: 100vh;
-  background: #0F0F0E;
+  background: #000000;
   position: relative;
+  overflow: hidden;
+}
+
+/* Шторка-анимация открытия снизу вверх */
+.audio-player-reveal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: #000000;
+  z-index: 50;
+  transform: translateY(0);
+  animation: revealSlideUp 2s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+}
+
+@keyframes revealSlideUp {
+  0% {
+    transform: translateY(0);
+  }
+  100% {
+    transform: translateY(-100%);
+  }
+}
+
+/* Линия-индикатор на границе шторки */
+.audio-player-reveal-line {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 2px;
+  background: linear-gradient(90deg,
+    transparent 0%,
+    rgba(255, 255, 255, 0.1) 20%,
+    rgba(255, 255, 255, 0.4) 50%,
+    rgba(255, 255, 255, 0.1) 80%,
+    transparent 100%
+  );
+  box-shadow: 0 0 20px rgba(255, 255, 255, 0.3), 0 0 40px rgba(255, 255, 255, 0.1);
 }
 
 /* Видео-фон - верхние 80% экрана */
