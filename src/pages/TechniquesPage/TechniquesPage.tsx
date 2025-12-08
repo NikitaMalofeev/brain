@@ -151,11 +151,12 @@ const TechniquesPage: React.FC = () => {
     // Кейс 1: Техника из модуля (заблокирована по времени)
     if (technique.user_access_source === 'module' && technique.module_name && technique.unlock_day !== undefined) {
       // Рассчитываем дату открытия
+      // unlock_day - это СМЕЩЕНИЕ в днях (0 = сразу доступен, 1 = через 1 день после старта)
       let unlockDateText = '';
       if (streamInfo?.startDate) {
         const startDate = new Date(streamInfo.startDate);
         const unlockDate = new Date(startDate);
-        unlockDate.setDate(startDate.getDate() + technique.unlock_day - 1);
+        unlockDate.setDate(startDate.getDate() + technique.unlock_day);
 
         const day = unlockDate.getDate();
         const monthNames = [
@@ -780,6 +781,7 @@ const TechniquesPage: React.FC = () => {
           techniqueName={buyModalTechnique?.title || ''}
           purchaseUrl={buyModalTechnique?.purchase_url}
           upgradeTariffUrl={buyModalTechnique?.upgrade_tariff_chat_url}
+          isGuest={isGuest}
         />
       </div>
     </Page>

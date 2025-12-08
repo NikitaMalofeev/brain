@@ -177,7 +177,8 @@ const CalendarPage: React.FC = () => {
     });
 
     return sortedModules.map((module, index) => {
-      // Дата начала модуля = start_date потока + unlock_day - 1
+      // Дата начала модуля = start_date потока + unlock_day
+      // unlock_day - это СМЕЩЕНИЕ в днях (0 = сразу доступен, 1 = через 1 день)
       const moduleStart = new Date(startDate);
       const unlockDay = (module as any).unlock_day ?? 0;
       moduleStart.setDate(moduleStart.getDate() + unlockDay);

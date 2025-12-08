@@ -335,7 +335,7 @@ const TechniquePlayerPage: React.FC = () => {
                 </button>
               )}
 
-              {/* Для гостей показываем только кнопку покупки, если техника purchasable */}
+              {/* Для гостей показываем только кнопку покупки, если техника paid */}
               {isGuest && technique.can_purchase && technique.purchase_url && (
                 <button
                   onClick={handlePurchaseClick}

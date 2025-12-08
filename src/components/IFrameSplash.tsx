@@ -22,7 +22,7 @@ export default function IFrameSplash({ onDone }: IFrameSplashProps) {
     }, []);
 
     return (
-        <div className="fixed inset-0 z-50 overflow-hidden bg-[rgba(224,231,251,1)] flex items-center justify-center">
+        <div className="fixed inset-0 z-[10000] overflow-hidden bg-[rgba(224,231,251,1)] flex items-center justify-center">
             <div
                 onClick={onDone}
                 style={{

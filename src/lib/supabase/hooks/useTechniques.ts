@@ -77,19 +77,17 @@ export interface BundleGroup {
  * Хук-хелпер для фильтрации техник по категориям
  * Разделяет техники на доступные, заблокированные и те, к которым есть доступ
  *
- * Новые статусы:
+ * Статусы:
  * - 'free' = бесплатная (показывается в библиотеке, доступна всем)
  * - 'paid' = платная (показывается в библиотеке, требует оплаты)
- * - 'default' = по умолчанию (только через модули/пакеты, НЕ в библиотеке)
- * - 'purchasable' = устаревший, обратная совместимость -> маппится на 'paid'
- * - 'locked' = устаревший, обратная совместимость -> маппится на 'default'
+ * - 'locked' = заблокирована по условию (after_technique, after_duration)
  *
  * Категории:
  * - myTechniques: техники с has_access = true (из пакетов, модулей, прямого доступа)
  * - availableTechniques: can_purchase = true И is_unlocked = true (платные к покупке)
  * - lockedTechniques: нет доступа, не разблокирована
  * - freeTechniques: status = 'free'
- * - paidTechniques: status = 'paid' или 'purchasable' (платные, требуют оплаты)
+ * - paidTechniques: status = 'paid' (платные, требуют оплаты)
  * - bundleGroups: техники сгруппированные по пакетам
  *
  * @param userId - ID пользователя
@@ -98,9 +96,9 @@ export interface BundleGroup {
 export function useTechniquesFiltered(userId: string | null | undefined) {
   const { data: techniques, isLoading, error } = useTechniques(userId);
 
-  // Хелпер для определения платного статуса (учитывает обратную совместимость)
+  // Хелпер для определения платного статуса
   const isPaidStatus = (status: string | undefined | null) =>
-    status === 'paid' || status === 'purchasable';
+    status === 'paid';
 
   // ========================================
   // ВАЖНО: Каждая техника должна попасть только в ОДНУ категорию!

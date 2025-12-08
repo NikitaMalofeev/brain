@@ -7,6 +7,7 @@ interface BuyModalProps {
   techniqueName: string;
   purchaseUrl?: string | null;
   upgradeTariffUrl?: string | null;
+  isGuest?: boolean;
 }
 
 /**
@@ -20,6 +21,7 @@ export default function BuyModal({
   techniqueName,
   purchaseUrl,
   upgradeTariffUrl,
+  isGuest = false,
 }: BuyModalProps) {
   const { openWebView } = useWebView();
 
@@ -144,7 +146,7 @@ export default function BuyModal({
                     backdropFilter: 'blur(30px)',
                   }}
                 >
-                  Стать учеником
+                  {isGuest ? 'Стать учеником' : 'Повысить тариф'}
                 </button>
               )}
             </div>

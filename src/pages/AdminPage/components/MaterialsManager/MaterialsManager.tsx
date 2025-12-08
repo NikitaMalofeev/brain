@@ -1427,7 +1427,7 @@ const MaterialsManager: React.FC = () => {
                                     placeholder="https://..."
                                 />
                                 <small style={{ color: '#666', fontSize: '12px' }}>
-                                    Ссылка на страницу покупки (для purchasable материалов)
+                                    Ссылка на страницу покупки (для paid материалов)
                                 </small>
                             </div>
 

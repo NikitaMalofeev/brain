@@ -101,7 +101,7 @@ const TechniqueEditor: React.FC<TechniqueEditorProps> = ({
   // Маппинг старых статусов на новые
   const mapOldStatusToNew = (oldStatus: string | null | undefined): 'free' | 'paid' => {
     if (oldStatus === 'free') return 'free';
-    // Все остальные статусы (paid, purchasable, locked, default, null) -> paid
+    // Все остальные статусы (paid, locked, null) -> paid
     return 'paid';
   };
 

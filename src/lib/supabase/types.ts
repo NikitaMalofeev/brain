@@ -571,9 +571,8 @@ export type Database = {
 // Статусы материала/техники
 // - 'free' = бесплатная (доступна всем, показывается в библиотеке)
 // - 'paid' = платная (показывается в библиотеке, требует оплаты)
-// - 'default' = по умолчанию (только через модули/пакеты, НЕ показывается в библиотеке отдельно)
-// Для обратной совместимости 'purchasable' и 'locked' тоже поддерживаются
-export type MaterialStatus = 'free' | 'paid' | 'default' | 'purchasable' | 'locked';
+// - 'locked' = заблокирована по условию (after_technique, after_duration)
+export type MaterialStatus = 'free' | 'paid' | 'locked';
 
 // Типы условий разблокировки
 export type UnlockConditionType =

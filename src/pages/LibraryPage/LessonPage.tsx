@@ -25,7 +25,7 @@ import dayBackground from '@/shared/assets/images/dayBackground.png';
 import Background1 from '@/shared/assets/images/background1.png';
 import whiteOkIcon from '@/shared/assets/icons/whiteOk.svg';
 import { Check, Clock, XCircle } from 'lucide-react';
-import { useAssignmentsWithProgress, useSaveAssignmentDraft, useSubmitAssignment } from '@/lib/supabase/hooks/useAssignments';
+import { useAssignmentsWithProgress, useSaveAssignmentDraft, useSubmitAssignment, useAssignmentProgress } from '@/lib/supabase/hooks/useAssignments';
 import { useTechniqueByModuleAndDay } from '@/lib/supabase/hooks/useTechniqueSchedule';
 import LoadingSpinner from '@/components/LoadingSpinner/LoadingSpinner';
 
@@ -641,6 +641,12 @@ const LessonPage: React.FC = () => {
         lessonId ? parseInt(lessonId) : undefined
     );
 
+    // Загружаем прогресс по заданиям (используется для прогресс-бара, автообновляется при сдаче ДЗ)
+    const { data: assignmentProgress } = useAssignmentProgress(
+        supabaseUser?.id,
+        lessonId ? parseInt(lessonId) : undefined
+    );
+
     // Загружаем технику для этого дня в модуле
     const { data: techniqueData, isLoading: techniqueLoading, error: techniqueError } = useTechniqueByModuleAndDay(
         state.moduleId,
@@ -979,9 +985,9 @@ const LessonPage: React.FC = () => {
         const hasStarted = !!state.progress?.started_at || !!submission;
         const deadlineStatus = getDeadlineStatus(state.lesson?.deadline_at);
 
-        // Проверяем прогресс по заданиям
-        const totalAssignments = state.totalAssignments;
-        const completedAssignments = state.completedAssignments;
+        // Проверяем прогресс по заданиям (используем данные из хука)
+        const totalAssignments = assignmentProgress?.total_assignments || 0;
+        const completedAssignments = assignmentProgress?.submitted_assignments || 0;
         const hasMultipleAssignments = totalAssignments > 0;
         const allAssignmentsCompleted = hasMultipleAssignments && completedAssignments === totalAssignments;
         const someAssignmentsCompleted = hasMultipleAssignments && completedAssignments > 0 && completedAssignments < totalAssignments;
@@ -1313,7 +1319,7 @@ const LessonPage: React.FC = () => {
 
     return (
         <Page back={true} showTabBar={false}>
-            <div className={'text-black'} style={{ backgroundImage: `url(${Background1})`, backgroundSize: '120%', backgroundPosition: 'top', backgroundAttachment: 'fixed', backgroundRepeat: 'no-repeat', minHeight: '100vh', paddingBottom: 'env(safe-area-inset-bottom, 0px)' }}>
+            <div className={'text-black'} style={{ backgroundImage: `url(${Background1})`, backgroundSize: '120%', backgroundPosition: 'top', backgroundAttachment: 'fixed', backgroundRepeat: 'no-repeat', minHeight: '100dvh' }}>
                 {/* Обложка урока с бейджами внутри - fullscreen до верха */}
                 <div
                     style={{
@@ -1396,8 +1402,8 @@ const LessonPage: React.FC = () => {
                     </div>
                 </div>
 
-                {/* Прогресс по заданиям урока */}
-                {state.totalAssignments > 0 && (
+                {/* Прогресс по заданиям урока - используем данные из хука для автообновления */}
+                {(assignmentProgress?.total_assignments || 0) > 0 && (
                     <div style={{ padding: '16px', margin: '16px', backgroundColor: 'rgba(255, 255, 255, 0.8)', borderRadius: 20 }}>
                         {/* Верхняя часть: Выполнено слева, счётчик справа */}
                         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 6 }}>
@@ -1423,21 +1429,21 @@ const LessonPage: React.FC = () => {
                                     margin: 0,
                                 }}
                             >
-                                {state.completedAssignments}/{state.totalAssignments}
+                                {assignmentProgress?.submitted_assignments || 0}/{assignmentProgress?.total_assignments || 0}
                             </p>
                         </div>
                         {/* Полосы прогресса */}
                         <div style={{ display: 'flex', gap: 4 }}>
-                            {Array.from({ length: state.totalAssignments }).map((_, index) => (
+                            {Array.from({ length: assignmentProgress?.total_assignments || 0 }).map((_, index) => (
                                 <div
                                     key={index}
                                     style={{
                                         flex: 1,
                                         height: 6,
                                         borderRadius: 12,
-                                        backgroundColor: index < state.completedAssignments ? 'rgba(0, 0, 0, 0.3)' : '#E6E6E6',
-                                        backdropFilter: index < state.completedAssignments ? 'blur(30px)' : 'none',
-                                        WebkitBackdropFilter: index < state.completedAssignments ? 'blur(30px)' : 'none',
+                                        backgroundColor: index < (assignmentProgress?.submitted_assignments || 0) ? 'rgba(0, 0, 0, 0.3)' : '#E6E6E6',
+                                        backdropFilter: index < (assignmentProgress?.submitted_assignments || 0) ? 'blur(30px)' : 'none',
+                                        WebkitBackdropFilter: index < (assignmentProgress?.submitted_assignments || 0) ? 'blur(30px)' : 'none',
                                     }}
                                 />
                             ))}
@@ -1766,6 +1772,9 @@ const LessonPage: React.FC = () => {
                         </Button>
                     </div>
                 )}
+
+                {/* Отступ для safe area снизу */}
+                <div style={{ height: 'env(safe-area-inset-bottom, 0px)' }} />
             </div>
 
             {/* Модалка для гостей */}

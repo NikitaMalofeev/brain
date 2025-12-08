@@ -33,7 +33,7 @@ interface Technique {
   audio_url: string;
   cover_image: string | null;
   duration_seconds: number | null;
-  status: 'free' | 'purchasable' | 'locked';
+  status: 'free' | 'paid' | 'locked';
   purchase_url: string | null;
   upgrade_tariff_chat_url: string | null;
   available_from_module: string | null;
