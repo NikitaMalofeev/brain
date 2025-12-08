@@ -134,7 +134,7 @@ function AppContent({ showSplash }: { showSplash: boolean }) {
             <ScrollToTop />
             <div style={{ flex: 1, position: 'relative', overflow: 'hidden' }}>
                 <ErrorBoundary fallback={PageErrorFallback}>
-                    <Suspense fallback={<LoadingSpinner />}>
+                    <Suspense fallback={null}>
                         <Routes location={location}>
                             {routers.map((router) => <Route key={router.path} {...router} />)}
                             <Route path="*" element={<Navigate to="/" />} />

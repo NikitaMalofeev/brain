@@ -12,19 +12,31 @@ import DarkLoadingSpinner from '@/components/DarkLoadingSpinner/DarkLoadingSpinn
 import { buildFileUrl } from '@/lib/supabase/supabaseStorageService';
 import { useWebView } from '@/hooks/useWebView';
 
+// Чёрный фон-обёртка для всей страницы
+const BlackBackground: React.FC<{ children: React.ReactNode }> = ({ children }) => (
+  <div style={{
+    position: 'fixed',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    width: '100vw',
+    height: '100vh',
+    backgroundColor: '#000000',
+    zIndex: 0,
+  }}>
+    <div style={{ position: 'relative', zIndex: 1, width: '100%', height: '100%' }}>
+      {children}
+    </div>
+  </div>
+);
+
 /**
  * Страница проигрывателя техники (аудиопрактики)
  * Отображает детали техники и аудиоплеер
  * Показывает кнопки покупки/обновления тарифа в зависимости от доступа
  */
 const TechniquePlayerPage: React.FC = () => {
-  // СРАЗУ при рендере ставим чёрный фон (до любых хуков)
-  document.body.style.cssText = 'background: #000000 !important; background-color: #000000 !important;';
-  const root = document.getElementById('root');
-  if (root) {
-    root.style.cssText = 'background: #000000 !important; background-color: #000000 !important;';
-  }
-  console.log('🟢 TechniquePlayerPage RENDER - black bg set');
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
 
@@ -169,24 +181,30 @@ const TechniquePlayerPage: React.FC = () => {
   };
 
   if (loading) {
-    return <DarkLoadingSpinner />;
+    return (
+      <BlackBackground>
+        <DarkLoadingSpinner />
+      </BlackBackground>
+    );
   }
 
   if (!technique) {
     return (
-      <Page back>
-        <div className="flex items-center justify-center h-screen">
-          <div className="text-center">
-            <p className="text-lg font-semibold text-black mb-2">Техника не найдена</p>
-            <button
-              onClick={() => navigate('/techniques')}
-              className="text-sm text-[#B862EA] hover:underline"
-            >
-              Вернуться к списку
-            </button>
+      <BlackBackground>
+        <Page back>
+          <div className="flex items-center justify-center h-screen">
+            <div className="text-center">
+              <p className="text-lg font-semibold text-white mb-2">Техника не найдена</p>
+              <button
+                onClick={() => navigate('/techniques')}
+                className="text-sm text-[#B862EA] hover:underline"
+              >
+                Вернуться к списку
+              </button>
+            </div>
           </div>
-        </div>
-      </Page>
+        </Page>
+      </BlackBackground>
     );
   }
 
@@ -200,17 +218,18 @@ const TechniquePlayerPage: React.FC = () => {
   });
 
   return (
-    <Page back>
-      <div
-        className="flex flex-col min-h-screen px-4 pb-6 with-content-offset"
-        style={{
-          backgroundImage: 'url(/library-page-background.png)',
-          backgroundSize: 'cover',
-          backgroundPosition: 'center',
-          backgroundAttachment: 'fixed',
-          backgroundRepeat: 'no-repeat',
-        }}
-      >
+    <BlackBackground>
+      <Page back>
+        <div
+          className="flex flex-col min-h-screen px-4 pb-6 with-content-offset"
+          style={{
+            backgroundImage: 'url(/library-page-background.png)',
+            backgroundSize: 'cover',
+            backgroundPosition: 'center',
+            backgroundAttachment: 'fixed',
+            backgroundRepeat: 'no-repeat',
+          }}
+        >
         {/* Обложка */}
         <div className="relative w-full aspect-square rounded-2xl overflow-hidden mb-6">
           {buildFileUrl(technique.cover_image) ? (
@@ -334,22 +353,23 @@ const TechniquePlayerPage: React.FC = () => {
         )}
       </div>
 
-      {/* Модалка для гостей */}
-      <GuestBlockedModal
-        isOpen={showGuestModal}
-        onClose={() => setShowGuestModal(false)}
-        ctaUrl={technique?.purchase_url || 'https://brainprogramming.ru/main?utm_source=app'}
-      />
+        {/* Модалка для гостей */}
+        <GuestBlockedModal
+          isOpen={showGuestModal}
+          onClose={() => setShowGuestModal(false)}
+          ctaUrl={technique?.purchase_url || 'https://brainprogramming.ru/main?utm_source=app'}
+        />
 
-      {/* Модалка для учеников с заблокированными техниками */}
-      <TechniqueBlockedModal
-        isOpen={showStudentBlockedModal}
-        onClose={() => setShowStudentBlockedModal(false)}
-        title={modalTitle}
-        description={modalDescription}
-        showButton={false}
-      />
-    </Page>
+        {/* Модалка для учеников с заблокированными техниками */}
+        <TechniqueBlockedModal
+          isOpen={showStudentBlockedModal}
+          onClose={() => setShowStudentBlockedModal(false)}
+          title={modalTitle}
+          description={modalDescription}
+          showButton={false}
+        />
+      </Page>
+    </BlackBackground>
   );
 };
 

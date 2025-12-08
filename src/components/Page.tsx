@@ -109,11 +109,11 @@ export function Page({
   useEffect(() => {
     //postEvent('web_app_request_safe_area');
 
-    // Убедимся, что все родительские элементы имеют белый фон
-    document.body.style.backgroundColor = '#ffffff';
-    if (document.getElementById('root')) {
-      document.getElementById('root')!.style.backgroundColor = '#ffffff';
-    }
+    // НЕ устанавливаем фон - пусть страницы сами определяют свой фон
+    // document.body.style.backgroundColor = '#ffffff';
+    // if (document.getElementById('root')) {
+    //   document.getElementById('root')!.style.backgroundColor = '#ffffff';
+    // }
   }, []);
 
   // Добавляем отступ снизу, если показываем TabBar

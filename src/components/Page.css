@@ -6,7 +6,8 @@ body{
 .page-container {
   min-height: 100vh;
   width: 100%;
-  background-color: var(--profile-bg, #ffffff);
+  /* Прозрачный фон - страницы сами определяют свой фон */
+  background-color: transparent;
 }
 
 /* Класс для фоновых контейнеров страниц - добавляет правильный отступ сверху */
@@ -17,7 +18,7 @@ body{
 }
 
 html, body, #root {
-  background-color: var(--profile-bg, #ffffff);
+  /* Не устанавливаем дефолтный фон - каждая страница сама определяет свой фон */
   scrollbar-width: none;
 }
 .kp-controls__play-button {

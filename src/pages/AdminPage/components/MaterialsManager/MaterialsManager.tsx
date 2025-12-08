@@ -137,14 +137,14 @@ const MaterialsManager: React.FC = () => {
         audio_url: '',
         animation_url: null,
         duration_seconds: null,
-        status: 'default',
+        status: 'paid',
         purchase_url: '',
         upgrade_tariff_chat_url: '',
         available_from_module: '',
         unlock_condition_type: null,
         unlock_condition_material_id: '',
         unlock_condition_duration_days: 30,
-        is_standalone: false,
+        is_standalone: true,
         is_special: false,
     });
 
@@ -364,14 +364,14 @@ const MaterialsManager: React.FC = () => {
                 audio_url: '',
                 animation_url: null,
                 duration_seconds: null,
-                status: 'default',
+                status: 'paid',
                 purchase_url: '',
                 upgrade_tariff_chat_url: '',
                 available_from_module: '',
                 unlock_condition_type: null,
                 unlock_condition_material_id: '',
                 unlock_condition_duration_days: 30,
-                is_standalone: false,
+                is_standalone: true,
                 is_special: false,
             });
         }
