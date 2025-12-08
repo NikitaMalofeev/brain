@@ -1,5 +1,5 @@
 // Компонент карточки ступени
-import React, { useState } from 'react';
+import React, { useState, memo } from 'react';
 import { buildFileUrl } from '@/lib/supabase/supabaseStorageService';
 import { motion } from 'framer-motion';
 import { Ripple } from '@/components/ui/Ripple/Ripple';
@@ -19,7 +19,7 @@ export interface StageCardProps {
     streamStartDate?: string; // Дата начала потока для расчёта даты открытия
 }
 
-const StageCard: React.FC<StageCardProps> = ({
+const StageCard: React.FC<StageCardProps> = memo(({
     id,
     name,
     isLocked,
@@ -118,6 +118,9 @@ const StageCard: React.FC<StageCardProps> = ({
         />
     </>
     );
-};
+});
+
+// Display name для React DevTools
+StageCard.displayName = 'StageCard';
 
 export default StageCard; 

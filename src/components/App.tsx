@@ -1,4 +1,4 @@
-import { useEffect, useState, useMemo } from 'react';
+import { useEffect, useState, useMemo, Suspense } from 'react';
 import { HashRouter, Navigate, Route, Routes, useLocation, useNavigate } from 'react-router-dom';
 import { retrieveLaunchParams, useSignal, isMiniAppDark, initDataState } from '@telegram-apps/sdk-react';
 import { AppRoot } from '@telegram-apps/telegram-ui';
@@ -134,10 +134,12 @@ function AppContent({ showSplash }: { showSplash: boolean }) {
             <ScrollToTop />
             <div style={{ flex: 1, position: 'relative', overflow: 'hidden' }}>
                 <ErrorBoundary fallback={PageErrorFallback}>
-                    <Routes location={location}>
-                        {routers.map((router) => <Route key={router.path} {...router} />)}
-                        <Route path="*" element={<Navigate to="/" />} />
-                    </Routes>
+                    <Suspense fallback={<LoadingSpinner />}>
+                        <Routes location={location}>
+                            {routers.map((router) => <Route key={router.path} {...router} />)}
+                            <Route path="*" element={<Navigate to="/" />} />
+                        </Routes>
+                    </Suspense>
                 </ErrorBoundary>
             </div>
             {showTabBar && !showSplash && <TabBar />}

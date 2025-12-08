@@ -158,7 +158,8 @@ export function useSupabaseUser(initDataRaw: TelegramInitDataType | undefined): 
     queryFn: () => upsertUser(telegramData!),
     enabled: !!telegramData, // Запрос выполняется только если есть данные Telegram
     retry: 2,
-    staleTime: 5 * 60 * 1000, // 5 минут
+    staleTime: 10 * 60 * 1000, // 10 минут - данные пользователя редко меняются
+    gcTime: 30 * 60 * 1000, // 30 минут в кэше
   });
 
   // Мутация для отметки завершения онбординга

@@ -78,7 +78,8 @@ export function usePreviewStreamModules() {
 
             return data || [];
         },
-        staleTime: 5 * 60 * 1000, // 5 минут
+        staleTime: 10 * 60 * 1000, // 10 минут - preview данные редко меняются
+        gcTime: 30 * 60 * 1000, // 30 минут в кэше
     });
 }
 
@@ -108,7 +109,8 @@ export function usePreviewCalendarEvents(month: Date) {
 
             return data || [];
         },
-        staleTime: 5 * 60 * 1000, // 5 минут
+        staleTime: 10 * 60 * 1000, // 10 минут
+        gcTime: 30 * 60 * 1000, // 30 минут в кэше
         placeholderData: (previousData) => previousData, // Сохраняем предыдущие данные при загрузке
     });
 }
@@ -135,6 +137,7 @@ export function usePreviewStreamInfo() {
             // Функция возвращает массив с одним элементом
             return data && data.length > 0 ? data[0] : null;
         },
-        staleTime: 5 * 60 * 1000, // 5 минут
+        staleTime: 10 * 60 * 1000, // 10 минут
+        gcTime: 30 * 60 * 1000, // 30 минут в кэше
     });
 }

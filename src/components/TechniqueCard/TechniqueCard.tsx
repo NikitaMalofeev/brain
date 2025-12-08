@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, memo } from 'react';
 import { motion } from 'framer-motion';
 import { clsx } from 'clsx';
 import { TechniqueWithAccess } from '@/lib/supabase/types';
@@ -14,7 +14,7 @@ export interface TechniqueCardProps {
  * Карточка техники (аудиопрактики)
  * Отображает превью техники с обложкой, названием, описанием и статусом доступа
  */
-const TechniqueCard: React.FC<TechniqueCardProps> = ({ technique, onClick, isGuest = false }) => {
+const TechniqueCard: React.FC<TechniqueCardProps> = memo(({ technique, onClick, isGuest = false }) => {
   const [isImageLoaded, setIsImageLoaded] = useState(false);
   const [hasImageError, setHasImageError] = useState(false);
 
@@ -183,6 +183,9 @@ const TechniqueCard: React.FC<TechniqueCardProps> = ({ technique, onClick, isGue
       </div>
     </motion.div>
   );
-};
+});
+
+// Display name для React DevTools
+TechniqueCard.displayName = 'TechniqueCard';
 
 export default TechniqueCard;

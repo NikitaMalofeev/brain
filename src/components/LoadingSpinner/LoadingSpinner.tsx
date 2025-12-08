@@ -3,17 +3,15 @@ import './LoadingSpinner.css';
 
 interface LoadingSpinnerProps {
   size?: number;
-  variant?: 'light' | 'dark';
 }
 
 /**
- * Компонент загрузки с вращающейся монеткой
- * @param size - размер монетки (по умолчанию 128)
- * @param variant - тема: 'light' (белый фон) или 'dark' (тёмный фон)
+ * Компонент загрузки с вращающейся монеткой на белом фоне
+ * Для тёмного фона используй DarkLoadingSpinner
  */
-const LoadingSpinner: React.FC<LoadingSpinnerProps> = ({ size = 128, variant = 'light' }) => {
+const LoadingSpinner: React.FC<LoadingSpinnerProps> = ({ size = 128 }) => {
   return (
-    <div className={`loading-spinner loading-spinner--${variant}`}>
+    <div className="loading-spinner">
       <img
         src="/coin3.png"
         alt="Loading"

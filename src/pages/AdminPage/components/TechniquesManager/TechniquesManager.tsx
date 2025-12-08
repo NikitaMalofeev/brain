@@ -12,12 +12,14 @@ import {
   Popconfirm,
   Avatar,
   Spin,
+  Input,
 } from 'antd';
 import {
   PlusOutlined,
   EditOutlined,
   DeleteOutlined,
   AppstoreOutlined,
+  SearchOutlined,
 } from '@ant-design/icons';
 import TechniqueEditor from './TechniqueEditor';
 import TechniqueBlocksManager from './TechniqueBlocksManager';
@@ -44,6 +46,7 @@ const TechniquesManager: React.FC = () => {
   const [selectedTechniqueId, setSelectedTechniqueId] = useState<string | null>(null);
   const [isCreating, setIsCreating] = useState(false);
   const [blocksView, setBlocksView] = useState<{ techniqueId: string; title: string } | null>(null);
+  const [searchQuery, setSearchQuery] = useState('');
   const queryClient = useQueryClient();
 
   // Fetch techniques
@@ -104,6 +107,14 @@ const TechniquesManager: React.FC = () => {
     setBlocksView(null);
   };
 
+  // Фильтрация техник по поисковому запросу
+  const filteredTechniques = techniques?.filter((technique) => {
+    if (!searchQuery.trim()) return true;
+    const query = searchQuery.toLowerCase().trim();
+    const titleMatch = technique.title?.toLowerCase().includes(query);
+    const descriptionMatch = technique.description?.toLowerCase().includes(query);
+    return titleMatch || descriptionMatch;
+  });
 
   if (isLoading) {
     return (
@@ -219,13 +230,34 @@ const TechniquesManager: React.FC = () => {
         </Button>
       }
     >
-      {techniques && techniques.length > 0 ? (
+      {/* Поисковая строка */}
+      <div style={{ marginBottom: 16 }}>
+        <Input
+          placeholder="Поиск по названию или описанию..."
+          prefix={<SearchOutlined style={{ color: '#bfbfbf' }} />}
+          value={searchQuery}
+          onChange={(e) => setSearchQuery(e.target.value)}
+          allowClear
+          style={{ maxWidth: 400 }}
+        />
+        {searchQuery && filteredTechniques && (
+          <Text type="secondary" style={{ marginLeft: 12 }}>
+            Найдено: {filteredTechniques.length} из {techniques?.length || 0}
+          </Text>
+        )}
+      </div>
+
+      {filteredTechniques && filteredTechniques.length > 0 ? (
         <Table
-          dataSource={techniques}
+          dataSource={filteredTechniques}
           columns={columns}
           rowKey="id"
           pagination={false}
         />
+      ) : techniques && techniques.length > 0 ? (
+        <div style={{ textAlign: 'center', padding: 48 }}>
+          <Text type="secondary">Ничего не найдено по запросу "{searchQuery}"</Text>
+        </div>
       ) : (
         <div style={{ textAlign: 'center', padding: 48 }}>
           <Text type="secondary">Нет созданных техник</Text>

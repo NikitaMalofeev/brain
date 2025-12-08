@@ -26,7 +26,7 @@ interface Material {
     audio_url?: string | null;
     animation_url?: string | null; // URL mp4 анимации для плеера
     duration_seconds?: number | null;
-    status?: 'free' | 'paid' | 'default';
+    status?: 'free' | 'paid';
     purchase_url?: string | null;
     upgrade_tariff_chat_url?: string | null;
     available_from_module?: string | null;
@@ -65,7 +65,7 @@ interface MaterialFormData {
     audio_url: string;
     animation_url: string | null; // URL mp4 анимации для плеера
     duration_seconds: number | null;
-    status: 'free' | 'paid' | 'default';
+    status: 'free' | 'paid';
     purchase_url: string;
     upgrade_tariff_chat_url: string;
     available_from_module: string;
@@ -97,6 +97,7 @@ const MaterialsManager: React.FC = () => {
     const [filteredMaterials, setFilteredMaterials] = useState<Material[]>([]);
     const [materialTypeFilter, setMaterialTypeFilter] = useState<string>('all');
     const [courseFilter, setCourseFilter] = useState<string>('all');
+    const [searchQuery, setSearchQuery] = useState<string>('');
 
     // Блоки материалов
     const [materialBlocks, setMaterialBlocks] = useState<MaterialBlock[]>([]);
@@ -241,7 +242,7 @@ const MaterialsManager: React.FC = () => {
     // Применяем фильтры при изменении материалов или фильтров
     useEffect(() => {
         filterMaterials();
-    }, [materials, materialTypeFilter, courseFilter]);
+    }, [materials, materialTypeFilter, courseFilter, searchQuery]);
 
     // Синхронизируем выбранные тарифы с данными из хука
     useEffect(() => {
@@ -283,6 +284,16 @@ const MaterialsManager: React.FC = () => {
 
         if (courseFilter !== 'all') {
             filtered = filtered.filter(material => material.course_id === courseFilter);
+        }
+
+        // Поиск по названию и описанию
+        if (searchQuery.trim()) {
+            const query = searchQuery.toLowerCase().trim();
+            filtered = filtered.filter(material => {
+                const nameMatch = material.name?.toLowerCase().includes(query);
+                const descriptionMatch = material.description?.toLowerCase().includes(query);
+                return nameMatch || descriptionMatch;
+            });
         }
 
         setFilteredMaterials(filtered);
@@ -327,10 +338,8 @@ const MaterialsManager: React.FC = () => {
                 audio_url: material.audio_url || '',
                 animation_url: material.animation_url || null,
                 duration_seconds: material.duration_seconds || null,
-                // Маппинг старых статусов на новые
-                status: material.status === 'purchasable' ? 'paid'
-                    : material.status === 'locked' ? 'default'
-                    : (material.status as 'free' | 'paid' | 'default') || 'default',
+                // Маппинг старых статусов на новые (все кроме 'free' -> 'paid')
+                status: material.status === 'free' ? 'free' : 'paid',
                 purchase_url: material.purchase_url || '',
                 upgrade_tariff_chat_url: material.upgrade_tariff_chat_url || '',
                 available_from_module: material.available_from_module || '',
@@ -1158,6 +1167,18 @@ const MaterialsManager: React.FC = () => {
                 <div className="admin-toolbar" style={{ marginBottom: '20px' }}>
                     <div className="admin-filters">
                         <div className="admin-filter-group">
+                            <label htmlFor="search-filter">Поиск:</label>
+                            <input
+                                id="search-filter"
+                                type="text"
+                                className="admin-input"
+                                placeholder="По названию или описанию..."
+                                value={searchQuery}
+                                onChange={(e) => setSearchQuery(e.target.value)}
+                                style={{ minWidth: '250px' }}
+                            />
+                        </div>
+                        <div className="admin-filter-group">
                             <label htmlFor="course-filter">Курс:</label>
                             <select
                                 id="course-filter"
@@ -1384,14 +1405,12 @@ const MaterialsManager: React.FC = () => {
                                     <select
                                         className="admin-input"
                                         value={materialForm.status}
-                                        onChange={(e) => setMaterialForm({ ...materialForm, status: e.target.value as 'free' | 'paid' | 'default' })}
+                                        onChange={(e) => setMaterialForm({ ...materialForm, status: e.target.value as 'free' | 'paid' })}
                                     >
-                                        <option value="default">📦 По умолчанию (только через модули/пакеты)</option>
                                         <option value="paid">💰 Платная (в библиотеке, требует оплаты)</option>
                                         <option value="free">🎁 Бесплатная (в библиотеке, доступна всем)</option>
                                     </select>
                                     <small style={{ color: '#666', fontSize: '12px', marginTop: '4px', display: 'block' }}>
-                                        {materialForm.status === 'default' && 'Техника доступна только через модули, пакеты или специальные пакеты. Не показывается в библиотеке отдельно.'}
                                         {materialForm.status === 'paid' && 'Техника показывается в библиотеке. Требуется отметка оплаты в карточке ученика.'}
                                         {materialForm.status === 'free' && 'Техника показывается в библиотеке. Доступна всем пользователям.'}
                                     </small>

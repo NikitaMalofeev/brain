@@ -8,7 +8,7 @@ import { useSignal, initDataState } from '@telegram-apps/sdk-react';
 import GuestBlockedModal from '@/components/GuestBlockedModal';
 import TechniqueBlockedModal from '@/components/TechniqueBlockedModal';
 import { motion } from 'framer-motion';
-import LoadingSpinner from '@/components/LoadingSpinner/LoadingSpinner';
+import DarkLoadingSpinner from '@/components/DarkLoadingSpinner/DarkLoadingSpinner';
 import { buildFileUrl } from '@/lib/supabase/supabaseStorageService';
 import { useWebView } from '@/hooks/useWebView';
 
@@ -18,6 +18,13 @@ import { useWebView } from '@/hooks/useWebView';
  * Показывает кнопки покупки/обновления тарифа в зависимости от доступа
  */
 const TechniquePlayerPage: React.FC = () => {
+  // СРАЗУ при рендере ставим чёрный фон (до любых хуков)
+  document.body.style.cssText = 'background: #000000 !important; background-color: #000000 !important;';
+  const root = document.getElementById('root');
+  if (root) {
+    root.style.cssText = 'background: #000000 !important; background-color: #000000 !important;';
+  }
+  console.log('🟢 TechniquePlayerPage RENDER - black bg set');
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
 
@@ -162,11 +169,7 @@ const TechniquePlayerPage: React.FC = () => {
   };
 
   if (loading) {
-    return (
-      <Page back>
-        <LoadingSpinner />
-      </Page>
-    );
+    return <DarkLoadingSpinner />;
   }
 
   if (!technique) {

@@ -79,8 +79,8 @@ export function useActiveTariff(userId: string | null | undefined) {
         },
         enabled: !!userId, // Запрос выполняется только если есть userId
         retry: 2,
-        staleTime: 5 * 60 * 1000, // 5 минут - тарифы меняются редко
-        gcTime: 10 * 60 * 1000, // 10 минут в кэше
+        staleTime: 15 * 60 * 1000, // 15 минут - тарифы меняются очень редко
+        gcTime: 30 * 60 * 1000, // 30 минут в кэше
     });
 
     return query;

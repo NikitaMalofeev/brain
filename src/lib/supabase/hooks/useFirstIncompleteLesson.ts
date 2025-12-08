@@ -141,6 +141,7 @@ export function useFirstIncompleteLesson(userId: string | undefined) {
             return { lessonId: null, lessonName: null, moduleId: null, moduleName: null };
         },
         enabled: !!userId,
-        staleTime: 2 * 60 * 1000, // 2 минуты
+        staleTime: 10 * 60 * 1000, // 10 минут - прогресс не меняется часто
+        gcTime: 30 * 60 * 1000, // 30 минут в кэше
     });
 }

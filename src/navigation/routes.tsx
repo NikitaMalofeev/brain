@@ -1,29 +1,47 @@
-import { IndexPage } from '@/pages/IndexPage/IndexPage';
-import { InitDataPage } from '@/pages/InitDataPage';
-import { LaunchParamsPage } from '@/pages/LaunchParamsPage';
-import { ThemeParamsPage } from '@/pages/ThemeParamsPage';
-import { ProfilePage } from '@/pages/ProfilePage';
-import { TONConnectPage } from '@/pages/TONConnectPage/TONConnectPage';
-import { DiagnosticsPage } from '@/pages/DiagnosticsPage/DiagnosticsPage';
-import LibraryPage from '@/pages/LibraryPage/LibraryPage';
-import StagePage from '@/pages/LibraryPage/StagePage';
-import ModuleStagesPage from '@/pages/LibraryPage/ModuleStagesPage';
-import LessonPage from '@/pages/LibraryPage/LessonPage';
-import { UserPage } from "@/pages/UserPage/UserPage.tsx";
-import { Chats } from "@/pages/Chats/Chats.tsx";
-import { HelpPage } from "@/pages/HelpPage/HelpPage.tsx";
-import { FaqPage } from "@/pages/FaqPage/FaqPage.tsx";
-import { CommonPage } from "@/pages/CommonPage/CommonPage.tsx";
-import { MainPage } from "@/pages/MainPage/MainPage.tsx";
-import { InfoPoints } from "@/pages/InfoPoints.tsx";
-import { MaterialPage } from "@/pages/MaterialPage.tsx";
-import TokenErrorPage from '@/pages/TokenErrorPage/TokenErrorPage';
-import TechniquesPage from '@/pages/TechniquesPage/TechniquesPage';
+import { lazy } from 'react';
+
+// Lazy loading для всех страниц - загружаются только при необходимости
+// Это критически важно для уменьшения initial bundle
+
+// Главные страницы (часто используемые)
+const MainPage = lazy(() => import('@/pages/MainPage/MainPage').then(m => ({ default: m.MainPage })));
+const CommonPage = lazy(() => import('@/pages/CommonPage/CommonPage').then(m => ({ default: m.CommonPage })));
+const TechniquesPage = lazy(() => import('@/pages/TechniquesPage/TechniquesPage'));
+const CalendarPage = lazy(() => import('@/pages/CalendarPage/CalendarPage'));
+const UserPage = lazy(() => import('@/pages/UserPage/UserPage').then(m => ({ default: m.UserPage })));
+
+// Аудио страницы - НЕ lazy, чтобы избежать мигания белого спиннера
 import TechniquePlayerPage from '@/pages/TechniquesPage/TechniquePlayerPage';
-import CalendarPage from '@/pages/CalendarPage/CalendarPage';
-import EventPage from '@/pages/EventPage/EventPage';
-import RoadMapPage from '@/pages/RoadMapPage/RoadMapPage';
 import { AudioPlayerPage } from '@/pages/AudioPlayerPage';
+
+// Библиотека и модули
+const LibraryPage = lazy(() => import('@/pages/LibraryPage/LibraryPage'));
+const ModuleStagesPage = lazy(() => import('@/pages/LibraryPage/ModuleStagesPage'));
+const StagePage = lazy(() => import('@/pages/LibraryPage/StagePage'));
+const LessonPage = lazy(() => import('@/pages/LibraryPage/LessonPage'));
+const MaterialPage = lazy(() => import('@/pages/MaterialPage').then(m => ({ default: m.MaterialPage })));
+
+// События и карта
+const EventPage = lazy(() => import('@/pages/EventPage/EventPage'));
+const RoadMapPage = lazy(() => import('@/pages/RoadMapPage/RoadMapPage'));
+
+// Профиль и пользователь
+const ProfilePage = lazy(() => import('@/pages/ProfilePage').then(m => ({ default: m.ProfilePage })));
+const InfoPoints = lazy(() => import('@/pages/InfoPoints').then(m => ({ default: m.InfoPoints })));
+
+// Коммуникации
+const Chats = lazy(() => import('@/pages/Chats/Chats').then(m => ({ default: m.Chats })));
+const HelpPage = lazy(() => import('@/pages/HelpPage/HelpPage').then(m => ({ default: m.HelpPage })));
+const FaqPage = lazy(() => import('@/pages/FaqPage/FaqPage').then(m => ({ default: m.FaqPage })));
+
+// Утилиты и отладка (редко используемые)
+const IndexPage = lazy(() => import('@/pages/IndexPage/IndexPage').then(m => ({ default: m.IndexPage })));
+const InitDataPage = lazy(() => import('@/pages/InitDataPage').then(m => ({ default: m.InitDataPage })));
+const LaunchParamsPage = lazy(() => import('@/pages/LaunchParamsPage').then(m => ({ default: m.LaunchParamsPage })));
+const ThemeParamsPage = lazy(() => import('@/pages/ThemeParamsPage').then(m => ({ default: m.ThemeParamsPage })));
+const TONConnectPage = lazy(() => import('@/pages/TONConnectPage/TONConnectPage').then(m => ({ default: m.TONConnectPage })));
+const DiagnosticsPage = lazy(() => import('@/pages/DiagnosticsPage/DiagnosticsPage').then(m => ({ default: m.DiagnosticsPage })));
+const TokenErrorPage = lazy(() => import('@/pages/TokenErrorPage/TokenErrorPage'));
 
 export const routers = [
   {
