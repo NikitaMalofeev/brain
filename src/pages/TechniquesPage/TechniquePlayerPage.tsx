@@ -9,6 +9,7 @@ import GuestBlockedModal from '@/components/GuestBlockedModal';
 import TechniqueBlockedModal from '@/components/TechniqueBlockedModal';
 import { motion } from 'framer-motion';
 import LoadingSpinner from '@/components/LoadingSpinner/LoadingSpinner';
+import { buildFileUrl } from '@/lib/supabase/supabaseStorageService';
 
 /**
  * Страница проигрывателя техники (аудиопрактики)

@@ -20,6 +20,7 @@ import { clsx } from "clsx";
 import { Ripple } from '@/components/ui/Ripple/Ripple';
 import ReactMarkdown from 'react-markdown';
 import GuestBlockedModal from '@/components/GuestBlockedModal';
+import { motion } from 'framer-motion';
 import dayBackground from '@/shared/assets/images/dayBackground.png';
 import Background1 from '@/shared/assets/images/background1.png';
 import whiteOkIcon from '@/shared/assets/icons/whiteOk.svg';
@@ -27,6 +28,32 @@ import { Check, Clock, XCircle } from 'lucide-react';
 import { useAssignmentsWithProgress, useSaveAssignmentDraft, useSubmitAssignment } from '@/lib/supabase/hooks/useAssignments';
 import { useTechniqueByModuleAndDay } from '@/lib/supabase/hooks/useTechniqueSchedule';
 import LoadingSpinner from '@/components/LoadingSpinner/LoadingSpinner';
+
+// Варианты анимации для блоков урока
+const lessonBlocksVariants = {
+    hidden: { opacity: 0 },
+    show: {
+        opacity: 1,
+        transition: {
+            staggerChildren: 0.15,
+            delayChildren: 0.25,
+        },
+    },
+};
+
+const lessonBlockVariants = {
+    hidden: { opacity: 0, y: 25 },
+    show: {
+        opacity: 1,
+        y: 0,
+        transition: {
+            type: 'spring',
+            stiffness: 60,
+            damping: 14,
+            duration: 0.8
+        }
+    },
+};
 
 interface LessonFeedback {
     id: number;
@@ -1417,8 +1444,13 @@ const LessonPage: React.FC = () => {
                         </div>
                     </div>
                 )}
-                {/* Блоки контента - каждый в своей карточке */}
-                <div style={{ display: 'flex', flexDirection: 'column', gap: 20, padding: '0 16px 16px 16px' }}>
+                {/* Блоки контента - каждый в своей карточке с анимацией */}
+                <motion.div
+                    style={{ display: 'flex', flexDirection: 'column', gap: 20, padding: '0 16px 16px 16px' }}
+                    variants={lessonBlocksVariants}
+                    initial="hidden"
+                    animate="show"
+                >
                     {(() => {
                         // Группируем блоки: блоки без заголовков попадают в предыдущий блок с заголовком
                         const groupedBlocks: Array<{ parent: LessonBlock, children: LessonBlock[] }> = [];
@@ -1454,8 +1486,9 @@ const LessonPage: React.FC = () => {
 
                                 // Блок с заголовком - используем BlockItem в отдельной карточке
                                 return (
-                                    <div
+                                    <motion.div
                                         key={group.parent.id}
+                                        variants={lessonBlockVariants}
                                         style={{
                                             backgroundColor: 'rgba(255, 255, 255, 0.8)',
                                             backdropFilter: 'blur(20px)',
@@ -1472,13 +1505,14 @@ const LessonPage: React.FC = () => {
                                             userId={supabaseUser?.id}
                                             lessonId={lessonId ? parseInt(lessonId) : undefined}
                                         />
-                                    </div>
+                                    </motion.div>
                                 );
                             } else {
                                 // Блок без заголовка и без группы - отображаем просто контент в карточке
                                 return (
-                                    <div
+                                    <motion.div
                                         key={group.parent.id}
+                                        variants={lessonBlockVariants}
                                         style={{
                                             backgroundColor: 'rgba(255, 255, 255, 0.8)',
                                             backdropFilter: 'blur(20px)',
@@ -1488,12 +1522,12 @@ const LessonPage: React.FC = () => {
                                         }}
                                     >
                                         <BlockContent block={group.parent} />
-                                    </div>
+                                    </motion.div>
                                 );
                             }
                         });
                     })()}
-                </div>
+                </motion.div>
 
                 {/* Комментарий куратора (обратная связь по дню) - показывается всегда */}
                 <div style={{ padding: '0 16px 20px 16px' }}>

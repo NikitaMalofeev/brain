@@ -109,6 +109,7 @@ export function usePreviewCalendarEvents(month: Date) {
             return data || [];
         },
         staleTime: 5 * 60 * 1000, // 5 минут
+        placeholderData: (previousData) => previousData, // Сохраняем предыдущие данные при загрузке
     });
 }
 

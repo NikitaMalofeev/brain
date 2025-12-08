@@ -24,6 +24,29 @@ interface Tab {
   label: string;
 }
 
+// Варианты анимации для плавного появления техник
+const containerVariants = {
+  hidden: { opacity: 0 },
+  show: {
+    opacity: 1,
+    transition: {
+      staggerChildren: 0.15,
+    },
+  },
+};
+
+const itemVariants = {
+  hidden: { opacity: 0, y: 40 },
+  show: {
+    opacity: 1,
+    y: 0,
+    transition: {
+      duration: 0.5,
+      ease: [0.25, 0.46, 0.45, 0.94],
+    },
+  },
+};
+
 const TABS: Tab[] = [
   { id: 'all', label: 'Все техники' },
   { id: 'mine', label: 'Мои техники' },
@@ -261,7 +284,7 @@ const TechniquesPage: React.FC = () => {
 
         {/* Единый блок с табами и контентом на всю ширину */}
         <div
-          className="rounded-[32px] overflow-hidden flex-1"
+          className="rounded-[32px] overflow-hidden"
           style={{ backdropFilter: 'blur(12px)' }}
         >
           {/* Табы внутри блока */}
@@ -353,11 +376,13 @@ const TechniquesPage: React.FC = () => {
 
             {/* Контент со статичным фоном */}
             <div
-              className="min-h-[500px] p-4 relative"
+              className="p-4 relative"
               style={{
                 background: '#0000004D',
                 borderTopLeftRadius: activeTab === 'mine' ? '32px' : '0px',
                 borderTopRightRadius: activeTab === 'all' ? '32px' : '0px',
+                borderBottomLeftRadius: '32px',
+                borderBottomRightRadius: '32px',
               }}
             >
               <AnimatePresence mode="wait">
@@ -399,77 +424,86 @@ const TechniquesPage: React.FC = () => {
                           {!isGuest && (myTechniques.length > 0 || bundleGroups.length > 0 || moduleTechniques.length > 0 || userSpecialBundleTechniques && userSpecialBundleTechniques.length > 0) && (
                             <div>
                               <h2 className="text-[20px] font-semibold text-white mb-3 leading-none tracking-normal">Мои</h2>
-                              <div className="flex flex-col gap-3">
+                              <motion.div
+                                className="flex flex-col gap-3"
+                                variants={containerVariants}
+                                initial="hidden"
+                                animate="show"
+                              >
                                 {/* Обычные техники (исключая те, что в спец.пакетах) */}
                                 {myTechniques.filter(t => !specialBundleTechniqueIds.has(t.id)).map((technique) => (
-                                  <TechniqueCard
-                                    key={technique.id}
-                                    technique={technique}
-                                    onClick={() => handleTechniqueClick(technique.id)}
-                                  />
+                                  <motion.div key={technique.id} variants={itemVariants}>
+                                    <TechniqueCard
+                                      technique={technique}
+                                      onClick={() => handleTechniqueClick(technique.id)}
+                                    />
+                                  </motion.div>
                                 ))}
                                 {/* Техники из обычных пакетов (исключая те, что в спец.пакетах) */}
                                 {bundleGroups.flatMap((bundle) => bundle.techniques).filter(t => !specialBundleTechniqueIds.has(t.id)).map((technique) => (
-                                  <TechniqueCard
-                                    key={technique.id}
-                                    technique={technique}
-                                    onClick={() => handleTechniqueClick(technique.id)}
-                                  />
+                                  <motion.div key={technique.id} variants={itemVariants}>
+                                    <TechniqueCard
+                                      technique={technique}
+                                      onClick={() => handleTechniqueClick(technique.id)}
+                                    />
+                                  </motion.div>
                                 ))}
                                 {/* Техники из модулей (исключая те, что в спец.пакетах) */}
                                 {moduleTechniques.filter(t => !specialBundleTechniqueIds.has(t.id)).map((technique) => (
-                                  <TechniqueCard
-                                    key={`module-${technique.id}`}
-                                    technique={technique}
-                                    onClick={() => handleTechniqueClick(technique.id)}
-                                  />
+                                  <motion.div key={`module-${technique.id}`} variants={itemVariants}>
+                                    <TechniqueCard
+                                      technique={technique}
+                                      onClick={() => handleTechniqueClick(technique.id)}
+                                    />
+                                  </motion.div>
                                 ))}
                                 {/* ВСЕ техники из специальных пакетов (доступные и заблокированные) */}
                                 {userSpecialBundleTechniques?.map((tech) => (
-                                  <TechniqueCard
-                                    key={`special-${tech.technique_id}`}
-                                    technique={{
-                                      id: tech.technique_id,
-                                      title: tech.technique_name,
-                                      description: tech.technique_description,
-                                      cover_image: tech.technique_cover,
-                                      has_access: tech.is_available,
-                                      is_unlocked: tech.is_time_unlocked,
-                                      can_purchase: false,
-                                      status: 'paid',
-                                    } as TechniqueWithAccess}
-                                    onClick={() => {
-                                      if (tech.is_available) {
-                                        navigate(`/techniques/${tech.technique_id}`);
-                                      } else {
-                                        setModalTitle(`Техника «${tech.technique_name}» недоступна`);
+                                  <motion.div key={`special-${tech.technique_id}`} variants={itemVariants}>
+                                    <TechniqueCard
+                                      technique={{
+                                        id: tech.technique_id,
+                                        title: tech.technique_name,
+                                        description: tech.technique_description,
+                                        cover_image: tech.technique_cover,
+                                        has_access: tech.is_available,
+                                        is_unlocked: tech.is_time_unlocked,
+                                        can_purchase: false,
+                                        status: 'paid',
+                                      } as TechniqueWithAccess}
+                                      onClick={() => {
+                                        if (tech.is_available) {
+                                          navigate(`/techniques/${tech.technique_id}`);
+                                        } else {
+                                          setModalTitle(`Техника «${tech.technique_name}» недоступна`);
 
-                                        let description = '';
-                                        if (!tech.is_time_unlocked) {
-                                          // Используем delay_days техники (сколько дней ждать после предыдущей)
-                                          const delayDays = tech.delay_days || 30;
-                                          const months = Math.round(delayDays / 30);
+                                          let description = '';
+                                          if (!tech.is_time_unlocked) {
+                                            // Используем delay_days техники (сколько дней ждать после предыдущей)
+                                            const delayDays = tech.delay_days || 30;
+                                            const months = Math.round(delayDays / 30);
 
-                                          const monthText = months <= 1 ? '1 месяц' :
-                                            months >= 2 && months <= 4 ? `${months} месяца` :
-                                            `${months} месяцев`;
+                                            const monthText = months <= 1 ? '1 месяц' :
+                                              months >= 2 && months <= 4 ? `${months} месяца` :
+                                              `${months} месяцев`;
 
-                                          if (tech.previous_technique_name) {
-                                            description = `Доступ откроется через ${monthText} после покупки техники «${tech.previous_technique_name}»`;
-                                          } else {
-                                            description = `Доступ откроется через ${monthText}`;
+                                            if (tech.previous_technique_name) {
+                                              description = `Доступ откроется через ${monthText} после покупки техники «${tech.previous_technique_name}»`;
+                                            } else {
+                                              description = `Доступ откроется через ${monthText}`;
+                                            }
+                                          } else if (!tech.is_paid) {
+                                            description = `Время ожидания прошло, требуется оплата для доступа.`;
                                           }
-                                        } else if (!tech.is_paid) {
-                                          description = `Время ожидания прошло, требуется оплата для доступа.`;
-                                        }
 
-                                        setModalDescription(description);
-                                        setShowBlockedModal(true);
-                                      }
-                                    }}
-                                  />
+                                          setModalDescription(description);
+                                          setShowBlockedModal(true);
+                                        }
+                                      }}
+                                    />
+                                  </motion.div>
                                 ))}
-                              </div>
+                              </motion.div>
                             </div>
                           )}
 
@@ -477,15 +511,21 @@ const TechniquesPage: React.FC = () => {
                           {isGuest && bundleGroups.length > 0 && (
                             <div>
                               <h2 className="text-[20px] font-semibold text-white mb-3 leading-none tracking-normal">Мои</h2>
-                              <div className="flex flex-col gap-3">
+                              <motion.div
+                                className="flex flex-col gap-3"
+                                variants={containerVariants}
+                                initial="hidden"
+                                animate="show"
+                              >
                                 {bundleGroups.flatMap((bundle) => bundle.techniques).map((technique) => (
-                                  <TechniqueCard
-                                    key={technique.id}
-                                    technique={technique}
-                                    onClick={() => handleTechniqueClick(technique.id)}
-                                  />
+                                  <motion.div key={technique.id} variants={itemVariants}>
+                                    <TechniqueCard
+                                      technique={technique}
+                                      onClick={() => handleTechniqueClick(technique.id)}
+                                    />
+                                  </motion.div>
                                 ))}
-                              </div>
+                              </motion.div>
                             </div>
                           )}
 
@@ -493,16 +533,22 @@ const TechniquesPage: React.FC = () => {
                           {availableTechniques.length > 0 && (
                             <div>
                               <h2 className="text-[20px] font-semibold text-white mb-3 leading-none tracking-normal">К покупке</h2>
-                              <div className="flex flex-col gap-3">
+                              <motion.div
+                                className="flex flex-col gap-3"
+                                variants={containerVariants}
+                                initial="hidden"
+                                animate="show"
+                              >
                                 {availableTechniques.map((technique) => (
-                                  <TechniqueCard
-                                    key={technique.id}
-                                    technique={technique}
-                                    onClick={() => handleTechniqueClick(technique.id)}
-                                    isGuest={isGuest}
-                                  />
+                                  <motion.div key={technique.id} variants={itemVariants}>
+                                    <TechniqueCard
+                                      technique={technique}
+                                      onClick={() => handleTechniqueClick(technique.id)}
+                                      isGuest={isGuest}
+                                    />
+                                  </motion.div>
                                 ))}
-                              </div>
+                              </motion.div>
                             </div>
                           )}
 
@@ -510,15 +556,21 @@ const TechniquesPage: React.FC = () => {
                           {freeTechniques.length > 0 && (
                             <div>
                               <h2 className="text-[20px] font-semibold text-white mb-3 leading-none tracking-normal">Бесплатные</h2>
-                              <div className="flex flex-col gap-3">
+                              <motion.div
+                                className="flex flex-col gap-3"
+                                variants={containerVariants}
+                                initial="hidden"
+                                animate="show"
+                              >
                                 {freeTechniques.map((technique) => (
-                                  <TechniqueCard
-                                    key={technique.id}
-                                    technique={technique}
-                                    onClick={() => handleTechniqueClick(technique.id)}
-                                  />
+                                  <motion.div key={technique.id} variants={itemVariants}>
+                                    <TechniqueCard
+                                      technique={technique}
+                                      onClick={() => handleTechniqueClick(technique.id)}
+                                    />
+                                  </motion.div>
                                 ))}
-                              </div>
+                              </motion.div>
                             </div>
                           )}
 
@@ -539,49 +591,58 @@ const TechniquesPage: React.FC = () => {
                           {!isGuest && (myTechniques.length > 0 || bundleGroups.length > 0 || availableSpecialTechniques.length > 0 || moduleTechniques.length > 0) && (
                             <div>
                               <h2 className="text-[20px] font-semibold text-white mb-3 leading-none tracking-normal">Мои</h2>
-                              <div className="flex flex-col gap-3">
+                              <motion.div
+                                className="flex flex-col gap-3"
+                                variants={containerVariants}
+                                initial="hidden"
+                                animate="show"
+                              >
                                 {/* Обычные техники (исключая те, что в спец.пакетах) */}
                                 {myTechniques.filter(t => !specialBundleTechniqueIds.has(t.id)).map((technique) => (
-                                  <TechniqueCard
-                                    key={technique.id}
-                                    technique={technique}
-                                    onClick={() => handleTechniqueClick(technique.id)}
-                                  />
+                                  <motion.div key={technique.id} variants={itemVariants}>
+                                    <TechniqueCard
+                                      technique={technique}
+                                      onClick={() => handleTechniqueClick(technique.id)}
+                                    />
+                                  </motion.div>
                                 ))}
                                 {/* Техники из обычных пакетов (исключая те, что в спец.пакетах) */}
                                 {bundleGroups.flatMap((bundle) => bundle.techniques).filter(t => !specialBundleTechniqueIds.has(t.id)).map((technique) => (
-                                  <TechniqueCard
-                                    key={technique.id}
-                                    technique={technique}
-                                    onClick={() => handleTechniqueClick(technique.id)}
-                                  />
+                                  <motion.div key={technique.id} variants={itemVariants}>
+                                    <TechniqueCard
+                                      technique={technique}
+                                      onClick={() => handleTechniqueClick(technique.id)}
+                                    />
+                                  </motion.div>
                                 ))}
                                 {/* Доступные техники из специальных пакетов (оплачены и разблокированы) */}
                                 {availableSpecialTechniques.map((tech) => (
-                                  <TechniqueCard
-                                    key={`special-mine-${tech.technique_id}`}
-                                    technique={{
-                                      id: tech.technique_id,
-                                      title: tech.technique_name,
-                                      description: tech.technique_description,
-                                      cover_image: tech.technique_cover,
-                                      has_access: true,
-                                      is_unlocked: true,
-                                      can_purchase: false,
-                                      status: 'paid',
-                                    } as TechniqueWithAccess}
-                                    onClick={() => navigate(`/techniques/${tech.technique_id}`)}
-                                  />
+                                  <motion.div key={`special-mine-${tech.technique_id}`} variants={itemVariants}>
+                                    <TechniqueCard
+                                      technique={{
+                                        id: tech.technique_id,
+                                        title: tech.technique_name,
+                                        description: tech.technique_description,
+                                        cover_image: tech.technique_cover,
+                                        has_access: true,
+                                        is_unlocked: true,
+                                        can_purchase: false,
+                                        status: 'paid',
+                                      } as TechniqueWithAccess}
+                                      onClick={() => navigate(`/techniques/${tech.technique_id}`)}
+                                    />
+                                  </motion.div>
                                 ))}
                                 {/* Техники из модулей (исключая те, что в спец.пакетах) */}
                                 {moduleTechniques.filter(t => !specialBundleTechniqueIds.has(t.id)).map((technique) => (
-                                  <TechniqueCard
-                                    key={`module-mine-${technique.id}`}
-                                    technique={technique}
-                                    onClick={() => handleTechniqueClick(technique.id)}
-                                  />
+                                  <motion.div key={`module-mine-${technique.id}`} variants={itemVariants}>
+                                    <TechniqueCard
+                                      technique={technique}
+                                      onClick={() => handleTechniqueClick(technique.id)}
+                                    />
+                                  </motion.div>
                                 ))}
-                              </div>
+                              </motion.div>
                             </div>
                           )}
 
@@ -589,15 +650,21 @@ const TechniquesPage: React.FC = () => {
                           {isGuest && bundleGroups.length > 0 && (
                             <div>
                               <h2 className="text-[20px] font-semibold text-white mb-3 leading-none tracking-normal">Мои</h2>
-                              <div className="flex flex-col gap-3">
+                              <motion.div
+                                className="flex flex-col gap-3"
+                                variants={containerVariants}
+                                initial="hidden"
+                                animate="show"
+                              >
                                 {bundleGroups.flatMap((bundle) => bundle.techniques).map((technique) => (
-                                  <TechniqueCard
-                                    key={technique.id}
-                                    technique={technique}
-                                    onClick={() => handleTechniqueClick(technique.id)}
-                                  />
+                                  <motion.div key={technique.id} variants={itemVariants}>
+                                    <TechniqueCard
+                                      technique={technique}
+                                      onClick={() => handleTechniqueClick(technique.id)}
+                                    />
+                                  </motion.div>
                                 ))}
-                              </div>
+                              </motion.div>
                             </div>
                           )}
 
@@ -605,15 +672,21 @@ const TechniquesPage: React.FC = () => {
                           {myFreeTechniques.length > 0 && (
                             <div>
                               <h2 className="text-[20px] font-semibold text-white mb-3 leading-none tracking-normal">Бесплатные</h2>
-                              <div className="flex flex-col gap-3">
+                              <motion.div
+                                className="flex flex-col gap-3"
+                                variants={containerVariants}
+                                initial="hidden"
+                                animate="show"
+                              >
                                 {myFreeTechniques.map((technique) => (
-                                  <TechniqueCard
-                                    key={technique.id}
-                                    technique={technique}
-                                    onClick={() => handleTechniqueClick(technique.id)}
-                                  />
+                                  <motion.div key={technique.id} variants={itemVariants}>
+                                    <TechniqueCard
+                                      technique={technique}
+                                      onClick={() => handleTechniqueClick(technique.id)}
+                                    />
+                                  </motion.div>
                                 ))}
-                              </div>
+                              </motion.div>
                             </div>
                           )}
 

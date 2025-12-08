@@ -23,23 +23,51 @@ const listVariants = {
     show: {
         opacity: 1,
         transition: {
-            staggerChildren: 0.06,
+            staggerChildren: 0.15,
+            delayChildren: 0.2,
         },
     },
 };
 
 const itemVariants = {
-    hidden: { opacity: 0, y: 15 },
+    hidden: { opacity: 0, y: 30, scale: 0.9 },
     show: {
         opacity: 1,
         y: 0,
+        scale: 1,
         transition: {
-            type: 'tween',
-            ease: 'easeOut',
-            duration: 0.3
+            type: 'spring',
+            stiffness: 60,
+            damping: 14,
+            duration: 0.8
         }
     },
 };
+
+// Скелетон для карточки урока
+const LessonCardSkeleton: React.FC = () => (
+    <div className="bg-white rounded-2xl overflow-hidden animate-pulse">
+        {/* Обложка */}
+        <div className="w-full h-[120px] bg-gray-200" />
+        {/* Контент */}
+        <div className="p-3 flex flex-col gap-2">
+            {/* Бейдж */}
+            <div className="w-16 h-5 bg-gray-200 rounded-full" />
+            {/* Название */}
+            <div className="w-full h-4 bg-gray-200 rounded" />
+            <div className="w-2/3 h-4 bg-gray-200 rounded" />
+        </div>
+    </div>
+);
+
+// Компонент скелетонов для сетки уроков
+const LessonsSkeletonGrid: React.FC<{ count?: number }> = ({ count = 6 }) => (
+    <div className="p-4 grid grid-cols-2 gap-3">
+        {Array.from({ length: count }).map((_, i) => (
+            <LessonCardSkeleton key={i} />
+        ))}
+    </div>
+);
 
 const StagePage: React.FC = () => {
     const { id: stageId } = useParams<{ id: string }>();
@@ -161,8 +189,23 @@ const StagePage: React.FC = () => {
 
     if (loading) {
         return (
-            <Page>
-                <LoadingSpinner />
+            <Page showTabBar={false}>
+                <div className={'page-bg-container bg-[url("/bg3.jpg")] min-h-full bg-cover bg-top text-black'}>
+                    {/* Скелетон заголовка */}
+                    <div className={'bg-white rounded-2xl mx-4 mt-4 p-4 flex flex-col gap-3 animate-pulse'}>
+                        <div className={'flex flex-col gap-2'}>
+                            <div className="w-32 h-6 bg-gray-200 rounded" />
+                            <div className="w-48 h-4 bg-gray-200 rounded" />
+                        </div>
+                        <div className={'flex items-center gap-1 w-full'}>
+                            {Array.from({ length: 7 }).map((_, i) => (
+                                <div key={i} className="flex-1 h-1 rounded-full bg-gray-200" />
+                            ))}
+                        </div>
+                    </div>
+                    {/* Скелетоны карточек уроков */}
+                    <LessonsSkeletonGrid count={6} />
+                </div>
             </Page>
         );
     }

@@ -12,7 +12,64 @@ import CalendarGrid, { ModulePeriod } from '@/components/CalendarGrid/CalendarGr
 import EventCard from '@/components/EventCard/EventCard';
 import Background1 from '@/shared/assets/images/background1.png';
 import LoadingSpinner from '@/components/LoadingSpinner/LoadingSpinner';
+import { motion, AnimatePresence } from 'framer-motion';
 import './CalendarPage.css';
+
+// Варианты анимации для списка событий
+const eventsContainerVariants = {
+  hidden: { opacity: 0 },
+  show: {
+    opacity: 1,
+    transition: {
+      staggerChildren: 0.12,
+      delayChildren: 0.15,
+    },
+  },
+};
+
+const eventGroupVariants = {
+  hidden: { opacity: 0 },
+  show: {
+    opacity: 1,
+    transition: {
+      staggerChildren: 0.1,
+    },
+  },
+  exit: {
+    opacity: 0,
+    transition: {
+      duration: 0.15,
+    },
+  },
+};
+
+const eventCardVariants = {
+  hidden: { opacity: 0, y: 20, scale: 0.95 },
+  show: {
+    opacity: 1,
+    y: 0,
+    scale: 1,
+    transition: {
+      type: 'spring',
+      stiffness: 70,
+      damping: 14,
+      duration: 0.6,
+    },
+  },
+};
+
+const dateTitleVariants = {
+  hidden: { opacity: 0, x: -10 },
+  show: {
+    opacity: 1,
+    x: 0,
+    transition: {
+      type: 'spring',
+      stiffness: 100,
+      damping: 15,
+    },
+  },
+};
 
 // Группировка событий по дате
 interface EventGroup {
@@ -68,8 +125,10 @@ const CalendarPage: React.FC = () => {
   const { data: previewModules, isLoading: previewModulesLoading } = usePreviewStreamModules();
   const { data: previewStreamInfo } = usePreviewStreamInfo();
 
-  // Определяем используем ли preview режим (нет событий и модулей у пользователя)
-  const isPreviewMode = !eventsLoading && (!userEvents || userEvents.length === 0) && (!userModules || userModules.length === 0);
+  // Определяем используем ли preview режим
+  // Preview режим только если нет модулей у пользователя (это стабильный признак)
+  // События могут быть пустыми в конкретном месяце, это не означает preview режим
+  const isPreviewMode = !userModules || userModules.length === 0;
 
   // Итоговые данные: используем пользовательские или preview
   const events = isPreviewMode ? (previewEvents?.map(e => ({
@@ -258,26 +317,52 @@ const CalendarPage: React.FC = () => {
 
         {/* Список всех событий месяца */}
         <div className="calendar-events-section">
-          {eventsByDate.length > 0 ? (
-            <div className="calendar-events-container">
-              {eventsByDate.map((group) => (
-                <div key={group.date} className="calendar-event-group">
-                  <h3 className="calendar-event-group-title">{group.dateFormatted}</h3>
-                  <div className="calendar-events-list">
-                    {group.events.map((event) => (
-                      <EventCard key={event.event_id} event={event} isGuest={isGuest} />
-                    ))}
-                  </div>
-                </div>
-              ))}
-            </div>
-          ) : (
-            !eventsLoading && (
-              <div className="calendar-no-events">
-                <p>На этот месяц нет запланированных событий</p>
-              </div>
-            )
-          )}
+          <AnimatePresence mode="wait">
+            {eventsByDate.length > 0 ? (
+              <motion.div
+                key={`events-${selectedMonth.getFullYear()}-${selectedMonth.getMonth()}`}
+                className="calendar-events-container"
+                variants={eventsContainerVariants}
+                initial="hidden"
+                animate="show"
+                exit="exit"
+              >
+                {eventsByDate.map((group) => (
+                  <motion.div
+                    key={group.date}
+                    className="calendar-event-group"
+                    variants={eventGroupVariants}
+                  >
+                    <motion.h3
+                      className="calendar-event-group-title"
+                      variants={dateTitleVariants}
+                    >
+                      {group.dateFormatted}
+                    </motion.h3>
+                    <div className="calendar-events-list">
+                      {group.events.map((event) => (
+                        <motion.div key={event.event_id} variants={eventCardVariants}>
+                          <EventCard event={event} isGuest={isGuest} />
+                        </motion.div>
+                      ))}
+                    </div>
+                  </motion.div>
+                ))}
+              </motion.div>
+            ) : (
+              !eventsLoading && (
+                <motion.div
+                  key="no-events"
+                  className="calendar-no-events"
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  exit={{ opacity: 0 }}
+                >
+                  <p>На этот месяц нет запланированных событий</p>
+                </motion.div>
+              )
+            )}
+          </AnimatePresence>
         </div>
       </div>
     </Page>

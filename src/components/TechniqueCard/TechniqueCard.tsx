@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { motion } from 'framer-motion';
 import { clsx } from 'clsx';
 import { TechniqueWithAccess } from '@/lib/supabase/types';
+import { buildFileUrl } from '@/lib/supabase/supabaseStorageService';
 
 export interface TechniqueCardProps {
   technique: TechniqueWithAccess;
@@ -72,7 +73,7 @@ const TechniqueCard: React.FC<TechniqueCardProps> = ({ technique, onClick, isGue
             <div className="absolute inset-0 bg-white/20 animate-pulse" />
           )}
           <img
-            src={cover_image && cover_image.trim() !== '' ? cover_image : '/mock-library-card-image.png'}
+            src={buildFileUrl(cover_image) || '/mock-library-card-image.png'}
             alt={title}
             className={clsx(
               "w-full h-full object-cover transition-opacity duration-200",
