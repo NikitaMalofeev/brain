@@ -31,6 +31,7 @@ body.bg-stage::before {
   pointer-events: none;
 }
 
+
 /* Убираем transform который может ломать position: fixed */
 html, body, #root {
   transform: none !important;

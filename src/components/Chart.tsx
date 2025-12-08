@@ -2,8 +2,6 @@
 import {
     AreaChart,
     Area,
-    XAxis,
-    YAxis,
     ResponsiveContainer
 } from "recharts";
 
@@ -26,9 +24,9 @@ const marksAt = [1, 4, 7]; // индексы для рисок
 
 export default function HealingChartRecharts({ current }: Props) {
     return (
-        <div className="w-full h-[80px]">
+        <div className="w-[calc(100%+10px)] h-[80px] -mx-[5px]">
             <ResponsiveContainer width="100%" height="100%">
-                <AreaChart data={data} >
+                <AreaChart data={data} margin={{ top: 0, right: 0, bottom: 0, left: 0 }}>
                     <defs>
                         <linearGradient id="gradientFill" x1="0" y1="0" x2="0" y2="1">
                             <stop offset="5%" stopColor="#575DFF" stopOpacity={0.4} />
@@ -36,8 +34,6 @@ export default function HealingChartRecharts({ current }: Props) {
                         </linearGradient>
                     </defs>
 
-                    <XAxis dataKey="name" hide />
-                    <YAxis hide />
 
 
                     <Area

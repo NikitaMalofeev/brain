@@ -164,6 +164,8 @@ const ModuleStagesPage: React.FC = () => {
     const navigate = useNavigate();
     const [showGuestModal, setShowGuestModal] = useState(false);
     const [showInfoModal, setShowInfoModal] = useState(false);
+    const [loadedImages, setLoadedImages] = useState<Set<string>>(new Set());
+
 
     const initDataSignal = useSignal(initDataState);
     const { supabaseUser, loading: userLoading } = useSupabaseUser(initDataSignal);
@@ -202,7 +204,8 @@ const ModuleStagesPage: React.FC = () => {
         if (!stages || !streamStartDate) return stages || [];
 
         const now = new Date();
-        const startDate = new Date(streamStartDate);
+        // Парсим дату как локальную чтобы избежать сдвига часового пояса
+        const startDate = new Date(streamStartDate + 'T00:00:00');
 
         return stages.map(stage => {
             const firstLesson = stage.lessons?.[0];
@@ -283,8 +286,16 @@ const ModuleStagesPage: React.FC = () => {
             : (totalStages > 0 ? (unlockedStages / totalStages) * 100 : 0));
 
     return (
-        <Page showTabBar={false}>
-            <div className="min-h-screen text-black px-4 pb-4 with-content-offset" style={{ backgroundImage: `url(${Background1})`, backgroundSize: '120%', backgroundPosition: 'top', backgroundAttachment: 'fixed', backgroundRepeat: 'no-repeat' }}>
+        <Page showTabBar={false} showSafeAreaFade={false}>
+            <style>{`
+                .page-container .content-wrapper { background: transparent !important; }
+                .page-container { background: transparent !important; }
+                body, html, #root {
+                    background: url(${Background1}) no-repeat top center !important;
+                    background-size: 120% !important;
+                }
+            `}</style>
+            <div className="page-bg-container relative min-h-screen text-black px-4 pb-8">
                 {/* Белая карточка с заголовком и прогрессом */}
                 <div
                     className="p-4 flex flex-col"
@@ -385,15 +396,23 @@ const ModuleStagesPage: React.FC = () => {
                                             className="flex flex-col w-full bg-white cursor-pointer"
                                         >
                                             {/* Изображение с бейджами */}
-                                            <div className="relative w-full" style={{ maxHeight: 140, overflow: 'hidden' }}>
+                                            <div className="relative w-full h-[120px] bg-gray-200" style={{ overflow: 'hidden' }}>
+                                                {/* Skeleton пока изображение загружается */}
+                                                {!loadedImages.has(stage.id) && (
+                                                    <div className="absolute inset-0 bg-gray-200 animate-pulse" />
+                                                )}
                                                 <img
                                                     src={coverUrl}
                                                     alt={stage.name}
-                                                    className="w-full h-full object-cover"
-                                                    onError={(e) => { e.currentTarget.src = LessonDefault; }}
+                                                    className={`absolute inset-0 w-full h-full object-cover transition-opacity duration-200 ${loadedImages.has(stage.id) ? 'opacity-100' : 'opacity-0'}`}
+                                                    onLoad={() => setLoadedImages(prev => new Set(prev).add(stage.id))}
+                                                    onError={(e) => {
+                                                        e.currentTarget.src = LessonDefault;
+                                                        setLoadedImages(prev => new Set(prev).add(stage.id));
+                                                    }}
                                                 />
                                                 {/* Затемнение для заблокированных */}
-                                                {!isUnlocked && (
+                                                {!isUnlocked && loadedImages.has(stage.id) && (
                                                     <div
                                                         style={{
                                                             position: 'absolute',
@@ -406,7 +425,8 @@ const ModuleStagesPage: React.FC = () => {
                                                     />
                                                 )}
 
-                                                {/* Бейджи в одном flex-контейнере */}
+                                                {/* Бейджи в одном flex-контейнере - показываем после загрузки изображения */}
+                                                {loadedImages.has(stage.id) && (
                                                 <div
                                                     style={{
                                                         position: 'absolute',
@@ -466,6 +486,7 @@ const ModuleStagesPage: React.FC = () => {
                                                         </div>
                                                     )}
                                                 </div>
+                                                )}
                                             </div>
 
                                             {/* День с открытия модуля снизу */}

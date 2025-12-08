@@ -5,6 +5,7 @@ import { FileUploader, type FileUploaderRef } from '@/components/FileUploader/Fi
 import { buildFileUrl } from '@/lib/supabase/supabaseStorageService';
 import { deleteFile } from '@/lib/supabase/supabaseStorageService';
 import { useLessonTariffAccess, useAllTariffs } from '@/lib/supabase/hooks/useLessonTariffAccess';
+import { utcToMoscow, moscowToUtc } from '@/helpers/dateUtils';
 
 interface LessonsManagerProps {
     courseId: string;
@@ -13,27 +14,7 @@ interface LessonsManagerProps {
     onLessonSelect: (lessonId: number, lessonName: string) => void;
 }
 
-// Функции для работы с часовыми поясами
-const utcToLocal = (utcDateString?: string): string => {
-    if (!utcDateString) return '';
-    const date = new Date(utcDateString);
-    // Получаем локальное время в формате YYYY-MM-DDTHH:mm
-    const year = date.getFullYear();
-    const month = String(date.getMonth() + 1).padStart(2, '0');
-    const day = String(date.getDate()).padStart(2, '0');
-    const hours = String(date.getHours()).padStart(2, '0');
-    const minutes = String(date.getMinutes()).padStart(2, '0');
-    return `${year}-${month}-${day}T${hours}:${minutes}`;
-};
-
-const localToUtc = (localDateString?: string): string | undefined => {
-    if (!localDateString) return undefined;
-    // Создаем дату как локальную и конвертируем в UTC
-    const date = new Date(localDateString);
-    return date.toISOString();
-};
-
-// Функция для автоматического расчета дедлайна (дата открытия + 2 дня)
+// Функция для автоматического расчета дедлайна (дата открытия + 2 дня) в МСК
 const calculateDeadline = (openAtString: string): string => {
     if (!openAtString) return '';
 
@@ -51,15 +32,19 @@ const calculateDeadline = (openAtString: string): string => {
     return `${year}-${month}-${day}T${hours}:${minutes}`;
 };
 
-// Функция для получения завтрашней даты с временем 9:00 утра
+// Функция для получения завтрашней даты с временем 9:00 утра по МСК
 const getDefaultOpenTime = (): string => {
-    const tomorrow = new Date();
-    tomorrow.setDate(tomorrow.getDate() + 1); // Завтра
-    tomorrow.setHours(9, 0, 0, 0); // 9:00 утра
+    // Создаем дату "сейчас" в UTC и добавляем 3 часа для МСК
+    const now = new Date();
+    const mskNow = new Date(now.getTime() + 3 * 60 * 60 * 1000);
 
-    const year = tomorrow.getFullYear();
-    const month = String(tomorrow.getMonth() + 1).padStart(2, '0');
-    const day = String(tomorrow.getDate()).padStart(2, '0');
+    // Завтра в МСК
+    mskNow.setDate(mskNow.getDate() + 1);
+    mskNow.setHours(9, 0, 0, 0);
+
+    const year = mskNow.getFullYear();
+    const month = String(mskNow.getMonth() + 1).padStart(2, '0');
+    const day = String(mskNow.getDate()).padStart(2, '0');
 
     return `${year}-${month}-${day}T09:00`;
 };
@@ -162,8 +147,8 @@ const LessonsManager: React.FC<LessonsManagerProps> = ({ courseId, stageId, onBa
                 description: newDescription.trim() || '', // Всегда передаем строку, даже пустую
                 order_num: newOrderNum,
                 has_assignment: newHasAssignment,
-                open_at: localToUtc(newOpenAt),
-                deadline_at: localToUtc(newDeadlineAt),
+                open_at: moscowToUtc(newOpenAt),
+                deadline_at: moscowToUtc(newDeadlineAt),
             });
 
             // Очищаем форму
@@ -206,8 +191,8 @@ const LessonsManager: React.FC<LessonsManagerProps> = ({ courseId, stageId, onBa
         setEditDescription(lesson.description || '');
         setEditOrderNum(lesson.order_num);
         setEditHasAssignment(lesson.has_assignment || false);
-        setEditOpenAt(utcToLocal(lesson.open_at));
-        setEditDeadlineAt(utcToLocal(lesson.deadline_at));
+        setEditOpenAt(utcToMoscow(lesson.open_at));
+        setEditDeadlineAt(utcToMoscow(lesson.deadline_at));
     };
 
     // Отмена редактирования
@@ -238,8 +223,8 @@ const LessonsManager: React.FC<LessonsManagerProps> = ({ courseId, stageId, onBa
                 description: editDescription.trim() || '', // Всегда передаем строку, даже пустую
                 order_num: editOrderNum || 1, // Если 0 или пустое значение, используем 1
                 has_assignment: editHasAssignment,
-                open_at: localToUtc(editOpenAt),
-                deadline_at: localToUtc(editDeadlineAt),
+                open_at: moscowToUtc(editOpenAt),
+                deadline_at: moscowToUtc(editDeadlineAt),
             });
 
             cancelEditing();
@@ -476,7 +461,7 @@ const LessonsManager: React.FC<LessonsManagerProps> = ({ courseId, stageId, onBa
                 <div style={{ display: 'flex', gap: '12px', marginBottom: '16px', flexWrap: 'wrap' }}>
                     <div style={{ flex: '1 1 220px' }}>
                         <label style={{ display: 'block', marginBottom: '4px', fontSize: '12px', fontWeight: '500' }}>
-                            Время открытия:
+                            Время открытия <span style={{ color: '#888', fontWeight: 'normal' }}>(Москва UTC+3)</span>:
                         </label>
                         <input
                             className="admin-input"
@@ -488,7 +473,7 @@ const LessonsManager: React.FC<LessonsManagerProps> = ({ courseId, stageId, onBa
                     </div>
                     <div style={{ flex: '1 1 220px' }}>
                         <label style={{ display: 'block', marginBottom: '4px', fontSize: '12px', fontWeight: '500' }}>
-                            Дедлайн сдачи:
+                            Дедлайн сдачи <span style={{ color: '#888', fontWeight: 'normal' }}>(Москва UTC+3)</span>:
                         </label>
                         <input
                             className="admin-input"
@@ -533,8 +518,8 @@ const LessonsManager: React.FC<LessonsManagerProps> = ({ courseId, stageId, onBa
                                 <th>Описание</th>
                                 <th>Порядок</th>
                                 <th>Есть ДЗ</th>
-                                <th>Открытие</th>
-                                <th>Дедлайн</th>
+                                <th>Открытие (Москва UTC+3)</th>
+                                <th>Дедлайн (Москва UTC+3)</th>
                                 <th>Действия</th>
                             </tr>
                         </thead>

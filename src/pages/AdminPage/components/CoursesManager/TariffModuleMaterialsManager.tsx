@@ -144,7 +144,8 @@ const TariffModuleMaterialsManager: React.FC<TariffModuleMaterialsManagerProps> 
   // Функция для получения даты конкретного дня модуля
   const getDayDate = (dayNum: number): string | null => {
     if (!streamStartDate) return null;
-    const startDate = new Date(streamStartDate);
+    // Парсим дату как локальную чтобы избежать сдвига часового пояса
+    const startDate = new Date(streamStartDate + 'T00:00:00');
     // День модуля = дата начала потока + unlock_offset модуля + (dayNum - 1)
     const dayOffset = (moduleUnlockOffset || 0) + (dayNum - 1);
     startDate.setDate(startDate.getDate() + dayOffset);

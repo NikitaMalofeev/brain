@@ -1,10 +1,43 @@
 import React, { useRef, useState, useEffect, useCallback } from 'react';
-import { motion } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
 import roadmapBg from '@/shared/assets/images/roadmap.png';
 import roadmapUserMark from '@/shared/assets/icons/roadmapUserMark.svg';
 import roadmapDarkMark from '@/shared/assets/icons/roadmapDarkMark.svg';
 import roadmapWhiteMark from '@/shared/assets/icons/roadmapWhiteMark.svg';
 import { getNounPluralForm } from '@/helpers/pluralize';
+
+// Shimmer эффект для загрузки изображения
+const ShimmerOverlay: React.FC = () => (
+  <motion.div
+    initial={{ opacity: 1 }}
+    exit={{ opacity: 0 }}
+    transition={{ duration: 0.4 }}
+    className="absolute inset-0 z-20 overflow-hidden"
+    style={{
+      borderRadius: 32,
+      background: 'linear-gradient(135deg, #E8D5B7 0%, #D4C4A8 50%, #C9B896 100%)',
+    }}
+  >
+    <motion.div
+      animate={{
+        x: ['0%', '200%'],
+      }}
+      transition={{
+        duration: 1.5,
+        ease: 'linear',
+        repeat: Infinity,
+      }}
+      style={{
+        position: 'absolute',
+        top: 0,
+        left: '-100%',
+        width: '100%',
+        height: '100%',
+        background: 'linear-gradient(90deg, transparent 0%, rgba(255,255,255,0.4) 50%, transparent 100%)',
+      }}
+    />
+  </motion.div>
+);
 
 // Базовые размеры экрана для которых заданы координаты дороги
 const BASE_WIDTH = 400;
@@ -62,6 +95,20 @@ const RoadMap: React.FC<RoadMapProps> = ({
 }) => {
   const containerRef = useRef<HTMLDivElement>(null);
   const [containerSize, setContainerSize] = useState({ width: BASE_WIDTH, height: BASE_HEIGHT });
+  const [isImageLoaded, setIsImageLoaded] = useState(false);
+
+  // Предзагрузка фонового изображения
+  useEffect(() => {
+    const img = new Image();
+    img.onload = () => setIsImageLoaded(true);
+    img.onerror = () => setIsImageLoaded(true); // Показываем контент даже при ошибке
+    img.src = roadmapBg;
+
+    // Если изображение уже в кеше
+    if (img.complete) {
+      setIsImageLoaded(true);
+    }
+  }, []);
 
   // Отслеживаем размер контейнера
   useEffect(() => {
@@ -192,7 +239,7 @@ const RoadMap: React.FC<RoadMapProps> = ({
       ref={containerRef}
       className="relative overflow-hidden"
       style={{
-        backgroundImage: `url(${roadmapBg})`,
+        backgroundImage: isImageLoaded ? `url(${roadmapBg})` : 'none',
         backgroundSize: 'cover',
         backgroundPosition: 'center',
         backgroundRepeat: 'no-repeat',
@@ -202,6 +249,10 @@ const RoadMap: React.FC<RoadMapProps> = ({
         height: '100%',
       }}
     >
+      {/* Shimmer эффект пока изображение загружается */}
+      <AnimatePresence>
+        {!isImageLoaded && <ShimmerOverlay />}
+      </AnimatePresence>
 
       {/* Контент */}
       <div className="relative z-10 flex flex-col" style={{ minHeight: '100%' }}>

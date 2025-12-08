@@ -209,7 +209,7 @@ const BroadcastsManager: React.FC = () => {
                                 <th>Название</th>
                                 <th>Описание</th>
                                 <th>Ссылка</th>
-                                <th>Дата начала (МСК)</th>
+                                <th>Дата начала (Москва UTC+3)</th>
                                 <th>Статус</th>
                                 <th>Запись</th>
                                 <th>Действия</th>
@@ -323,7 +323,7 @@ const BroadcastsManager: React.FC = () => {
 
                         <div className="form-row">
                             <div className="form-group">
-                                <label>Дата и время начала:</label>
+                                <label>Дата и время начала <span style={{ color: '#888', fontWeight: 'normal' }}>(Москва UTC+3)</span>:</label>
                                 <input
                                     className="admin-input"
                                     type="datetime-local"

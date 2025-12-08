@@ -31,7 +31,7 @@ export const FaqPage = () => {
     }
     return (
         <Page>
-            <div className={'flex flex-col gap-2 text-black min-h-screen with-content-offset'}>
+            <div className={'flex flex-col gap-2 text-black min-h-screen'}>
                 <div
                     className={'page-bg-container relative items-center rounded-b-3xl bg-[url("/bg3.jpg")] bg-cover bg-bottom h-[328px] overflow-hidden'}>
                     <img src={'/sphere-faq.png'} alt={''}

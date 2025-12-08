@@ -10,16 +10,15 @@ const WebViewContext = createContext<WebViewContextType | null>(null);
 
 /**
  * Провайдер для WebView - оборачивает приложение
- * Использует Telegram WebApp API для открытия ссылок во внутреннем браузере
+ * Открывает ссылки в браузере Telegram
  */
 export const WebViewProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
   const openWebView = useCallback((url: string) => {
-    // Используем Telegram WebApp API для открытия во внутреннем браузере
     openExternalLink(url);
   }, []);
 
   const closeWebView = useCallback(() => {
-    // Пустая функция - браузер Telegram закрывается пользователем
+    // Пустая функция - браузер закрывается пользователем
   }, []);
 
   return (
@@ -30,7 +29,7 @@ export const WebViewProvider: React.FC<{ children: ReactNode }> = ({ children })
 };
 
 /**
- * Хук для открытия ссылок во внутреннем браузере Telegram
+ * Хук для открытия ссылок в браузере Telegram
  */
 export const useWebView = (): WebViewContextType => {
   const context = useContext(WebViewContext);

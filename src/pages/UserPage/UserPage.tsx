@@ -1,5 +1,5 @@
+import React, { useMemo, useState } from "react";
 import { useSupabaseUser, usePreviewStreamModules } from '@/lib/supabase/hooks';
-import { useMemo, useState } from "react";
 import { useWebView } from '@/hooks/useWebView';
 import {
     initDataState as _initDataState,
@@ -12,7 +12,7 @@ import { supabase } from '@/lib/supabase/client';
 import { Ripple } from '@/components/ui/Ripple/Ripple';
 import { clsx } from "clsx";
 import { useUserStreamModules } from '@/lib/supabase/hooks/useUserStreamModules';
-import { motion } from "framer-motion";
+import { motion, AnimatePresence } from "framer-motion";
 import { useGuestStatus } from '@/lib/supabase/hooks/useIsGuest';
 import GuestBlockedModal from '@/components/GuestBlockedModal';
 import LoadingSpinner from '@/components/LoadingSpinner/LoadingSpinner';
@@ -87,10 +87,46 @@ const pageVariants = {
     },
 };
 
+// Shimmer компонент для видео с приятным переливанием
+const VideoShimmer: React.FC = () => (
+    <motion.div
+        initial={{ opacity: 1 }}
+        exit={{ opacity: 0 }}
+        transition={{ duration: 0.5 }}
+        className="absolute top-[150px] left-1/2 -translate-y-1/2 -translate-x-1/2 rotate-[16deg] scale-125 overflow-hidden"
+        style={{
+            width: 300,
+            height: 300,
+            borderRadius: '50%',
+            background: 'linear-gradient(135deg, #f8f9fa 0%, #e9ecef 50%, #dee2e6 100%)',
+        }}
+    >
+        <motion.div
+            animate={{
+                x: ['-100%', '200%'],
+            }}
+            transition={{
+                duration: 1.5,
+                repeat: Infinity,
+                ease: 'linear',
+            }}
+            style={{
+                position: 'absolute',
+                top: 0,
+                left: 0,
+                right: 0,
+                bottom: 0,
+                background: 'linear-gradient(90deg, transparent 0%, rgba(255,255,255,0.6) 50%, transparent 100%)',
+            }}
+        />
+    </motion.div>
+);
+
 export const UserPage = () => {
     const initDataState = useSignal(_initDataState);
     const { supabaseUser, loading, error } = useSupabaseUser(initDataState);
     const [showGuestModal, setShowGuestModal] = useState(false);
+    const [isVideoReady, setIsVideoReady] = useState(false);
     const { openWebView } = useWebView();
     const user = useMemo(() =>
         initDataState && initDataState.user ? initDataState.user : undefined,
@@ -262,13 +298,17 @@ export const UserPage = () => {
     return (
         <Page back={false}>
             <div className={' relative text-black min-h-screen bg-white pt-[180px] overflow-hidden'}>
+                <AnimatePresence>
+                    {!isVideoReady && <VideoShimmer />}
+                </AnimatePresence>
                 <video
                     className={'absolute top-[150px] left-1/2 -translate-y-1/2 -translate-x-1/2 rotate-[16deg] object-cover scale-125'}
-                    src="/brain2.mov"        /* или CDN-ссылка */
+                    src="/brain2.mov"
                     autoPlay
                     muted
                     loop
                     playsInline
+                    onCanPlayThrough={() => setIsVideoReady(true)}
                 />
                 <motion.div
                     className={'rounded-t-3xl bg-[url("/bg3.jpg")] bg-cover bg-bottom relative'}
@@ -291,7 +331,7 @@ export const UserPage = () => {
                     <p className={'pt-[58px] text-xl font-semibold text-center text-wrap max-w-full px-3 mb-2'}>Привет, {user?.first_name}</p>
                     <motion.div variants={itemVariants} className={' grid grid-cols-2 gap-3 mb-3 px-4'}>
                         {/* Блок уровня с графиком */}
-                        <div className={'row-span-2 flex flex-col items-center justify-center gap-3 px-2 rounded-2xl bg-white relative overflow-hidden'}>
+                        <div className={'row-span-2 flex flex-col items-center justify-center gap-3 rounded-2xl bg-white relative overflow-hidden'}>
                             {(isGuest || isPreviewMode) && (
                                 <div
                                     className="absolute inset-0 bg-black/30 z-10 cursor-pointer rounded-2xl flex items-center justify-center"
@@ -303,12 +343,15 @@ export const UserPage = () => {
                                     </svg>
                                 </div>
                             )}
-                            <div className={'flex items-center flex-col gap-2'}>
-                                <p className={'text-sm text-center font-medium text-[#9F9F9F]'}>Ваш уровень</p>
-                                <p className={'font-bold text-sm uppercase'}>
+                            <div className={'flex items-center flex-col gap-2 w-full'}>
+                                <p className={'text-sm text-center font-medium text-[#9F9F9F] px-2'}>Ваш уровень</p>
+                                <p className={'font-bold text-sm uppercase px-2'}>
                                     {currentStage?.stage_name || 'Неизвестная ступень'}
                                 </p>
-                                <HealingChartRecharts current={(isGuest || isPreviewMode) ? 0 : chartCurrent} />
+                                {/* График от края до края карточки */}
+                                <div className="w-full">
+                                    <HealingChartRecharts current={(isGuest || isPreviewMode) ? 0 : chartCurrent} />
+                                </div>
                             </div>
                         </div>
                         <div className={'p-3 rounded-2xl bg-white flex items-center flex-col relative overflow-hidden'}>

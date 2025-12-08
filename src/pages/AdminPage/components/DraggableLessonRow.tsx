@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { buildFileUrl } from '@/lib/supabase/supabaseStorageService';
+import { formatMoscowDateTime } from '@/helpers/dateUtils';
 
 interface DraggableLessonRowProps {
     lesson: any;
@@ -162,13 +163,7 @@ const DraggableLessonRow: React.FC<DraggableLessonRowProps> = ({
                         Время редактируется ниже
                     </div>
                 ) : (
-                    lesson.open_at ? new Date(lesson.open_at).toLocaleString('ru-RU', {
-                        day: '2-digit',
-                        month: '2-digit',
-                        year: 'numeric',
-                        hour: '2-digit',
-                        minute: '2-digit'
-                    }) : '-'
+                    formatMoscowDateTime(lesson.open_at)
                 )}
             </td>
             <td>
@@ -177,13 +172,7 @@ const DraggableLessonRow: React.FC<DraggableLessonRowProps> = ({
                         Дедлайн редактируется ниже
                     </div>
                 ) : (
-                    lesson.deadline_at ? new Date(lesson.deadline_at).toLocaleString('ru-RU', {
-                        day: '2-digit',
-                        month: '2-digit',
-                        year: 'numeric',
-                        hour: '2-digit',
-                        minute: '2-digit'
-                    }) : '-'
+                    formatMoscowDateTime(lesson.deadline_at)
                 )}
             </td>
             <td className="actions-cell">
@@ -335,7 +324,7 @@ const DraggableLessonRow: React.FC<DraggableLessonRowProps> = ({
                                 {/* Время открытия */}
                                 <div style={{ flex: '1' }}>
                                     <div style={{ marginBottom: '8px', fontWeight: '500', color: 'var(--admin-text-primary)' }}>
-                                        Время открытия:
+                                        Время открытия <span style={{ color: '#888', fontWeight: 'normal' }}>(Москва UTC+3)</span>:
                                     </div>
                                     <input
                                         className="admin-input"
@@ -352,11 +341,11 @@ const DraggableLessonRow: React.FC<DraggableLessonRowProps> = ({
                                         Оставьте пустым для немедленного открытия
                                     </small>
                                 </div>
-                                
+
                                 {/* Дедлайн */}
                                 <div style={{ flex: '1' }}>
                                     <div style={{ marginBottom: '8px', fontWeight: '500', color: 'var(--admin-text-primary)' }}>
-                                        Дедлайн:
+                                        Дедлайн <span style={{ color: '#888', fontWeight: 'normal' }}>(Москва UTC+3)</span>:
                                     </div>
                                     <input
                                         className="admin-input"

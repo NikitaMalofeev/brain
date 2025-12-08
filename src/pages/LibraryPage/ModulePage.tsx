@@ -177,8 +177,8 @@ const ModulePage: React.FC = () => {
 
   return (
     <Page showTabBar={false}>
-      <div className="text-black min-h-full">
-        <div className="bg-white p-4 flex flex-col gap-3 p-4 pt-4">
+      <div className="page-bg-container text-black min-h-screen bg-[url('/bg3.jpg')] bg-cover bg-top pb-8">
+        <div className="bg-white p-4 flex flex-col gap-3">
           <div className="flex items-center justify-between">
             <div className="flex flex-col">
               <p className="font-bold text-xl">{moduleDetails.module_name}</p>
@@ -205,7 +205,7 @@ const ModulePage: React.FC = () => {
           </div>
         </div>
         <motion.div
-          className="page-bg-container bg-[url('/bg3.jpg')] min-h-full bg-cover bg-top p-4 rounded-t-3xl flex-1 flex flex-col gap-3"
+          className="p-4 rounded-t-3xl flex-1 flex flex-col gap-3"
           variants={listVariants}
           initial="hidden"
           animate="show"

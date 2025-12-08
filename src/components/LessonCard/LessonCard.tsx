@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { LessonData } from '@/lib/supabase/hooks/useStageDetails';
 import { buildFileUrl } from '@/lib/supabase/supabaseStorageService';
 import { Ripple } from '@/components/ui/Ripple/Ripple';
@@ -17,6 +17,8 @@ const getDefaultCover = (): string => {
 };
 
 const LessonCard: React.FC<LessonCardProps> = ({ lesson, onClick, isGuest = false, stageName }) => {
+    const [imageLoaded, setImageLoaded] = useState(false);
+
     const handleClick = () => {
         // Если гость - всегда вызываем onClick (он покажет модалку в родителе)
         if (isGuest) {
@@ -49,27 +51,33 @@ const LessonCard: React.FC<LessonCardProps> = ({ lesson, onClick, isGuest = fals
                     className={'flex flex-col w-full bg-white cursor-pointer'}
                 >
                     {/* Изображение с бейджами */}
-                    <div className={'relative w-full aspect-[4/3]'}>
+                    <div className={'relative w-full h-[120px] bg-gray-200'}>
+                        {/* Skeleton пока изображение загружается */}
+                        {!imageLoaded && (
+                            <div className="absolute inset-0 bg-gray-200 animate-pulse" />
+                        )}
+
                         <img
                             src={coverImageUrl}
                             alt={lesson.lesson_name}
-                            className="w-full h-full object-cover"
+                            className={`absolute inset-0 w-full h-full object-cover transition-opacity duration-200 ${imageLoaded ? 'opacity-100' : 'opacity-0'}`}
+                            onLoad={() => setImageLoaded(true)}
                         />
 
                         {/* Затемняющий оверлей для заблокированных */}
-                        {isLocked && (
+                        {isLocked && imageLoaded && (
                             <div className="absolute inset-0 bg-black/30" />
                         )}
 
                         {/* Бейдж с названием ступени - левый верхний угол */}
-                        {stageName && !isLocked && (
+                        {stageName && !isLocked && imageLoaded && (
                             <div className="absolute top-2 left-2 bg-[#A89080]/90 text-white text-[10px] font-medium px-2 py-1 rounded-md">
                                 {stageName}
                             </div>
                         )}
 
                         {/* Бейдж "Не доступно" с замком - для заблокированных */}
-                        {isLocked && (
+                        {isLocked && imageLoaded && (
                             <div className="absolute top-2 left-2 bg-[#ADADAD] text-white text-[10px] font-medium px-2 py-1 rounded-md flex items-center gap-1">
                                 <span>Не доступно</span>
                                 <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">

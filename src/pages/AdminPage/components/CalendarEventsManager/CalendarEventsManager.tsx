@@ -398,7 +398,7 @@ const CalendarEventsManager: React.FC = () => {
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Время
+                    Время <span className="text-gray-500 font-normal">(Москва UTC+3)</span>
                   </label>
                   <input
                     type="time"
@@ -598,7 +598,7 @@ const CalendarEventsManager: React.FC = () => {
               <thead className="bg-gray-50 border-b">
                 <tr>
                   <th className="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase">
-                    Дата
+                    Дата / Время (Москва UTC+3)
                   </th>
                   <th className="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase">
                     Название

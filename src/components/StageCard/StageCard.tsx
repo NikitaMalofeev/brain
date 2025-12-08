@@ -6,6 +6,7 @@ import { Ripple } from '@/components/ui/Ripple/Ripple';
 import { clsx } from 'clsx';
 import { Link } from 'react-router-dom';
 import GuestBlockedModal from '@/components/GuestBlockedModal';
+import { parseDateOnly } from '@/helpers/dateUtils';
 
 export interface StageCardProps {
     id: number;
@@ -33,12 +34,14 @@ const StageCard: React.FC<StageCardProps> = memo(({
     const [showGuestModal, setShowGuestModal] = useState(false);
     const isUnlocked = !isLocked;
 
-    // Вычисляем дату открытия модуля
+    // Вычисляем дату открытия модуля (в локальном времени пользователя)
     const getUnlockDate = (): string | null => {
         if (!streamStartDate || unlockDay === undefined || unlockDay <= 0) {
             return null;
         }
-        const startDate = new Date(streamStartDate);
+        // Используем parseDateOnly чтобы избежать сдвига часового пояса
+        const startDate = parseDateOnly(streamStartDate);
+        if (!startDate) return null;
         startDate.setDate(startDate.getDate() + unlockDay - 1);
         return startDate.toLocaleDateString('ru-RU', {
             day: 'numeric',
