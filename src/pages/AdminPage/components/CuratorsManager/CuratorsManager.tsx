@@ -1,4 +1,4 @@
-import React, { useState, useRef } from 'react';
+import React, { useState } from 'react';
 import { useCuratorsAdmin, type CreateCuratorData, type UpdateCuratorData, type Curator } from '@/lib/supabase/hooks/useCuratorsAdmin';
 import { buildFileUrl } from '@/lib/supabase/supabaseStorageService';
 import { CURATOR_PASSWORD_CONFIG } from '@/lib/config/constants';
@@ -31,9 +31,7 @@ const CuratorsManager: React.FC = () => {
         deleteCurator,
         isDeleting,
         updateCuratorAvatar,
-        isUpdatingAvatar,
         deleteCuratorAvatar,
-        isDeletingAvatar
     } = useCuratorsAdmin();
 
     // Состояние формы создания куратора
@@ -489,6 +487,55 @@ const CuratorsManager: React.FC = () => {
                                 {formError}
                             </div>
                         )}
+
+                        {/* Секция аватара */}
+                        <div className="form-group" style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
+                            <label style={{ minWidth: 'auto' }}>Аватар</label>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                                {editingCurator.photo_url ? (
+                                    <img
+                                        src={buildFileUrl(editingCurator.photo_url) || ''}
+                                        alt="Аватар"
+                                        style={{
+                                            width: '60px',
+                                            height: '60px',
+                                            borderRadius: '50%',
+                                            objectFit: 'cover',
+                                            border: '2px solid #e0e0e0'
+                                        }}
+                                    />
+                                ) : (
+                                    <div
+                                        style={{
+                                            width: '60px',
+                                            height: '60px',
+                                            borderRadius: '50%',
+                                            background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+                                            display: 'flex',
+                                            alignItems: 'center',
+                                            justifyContent: 'center',
+                                            color: 'white',
+                                            fontSize: '18px',
+                                            fontWeight: 'bold',
+                                            border: '2px solid #e0e0e0'
+                                        }}
+                                    >
+                                        {`${editingCurator.first_name?.[0] || ''}${editingCurator.last_name?.[0] || ''}`.toUpperCase() || '?'}
+                                    </div>
+                                )}
+                                <button
+                                    type="button"
+                                    className="admin-button secondary"
+                                    onClick={() => {
+                                        setIsEditModalVisible(false);
+                                        openAvatarModal(editingCurator);
+                                    }}
+                                    style={{ padding: '8px 16px', fontSize: '13px' }}
+                                >
+                                    {editingCurator.photo_url ? 'Изменить' : 'Добавить'}
+                                </button>
+                            </div>
+                        </div>
 
                         <div className="form-group">
                             <label>Имя *</label>

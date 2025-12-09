@@ -10,6 +10,7 @@ export interface Chat {
     created_at: string;
     stream_id?: string;  // ID привязанного потока
     stream_name?: string; // Название потока (приходит из JOIN)
+    avatar_url?: string | null; // Путь к аватару чата
 }
 
 // Тип для FAQ

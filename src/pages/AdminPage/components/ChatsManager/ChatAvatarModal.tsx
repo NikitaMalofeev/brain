@@ -1,23 +1,22 @@
 import React, { useRef, useState, useCallback } from 'react';
 import { FileUploader, FileUploaderRef } from '@/components/FileUploader/FileUploader';
-import { Curator } from '@/lib/supabase/hooks/useCuratorsAdmin';
 import { buildFileUrl } from '@/lib/supabase/supabaseStorageService';
 import { uploadFile } from '@/lib/supabase/supabaseStorageService';
+import type { Chat } from '@/types';
 import ReactCrop, { Crop, PixelCrop } from 'react-image-crop';
 import 'react-image-crop/dist/ReactCrop.css';
 
-// Расширяем тип Curator для поддержки photo_url
-interface CuratorAvatarModalProps {
+interface ChatAvatarModalProps {
     isOpen: boolean;
-    curator: Curator | null;
+    chat: Chat | null;
     onClose: () => void;
     onSave: (filePath: string) => Promise<void>;
     onDelete: () => Promise<void>;
 }
 
-const CuratorAvatarModal: React.FC<CuratorAvatarModalProps> = ({
+const ChatAvatarModal: React.FC<ChatAvatarModalProps> = ({
     isOpen,
-    curator,
+    chat,
     onClose,
     onSave,
     onDelete
@@ -134,7 +133,7 @@ const CuratorAvatarModal: React.FC<CuratorAvatarModalProps> = ({
             const croppedBlob = await getCroppedImg(imgRef.current, completedCrop);
 
             // Создаем File из Blob для загрузки
-            const croppedFile = new File([croppedBlob], `avatar_${Date.now()}.jpg`, {
+            const croppedFile = new File([croppedBlob], `chat_avatar_${Date.now()}.jpg`, {
                 type: 'image/jpeg',
             });
 
@@ -149,7 +148,7 @@ const CuratorAvatarModal: React.FC<CuratorAvatarModalProps> = ({
             onClose();
 
         } catch (error: any) {
-            console.error('Ошибка сохранения аватара куратора:', error);
+            console.error('Ошибка сохранения аватара чата:', error);
             alert(`Ошибка сохранения аватара: ${error.message}`);
         } finally {
             setIsSaving(false);
@@ -157,9 +156,9 @@ const CuratorAvatarModal: React.FC<CuratorAvatarModalProps> = ({
     };
 
     const handleDelete = async () => {
-        if (!curator?.photo_url) return;
+        if (!chat?.avatar_url) return;
 
-        const confirmDelete = confirm('Вы уверены, что хотите удалить аватар куратора?');
+        const confirmDelete = confirm('Вы уверены, что хотите удалить аватар чата?');
         if (!confirmDelete) return;
 
         try {
@@ -167,7 +166,7 @@ const CuratorAvatarModal: React.FC<CuratorAvatarModalProps> = ({
             await onDelete();
             onClose();
         } catch (error: any) {
-            console.error('Ошибка удаления аватара куратора:', error);
+            console.error('Ошибка удаления аватара чата:', error);
             alert(`Ошибка удаления аватара: ${error.message}`);
         } finally {
             setIsSaving(false);
@@ -189,15 +188,13 @@ const CuratorAvatarModal: React.FC<CuratorAvatarModalProps> = ({
     };
 
     // Условный возврат ПОСЛЕ всех хуков
-    if (!isOpen || !curator) return null;
-
-    const curatorName = `${curator.first_name || ''} ${curator.last_name || ''}`.trim() || curator.web_login || 'Безымянный куратор';
+    if (!isOpen || !chat) return null;
 
     return (
         <div className="admin-modal-backdrop" onClick={onClose}>
             <div className="admin-modal" onClick={e => e.stopPropagation()}>
                 <button className="admin-modal-close" onClick={onClose}>×</button>
-                <h3>Аватар куратора: {curatorName}</h3>
+                <h3>Аватар чата: {chat.name}</h3>
 
                 {!showCropper ? (
                     // Этап 1: Выбор файла
@@ -209,13 +206,13 @@ const CuratorAvatarModal: React.FC<CuratorAvatarModalProps> = ({
                                 filePrefix="images/"
                                 onFileSelected={handleFileSelected}
                                 disabled={isSaving}
-                                currentFileUrl={buildFileUrl(curator.photo_url) || undefined}
+                                currentFileUrl={buildFileUrl(chat.avatar_url) || undefined}
                                 showDeleteButton={false}
                             />
                         </div>
 
                         <div className="form-actions">
-                            {curator.photo_url && (
+                            {chat.avatar_url && (
                                 <button
                                     className="admin-button danger"
                                     onClick={handleDelete}
@@ -295,4 +292,4 @@ const CuratorAvatarModal: React.FC<CuratorAvatarModalProps> = ({
     );
 };
 
-export default CuratorAvatarModal; 
+export default ChatAvatarModal;

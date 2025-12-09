@@ -1,6 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { useChatsAdmin } from '@/lib/supabase/hooks/useChatsAdmin';
 import { useChatAccess } from '@/lib/supabase/hooks/useChatAccess';
+import { buildFileUrl } from '@/lib/supabase/supabaseStorageService';
+import ChatAvatarModal from './ChatAvatarModal';
 import type { Chat, CreateChatData, UpdateChatData } from '@/types';
 
 /**
@@ -16,6 +18,8 @@ const ChatsManager: React.FC = () => {
         createChat,
         updateChat,
         deleteChat,
+        updateChatAvatar,
+        deleteChatAvatar,
         streams,
         streamsLoading,
         tariffs,
@@ -29,6 +33,10 @@ const ChatsManager: React.FC = () => {
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [editingChat, setEditingChat] = useState<Chat | null>(null);
     const [modalLoading, setModalLoading] = useState(false);
+
+    // Состояние для модального окна аватара
+    const [avatarModalOpen, setAvatarModalOpen] = useState(false);
+    const [selectedChatForAvatar, setSelectedChatForAvatar] = useState<Chat | null>(null);
 
     // Хук для работы с доступами конкретного чата (поток + тарифы)
     const chatAccess = useChatAccess(editingChat?.id || null);
@@ -297,6 +305,93 @@ const ChatsManager: React.FC = () => {
         setDraggedChatId(null);
     };
 
+    // === АВАТАР ЧАТА ===
+    const openAvatarModal = (chat: Chat) => {
+        setSelectedChatForAvatar(chat);
+        setAvatarModalOpen(true);
+    };
+
+    const closeAvatarModal = () => {
+        setAvatarModalOpen(false);
+        setSelectedChatForAvatar(null);
+    };
+
+    const handleSaveAvatar = async (filePath: string) => {
+        if (!selectedChatForAvatar) return;
+
+        try {
+            await updateChatAvatar(selectedChatForAvatar.id, filePath);
+            console.log('Аватар чата успешно сохранен:', filePath);
+        } catch (error: any) {
+            console.error('Ошибка сохранения аватара:', error);
+            throw error;
+        }
+    };
+
+    const handleDeleteAvatar = async () => {
+        if (!selectedChatForAvatar) return;
+
+        try {
+            await deleteChatAvatar(selectedChatForAvatar.id);
+            console.log('Аватар чата успешно удален');
+        } catch (error: any) {
+            console.error('Ошибка удаления аватара:', error);
+            throw error;
+        }
+    };
+
+    // Функция для отображения аватара или плейсхолдера
+    const renderChatAvatar = (chat: Chat) => {
+        const avatar_url = chat.avatar_url;
+
+        if (avatar_url) {
+            return (
+                <img
+                    src={buildFileUrl(avatar_url) || ''}
+                    alt={chat.name}
+                    style={{
+                        width: '40px',
+                        height: '40px',
+                        borderRadius: '50%',
+                        objectFit: 'cover',
+                        border: '1px solid #e0e0e0',
+                        cursor: 'pointer'
+                    }}
+                    onClick={() => openAvatarModal(chat)}
+                    onError={(e) => {
+                        console.warn('Ошибка загрузки аватара чата:', avatar_url);
+                        e.currentTarget.style.display = 'none';
+                    }}
+                />
+            );
+        }
+
+        // Плейсхолдер с первой буквой названия
+        const initial = chat.name?.[0]?.toUpperCase() || '?';
+        return (
+            <div
+                style={{
+                    width: '40px',
+                    height: '40px',
+                    borderRadius: '50%',
+                    background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    color: 'white',
+                    fontSize: '14px',
+                    fontWeight: 'bold',
+                    cursor: 'pointer',
+                    border: '1px solid #e0e0e0'
+                }}
+                onClick={() => openAvatarModal(chat)}
+                title="Нажмите для загрузки аватара"
+            >
+                {initial}
+            </div>
+        );
+    };
+
     // Отображение загрузки
     if (loading) {
         return (
@@ -385,6 +480,7 @@ const ChatsManager: React.FC = () => {
                             <tr>
                                 <th>🔄</th>
                                 <th>Порядок</th>
+                                <th>Аватар</th>
                                 <th>Название</th>
                                 <th>Поток</th>
                                 <th>Ссылка</th>
@@ -415,6 +511,7 @@ const ChatsManager: React.FC = () => {
                                                 min="1"
                                             />
                                         </td>
+                                        <td>{renderChatAvatar(chat)}</td>
                                         <td className="font-medium">{chat.name}</td>
                                         <td className="text-gray-600">
                                             {chat.stream_name || '—'}
@@ -462,6 +559,58 @@ const ChatsManager: React.FC = () => {
                         <button className="admin-modal-close" onClick={closeModal}>×</button>
 
                         <h3>{editingChat ? 'Редактирование чата' : 'Создание чата'}</h3>
+
+                        {/* Секция аватара - только для редактирования */}
+                        {editingChat && (
+                            <div className="form-group" style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
+                                <label style={{ minWidth: 'auto' }}>Аватар</label>
+                                <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                                    {editingChat.avatar_url ? (
+                                        <img
+                                            src={buildFileUrl(editingChat.avatar_url) || ''}
+                                            alt="Аватар"
+                                            style={{
+                                                width: '60px',
+                                                height: '60px',
+                                                borderRadius: '50%',
+                                                objectFit: 'cover',
+                                                border: '2px solid #e0e0e0'
+                                            }}
+                                        />
+                                    ) : (
+                                        <div
+                                            style={{
+                                                width: '60px',
+                                                height: '60px',
+                                                borderRadius: '50%',
+                                                background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+                                                display: 'flex',
+                                                alignItems: 'center',
+                                                justifyContent: 'center',
+                                                color: 'white',
+                                                fontSize: '18px',
+                                                fontWeight: 'bold',
+                                                border: '2px solid #e0e0e0'
+                                            }}
+                                        >
+                                            {editingChat.name?.[0]?.toUpperCase() || '?'}
+                                        </div>
+                                    )}
+                                    <button
+                                        type="button"
+                                        className="admin-button secondary"
+                                        onClick={() => {
+                                            closeModal();
+                                            openAvatarModal(editingChat);
+                                        }}
+                                        style={{ padding: '8px 16px', fontSize: '13px' }}
+                                        disabled={modalLoading}
+                                    >
+                                        {editingChat.avatar_url ? 'Изменить' : 'Добавить'}
+                                    </button>
+                                </div>
+                            </div>
+                        )}
 
                         <div className="form-group">
                             <label>Название чата *</label>
@@ -582,6 +731,15 @@ const ChatsManager: React.FC = () => {
                     </div>
                 </div>
             )}
+
+            {/* Модальное окно аватара чата */}
+            <ChatAvatarModal
+                isOpen={avatarModalOpen}
+                chat={selectedChatForAvatar}
+                onClose={closeAvatarModal}
+                onSave={handleSaveAvatar}
+                onDelete={handleDeleteAvatar}
+            />
         </div>
     );
 };

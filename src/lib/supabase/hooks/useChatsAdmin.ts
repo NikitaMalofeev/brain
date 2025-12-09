@@ -1,5 +1,4 @@
 import { useState, useEffect, useMemo } from 'react';
-import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/lib/supabase/client';
 import { useStreams } from './useTariffConfiguration';
 import { useTariffsAdmin } from './useTariffsAdmin';
@@ -22,6 +21,10 @@ interface ChatsAdminResult {
     createChat: (data: CreateChatData) => Promise<Chat>;
     updateChat: (data: UpdateChatData) => Promise<void>;
     deleteChat: (id: string) => Promise<void>;
+
+    // Avatar операции
+    updateChatAvatar: (chatId: string, avatarUrl: string) => Promise<void>;
+    deleteChatAvatar: (chatId: string) => Promise<void>;
 }
 
 /**
@@ -184,6 +187,54 @@ export function useChatsAdmin(): ChatsAdminResult {
         }
     };
 
+    // Обновление аватара чата
+    const updateChatAvatar = async (chatId: string, avatarUrl: string) => {
+        if (!supabase) {
+            throw new Error('Supabase клиент не инициализирован');
+        }
+
+        try {
+            const { error: updateError } = await supabase
+                .from('chats')
+                .update({ avatar_url: avatarUrl })
+                .eq('id', chatId);
+
+            if (updateError) throw updateError;
+
+            // Обновляем локальное состояние
+            setChats(prev => prev.map(chat =>
+                chat.id === chatId ? { ...chat, avatar_url: avatarUrl } : chat
+            ));
+        } catch (err) {
+            console.error('Ошибка при обновлении аватара чата:', err);
+            throw err instanceof Error ? err : new Error('Ошибка при обновлении аватара чата');
+        }
+    };
+
+    // Удаление аватара чата
+    const deleteChatAvatar = async (chatId: string) => {
+        if (!supabase) {
+            throw new Error('Supabase клиент не инициализирован');
+        }
+
+        try {
+            const { error: updateError } = await supabase
+                .from('chats')
+                .update({ avatar_url: null })
+                .eq('id', chatId);
+
+            if (updateError) throw updateError;
+
+            // Обновляем локальное состояние
+            setChats(prev => prev.map(chat =>
+                chat.id === chatId ? { ...chat, avatar_url: null } : chat
+            ));
+        } catch (err) {
+            console.error('Ошибка при удалении аватара чата:', err);
+            throw err instanceof Error ? err : new Error('Ошибка при удалении аватара чата');
+        }
+    };
+
     useEffect(() => {
         loadChats();
     }, []);
@@ -205,5 +256,9 @@ export function useChatsAdmin(): ChatsAdminResult {
         createChat,
         updateChat,
         deleteChat,
+
+        // Avatar операции
+        updateChatAvatar,
+        deleteChatAvatar,
     };
 } 
