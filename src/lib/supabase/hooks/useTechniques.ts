@@ -136,10 +136,10 @@ export function useTechniquesFiltered(userId: string | null | undefined) {
   });
   const bundleGroups = Array.from(bundleGroupsMap.values());
 
-  // 2. Техники из модулей - ПРИОРИТЕТ МОДУЛЯ! (status игнорируется)
-  // 2a. Разблокированные по дате из модулей → идут в myTechniques
+  // 2. Техники из модулей - ПРИОРИТЕТ МОДУЛЯ!
+  // 2a. Разблокированные по дате из модулей → идут в myTechniques (кроме бесплатных - они в отдельной секции)
   const moduleTechniquesUnlocked = techniques?.filter(
-    (t) => !usedIds.has(t.id) && t.user_access_source === 'module' && t.is_unlocked === true
+    (t) => !usedIds.has(t.id) && t.user_access_source === 'module' && t.is_unlocked === true && t.status !== 'free'
   ) || [];
 
   // Добавляем в usedIds

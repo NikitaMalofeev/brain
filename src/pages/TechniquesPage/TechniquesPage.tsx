@@ -412,7 +412,7 @@ const TechniquesPage: React.FC = () => {
                         <p className="text-xs text-white/60 mt-1">{error.message}</p>
                       </div>
                     </div>
-                  ) : (activeTab === 'mine' && (isGuest ? (bundleGroups.length === 0 && myFreeTechniques.length === 0) : (myTechniques.length === 0 && bundleGroups.length === 0 && availableSpecialTechniques.length === 0 && myFreeTechniques.length === 0 && moduleTechniques.length === 0))) ? (
+                  ) : (activeTab === 'mine' && (isGuest ? (myTechniques.length === 0 && bundleGroups.length === 0 && myFreeTechniques.length === 0) : (myTechniques.length === 0 && bundleGroups.length === 0 && availableSpecialTechniques.length === 0 && myFreeTechniques.length === 0 && moduleTechniques.length === 0))) ? (
                     <div className="flex items-center justify-center h-full min-h-[300px]">
                       <div className="text-center">
                         <p className="text-sm text-white/60">
@@ -513,8 +513,8 @@ const TechniquesPage: React.FC = () => {
                             </div>
                           )}
 
-                          {/* Секция "Мои" для гостей - только обычные пакеты */}
-                          {isGuest && bundleGroups.length > 0 && (
+                          {/* Секция "Мои" для гостей - купленные техники и обычные пакеты */}
+                          {isGuest && (myTechniques.length > 0 || bundleGroups.length > 0) && (
                             <div>
                               <h2 className="text-[20px] font-semibold text-white mb-3 leading-none tracking-normal">Мои</h2>
                               <motion.div
@@ -523,8 +523,18 @@ const TechniquesPage: React.FC = () => {
                                 initial="hidden"
                                 animate="show"
                               >
-                                {bundleGroups.flatMap((bundle) => bundle.techniques).map((technique) => (
+                                {/* Купленные техники гостя */}
+                                {myTechniques.map((technique) => (
                                   <motion.div key={technique.id} variants={itemVariants}>
+                                    <TechniqueCard
+                                      technique={technique}
+                                      onClick={() => handleTechniqueClick(technique.id)}
+                                    />
+                                  </motion.div>
+                                ))}
+                                {/* Техники из обычных пакетов */}
+                                {bundleGroups.flatMap((bundle) => bundle.techniques).map((technique) => (
+                                  <motion.div key={`bundle-${technique.id}`} variants={itemVariants}>
                                     <TechniqueCard
                                       technique={technique}
                                       onClick={() => handleTechniqueClick(technique.id)}
@@ -652,8 +662,8 @@ const TechniquesPage: React.FC = () => {
                             </div>
                           )}
 
-                          {/* Секция "Мои" для гостей - только обычные пакеты */}
-                          {isGuest && bundleGroups.length > 0 && (
+                          {/* Секция "Мои" для гостей - купленные техники и обычные пакеты */}
+                          {isGuest && (myTechniques.length > 0 || bundleGroups.length > 0) && (
                             <div>
                               <h2 className="text-[20px] font-semibold text-white mb-3 leading-none tracking-normal">Мои</h2>
                               <motion.div
@@ -662,8 +672,18 @@ const TechniquesPage: React.FC = () => {
                                 initial="hidden"
                                 animate="show"
                               >
-                                {bundleGroups.flatMap((bundle) => bundle.techniques).map((technique) => (
+                                {/* Купленные техники гостя */}
+                                {myTechniques.map((technique) => (
                                   <motion.div key={technique.id} variants={itemVariants}>
+                                    <TechniqueCard
+                                      technique={technique}
+                                      onClick={() => handleTechniqueClick(technique.id)}
+                                    />
+                                  </motion.div>
+                                ))}
+                                {/* Техники из обычных пакетов */}
+                                {bundleGroups.flatMap((bundle) => bundle.techniques).map((technique) => (
+                                  <motion.div key={`bundle-${technique.id}`} variants={itemVariants}>
                                     <TechniqueCard
                                       technique={technique}
                                       onClick={() => handleTechniqueClick(technique.id)}
